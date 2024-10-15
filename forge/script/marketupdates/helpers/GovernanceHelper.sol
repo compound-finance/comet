@@ -38,7 +38,7 @@ library GovernanceHelper {
 
         // Dynamically allocate arrays based on the number of markets
         uint256 numMarkets = addresses.markets.length;
-        uint256 totalTargets = 6 + numMarkets; // 6 fixed operations + numMarkets
+        uint256 totalTargets = 3 + numMarkets; // 6 fixed operations + numMarkets
         address[] memory targets = new address[](totalTargets);
         uint256[] memory values = new uint256[](totalTargets);
         string[] memory signatures = new string[](totalTargets);
@@ -67,25 +67,25 @@ library GovernanceHelper {
         signatures[offset + 1] = "upgrade(address,address)";
         calldatas[offset + 1] = abi.encode(configuratorProxyAddress, configuratorNewAddress);
 
-        // Set Market Admin
-        targets[offset + 2] = marketAdminPermissionCheckerAddress;
-        signatures[offset + 2] = "setMarketAdmin(address)";
-        calldatas[offset + 2] = abi.encode(marketUpdateTimelockAddress);
-
+//        // Set Market Admin
+//        targets[offset + 2] = marketAdminPermissionCheckerAddress;
+//        signatures[offset + 2] = "setMarketAdmin(address)";
+//        calldatas[offset + 2] = abi.encode(marketUpdateTimelockAddress);
+//
         // Set Market Admin Permission Checker on the configurator
-        targets[offset + 3] = configuratorProxyAddress;
-        signatures[offset + 3] = "setMarketAdminPermissionChecker(address)";
-        calldatas[offset + 3] = abi.encode(marketAdminPermissionCheckerAddress);
-
-        // Set Market Admin Permission Checker on the new comet proxy admin
-        targets[offset + 4] = cometProxyAdminNewAddress;
-        signatures[offset + 4] = "setMarketAdminPermissionChecker(address)";
-        calldatas[offset + 4] = abi.encode(marketAdminPermissionCheckerAddress);
-
-        // Set Market Update Proposer
-        targets[offset + 5] = marketUpdateTimelockAddress;
-        signatures[offset + 5] = "setMarketUpdateProposer(address)";
-        calldatas[offset + 5] = abi.encode(marketUpdateProposerAddress);
+        targets[offset + 2] = configuratorProxyAddress;
+        signatures[offset + 2] = "setMarketAdminPermissionChecker(address)";
+        calldatas[offset + 2] = abi.encode(marketAdminPermissionCheckerAddress);
+//
+//        // Set Market Admin Permission Checker on the new comet proxy admin
+//        targets[offset + 4] = cometProxyAdminNewAddress;
+//        signatures[offset + 4] = "setMarketAdminPermissionChecker(address)";
+//        calldatas[offset + 4] = abi.encode(marketAdminPermissionCheckerAddress);
+//
+//        // Set Market Update Proposer
+//        targets[offset + 5] = marketUpdateTimelockAddress;
+//        signatures[offset + 5] = "setMarketUpdateProposer(address)";
+//        calldatas[offset + 5] = abi.encode(marketUpdateProposerAddress);
 
         return ProposalRequest(targets, values, signatures, calldatas);
     }
@@ -123,8 +123,8 @@ library GovernanceHelper {
         moveProposalToExecution(vm, proposalId);
     }
 
-    function createAndPassMarketUpdateProposal(Vm vm, ProposalRequest memory proposalRequest, string memory description, address marketUpdateProposer) public {
-        vm.startPrank(MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS);
+    function createAndPassMarketUpdateProposal(Vm vm, address marketAdmin, ProposalRequest memory proposalRequest, string memory description, address marketUpdateProposer) public {
+        vm.startPrank(marketAdmin);
         MarketUpdateProposer(marketUpdateProposer).propose(proposalRequest.targets, proposalRequest.values, proposalRequest.signatures, proposalRequest.calldatas, description);
 
         // Fast forward by 5 days
@@ -135,8 +135,8 @@ library GovernanceHelper {
         vm.stopPrank();
     }
 
-    function createAndPassMarketUpdateProposalL2(Vm vm, ProposalRequest memory proposalRequest, string memory description, address marketUpdateProposer) public {
-        vm.startPrank(MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS);
+    function createAndPassMarketUpdateProposalL2(Vm vm, address marketAdmin, ProposalRequest memory proposalRequest, string memory description, address marketUpdateProposer) public {
+        vm.startPrank(marketAdmin);
         MarketUpdateProposer(marketUpdateProposer).propose(proposalRequest.targets, proposalRequest.values, proposalRequest.signatures, proposalRequest.calldatas, description);
 
         // Fast forward by 5 days
@@ -162,6 +162,7 @@ library GovernanceHelper {
     }
 
     function moveProposalToSucceed(Vm vm, uint proposalId) public {
+        console.log("Moving proposal to Succeeded");
         require(governorBravo.state(proposalId) == IGovernorBravo.ProposalState.Active, "Proposal is not Active");
 
 
@@ -174,6 +175,7 @@ library GovernanceHelper {
     }
 
     function moveProposalToExecution(Vm vm, uint proposalId) public {
+        console.log("Moving proposal to Execution");
         uint proposalEta = governorBravo.proposals(proposalId).eta;
         require(proposalEta != 0, "Proposal has not been queued");
 

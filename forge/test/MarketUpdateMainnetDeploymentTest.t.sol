@@ -12,13 +12,15 @@ import "../script/marketupdates/helpers/MarketAddresses.sol";
 import "../script/marketupdates/helpers/GovernanceHelper.sol";
 import "./MarketUpdateDeploymentBaseTest.sol";
 
-contract MarketUpdateMainnetDeploymentTest is Test, MarketUpdateDeploymentBaseTest {
+contract MarketUpdateMainnetDeploymentTest is MarketUpdateDeploymentBaseTest {
 
-    MarketUpdateContractsDeployer.DeployedContracts deployedContracts;
+    MarketUpdateContractsDeployer.DeployedContracts internal deployedContracts;
+    ChainAddresses.ChainAddressesStruct internal chainAddresses;
 
     function setUp() public {
         vm.createSelectFork("mainnet");
         deployedContracts = createMarketUpdateDeployment(vm);
+        chainAddresses = ChainAddresses.getChainAddresses(ChainAddresses.Chain.ETHEREUM);
     }
 
     function test_UsdcDeployment() public {
@@ -26,11 +28,10 @@ contract MarketUpdateMainnetDeploymentTest is Test, MarketUpdateDeploymentBaseTe
 
         updateAndVerifySupplyKink(
             vm,
-            MarketAddresses.MAINNET_USDC_MARKET, 
-            ChainAddresses.MAINNET_CONFIGURATOR_PROXY,
-            deployedContracts.newCometProxyAdmin,
-            deployedContracts.marketUpdateProposer,
-            "USDC"
+            "USDC",
+            MarketAddresses.MAINNET_USDC_MARKET,
+            chainAddresses,
+            deployedContracts
         );
     }
 
@@ -39,11 +40,11 @@ contract MarketUpdateMainnetDeploymentTest is Test, MarketUpdateDeploymentBaseTe
 
         updateAndVerifySupplyKink(
             vm,
-            MarketAddresses.MAINNET_USDT_MARKET, 
-            ChainAddresses.MAINNET_CONFIGURATOR_PROXY,
-            deployedContracts.newCometProxyAdmin,
-            deployedContracts.marketUpdateProposer,
-            "USDT"
+            "USDT",
+            MarketAddresses.MAINNET_USDT_MARKET,
+            chainAddresses,
+            deployedContracts
+
         );
     }
 
@@ -52,11 +53,10 @@ contract MarketUpdateMainnetDeploymentTest is Test, MarketUpdateDeploymentBaseTe
 
         updateAndVerifySupplyKink(
             vm,
-            MarketAddresses.MAINNET_ETH_MARKET, 
-            ChainAddresses.MAINNET_CONFIGURATOR_PROXY,
-            deployedContracts.newCometProxyAdmin,
-            deployedContracts.marketUpdateProposer,
-            "ETH"
+            "ETH",
+            MarketAddresses.MAINNET_ETH_MARKET,
+            chainAddresses,
+            deployedContracts
         );
     }
 
@@ -65,11 +65,10 @@ contract MarketUpdateMainnetDeploymentTest is Test, MarketUpdateDeploymentBaseTe
 
         updateAndVerifySupplyKink(
             vm,
-            MarketAddresses.MAINNET_WST_ETH_MARKET, 
-            ChainAddresses.MAINNET_CONFIGURATOR_PROXY,
-            deployedContracts.newCometProxyAdmin,
-            deployedContracts.marketUpdateProposer,
-            "WST_ETH"
+            "WST_ETH",
+            MarketAddresses.MAINNET_WST_ETH_MARKET,
+            chainAddresses,
+            deployedContracts
         );
     }
 }

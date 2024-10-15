@@ -26,12 +26,10 @@ contract MarketUpdatePolygonDeploymentTest is Test, MarketUpdateDeploymentBaseTe
 
         updateAndVerifySupplyKinkInL2(
             vm,
+            "USDCe",
             ChainAddresses.Chain.POLYGON,
             MarketAddresses.POLYGON_USDCe_MARKET,
-            ChainAddresses.POLYGON_CONFIGURATOR_PROXY,
-            deployedContracts.newCometProxyAdmin, 
-            deployedContracts.marketUpdateProposer,
-            "USDCe"
+            deployedContracts
         );
     }
 
@@ -40,12 +38,10 @@ contract MarketUpdatePolygonDeploymentTest is Test, MarketUpdateDeploymentBaseTe
 
         updateAndVerifySupplyKinkInL2(
             vm,
+            "USDT",
             ChainAddresses.Chain.POLYGON,
             MarketAddresses.POLYGON_USDT_MARKET,
-            ChainAddresses.POLYGON_CONFIGURATOR_PROXY,
-            deployedContracts.newCometProxyAdmin, 
-            deployedContracts.marketUpdateProposer,
-            "USDT"
+            deployedContracts
         );
     }
 }

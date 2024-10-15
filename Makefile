@@ -2,14 +2,12 @@
 
 
 # Declare constants at the top
-GOVERNOR_TIMELOCK_ADDRESS = 0xDeployedGovernorTimelock
-MARKET_UPDATE_MULTISIG = 0xDeployedMarketUpdateMultisig
-PROPOSAL_GUARDIAN_ADDRESS = 0xDeployedProposalGuardian
-MARKET_ADMIN_TIMELOCK_ADDRESS = 0xDeployedComputedTimelock
-MARKET_UPDATE_PROPOSER = 0xDeployedComputedProposer
-CONFIGURATOR = 0xDeployedComputedConfigurator
-COMET_PROXY_ADMIN = 0xDeployedComputedProxyAdmin
-MARKET_ADMIN_PERMISSION_CHECKER = 0xDeployedComputedMarketAdminPermissionChecker
+MARKET_UPDATE_MULTISIG = 0x7e14050080306cd36b47DE61ce604b3a1EC70c4e
+MARKET_ADMIN_TIMELOCK_ADDRESS = 0x81Bc6016Fa365bfE929a51Eec9217B441B598eC6
+MARKET_UPDATE_PROPOSER = 0xB6Ef3AC71E9baCF1F4b9426C149d855Bfc4415F9
+CONFIGURATOR_IMPL = 0x371DB45c7ee248dAFf4Dc1FFB67A20faa0ecFE02
+COMET_PROXY_ADMIN = 0x24D86Da09C4Dd64e50dB7501b0f695d030f397aF
+MARKET_ADMIN_PERMISSION_CHECKER = 0x62DD0452411113404cf9a7fE88A5E6E86f9B71a6
 
 SOLIDITY_COMPILER_VERSION = "0.8.15"
 SENDER = "0x470579d16401a36BF63b1428eaA7189FBdE5Fee9"
@@ -54,7 +52,7 @@ verify-MarketUpdateTimelock:
 		--chain-id $(CHAIN_ID) \
 		--compiler-version $(SOLIDITY_COMPILER_VERSION) \
 		--optimizer-runs 200 \
-		--constructor-args $(shell cast abi-encode "constructor(address,uint256)" $(SENDER) 360000) \
+		--constructor-args $(shell cast abi-encode "constructor(address,uint256)" $(SENDER) 172800) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--watch \
 		--via-ir \
@@ -68,7 +66,7 @@ verify-MarketUpdateProposer:
 		--chain-id $(CHAIN_ID) \
 		--compiler-version $(SOLIDITY_COMPILER_VERSION) \
 		--optimizer-runs 200 \
-		--constructor-args $(shell cast abi-encode "constructor(address,address,address,address)" $(SENDER) $(MARKET_UPDATE_MULTISIG) $(PROPOSAL_GUARDIAN_ADDRESS) $(MARKET_ADMIN_TIMELOCK_ADDRESS)) \
+		--constructor-args $(shell cast abi-encode "constructor(address,address,address,address)" $(SENDER) $(MARKET_UPDATE_MULTISIG) 0x0000000000000000000000000000000000000000 $(MARKET_ADMIN_TIMELOCK_ADDRESS)) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--watch \
 		--via-ir \
@@ -99,7 +97,7 @@ verify-Configurator:
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--watch \
 		--via-ir \
-		${CONFIGURATOR} \
+		${CONFIGURATOR_IMPL} \
 		contracts/Configurator.sol:Configurator
 
 # Verifying MarketAdminPermissionChecker

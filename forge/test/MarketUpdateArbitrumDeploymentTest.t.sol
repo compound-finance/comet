@@ -26,12 +26,10 @@ contract MarketUpdateArbitrumDeploymentTest is Test, MarketUpdateDeploymentBaseT
 
         updateAndVerifySupplyKinkInL2(
             vm,
+            "USDC",
             ChainAddresses.Chain.ARBITRUM,
             MarketAddresses.ARBITRUM_USDC_MARKET,
-            ChainAddresses.ARBITRUM_CONFIGURATOR_PROXY,
-            deployedContracts.newCometProxyAdmin, 
-            deployedContracts.marketUpdateProposer,
-            "USDC"
+            deployedContracts
         );
     }
 
@@ -40,12 +38,11 @@ contract MarketUpdateArbitrumDeploymentTest is Test, MarketUpdateDeploymentBaseT
 
         updateAndVerifySupplyKinkInL2(
             vm,
+            "USDCe",
             ChainAddresses.Chain.ARBITRUM,
             MarketAddresses.ARBITRUM_USDCe_MARKET,
-            ChainAddresses.ARBITRUM_CONFIGURATOR_PROXY,
-            deployedContracts.newCometProxyAdmin, 
-            deployedContracts.marketUpdateProposer,
-            "USDCe"
+            deployedContracts
+
         );
     }
 
@@ -54,12 +51,11 @@ contract MarketUpdateArbitrumDeploymentTest is Test, MarketUpdateDeploymentBaseT
 
         updateAndVerifySupplyKinkInL2(
             vm,
+            "USDT",
             ChainAddresses.Chain.ARBITRUM,
             MarketAddresses.ARBITRUM_USDT_MARKET,
-            ChainAddresses.ARBITRUM_CONFIGURATOR_PROXY,
-            deployedContracts.newCometProxyAdmin, 
-            deployedContracts.marketUpdateProposer,
-            "USDT"
+            deployedContracts
+
         );
     }
 
@@ -68,12 +64,10 @@ contract MarketUpdateArbitrumDeploymentTest is Test, MarketUpdateDeploymentBaseT
 
         updateAndVerifySupplyKinkInL2(
             vm,
+            "ETH",
             ChainAddresses.Chain.ARBITRUM,
             MarketAddresses.ARBITRUM_ETH_MARKET,
-            ChainAddresses.ARBITRUM_CONFIGURATOR_PROXY,
-            deployedContracts.newCometProxyAdmin, 
-            deployedContracts.marketUpdateProposer,
-            "ETH"
+            deployedContracts
         );
     }
 }

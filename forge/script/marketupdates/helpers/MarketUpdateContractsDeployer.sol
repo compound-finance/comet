@@ -14,6 +14,9 @@ import "@forge-std/src/Vm.sol";
 library MarketUpdateContractsDeployer {
 
     address constant public create2DeployerAddress = 0x13b0D85CcB8bf860b6b79AF3029fCA081AE9beF2;
+    address constant public ZER0_ADDRESS_MARKET_UPDATE_PROPOSAL_GUARDIAN = address(0);
+    address constant public ZER0_ADDRESS_MARKET_ADMIN_PAUSE_GUARDIAN = address(0);
+    address constant public INITIAL_ADDRESS_MARKET_UPDATE_MULTI_SIG = address(0x7e14050080306cd36b47DE61ce604b3a1EC70c4e);
 
     struct DeployedContracts {
         address marketUpdateTimelock;
@@ -33,20 +36,45 @@ library MarketUpdateContractsDeployer {
     function deployContracts(
         Vm vm,
         bytes32 salt,
-        address marketUpdateMultiSig, // TODO: Check this is properly used
-        address marketAdminPauseGuardianAddress, // TODO: Check this is properly used
-        address marketUpdateProposalGuardianAddress, // TODO: Check this is properly used
+        address marketUpdateMultiSig,
+        address marketAdminPauseGuardianAddress,
+        address marketUpdateProposalGuardianAddress,
         address localTimelockAddress
     ) public returns (DeployedContracts memory) {
         console.log("Deploying contracts with sender", msg.sender);
+        vm.startBroadcast(msg.sender);
+
+        DeployedContracts memory deployedContracts = _deployContracts(
+            salt,
+            msg.sender,
+            marketUpdateMultiSig,
+            marketAdminPauseGuardianAddress,
+            marketUpdateProposalGuardianAddress,
+            localTimelockAddress
+        );
+
+        vm.stopBroadcast();
+        return deployedContracts;
+    }
+
+    function _deployContracts(
+        bytes32 salt,
+        address msgSender,
+        address marketUpdateMultiSig,
+        address marketAdminPauseGuardianAddress,
+        address marketUpdateProposalGuardianAddress,
+        address localTimelockAddress
+    ) internal returns (DeployedContracts memory) {
+        console.log("Deploying contracts with sender", msgSender);
+
 
         ICreate2Deployer create2Deployer = ICreate2Deployer(create2DeployerAddress);
 
-        vm.startBroadcast(msg.sender);
+
         // Prepare deployment parameters for each contract
         ContractDeploymentParams memory marketUpdateTimelockParams = ContractDeploymentParams({
             creationCode: type(MarketUpdateTimelock).creationCode,
-            constructorArgs: abi.encode(msg.sender, 360000), // TODO: add comment on how 360000 is calculated
+            constructorArgs: abi.encode(msgSender, 2 days), // 2 days
             expectedRuntimeCode: type(MarketUpdateTimelock).runtimeCode,
             contractName: "MarketUpdateTimelock"
         });
@@ -58,9 +86,9 @@ library MarketUpdateContractsDeployer {
         ContractDeploymentParams memory marketUpdateProposerParams = ContractDeploymentParams({
             creationCode: type(MarketUpdateProposer).creationCode,
             constructorArgs: abi.encode(
-                msg.sender,
-                marketUpdateMultiSig,
-                marketUpdateProposalGuardianAddress,
+                msgSender,
+                INITIAL_ADDRESS_MARKET_UPDATE_MULTI_SIG,
+                ZER0_ADDRESS_MARKET_UPDATE_PROPOSAL_GUARDIAN,
                 computedMarketUpdateTimelockAddress
             ),
             expectedRuntimeCode: type(MarketUpdateProposer).runtimeCode,
@@ -68,6 +96,8 @@ library MarketUpdateContractsDeployer {
         });
 
         address computedMarketUpdateProposerAddress = deployContractWithCreate2(create2Deployer, salt, marketUpdateProposerParams);
+        MarketUpdateProposer(computedMarketUpdateProposerAddress).setMarketAdmin(marketUpdateMultiSig);
+        MarketUpdateProposer(computedMarketUpdateProposerAddress).setProposalGuardian(marketUpdateProposalGuardianAddress);
         MarketUpdateProposer(computedMarketUpdateProposerAddress).setGovernor(localTimelockAddress);
 
         MarketUpdateTimelock(payable(computedMarketUpdateTimelockAddress)).setMarketUpdateProposer(computedMarketUpdateProposerAddress);
@@ -82,28 +112,32 @@ library MarketUpdateContractsDeployer {
 
         address computedConfiguratorAddress = deployContractWithCreate2(create2Deployer, salt, configuratorParams);
 
-        ContractDeploymentParams memory cometProxyAdminParams = ContractDeploymentParams({
-            creationCode: type(CometProxyAdmin).creationCode,
-            constructorArgs: abi.encode(msg.sender),
-            expectedRuntimeCode: type(CometProxyAdmin).runtimeCode,
-            contractName: "CometProxyAdmin"
-        });
-
-        address computedCometProxyAdminAddress = deployContractWithCreate2(create2Deployer, salt, cometProxyAdminParams);
-        CometProxyAdmin(computedCometProxyAdminAddress).transferOwnership(localTimelockAddress);
-
-        console.log("Owner of cometProxyAdmin: ", CometProxyAdmin(computedCometProxyAdminAddress).owner());
-
         ContractDeploymentParams memory marketAdminPermissionCheckerParams = ContractDeploymentParams({
             creationCode: type(MarketAdminPermissionChecker).creationCode,
-            constructorArgs: abi.encode(msg.sender, marketUpdateMultiSig, address(0)),
+            constructorArgs: abi.encode(msgSender, INITIAL_ADDRESS_MARKET_UPDATE_MULTI_SIG, address(0)),
             expectedRuntimeCode: type(MarketAdminPermissionChecker).runtimeCode,
             contractName: "MarketAdminPermissionChecker"
         });
 
         address computedMarketAdminPermissionCheckerAddress = deployContractWithCreate2(create2Deployer, salt, marketAdminPermissionCheckerParams);
+        MarketAdminPermissionChecker(computedMarketAdminPermissionCheckerAddress).setMarketAdmin(computedMarketUpdateTimelockAddress);
+        MarketAdminPermissionChecker(computedMarketAdminPermissionCheckerAddress).setMarketAdminPauseGuardian(marketAdminPauseGuardianAddress);
+
         MarketAdminPermissionChecker(computedMarketAdminPermissionCheckerAddress).transferOwnership(localTimelockAddress);
-        vm.stopBroadcast();
+
+        ContractDeploymentParams memory cometProxyAdminParams = ContractDeploymentParams({
+            creationCode: type(CometProxyAdmin).creationCode,
+            constructorArgs: abi.encode(msgSender),
+            expectedRuntimeCode: type(CometProxyAdmin).runtimeCode,
+            contractName: "CometProxyAdmin"
+        });
+
+        address computedCometProxyAdminAddress = deployContractWithCreate2(create2Deployer, salt, cometProxyAdminParams);
+        CometProxyAdmin(computedCometProxyAdminAddress).setMarketAdminPermissionChecker(MarketAdminPermissionChecker(computedMarketAdminPermissionCheckerAddress));
+        CometProxyAdmin(computedCometProxyAdminAddress).transferOwnership(localTimelockAddress);
+
+        console.log("Owner of cometProxyAdmin: ", CometProxyAdmin(computedCometProxyAdminAddress).owner());
+
         return DeployedContracts({
             marketUpdateTimelock: computedMarketUpdateTimelockAddress,
             marketUpdateProposer: computedMarketUpdateProposerAddress,

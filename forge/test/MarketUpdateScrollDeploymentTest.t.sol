@@ -26,12 +26,10 @@ contract MarketUpdateScrollDeploymentTest is Test, MarketUpdateDeploymentBaseTes
 
         updateAndVerifySupplyKinkInL2(
             vm,
+            "USDC",
             ChainAddresses.Chain.SCROLL,
             MarketAddresses.SCROLL_USDC_MARKET,
-            ChainAddresses.SCROLL_CONFIGURATOR_PROXY,
-            deployedContracts.newCometProxyAdmin, 
-            deployedContracts.marketUpdateProposer,
-            "USDC"
+            deployedContracts
         );
     }
 }

@@ -26,12 +26,10 @@ contract MarketUpdateBaseDeploymentTest is Test, MarketUpdateDeploymentBaseTest 
 
         updateAndVerifySupplyKinkInL2(
             vm,
+            "USDbC",
             ChainAddresses.Chain.BASE,
             MarketAddresses.BASE_USDbC_MARKET,
-            ChainAddresses.BASE_CONFIGURATOR_PROXY,
-            deployedContracts.newCometProxyAdmin, 
-            deployedContracts.marketUpdateProposer,
-            "USDbC"
+            deployedContracts
         );
     }
 
@@ -40,12 +38,10 @@ contract MarketUpdateBaseDeploymentTest is Test, MarketUpdateDeploymentBaseTest 
 
         updateAndVerifySupplyKinkInL2(
             vm,
+            "USDC",
             ChainAddresses.Chain.BASE,
             MarketAddresses.BASE_USDC_MARKET,
-            ChainAddresses.BASE_CONFIGURATOR_PROXY,
-            deployedContracts.newCometProxyAdmin, 
-            deployedContracts.marketUpdateProposer,
-            "USDC"
+            deployedContracts
         );
     }
 
@@ -54,12 +50,10 @@ contract MarketUpdateBaseDeploymentTest is Test, MarketUpdateDeploymentBaseTest 
 
         updateAndVerifySupplyKinkInL2(
             vm,
+            "ETH",
             ChainAddresses.Chain.BASE,
             MarketAddresses.BASE_ETH_MARKET,
-            ChainAddresses.BASE_CONFIGURATOR_PROXY,
-            deployedContracts.newCometProxyAdmin, 
-            deployedContracts.marketUpdateProposer,
-            "ETH"
+            deployedContracts
         );
     }
 }
