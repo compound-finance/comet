@@ -10,14 +10,20 @@ MARKET_UPDATE_PROPOSER = 0xDeployedComputedProposer
 CONFIGURATOR = 0xDeployedComputedConfigurator
 COMET_PROXY_ADMIN = 0xDeployedComputedProxyAdmin
 MARKET_ADMIN_PERMISSION_CHECKER = 0xDeployedComputedMarketAdminPermissionChecker
-CHAIN_ID = ChainIdOfTheNetwork
-ETHERSCAN_API_KEY = "YourEtherscanApiKey"
+
 SOLIDITY_COMPILER_VERSION = "0.8.15"
-SENDER = "0xYourSenderAddress"
+SENDER = "0x470579d16401a36BF63b1428eaA7189FBdE5Fee9"
 EVM_VERSION = "london"
-RPC_URL = "RPCUrlOfTheNetwork"
-OWNERS = '["0xOwner1", "0xOwner2", "0xOwner3"]'
+OWNERS = '["0xDD659911EcBD4458db07Ee7cDdeC79bf8F859AbC", "0xda32C5AEE8Fc5C51Ed9a99f5608c33f435F740B4", "0x1D8e0b8F4CEd9262C9ac0c0870BF8B45D74ad9D9", "0x47526FDDBA0A5a7ef001FaaD4836b771B3e92522"]'
 THRESHOLD = 2
+
+#RPC_URL = "RPCUrlOfTheNetwork"
+#SENDER = "0x470579d16401a36BF63b1428eaA7189FBdE5Fee9"
+#ETHERSCAN_API_KEY = ""
+#CHAIN_ID = ChainIdOfTheNetwork
+#SALT = 'salt-salt-sale-salt'
+
+include .env
 
 # Define targets for each contract
 verify-all: verify-MarketUpdateTimelock verify-MarketUpdateProposer verify-Configurator verify-CometProxyAdmin verify-MarketAdminPermissionChecker
@@ -25,7 +31,7 @@ verify-all: verify-MarketUpdateTimelock verify-MarketUpdateProposer verify-Confi
 # Deploying Safe
 deploy-safe:
 	@echo "Deploying Safe..."
-	OWNERS=$(OWNERS) THRESHOLD=$(THRESHOLD) CHAIN_ID=$(CHAIN_ID) yarn hardhat run scripts/marketupdates/deploySafe.ts
+	OWNERS=$(OWNERS) THRESHOLD=$(THRESHOLD) SALT=$(SALT) CHAIN_ID=$(CHAIN_ID) yarn hardhat run scripts/marketupdates/deploySafe.ts
 
 # Deploying the contracts
 deploy-contracts:
