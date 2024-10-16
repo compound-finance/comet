@@ -36,6 +36,7 @@ jobs:
           SCROLL_RPC_URL: ${{ secrets.SCROLL_RPC_URL }}
           ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
           POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
+          SALT: ${{ secrets.SALT }}
 
       - name: Build Comet with older solc versions
         run: |
