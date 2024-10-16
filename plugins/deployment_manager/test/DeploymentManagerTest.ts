@@ -30,7 +30,8 @@ export interface TestContracts {
 }
 
 export async function setupContracts(deploymentManager: DeploymentManager): Promise<TestContracts> {
-  let proxyAdminArgs: [] = [];
+  const signers = await deploymentManager.getSigners();
+  let proxyAdminArgs: string[] = [signers[0].address];
   let proxyAdmin: ProxyAdmin = await deploymentManager.deploy(
     'proxyAdmin',
     'vendor/proxy/transparent/ProxyAdmin.sol',
