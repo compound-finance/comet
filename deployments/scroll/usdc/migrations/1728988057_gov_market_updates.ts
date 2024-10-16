@@ -104,7 +104,26 @@ export default migration('1728988057_gov_market_updates', {
     ];
 
     const description =
-      'Governance proposal with actions to change proxy admins, upgrade the configurator, and set the market admin and related roles.';
+      `DoDAO has been examining various areas where improvements can be made to governance in Compound through tooling or automation. A significant issue raised repeatedly by many members concerns the time and effort required to apply Market Updates.
+
+Currently, approximately 70-90% of the proposals pertain solely to updating market parameters. Gauntlet uses analytics and algorithms to determine new parameters based on current market conditions. These proposals are highly specific and require unique skills for validation. So far, we have seen minimal participation from other community members or teams in validating these parameters.
+
+Assuming the total cost of reviewing a proposal (including the effort of all delegates) is $2,000 per proposal, we are spending upwards of $300,000 per year on a process that currently acts more as a friction layer without much safeguard, as these market update proposals are rarely reviewed thoroughly.
+
+This not only slows down the process but also diverts focus from reviewing essential proposals related to new partnerships, the addition of new chains, and the introduction of assets, etc.
+
+We propose a parallel process specifically for market updates that can bypass the normal governance lifecycle. This would enable us, as a Compound community, to move faster and concentrate on the most critical decisions.
+
+This proposal has already been discussed here - https://www.comp.xyz/t/market-updates-alternate-governance-track/5379 
+
+The forum post includes two solutions, and OpenZeppelin has provided details and feedback on those solutions.
+
+After discussing with OpenZeppelin, DoDAO and OZ together believe that given the amount of changes, updating the Configurator could be the best solution. OpenZeppelin mentioned a couple of important points in the forum post:
+
+1. Grant the market admin role to an Safe address, which can be maintained by Gauntlet or other community members.
+2. Market Updates to the Configurator will go through a timelock, providing sufficient time for the community to review or even block the market updates via this alternate route.
+`;
+
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(actions, description))))
     );
