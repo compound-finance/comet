@@ -8,9 +8,7 @@ cache_path  = 'forge/cache'
 # disable for CI (used for debugging liquidity issues)
 no_match_test = "test.*SwapVia"
 
-evm_version = "shanghai"
-
-fs_permissions = [{ access = "read-write", path = "./forge/script/helperContracts/DeployedAddresses.sol" }]
+evm_version = "london"
 
 remappings = [
     "@forge-std/=forge/lib/forge-std/",
@@ -25,6 +23,3 @@ optimism = "${OPTIMISM_RPC_URL}"
 scroll = "${SCROLL_RPC_URL}"
 base = "${BASE_RPC_URL}"
 sepolia = "${SEPOLIA_RPC_URL}"
-
-[etherscan]
-sepolia = { key = "${ETHERSCAN_API_KEY}" }

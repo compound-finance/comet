@@ -8,11 +8,10 @@ import "@comet-contracts/IGovernorBravo.sol";
 import "@comet-contracts/IComp.sol";
 import "@comet-contracts/marketupdates/CometProxyAdminOld.sol";
 
-import "./helpers/DeployedAddresses.sol";
 import "./helpers/GovernanceHelper.sol";
 import "./helpers/MarketUpdateAddresses.sol";
 
-contract GovernorProposal is Script, DeployedAddresses {
+contract GovernorProposal is Script {
 
     function run() external {
         string memory chainName = vm.envString("CHAIN_NAME"); // Access the env variable
