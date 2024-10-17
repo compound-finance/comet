@@ -4,7 +4,7 @@ import { exp } from '../test/helpers';
 import { isRewardSupported, matchesDeployment } from './utils';
 import { Contract, ContractReceipt } from 'ethers';
 import { CometRewards, ERC20__factory } from '../build/types';
-import { World } from '../plugins/scenario';
+import {World} from '../plugins/scenario';
 
 function calculateRewardsOwed(
   userBalance: bigint,
@@ -87,7 +87,7 @@ scenario(
 scenario(
   'Comet#rewards > manager can claimTo supply rewards from a managed account',
   {
-    filter: async (ctx) => await isRewardSupported(ctx) && !matchesDeployment(ctx, [{ network: 'mainnet', deployment: 'weth' }]),
+    filter: async (ctx) => await isRewardSupported(ctx) && !matchesDeployment(ctx, [{network: 'mainnet', deployment: 'weth'}]),
     tokenBalances: {
       albert: { $base: ' == 100' }, // in units of asset, not wei
     },
