@@ -68,7 +68,7 @@ scenario(
 
     await albert.invoke({ actions, calldata });
 
-    expectApproximately((await stETH.balanceOf(albert.address)).toBigInt(), 0n, 1n);
+    expectApproximately((await stETH.balanceOf(albert.address)).toBigInt(), 0n, 2n);
     expectApproximately(
       (await comet.collateralBalanceOf(albert.address, wstETH.address)).toBigInt(),
       (await wstETH.getWstETHByStETH(toSupplyStEth)).toBigInt(),

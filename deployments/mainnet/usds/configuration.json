@@ -3,10 +3,10 @@
   "symbol": "cUSDSv3",
   "baseToken": "USDS",
   "baseTokenAddress": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
-  "borrowMin": "100e18",
+  "borrowMin": "10e18",
   "governor": "0x6d903f6003cca6255d85cca4d3b5e5146dc33925",
   "pauseGuardian": "0xbbf3f1421d886e9b2c5d716b5192ac998af2012c",
-  "baseTokenPriceFeed": "0x3E7d1eAB13ad0104d2750B8863b489D65364e32D",
+  "baseTokenPriceFeed": "0xfF30586cD0F29eD462364C7e81375FC0C71219b1",
   "storeFrontPriceFactor": 0.6,
   "targetReserves": "20_000_000e18",
   "rates": {
@@ -23,7 +23,7 @@
     "indexScale": "1e15",
     "baseSupplySpeed": "0e0",
     "baseBorrowSpeed": "0e0",
-    "baseMinForRewards": "100000e18"
+    "baseMinForRewards": "10000e18"
   },
   "rewardTokenAddress": "0xc00e94Cb662C3520282E6f5717214004A7f26888",
   "assets": {

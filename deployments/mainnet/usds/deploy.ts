@@ -8,20 +8,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const cbBTC = await deploymentManager.existing('cbBTC', '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf');
   const tBTC = await deploymentManager.existing('tBTC', '0x18084fbA666a33d37592fA2633fD49a74DD93a88');
   const USDe = await deploymentManager.existing('USDe', '0x4c9EDD5852cd905f086C759E8383e09bff1E68B3');
-  // const sUSDe = await deploymentManager.existing('sUSDe', '0x9D39A5DE30e57443BfF2A8307A4256c8797A3497');
-  // const sUSDS = await deploymentManager.existing('sUSDS', '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD');
-  const USDS  = await deploymentManager.existing('USDS', '0xdC035D45d973E3EC169d2276DDab16f1e407384F');
-
-  // const sUSDSScalingPriceFeed = await deploymentManager.deploy(
-  //   'sUSDS:priceFeed',
-  //   'pricefeeds/PriceFeedWith4626Support.sol',
-  //   [
-  //     '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD', // sUSDS / USDS rate provider
-  //     '0x3E7d1eAB13ad0104d2750B8863b489D65364e32D', // USDS / USD price feed
-  //     8,                                            // decimals
-  //     'Custom sUSDS / USD price feed'               // description
-  //   ]
-  // );
+  const USDS = await deploymentManager.existing('USDS', '0xdC035D45d973E3EC169d2276DDab16f1e407384F');
 
   const wstETHtoUsdPriceFeed = await deploymentManager.deploy(
     'wstETH:priceFeed',
@@ -30,7 +17,8 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
       '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419', // ETH / USD price feed
       wstETH.address,                               // wstETH token
       8,                                            // decimals
-    ]
+    ],
+    true
   );
 
   // Import shared contracts from cUSDCv3

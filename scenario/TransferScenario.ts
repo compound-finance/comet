@@ -2,7 +2,6 @@ import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { expectApproximately, expectBase, expectRevertCustom, getInterest, hasMinBorrowGreaterThanOne, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
 import { ContractReceipt } from 'ethers';
-import { getConfigForScenario } from './utils/scenarioHelper';
 
 async function testTransferCollateral(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
   const comet = await context.getComet();
@@ -134,16 +133,11 @@ scenario(
 scenario(
   'Comet#transfer > partial withdraw / borrow base to partial repay / supply',
   {
-    cometBalances: async (ctx) =>  (
-      {
-        albert: {
-          $base: getConfigForScenario(ctx).transferBase,
-          $asset0: getConfigForScenario(ctx).transferAsset,
-        },
-        betty: { $base: -getConfigForScenario(ctx).transferBase },
-        charles: { $base: getConfigForScenario(ctx).transferBase }, // to give the protocol enough base for others to borrow from
-      }
-    )
+    cometBalances: {
+      albert: { $base: 1000, $asset0: 5000 }, // in units of asset, not wei
+      betty: { $base: -1000 },
+      charles: { $base: 1000 }, // to give the protocol enough base for others to borrow from
+    },
   },
   async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
@@ -154,47 +148,16 @@ scenario(
     const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
 
     // XXX 100 seconds?!
-    expectApproximately(
-      await albert.getCometBaseBalance(),
-      BigInt(getConfigForScenario(context).transferBase) * scale,
-      getInterest(1000n * scale,
-        borrowRate,
-        100n
-      ) + 2n
-    );
-    expectApproximately(
-      await betty.getCometBaseBalance(),
-      -BigInt(getConfigForScenario(context).transferBase) * scale,
-      getInterest(
-        BigInt(getConfigForScenario(context).transferBase) * scale,
-        borrowRate,
-        100n
-      ) + 2n
-    );
+    expectApproximately(await albert.getCometBaseBalance(), 1000n * scale, getInterest(1000n * scale, borrowRate, 100n) + 2n);
+    expectApproximately(await betty.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, 100n) + 2n);
 
     // Albert with positive balance transfers to Betty with negative balance
-    const toTransfer = BigInt(getConfigForScenario(context).transferAsset)/2n * scale;
+    const toTransfer = 2500n * scale;
     const txn = await albert.transferAsset({ dst: betty.address, asset: baseAsset.address, amount: toTransfer });
 
     // Albert ends with negative balance and Betty with positive balance
-    expectApproximately(
-      await albert.getCometBaseBalance(),
-      -BigInt(getConfigForScenario(context).transferBase) * 3n / 2n * scale,
-      getInterest(
-        BigInt(getConfigForScenario(context).transferBase) * 3n / 2n * scale,
-        borrowRate,
-        100n
-      ) + 4n
-    );
-    expectApproximately(
-      await betty.getCometBaseBalance(),
-      BigInt(getConfigForScenario(context).transferBase) * 3n / 2n * scale,
-      getInterest(
-        BigInt(getConfigForScenario(context).transferBase) * 3n / 2n * scale,
-        borrowRate,
-        100n
-      ) + 4n
-    );
+    expectApproximately(await albert.getCometBaseBalance(), -1500n * scale, getInterest(1500n * scale, borrowRate, 100n) + 4n);
+    expectApproximately(await betty.getCometBaseBalance(), 1500n * scale, getInterest(1500n * scale, borrowRate, 100n) + 4n);
 
     return txn; // return txn to measure gas
   }
@@ -218,8 +181,8 @@ scenario(
     const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
 
     // XXX 70 seconds?!
-    expectApproximately(await albert.getCometBaseBalance(), 1000n * scale, getInterest(1000n * scale, borrowRate, BigInt(getConfigForScenario(context).interestSeconds)) + 2n);
-    expectApproximately(await betty.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, BigInt(getConfigForScenario(context).interestSeconds)) + 2n);
+    expectApproximately(await albert.getCometBaseBalance(), 1000n * scale, getInterest(1000n * scale, borrowRate, 70n) + 2n);
+    expectApproximately(await betty.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, 70n) + 2n);
 
     await albert.allow(betty, true);
 
@@ -227,8 +190,8 @@ scenario(
     const toTransfer = 999n * scale; // XXX cannot withdraw 1000 (to ~0)
     const txn = await betty.transferAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: toTransfer });
 
-    expectApproximately(await albert.getCometBaseBalance(), scale, getInterest(1000n * scale, borrowRate, BigInt(getConfigForScenario(context).interestSeconds)) + 2n);
-    expectApproximately(await betty.getCometBaseBalance(), -scale, getInterest(1000n * scale, borrowRate, BigInt(getConfigForScenario(context).interestSeconds)) + 2n);
+    expectApproximately(await albert.getCometBaseBalance(), scale, getInterest(1000n * scale, borrowRate, 70n) + 2n);
+    expectApproximately(await betty.getCometBaseBalance(), -scale, getInterest(1000n * scale, borrowRate, 70n) + 2n);
 
     return txn; // return txn to measure gas
   }
@@ -286,8 +249,8 @@ scenario(
     const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
 
     // XXX 70 seconds?!
-    expectApproximately(await albert.getCometBaseBalance(), 1000n * scale, getInterest(1000n * scale, borrowRate, BigInt(getConfigForScenario(context).interestSeconds)) + 2n);
-    expectApproximately(await betty.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, BigInt(getConfigForScenario(context).interestSeconds)) + 2n);
+    expectApproximately(await albert.getCometBaseBalance(), 1000n * scale, getInterest(1000n * scale, borrowRate, 70n) + 2n);
+    expectApproximately(await betty.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, 70n) + 2n);
 
     await albert.allow(betty, true);
 

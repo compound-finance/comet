@@ -11,9 +11,9 @@ const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
 
-const USDSAmount = ethers.BigNumber.from(exp(250_000, 18));
+const USDSAmount = ethers.BigNumber.from(exp(300_000, 18));
 const cDAIAddress = '0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643';
-const DaiToUsdmConverterAddress = '0x3225737a9Bbb6473CB4a45b7244ACa2BeFdB276A';
+const DaiToUsdsConverterAddress = '0x3225737a9Bbb6473CB4a45b7244ACa2BeFdB276A';
 const DAIAddress = '0x6B175474E89094C44Da98b954EedeAC495271d0F';
 
 export default migration('1729069465_configurate_and_ens', {
@@ -55,7 +55,7 @@ export default migration('1729069465_configurate_and_ens', {
 
     const approveCalldata = utils.defaultAbiCoder.encode(
       ['address', 'uint256'],
-      [DaiToUsdmConverterAddress, USDSAmount]
+      [DaiToUsdsConverterAddress, USDSAmount]
     );
 
     const convertCalldata = utils.defaultAbiCoder.encode(
@@ -88,7 +88,7 @@ export default migration('1729069465_configurate_and_ens', {
         signature: 'setRewardConfig(address,address)',
         args: [comet.address, COMP.address],
       },
-      
+
       // 5. Get DAI reserves from cDAI contract
       {
         target: cDAIAddress,
@@ -103,7 +103,7 @@ export default migration('1729069465_configurate_and_ens', {
       },
       // 7. Convert DAI to USDS
       {
-        target: DaiToUsdmConverterAddress,
+        target: DaiToUsdsConverterAddress,
         signature: 'daiToUsds(address,uint256)',
         calldata: convertCalldata
       },
@@ -118,7 +118,7 @@ export default migration('1729069465_configurate_and_ens', {
       }
     ];
 
-    const description = 'DESCRIPTION';
+    const description = '# Initialize cUSDSv3 on Ethereum Mainnet\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Mainnet network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDS market on Mainnet; upon execution, cUSDSv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/add-collateral-usds-market-on-eth-mainnet/5781/5).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/942), [deploy market GitHub action run](<>) and [forum discussion](https://www.comp.xyz/t/add-collateral-usds-market-on-eth-mainnet/5781).\n\n\n## wstETH price feed\n\nFor LSTs, the goal is to use full exchange rate price feeds. Thus, we treat that stETH:ETH is 1:1.\n\n## sUSDS and sUSDe collaterals\n\nGauntlet suggests having sUDSS and sUSDe collaterals. This proposal does not include them, because the price feed is under the audit. We suggest to start bootstrapping the liquidity without these collaterals and as the price feed is audited, we will add these collaterals. We discussed it with Gauntlet, and we received the approval to have such an approach.\n\n## Proposal Actions\n\nThe first proposal action sets the CometFactory for the new Comet instance in the existing Configurator.\n\nThe second action configures the Comet instance in the Configurator.\n\nThe third action deploys an instance of the newly configured factory and upgrades the Comet instance to use that implementation.\n\nThe fourth action configures the existing rewards contract for the newly deployed Comet instance.\n\nThe fifth action reduces Compound’s [cDAI](https://etherscan.io/address/0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643) reserves and transfers it to Timelock, in order to convert it to USDS to then seed the market reserves for the cUSDSv3 Comet.\n\nThe sixth action approves DAI to DAI-to-USDS native converter.\n\nThe seventh action converts DAI to USDS with 1:1 ratio and transfers USDS to cUSDSv3 Comet.\n\nThe eight action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Ethereum Mainnet cUSDSv3 market.';
     const txn = await deploymentManager.retry(
       async () => trace((await governor.propose(...await proposal(actions, description))))
     );
@@ -144,8 +144,6 @@ export default migration('1729069465_configurate_and_ens', {
       cbBTC,
       tBTC,
       USDe,
-      // sUSDe,
-      // sUSDS,
       COMP
     } = await deploymentManager.getContracts();
 
@@ -154,16 +152,12 @@ export default migration('1729069465_configurate_and_ens', {
     const tbtcInfo = await comet.getAssetInfoByAddress(tBTC.address);
     const wethInfo = await comet.getAssetInfoByAddress(WETH.address);
     const usdeInfo = await comet.getAssetInfoByAddress(USDe.address);
-    // const susdeInfo = await comet.getAssetInfoByAddress(sUSDe.address);
-    // const susdsInfo = await comet.getAssetInfoByAddress(sUSDS.address);
     const wstETHInfo = await comet.getAssetInfoByAddress(wstETH.address);
 
     // expect(cbbtcInfo.supplyCap).to.be.eq(exp(150, 8));
     // expect(tbtcInfo.supplyCap).to.be.eq(exp(285, 18));
     // expect(wethInfo.supplyCap).to.be.eq(exp(50_000, 18));
     // expect(usdeInfo.supplyCap).to.be.eq(exp(50_000_000, 18));
-    // expect(susdeInfo.supplyCap).to.be.eq(exp(38_000_000, 18));
-    // expect(susdsInfo.supplyCap).to.be.eq(exp(50_000_000, 18));
     // expect(wstETHInfo.supplyCap).to.be.eq(exp(10_000, 18));
 
     // expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(25 / 86400, 15, 18)); // 289351851851
@@ -174,7 +168,7 @@ export default migration('1729069465_configurate_and_ens', {
     expect(config.token).to.be.equal(COMP.address);
     expect(config.rescaleFactor).to.be.equal(exp(1, 12));
     expect(config.shouldUpscale).to.be.equal(true);
-    
+
     expect((await comet.pauseGuardian()).toLowerCase()).to.be.eq('0xbbf3f1421d886e9b2c5d716b5192ac998af2012c');
 
     // 5. & 6.
@@ -189,7 +183,7 @@ export default migration('1729069465_configurate_and_ens', {
     expect(await ENSRegistry.owner(subdomainHash)).to.be.equal(timelock.address);
     expect(await ENSRegistry.resolver(subdomainHash)).to.be.equal(ENSResolverAddress);
     expect(await ENSRegistry.ttl(subdomainHash)).to.be.equal(0);
-    
+
     const officialMarkets = JSON.parse(officialMarketsJSON);
     expect(officialMarkets).to.deep.equal({
       1: [
