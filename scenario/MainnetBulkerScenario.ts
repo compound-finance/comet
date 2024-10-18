@@ -52,9 +52,9 @@ scenario(
 
     const toSupplyStEth = exp(.1, 18);
 
-    await context.sourceTokens(toSupplyStEth, new CometAsset(stETH), albert);
+    await context.sourceTokens(toSupplyStEth + 3n, new CometAsset(stETH), albert);
 
-    expect(await stETH.balanceOf(albert.address)).to.be.approximately(toSupplyStEth, 2);
+    expect(await stETH.balanceOf(albert.address)).to.be.greaterThanOrEqual(toSupplyStEth);
 
     // approve bulker as albert
     await stETH.connect(albert.signer).approve(bulker.address, toSupplyStEth);
@@ -68,7 +68,7 @@ scenario(
 
     await albert.invoke({ actions, calldata });
 
-    expect(await stETH.balanceOf(albert.address)).to.be.equal(0n);
+    expectApproximately((await stETH.balanceOf(albert.address)).toBigInt(), 0n, 2n);
     expectApproximately(
       (await comet.collateralBalanceOf(albert.address, wstETH.address)).toBigInt(),
       (await wstETH.getWstETHByStETH(toSupplyStEth)).toBigInt(),

@@ -89,6 +89,8 @@ export const WHALES = {
     '0x2775b1c75658be0f640272ccb8c72ac986009e38',
     '0x1a9c8182c09f50c8318d769245bea52c32be35bc',
     '0x3c22ec75ea5D745c78fc84762F7F1E6D82a2c5BF',
+    '0x88a1493366D48225fc3cEFbdae9eBb23E323Ade3', // USDe whale
+    '0x43594da5d6A03b2137a04DF5685805C676dEf7cB', // rsETH whale
     '0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b'
   ],
   polygon: [

@@ -1,0 +1,75 @@
+{
+  "name": "Compound USDS",
+  "symbol": "cUSDSv3",
+  "baseToken": "USDS",
+  "baseTokenAddress": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+  "borrowMin": "10e18",
+  "governor": "0x6d903f6003cca6255d85cca4d3b5e5146dc33925",
+  "pauseGuardian": "0xbbf3f1421d886e9b2c5d716b5192ac998af2012c",
+  "baseTokenPriceFeed": "0xfF30586cD0F29eD462364C7e81375FC0C71219b1",
+  "storeFrontPriceFactor": 0.6,
+  "targetReserves": "20_000_000e18",
+  "rates": {
+    "borrowBase": 0.015,
+    "borrowSlopeLow": 0.0333,
+    "borrowKink": 0.9,
+    "borrowSlopeHigh": 4.0,
+    "supplyBase": 0,
+    "supplySlopeLow": 0.039,
+    "supplyKink": 0.9,
+    "supplySlopeHigh": 3.6
+  },
+  "tracking": {
+    "indexScale": "1e15",
+    "baseSupplySpeed": "289351851851e0",
+    "baseBorrowSpeed": "289351851851e0",
+    "baseMinForRewards": "10000e18"
+  },
+  "rewardTokenAddress": "0xc00e94Cb662C3520282E6f5717214004A7f26888",
+  "assets": {
+    "WETH": {
+      "address": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+      "priceFeed": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
+      "decimals": "18",
+      "borrowCF": 0.83,
+      "liquidateCF": 0.9,
+      "liquidationFactor": 0.95,
+      "supplyCap": "50_000e18"
+    },
+    "USDe": {
+      "address": "0x4c9EDD5852cd905f086C759E8383e09bff1E68B3",
+      "priceFeed": "0xa569d910839Ae8865Da8F8e70FfFb0cBA869F961",
+      "decimals": "18",
+      "borrowCF": 0.7,
+      "liquidateCF": 0.75,
+      "liquidationFactor": 0.85,
+      "supplyCap": "50_000_000e18"
+    },
+    "cbBTC": {
+      "address": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
+      "priceFeed": "0x2665701293fCbEB223D11A08D826563EDcCE423A",
+      "decimals": "8",
+      "borrowCF": 0.8,
+      "liquidateCF": 0.85,
+      "liquidationFactor": 0.95,
+      "supplyCap": "150e8"
+    },
+    "tBTC": {
+      "address": "0x18084fbA666a33d37592fA2633fD49a74DD93a88",
+      "priceFeed": "0x8350b7De6a6a2C1368E7D4Bd968190e13E354297",
+      "decimals": "18",
+      "borrowCF": 0.76,
+      "liquidateCF": 0.81,
+      "liquidationFactor": 0.9,
+      "supplyCap": "285e18"
+    },
+    "wstETH": {
+      "address": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
+      "decimals": "18",
+      "borrowCF": 0.82,
+      "liquidateCF": 0.87,
+      "liquidationFactor": 0.92,
+      "supplyCap": "10_000e18"
+    }
+  }
+}
