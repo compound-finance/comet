@@ -7,3 +7,19 @@ cache_path  = 'forge/cache'
 
 # disable for CI (used for debugging liquidity issues)
 no_match_test = "test.*SwapVia"
+
+evm_version = "shanghai"
+
+remappings = [
+    "@forge-std/=forge/lib/forge-std/",
+    "@comet-contracts/=contracts/",
+]
+
+[rpc_endpoints]
+mainnet = "${MAINNET_RPC_URL}"
+polygon = "${POLYGON_RPC_URL}"
+arbitrum = "${ARBITRUM_RPC_URL}"
+optimism = "${OPTIMISM_RPC_URL}"
+scroll = "${SCROLL_RPC_URL}"
+base = "${BASE_RPC_URL}"
+sepolia = "${SEPOLIA_RPC_URL}"
