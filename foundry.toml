@@ -8,7 +8,7 @@ cache_path  = 'forge/cache'
 # disable for CI (used for debugging liquidity issues)
 no_match_test = "test.*SwapVia"
 
-evm_version = "london"
+evm_version = "shanghai"
 
 remappings = [
     "@forge-std/=forge/lib/forge-std/",

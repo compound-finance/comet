@@ -13,7 +13,7 @@ import "./helpers/MarketUpdateAddresses.sol";
 import "./helpers/MarketUpdateContractsDeployer.sol";
 import "./helpers/ChainAddresses.sol";
 
-contract DeployContracts is Script {
+contract ComputeContractAddresses is Script {
     address public deployedWalletAddress;
 
     address constant public create2DeployerAddress = 0x13b0D85CcB8bf860b6b79AF3029fCA081AE9beF2;
@@ -42,7 +42,7 @@ contract DeployContracts is Script {
         bytes32 salt = keccak256(abi.encodePacked(vm.envString("SALT")));
 
         /// Call library function
-        MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts = MarketUpdateContractsDeployer._prepareAndDeployContracts(
+        MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts = MarketUpdateContractsDeployer.calculateContractAddresses(
             salt,
             msg.sender,
             chainAddresses.marketAdmin,

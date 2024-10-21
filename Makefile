@@ -45,6 +45,20 @@ deploy-contracts:
 		-vvvv \
 		--sender $(SENDER)
 
+# Compute contracts addresses
+compute-contracts-addresses:
+	@echo "Computing contracts addresses..."
+	CHAIN_ID=$(CHAIN_ID) forge script forge/script/marketupdates/ComputeContractsAddresses.s.sol:ComputeContractAddresses \
+		--rpc-url $(RPC_URL) \
+		--optimize \
+		--optimizer-runs 200 \
+		--use $(SOLIDITY_COMPILER_VERSION) \
+		--evm-version $(EVM_VERSION) \
+		--via-ir \
+		-vvvv \
+		--skip-simulation \
+		--sender $(SENDER)
+
 # Verifying MarketUpdateTimelock
 verify-MarketUpdateTimelock:
 	@echo "Verifying MarketUpdateTimelock..."

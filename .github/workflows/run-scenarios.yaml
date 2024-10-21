@@ -2,6 +2,8 @@ name: Run Scenarios
 on:
   workflow_dispatch:
   pull_request:
+permissions:
+  checks: write 
 jobs:
   run-scenarios:
     strategy:
