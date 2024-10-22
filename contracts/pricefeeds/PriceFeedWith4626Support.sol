@@ -73,7 +73,6 @@ contract PriceFeedWith4626Support is IPriceFeed {
         uint256 rate = IERC4626(rateProvider).convertToAssets(10**rateProviderDecimals);
         (uint80 roundId_, int256 underlyingPrice, uint256 startedAt_, uint256 updatedAt_, uint80 answeredInRound_) = AggregatorV3Interface(underlyingPriceFeed).latestRoundData();
 
-        // We return the round data of the underlying asset price feed because of its shorter heartbeat (1hr vs 24hr)
         if (rate <= 0 || underlyingPrice <= 0) return (roundId_, 0, startedAt_, updatedAt_, answeredInRound_);
 
         int256 price = signed256(rate) * underlyingPrice * priceFeedScale / combinedScale;
