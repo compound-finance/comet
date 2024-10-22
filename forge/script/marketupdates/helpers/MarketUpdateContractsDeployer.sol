@@ -151,7 +151,7 @@ library MarketUpdateContractsDeployer {
         address marketAdminPauseGuardianAddress,
         address marketUpdateProposalGuardianAddress,
         address localTimelockAddress
-    ) internal returns (DeployedContracts memory) {
+    ) internal view returns (DeployedContracts memory) {
 
         ICreate2Deployer create2Deployer = ICreate2Deployer(create2DeployerAddress);
         ContractDeploymentParams memory marketUpdateTimelockParams = getMarketUpdateTimelockParams(msgSender);

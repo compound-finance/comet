@@ -261,10 +261,10 @@ async function testScalingReward(properties: CometProperties, context: CometCont
   );
   await newRewards.connect(albert.signer).setRewardConfigWithMultiplier(comet.address, rewardTokenAddress, multiplier);
   await context.sourceTokens(
-    100000, // maximum amount which can be sourced from transaction logs
+    world.base.network === 'scroll' ? 100000 : exp(1_000, rewardDecimals), // conditional check for scroll network: maximum amount which can be sourced from transaction logs on scroll
     rewardTokenAddress, // CometAsset
     newRewards.address, // Recipient's address
-    2751700 // Block number to start searching for transfer event
+    world.base.network === 'scroll' ? 2751700 : undefined // conditional check for scroll network: Block number to start searching for transfer event on scroll
   );
 
   await baseAsset.approve(albert, comet.address);

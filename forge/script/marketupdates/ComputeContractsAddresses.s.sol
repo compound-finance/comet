@@ -30,7 +30,7 @@ contract ComputeContractAddresses is Script {
         ChainAddresses.Chain chain = ChainAddresses.getChainBasedOnChainId(passedChainId);
         ChainAddresses.ChainAddressesStruct memory chainAddresses = ChainAddresses.getChainAddresses(chain);
 
-        console.log("Deploying contracts with sender: ", msg.sender);
+        console.log("computing addresses for contracts with sender: ", msg.sender);
 
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
