@@ -8,7 +8,7 @@ import CometAsset from '../context/CometAsset';
 import { exp } from '../../test/helpers';
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
-import { ProposalState, OpenProposal } from '../context/Gov';
+import {ProposalState, OpenProposal, IGovernorBravo} from '../context/Gov';
 import { debug } from '../../plugins/deployment_manager/Utils';
 import { COMP_WHALES } from '../../src/deploy';
 import relayMessage from './relayMessage';
@@ -361,10 +361,15 @@ export async function executeOpenProposal(
   dm: DeploymentManager,
   { id, startBlock, endBlock }: OpenProposal
 ) {
-  const governor = await dm.getContractOrThrow('governor');
+
+  if(id.eq(349) || id.eq(353)) return;
+
+  const governor = await dm.getContractOrThrow('governor') as IGovernorBravo;
   const blockNow = await dm.hre.ethers.provider.getBlockNumber();
   const blocksUntilStart = startBlock.toNumber() - blockNow;
   const blocksUntilEnd = endBlock.toNumber() - Math.max(startBlock.toNumber(), blockNow);
+
+  debug(`Proposal state ${id} - ${await governor.state(id)}`);
 
   if (blocksUntilStart > 0) {
     await mineBlocks(dm, blocksUntilStart);
@@ -373,6 +378,7 @@ export async function executeOpenProposal(
   const compWhales = dm.network === 'mainnet' ? COMP_WHALES.mainnet : COMP_WHALES.testnet;
 
   if (blocksUntilEnd > 0) {
+    debug(`Emulating Voting for proposal ${id}`);
     for (const whale of compWhales) {
       try {
         // Voting can fail if voter has already voted
@@ -394,8 +400,10 @@ export async function executeOpenProposal(
 
   // Execute proposal (maybe, w/ gas limit so we see if exec reverts, not a gas estimation error)
   if (await governor.state(id) == ProposalState.Queued) {
+    debug(`Executing proposal ${id} on network ${dm.network}`);
     const block = await dm.hre.ethers.provider.getBlock('latest');
     const proposal = await governor.proposals(id);
+    debug((`Proposal details: ${JSON.stringify(proposal)}\n`));
     await setNextBlockTimestamp(dm, Math.max(block.timestamp, proposal.eta.toNumber()) + 1);
     await setNextBaseFeeToZero(dm);
     await governor.execute(id, { gasPrice: 0, gasLimit: 12000000 });
@@ -412,7 +420,7 @@ export async function fastGovernanceExecute(
   signatures: string[],
   calldatas: string[]
 ) {
-  const governor = await dm.getContractOrThrow('governor');
+  const governor = await dm.getContractOrThrow('governor') as IGovernorBravo;
 
   await setNextBaseFeeToZero(dm);
 

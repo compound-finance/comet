@@ -71,4 +71,11 @@ interface IGovernorBravo {
         string[] memory signatures,
         bytes[] memory calldatas
     );
+
+    function castVoteWithReason(
+        uint proposalId,
+        uint8 support,
+        string calldata reason
+    ) external;
+    function quorumVotes() external view returns (uint256);
 }

@@ -2,6 +2,10 @@ name: Run Unit Tests
 on:
   workflow_dispatch:
   pull_request:
+
+permissions:
+  checks: write  # Grant write permission to checks
+
 jobs:
   unit-tests:
     name: Unit tests
@@ -20,7 +24,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '16'
+          node-version: '18'
 
       - name: Install packages
         run: yarn install --non-interactive --frozen-lockfile
