@@ -146,6 +146,9 @@ export const WHALES = {
   mantle: [
     '0x588846213A30fd36244e0ae0eBB2374516dA836C', // USDe whale
     '0x88a1493366D48225fc3cEFbdae9eBb23E323Ade3', // mETH whale
+    '0x651C9D1F9da787688225f49d63ad1623ba89A8D5', // FBTC whale
+    '0xC455fE28a76da80022d4C35A37eB08FF405Eb78f', // FBTC whale
+    '0x524db930F0886CdE7B5FFFc920Aae85e98C2abfb', // FBTC whale
   ],
 };
 

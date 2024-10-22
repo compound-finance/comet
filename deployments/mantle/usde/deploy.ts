@@ -11,6 +11,7 @@ const MAINNET_TIMELOCK = '0x6d903f6003cca6255d85cca4d3b5e5146dc33925';
 const USDE_TO_USD_PRICE_FEED_ADDRESS = '0xc49E06B50FCA57751155DA78803DCa691AfcDB22';
 const METH_TO_ETH_PRICE_FEED_ADDRESS = '0xBeaa52edFeB12da4F026b38eD6203938a9936EDF';
 const ETH_TO_USD_PRICE_FEED_ADDRESS = '0x61A31634B4Bb4B9C2556611f563Ed86cE2D4643B';
+const FBTC_TO_USD_PRICE_FEED_ADDRESS = '0x7e19d187d7B3Be8dDEF2fD0A3b4df6Ed0b8E62ee';
 
 export default async function deploy(
   deploymentManager: DeploymentManager,
@@ -47,6 +48,11 @@ async function deployContracts(
     '0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8',
     'mantle'
   );
+  const FBTC = await deploymentManager.existing(
+    'FBTC',
+    '0xC96dE26018A54D51c097160568752c4E3BD6C364',
+    'mantle'
+  );
 
   // pre-deployed OptimismMintableERC20
   const COMP = await deploymentManager.existing(
@@ -57,20 +63,24 @@ async function deployContracts(
 
   const usdePriceFeed = await deploymentManager.deploy(
     'USDe:priceFeed',
-    'pricefeeds/ScalingPriceFeed.sol',
+    'pricefeeds/ScalingPriceFeedWithCustomDescription.sol',
     [
       USDE_TO_USD_PRICE_FEED_ADDRESS,   // USDe / USD price feed
       8,                                // decimals
-    ]
+      'USDe / USD price feed'           // description
+    ],
+    true
   );
 
   const wethPriceFeed = await deploymentManager.deploy(
     'WETH:priceFeed',
-    'pricefeeds/ScalingPriceFeed.sol',
+    'pricefeeds/ScalingPriceFeedWithCustomDescription.sol',
     [
       ETH_TO_USD_PRICE_FEED_ADDRESS,   // ETH / USD price feed
-      8,                                // decimals
-    ]
+      8,                               // decimals
+      'WETH / USD price feed'          // description
+    ],
+    true
   );
 
   const methPriceFeed = await deploymentManager.deploy(
@@ -81,9 +91,20 @@ async function deployContracts(
       ETH_TO_USD_PRICE_FEED_ADDRESS,    // ETH / USD price feed
       8,                                // decimals
       'mETH / USD price feed'           // description
-    ]
+    ],
+    true
   );
 
+  const fbtcPriceFeed = await deploymentManager.deploy(
+    'FBTC:priceFeed',
+    'pricefeeds/ScalingPriceFeedWithCustomDescription.sol',
+    [
+      FBTC_TO_USD_PRICE_FEED_ADDRESS,   // FBTC / USD price feed
+      8,                                // decimals
+      'FBTC / USD price feed'           // description
+    ],
+    true
+  );
 
   const l2CrossDomainMessenger = await deploymentManager.existing(
     'l2CrossDomainMessenger',

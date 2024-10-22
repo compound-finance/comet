@@ -39,6 +39,14 @@
         "liquidateCF": 0.87,
         "liquidationFactor": 0.93,
         "supplyCap": "2800e18"
+      },
+      "FBTC": {
+        "address": "0xC96dE26018A54D51c097160568752c4E3BD6C364",
+        "decimals": "8",
+        "borrowCF": 0.78,
+        "liquidateCF": 0.83,
+        "liquidationFactor": 0.88,
+        "supplyCap": "120e8"
       }
     }
 }
