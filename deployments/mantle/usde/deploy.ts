@@ -67,7 +67,7 @@ async function deployContracts(
     [
       USDE_TO_USD_PRICE_FEED_ADDRESS,   // USDe / USD price feed
       8,                                // decimals
-      'USDe / USD price feed'           // description
+      'USDe / USD price feed by API3'           // description
     ],
     true
   );
@@ -78,7 +78,7 @@ async function deployContracts(
     [
       ETH_TO_USD_PRICE_FEED_ADDRESS,   // ETH / USD price feed
       8,                               // decimals
-      'WETH / USD price feed'          // description
+      'WETH / USD price feed by API3'          // description
     ],
     true
   );
@@ -90,7 +90,7 @@ async function deployContracts(
       METH_TO_ETH_PRICE_FEED_ADDRESS,   // mETH / ETH price feed
       ETH_TO_USD_PRICE_FEED_ADDRESS,    // ETH / USD price feed
       8,                                // decimals
-      'mETH / USD price feed'           // description
+      'mETH / USD price feed by API3'           // description
     ],
     true
   );
@@ -101,7 +101,7 @@ async function deployContracts(
     [
       FBTC_TO_USD_PRICE_FEED_ADDRESS,   // FBTC / USD price feed
       8,                                // decimals
-      'FBTC / USD price feed'           // description
+      'FBTC / USD price feed by API3'           // description
     ],
     true
   );
