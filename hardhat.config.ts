@@ -127,7 +127,9 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'mantle',
     chainId: 5000,
-    // url: `https://yolo-side-wildflower.mantle-mainnet.quiknode.pro/${QUICKNODE_KEY}`,
+    // link for scenarios
+    // url: `https://mantle-mainnet.infura.io/v3/${INFURA_KEY}`,
+    // link for deployment
     url: `https://rpc.mantle.xyz`,
   },
   {
@@ -345,8 +347,10 @@ const config: HardhatUserConfig = {
         chainId: 5000,
         urls: {
           // apiURL: 'https://rpc.mantle.xyz',
+          // links for scenarios
           // apiURL: 'https://explorer.mantle.xyz/api',
           // browserURL: 'https://explorer.mantle.xyz/'
+          // links for deployment
           apiURL: 'https://api.mantlescan.xyz/api',
           browserURL: 'https://mantlescan.xyz/'
         }
