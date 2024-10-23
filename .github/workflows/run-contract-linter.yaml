@@ -14,6 +14,7 @@ jobs:
       ARBISCAN_KEY: ${{ secrets.ARBISCAN_KEY }}
       LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
       OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
+      MANTLESCAN_KEY: ${{ secrets.MANTLESCAN_KEY }}
     steps:
       - uses: actions/checkout@v4
         with:

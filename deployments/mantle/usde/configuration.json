@@ -1,0 +1,52 @@
+{
+    "name": "Compound USDe",
+    "symbol": "cUSDev3",
+    "baseToken": "USDe",
+    "baseTokenAddress": "0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34",
+    "borrowMin": "100e18",
+    "storeFrontPriceFactor": 0.6,
+    "targetReserves": "5_000_000e18",
+    "pauseGuardian": "0x2127338F0ff71Ecc779dce407D95C7D32f7C5F45",
+    "rates": {
+      "borrowBase": 0.015,
+      "borrowSlopeLow": 0.0333,
+      "borrowKink": 0.9,
+      "borrowSlopeHigh": 4.0,
+      "supplyBase": 0,
+      "supplySlopeLow": 0.039,
+      "supplyKink": 0.9,
+      "supplySlopeHigh": 3.6
+    },
+    "tracking": {
+      "indexScale": "1e15",
+      "baseSupplySpeed": "46296296296e0",
+      "baseBorrowSpeed": "46296296296e0",
+      "baseMinForRewards": "1000e18"
+    },
+    "assets": {
+      "mETH": {
+        "address": "0xcDA86A272531e8640cD7F1a92c01839911B90bb0",
+        "decimals": "18",
+        "borrowCF": 0.8,
+        "liquidateCF": 0.85,
+        "liquidationFactor": 0.90,
+        "supplyCap": "3000e18"
+      },
+      "WETH": {
+        "address": "0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111",
+        "decimals": "18",
+        "borrowCF": 0.82,
+        "liquidateCF": 0.87,
+        "liquidationFactor": 0.93,
+        "supplyCap": "2800e18"
+      },
+      "FBTC": {
+        "address": "0xC96dE26018A54D51c097160568752c4E3BD6C364",
+        "decimals": "8",
+        "borrowCF": 0.78,
+        "liquidateCF": 0.83,
+        "liquidationFactor": 0.88,
+        "supplyCap": "120e8"
+      }
+    }
+}

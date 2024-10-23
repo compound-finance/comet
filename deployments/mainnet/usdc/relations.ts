@@ -66,6 +66,19 @@ export default {
       }
     }
   },
+  mantleL1CrossDomainMessenger: {
+    delegates: {
+      field: async () => '0xb8DE82551fA4BA3bE4B3d9097763EDBeED541308'
+    }
+  },
+  mantleL1StandardBridge: {
+    delegates: {
+      field: {
+        slot:
+          '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+      }
+    }
+  },
   scrollMessenger: {
     delegates: {
       field: {

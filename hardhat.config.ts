@@ -45,6 +45,7 @@ import lineaGoerliRelationConfigMap from './deployments/linea-goerli/usdc/relati
 import optimismRelationConfigMap from './deployments/optimism/usdc/relations';
 import optimismUsdtRelationConfigMap from './deployments/optimism/usdt/relations';
 import optimismWethRelationConfigMap from './deployments/optimism/weth/relations';
+import mantleRelationConfigMap from './deployments/mantle/usde/relations';
 import scrollGoerliRelationConfigMap from './deployments/scroll-goerli/usdc/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
 
@@ -63,6 +64,7 @@ const {
   BASESCAN_KEY,
   LINEASCAN_KEY,
   OPTIMISMSCAN_KEY,
+  MANTLESCAN_KEY,
   INFURA_KEY,
   QUICKNODE_KEY,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
@@ -94,7 +96,8 @@ export function requireEnv(varName, msg?: string): string {
   'POLYGONSCAN_KEY',
   'ARBISCAN_KEY',
   'LINEASCAN_KEY',
-  'OPTIMISMSCAN_KEY'
+  'OPTIMISMSCAN_KEY',
+  'MANTLESCAN_KEY',
 ].map((v) => requireEnv(v));
 
 // Networks
@@ -121,6 +124,14 @@ const networkConfigs: NetworkConfig[] = [
     network: 'optimism',
     chainId: 10,
     url: `https://optimism-mainnet.infura.io/v3/${INFURA_KEY}`,
+  },
+  {
+    network: 'mantle',
+    chainId: 5000,
+    // link for scenarios
+    url: `https://mantle-mainnet.infura.io/v3/${INFURA_KEY}`,
+    // link for deployment
+    // url: `https://rpc.mantle.xyz`,
   },
   {
     network: 'base',
@@ -262,8 +273,10 @@ const config: HardhatUserConfig = {
       'base-goerli': BASESCAN_KEY,
       // Linea
       'linea-goerli': LINEASCAN_KEY,
-      optimism: OPTIMISMSCAN_KEY,
+      // optimism: OPTIMISMSCAN_KEY,
       optimisticEthereum: OPTIMISMSCAN_KEY,
+      // Mantle
+      mantle: MANTLESCAN_KEY,
       // Scroll Testnet
       'scroll-goerli': ETHERSCAN_KEY,
       // Scroll
@@ -329,6 +342,19 @@ const config: HardhatUserConfig = {
           apiURL: 'https://api.scrollscan.com/api',
           browserURL: 'https://scrollscan.com/'
         }
+      },
+      {
+        network: 'mantle',
+        chainId: 5000,
+        urls: {
+          // apiURL: 'https://rpc.mantle.xyz',
+          // links for scenarios
+          apiURL: 'https://explorer.mantle.xyz/api',
+          browserURL: 'https://explorer.mantle.xyz/'
+          // links for deployment
+          // apiURL: 'https://api.mantlescan.xyz/api',
+          // browserURL: 'https://mantlescan.xyz/'
+        }
       }
     ]
   },
@@ -389,6 +415,9 @@ const config: HardhatUserConfig = {
         usdc: optimismRelationConfigMap,
         usdt: optimismUsdtRelationConfigMap,
         weth: optimismWethRelationConfigMap
+      },
+      'mantle': {
+        'usde': mantleRelationConfigMap
       },
       'scroll-goerli': {
         usdc: scrollGoerliRelationConfigMap
@@ -564,6 +593,12 @@ const config: HardhatUserConfig = {
         name: 'optimism-weth',
         network: 'optimism',
         deployment: 'weth',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'mantle-usde',
+        network: 'mantle',
+        deployment: 'usde',
         auxiliaryBase: 'mainnet'
       },
       {
