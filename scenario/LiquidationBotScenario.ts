@@ -829,7 +829,7 @@ scenario(
       const [initialNumAbsorbs, initialNumAbsorbed] = await comet.liquidatorPoints(betty.address);
 
       const borrowCapacity = await borrowCapacityForAsset(comet, albert, 0);
-      const borrowAmount = (borrowCapacity.mul(90n)).div(100n);
+      const borrowAmount = (borrowCapacity.mul(75n)).div(100n);
 
       await albert.withdrawAsset({
         asset: baseToken,
