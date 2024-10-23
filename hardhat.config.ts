@@ -129,9 +129,9 @@ const networkConfigs: NetworkConfig[] = [
     network: 'mantle',
     chainId: 5000,
     // link for scenarios
-    // url: `https://mantle-mainnet.infura.io/v3/${INFURA_KEY}`,
+    url: `https://mantle-mainnet.infura.io/v3/${INFURA_KEY}`,
     // link for deployment
-    url: `https://rpc.mantle.xyz`,
+    // url: `https://rpc.mantle.xyz`,
   },
   {
     network: 'base',
@@ -349,11 +349,11 @@ const config: HardhatUserConfig = {
         urls: {
           // apiURL: 'https://rpc.mantle.xyz',
           // links for scenarios
-          // apiURL: 'https://explorer.mantle.xyz/api',
-          // browserURL: 'https://explorer.mantle.xyz/'
+          apiURL: 'https://explorer.mantle.xyz/api',
+          browserURL: 'https://explorer.mantle.xyz/'
           // links for deployment
-          apiURL: 'https://api.mantlescan.xyz/api',
-          browserURL: 'https://mantlescan.xyz/'
+          // apiURL: 'https://api.mantlescan.xyz/api',
+          // browserURL: 'https://mantlescan.xyz/'
         }
       }
     ]
