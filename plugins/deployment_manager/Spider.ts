@@ -170,12 +170,12 @@ async function crawl(
     if (addressConfig.artifact) {
       //trace(`  ... has artifact specified (${addressConfig.artifact})`);
       const build = await localBuild(null, hre, addressConfig.artifact, network, address);
-      const alias = await readAlias(build.contract, aliasRender, context, path);
+      const alias = await readAlias(build.contract, aliasRender, context, path, network);
       return maybeProcess(alias, build, addressConfig);
     } else {
       //trace('  ... no artifact specified');
       const build = await remoteBuild(cache, hre, network, address);
-      const alias = await readAlias(build.contract, aliasRender, context, path);
+      const alias = await readAlias(build.contract, aliasRender, context, path, network);
       return maybeProcess(alias, build, addressConfig);
     }
   }
@@ -190,12 +190,12 @@ async function crawl(
     if (aliasTemplateConfig.artifact) {
       //trace(`  ... has artifact specified (${aliasTemplateConfig.artifact})`);
       const build = await localBuild(null, hre, aliasTemplateConfig.artifact, network, address);
-      const alias = await readAlias(build.contract, aliasRender, context, path);
+      const alias = await readAlias(build.contract, aliasRender, context, path, network);
       return maybeProcess(alias, build, aliasTemplateConfig);
     } else {
       //trace('  ... no artifact specified');
       const build = await remoteBuild(cache, hre, network, address);
-      const alias = await readAlias(build.contract, aliasRender, context, path);
+      const alias = await readAlias(build.contract, aliasRender, context, path, network);
       return maybeProcess(alias, build, aliasTemplateConfig);
     }
   } else {
@@ -209,16 +209,16 @@ async function crawl(
         if (contractConfig.artifact) {
           //trace(`    ... has artifact specified (${contractConfig.artifact})`);
           const build_ = await localBuild(null, hre, contractConfig.artifact, network, address);
-          const alias = await readAlias(build_.contract, aliasRender, context, path);
+          const alias = await readAlias(build_.contract, aliasRender, context, path, network);
           return maybeProcess(alias, build_, contractConfig);
         } else {
           //trace('    ... no artifact specified');
-          const alias = await readAlias(build.contract, aliasRender, context, path);
+          const alias = await readAlias(build.contract, aliasRender, context, path, network);
           return maybeProcess(alias, build, contractConfig);
         }
       } else {
         //trace(`   ... no contract config (${build.buildFile.contract})`);
-        const alias = await readAlias(build.contract, aliasRender, context, path);
+        const alias = await readAlias(build.contract, aliasRender, context, path, network);
         const aliasConfig = relations[alias];
         if (aliasConfig) {
           //trace(`    ... has alias config (${alias})`);
@@ -230,7 +230,7 @@ async function crawl(
       }
     } else {
       //trace('  ... is not a contract');
-      const alias = await readAlias(undefined, aliasRender, context, path);
+      const alias = await readAlias(undefined, aliasRender, context, path, network);
       return maybeStore(alias, address, aliases), alias;
     }
   }

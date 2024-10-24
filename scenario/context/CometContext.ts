@@ -37,6 +37,7 @@ import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
 import { fastGovernanceExecute, max, mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp } from '../utils';
 import { DynamicConstraint, StaticConstraint } from '../../plugins/scenario/Scenario';
 import { Requirements } from '../constraints/Requirements';
+import { getSymbol } from '../utils/symbolGetter';
 
 export type ActorMap = { [name: string]: CometActor };
 export type AssetMap = { [name: string]: CometAsset };
@@ -375,10 +376,15 @@ async function getAssets(context: CometContext): Promise<{ [symbol: string]: Com
 
   return Object.fromEntries(await Promise.all(assetAddresses.map(async (address) => {
     const erc20 = ERC20__factory.connect(address, signer);
-    if(address == '0xD9A442856C234a39a81a089C06451EBAa4306a72') {
-      return ['pufETH', new CometAsset(erc20)];
+    try {
+      return [await erc20.symbol(),
+        new CometAsset(erc20)
+      ];
+    } catch (e) {
+      return [await getSymbol(address, context.world.base.network),
+        new CometAsset(erc20)
+      ];
     }
-    return [await erc20.symbol(), new CometAsset(erc20)];
   })));
 }
 

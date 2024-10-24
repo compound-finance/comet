@@ -5,6 +5,7 @@ import { ethers, event, exp, wait } from '../test/helpers';
 import CometActor from './context/CometActor';
 import { CometInterface, OnChainLiquidator } from '../build/types';
 import { getPoolConfig, flashLoanPools } from '../scripts/liquidation_bot/liquidateUnderwaterBorrowers';
+import { getConfigForScenario } from './utils/scenarioHelper';
 
 interface LiquidationAddresses {
   balancerVault: string;
@@ -829,7 +830,7 @@ scenario(
       const [initialNumAbsorbs, initialNumAbsorbed] = await comet.liquidatorPoints(betty.address);
 
       const borrowCapacity = await borrowCapacityForAsset(comet, albert, 0);
-      const borrowAmount = (borrowCapacity.mul(75n)).div(100n);
+      const borrowAmount = (borrowCapacity.mul(BigInt(getConfigForScenario(_context).liquidationNumerator))).div(100n);
 
       await albert.withdrawAsset({
         asset: baseToken,

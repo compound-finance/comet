@@ -31,12 +31,7 @@ const relationConfigMap: RelationConfigMap = {
             })
           );
         },
-        alias: async (token) => {
-          if(token.address == '0xD9A442856C234a39a81a089C06451EBAa4306a72'){
-            return 'pufETH';
-          }
-          return token.symbol();
-        },
+        alias: async (token) =>  token.symbol(),
       },
       assetPriceFeeds: {
         field: async (comet) => {
@@ -48,12 +43,7 @@ const relationConfigMap: RelationConfigMap = {
             })
           );
         },
-        alias: async (_, { assets }, i) =>{
-          if(assets[i].address == '0xD9A442856C234a39a81a089C06451EBAa4306a72'){
-            return 'pufETH:priceFeed';
-          }
-          return(`${await assets[i].symbol()}:priceFeed`);
-        },
+        alias: async (_, { assets }, i) => `${await assets[i].symbol()}:priceFeed`,
       },
       cometAdmin: {
         field: {
