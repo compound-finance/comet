@@ -18,6 +18,22 @@ const config = {
 };
 
 export function getConfigForScenario(ctx: CometContext) {
+  if (ctx.world.base.network === 'mainnet' && ctx.world.base.deployment === 'wbtc') {
+    config.bulkerBase = 5000;
+    config.bulkerAsset = 200;
+    config.bulkerComet = 200;
+    config.bulkerBorrowBase = 100;
+    config.bulkerBorrowAsset = 50;
+    config.liquidationBase = 1000;
+    config.liquidationBase1 = 500;
+    config.liquidationAsset = 100;
+    config.rewardsAsset = 1000;
+    config.rewardsBase = 100;
+    config.transferBase = 100;
+    config.transferAsset = 500;
+    config.interestSeconds = 70;
+  }
+  
   if (ctx.world.base.network === 'mainnet' && ctx.world.base.deployment === 'wsteth') {
     config.liquidationBase = 10000;
     config.liquidationBase1 = 1000;
@@ -25,8 +41,13 @@ export function getConfigForScenario(ctx: CometContext) {
     config.liquidationDenominator = 84;
     config.interestSeconds = 70;
   }
+
   if (ctx.world.base.network === 'mainnet' && ctx.world.base.deployment === 'usds') {
     config.liquidationAsset = 100;
+  }
+  
+  if (ctx.world.base.network === 'base' && ctx.world.base.deployment === 'aero') {
+    config.interestSeconds = 110;
   }
 
   return config;

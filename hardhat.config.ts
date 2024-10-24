@@ -39,6 +39,7 @@ import arbitrumUsdtRelationConfigMap from './deployments/arbitrum/usdt/relations
 import baseUsdbcRelationConfigMap from './deployments/base/usdbc/relations';
 import baseWethRelationConfigMap from './deployments/base/weth/relations';
 import baseUsdcRelationConfigMap from './deployments/base/usdc/relations';
+import baseAeroRelationConfigMap from './deployments/base/aero/relations';
 import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relations';
 import baseGoerliWethRelationConfigMap from './deployments/base-goerli/weth/relations';
 import lineaGoerliRelationConfigMap from './deployments/linea-goerli/usdc/relations';
@@ -73,7 +74,7 @@ const {
   REMOTE_ACCOUNTS = ''
 } = process.env;
 
-function *deriveAccounts(pk: string, n: number = 10) {
+function* deriveAccounts(pk: string, n: number = 10) {
   for (let i = 0; i < n; i++)
     yield (BigInt('0x' + pk) + BigInt(i)).toString(16);
 }
@@ -189,7 +190,7 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
         getDefaultProviderURL(netConfig.network),
       gas: netConfig.gas || 'auto',
       gasPrice: netConfig.gasPrice || 'auto',
-      accounts: REMOTE_ACCOUNTS ? 'remote' : ( ETH_PK ? [...deriveAccounts(ETH_PK)] : { mnemonic: MNEMONIC } ),
+      accounts: REMOTE_ACCOUNTS ? 'remote' : (ETH_PK ? [...deriveAccounts(ETH_PK)] : { mnemonic: MNEMONIC }),
     };
   }
 }
@@ -376,7 +377,8 @@ const config: HardhatUserConfig = {
       'base': {
         usdbc: baseUsdbcRelationConfigMap,
         weth: baseWethRelationConfigMap,
-        usdc: baseUsdcRelationConfigMap
+        usdc: baseUsdcRelationConfigMap,
+        aero: baseAeroRelationConfigMap
       },
       'base-goerli': {
         usdc: baseGoerliRelationConfigMap,
@@ -527,6 +529,12 @@ const config: HardhatUserConfig = {
         name: 'base-usdc',
         network: 'base',
         deployment: 'usdc',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'base-aero',
+        network: 'base',
+        deployment: 'aero',
         auxiliaryBase: 'mainnet'
       },
       {
