@@ -88,6 +88,7 @@ export const WHALES = {
     '0xf04a5cc80b1e94c69b48f5ee68a08cd2f09a7c3e',
     '0x2775b1c75658be0f640272ccb8c72ac986009e38',
     '0x1a9c8182c09f50c8318d769245bea52c32be35bc',
+    '0x3c22ec75ea5D745c78fc84762F7F1E6D82a2c5BF',
     '0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b'
   ],
   polygon: [
@@ -115,7 +116,11 @@ export const WHALES = {
   ],
   base: [
     '0x6D3c5a4a7aC4B1428368310E4EC3bB1350d01455', // USDbC whale
-    '0x07CFA5Df24fB17486AF0CBf6C910F24253a674D3'  // cbETH whale TODO: need to update this whale, not enough
+    '0x07CFA5Df24fB17486AF0CBf6C910F24253a674D3', // cbETH whale TODO: need to update this whale, not enough
+    '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb', // cbETH whale
+    '0x3bf93770f2d4a794c3d9EBEfBAeBAE2a8f09A5E5', // cbETH whale
+    '0xcf3D55c10DB69f28fD1A75Bd73f3D8A2d9c595ad', // cbETH whale
+    '0xb125E6687d4313864e53df431d5425969c15Eb2F', // cbETH whale
   ],
   scroll: [
     '0xaaaaAAAACB71BF2C8CaE522EA5fa455571A74106'  // USDC whale
