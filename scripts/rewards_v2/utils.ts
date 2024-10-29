@@ -100,42 +100,58 @@ export const createMulticallCallsToGetBaseTrackingAccruedPerAddress = (cometAddr
     return calls
 }
 
+function chunkArray<T>(array: T[], chunkSize: number): T[][] {
+    const chunks: T[][] = [];
+    for (let i = 0; i < array.length; i += chunkSize) {
+        chunks.push(array.slice(i, i + chunkSize));
+    }
+    return chunks;
+}
+
 export const multicall = async (multicallAddress: string, cometAddress: string, userAddresses: string[], blockNumber: number) => {
     const multicallABI = [
         "function aggregate((address target, bytes callData)[] memory calls) external view returns (uint256 blockNumber, bytes[] memory returnData)"
     ];
 
     const multicallContract = new ethers.Contract(multicallAddress, multicallABI, hre.ethers.provider);
+    const userAddressToAccrue: { [address: string]: string } = {};
 
-    const calls: { target: string, callData: string }[] = []
+    // Split user addresses into chunks of 1,000
+    const chunks = chunkArray(userAddresses, 1000);
 
-    userAddresses.forEach(address => calls.push(...createMulticallCallsToGetBaseTrackingAccruedPerAddress(cometAddress, address)))
+    // Process each chunk separately
+    for (const chunk of chunks) {
+        const calls: { target: string, callData: string }[] = [];
 
-    const [, returnData] = await multicallContract.callStatic.aggregate(calls, {
-        blockTag: blockNumberToBlockTag(blockNumber)
-    });
+        chunk.forEach(address => {
+            calls.push(...createMulticallCallsToGetBaseTrackingAccruedPerAddress(cometAddress, address));
+        });
 
-    if (!returnData || returnData.length !== userAddresses.length * 2) {
-        console.error('Incorrect mulicall')
-        process.exit(1)
+        const [, returnData] = await multicallContract.callStatic.aggregate(calls, {
+            blockTag: blockNumberToBlockTag(blockNumber)
+        });
+
+        if (!returnData || returnData.length !== chunk.length * 2) {
+            console.error('Incorrect multicall');
+            process.exit(1);
+        }
+
+        // Decode results for this chunk
+        returnData.forEach((data: string, index: number) => {
+            if (index % 2 !== 0) {
+                const result = ethers.utils.defaultAbiCoder.decode(
+                    ["int104", "uint64", "uint64", "uint16", "uint8"],
+                    data
+                ) as [BigNumber, BigNumber, BigNumber, number, number];
+
+                userAddressToAccrue[chunk[(index - 1) / 2]] = result[2].toString();
+            }
+        });
     }
 
-    const userAddressToAccrue: { [address: string]: string } = {}
-
-    // Decode results
-    returnData.forEach((data: string, index: number) => {
-        // 0, 2, 4, 6 ...
-        if (index % 2 !== 0) {
-            // principal int104, baseTrackingIndex uint64, baseTrackingAccrued uint64, assetsIn uint16, _reserved uint8
-            const result = ethers.utils.defaultAbiCoder.decode(["int104", "uint64", "uint64", "uint16", "uint8"], data) as [BigNumber, BigNumber, BigNumber, number, number];
-            userAddressToAccrue[userAddresses[(index - 1) / 2]] = result[2].toString()
-        }
-    });
-
-    const response = { blockNumber: blockNumber, data: userAddressToAccrue }
-
-    return response
-}
+    const response = { blockNumber, data: userAddressToAccrue };
+    return response;
+};
 
 export const createCampaignFile = (data: string[][], tree: StandardMerkleTree<string[]>, conf: { network: string, market: string, type: 'start' | 'finish', blockNumber: number, generatedTimestamp: number }): IncentivizationCampaignData => {
     const file = {} as IncentivizationCampaignData

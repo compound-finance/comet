@@ -102,6 +102,8 @@ const main = async () => {
     await mkdir(directory, { recursive: true });
 
     await writeFile(filePath, JSON.stringify(file, null, 2), 'utf-8')
+
+    console.log('Merkle tree sucessfully generated')
 }
 
 main().then().catch(console.error)
