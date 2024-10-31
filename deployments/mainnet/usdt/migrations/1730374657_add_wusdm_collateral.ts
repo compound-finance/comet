@@ -9,7 +9,7 @@ const USDM_TO_USD_PRICE_FEED_ADDRESS = '0x079674468Fee6ab45aBfE986737A440701c49B
 
 let priceFeedAddress: string;
 
-export default migration('1727361534_add_wusdm_collateral', {
+export default migration('1730374657_add_wusdm_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
     const _wUSDMPriceFeed = await deploymentManager.deploy(
       'wUSDM:priceFeed',
