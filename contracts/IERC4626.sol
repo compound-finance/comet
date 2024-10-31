@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v5.0.0) (interfaces/IERC4626.sol)
+// OpenZeppelin Contracts (last updated v5.1.0) (interfaces/IERC4626.sol)
 
-pragma solidity 0.8.15;
+pragma solidity ^0.8.15;
+
+import {IERC20} from "./IERC20.sol";
+import {IERC20Metadata} from "./IERC20Metadata.sol";
 
 /**
  * @dev Interface of the ERC-4626 "Tokenized Vault Standard", as defined in
  * https://eips.ethereum.org/EIPS/eip-4626[ERC-4626].
  */
-interface IERC4626  {
+interface IERC4626 is IERC20, IERC20Metadata {
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
 
     event Withdraw(
@@ -17,9 +20,6 @@ interface IERC4626  {
         uint256 assets,
         uint256 shares
     );
-
-    /// @dev Returns decimals of the Vault shares.
-    function decimals() external view returns (uint8);
 
     /**
      * @dev Returns the address of the underlying token used for the Vault for accounting, depositing, and withdrawing.
