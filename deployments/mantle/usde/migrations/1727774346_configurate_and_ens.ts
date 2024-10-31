@@ -331,11 +331,10 @@ export default migration('1727774346_configurate_and_ens', {
           baseSymbol: 'wstETH',
           cometAddress: '0x3D0bb1ccaB520A66e607822fC55BC921738fAFE3',
         },
-        // uncomment before on-chain push
-        // {
-        //   baseSymbol: 'USDS',
-        //   cometAddress: '0x5D409e56D886231aDAf00c8775665AD0f9897b56'
-        // }
+        {
+          baseSymbol: 'USDS',
+          cometAddress: '0x5D409e56D886231aDAf00c8775665AD0f9897b56'
+        }
       ],
       10: [
         {
