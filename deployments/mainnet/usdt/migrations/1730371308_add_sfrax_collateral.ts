@@ -9,7 +9,7 @@ const FRAX_TO_USD_PRICE_FEED_ADDRESS = '0xB9E1E3A9feFf48998E45Fa90847ed4D467E8Bc
 
 let priceFeedAddress: string;
 
-export default migration('1727445522_add_sfrax_collateral', {
+export default migration('1730371308_add_sfrax_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
     const _sFRAXPriceFeed = await deploymentManager.deploy(
       'sFRAX:priceFeed',
