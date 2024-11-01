@@ -21,7 +21,8 @@ export default migration('1727427904_add_wusdm_as_collateral', {
         USDM_TO_USD_PRICE_FEED_ADDRESS,   // USDM / USD price feed
         8,                                // decimals
         'wUSDM/USD price feed'            // description
-      ]
+      ],
+      true
     );
     return { wUSDMPriceFeedAddress: _wUSDMPriceFeed.address };
   },
