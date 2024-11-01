@@ -635,10 +635,14 @@ describe('CometRewardsV2', () => {
 
       const finishTree = await generateTree([[alice.address, '100'], [bob.address, '200'], [charlie.address, '555']]);
 
+      // wait until the campaign is finished
+      const finishTime = (await rewardsV2.campaigns(comet.address, 0)).finishTimestamp;
+      await fastForward(finishTime.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
+      await ethers.provider.send('evm_mine', []);
       await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
 
 
-      const result = await rewardsV2.callStatic.getRewardOwedBatch(
+      const result = await rewardsV2.callStatic.getRewardsOwedBatch(
         comet.address,
         0,
         charlie.address,
@@ -1335,7 +1339,7 @@ describe('CometRewardsV2', () => {
     });
   });
 
-  describe('getRewardOwed', () => {
+  describe('getRewardsOwed', () => {
     it('can construct and calculate rewards for owner with upscale', async () => {
       const {
         comet,
@@ -1379,7 +1383,7 @@ describe('CometRewardsV2', () => {
       expect(token).to.be.equal(COMP.address);
       // expect(owed).to.be.equal(exp(86400, 6));
       
-      const result = await rewardsV2.callStatic.getRewardOwed(
+      const result = await rewardsV2.callStatic.getRewardsOwed(
         comet.address,
         0,
         COMP.address,
@@ -1439,7 +1443,7 @@ describe('CometRewardsV2', () => {
       expect(token).to.be.equal(COMP.address);
       // expect(owed).to.be.equal(exp(86400, 6));
 
-      const result = await rewardsV2.callStatic.getRewardOwed(
+      const result = await rewardsV2.callStatic.getRewardsOwed(
         comet.address,
         0,
         COMP.address,
@@ -1499,7 +1503,7 @@ describe('CometRewardsV2', () => {
       expect(token).to.be.equal(COMP.address);
       expect(owed).to.be.equal(exp(86400, 6));
 
-      const result = await rewardsV2.callStatic.getRewardOwed(
+      const result = await rewardsV2.callStatic.getRewardsOwed(
         comet.address,
         0,
         COMP.address,
@@ -1556,7 +1560,7 @@ describe('CometRewardsV2', () => {
       expect(token).to.be.equal(COMP.address);
       expect(owed).to.be.equal(0);
 
-      const result = await rewardsV2.callStatic.getRewardOwed(
+      const result = await rewardsV2.callStatic.getRewardsOwed(
         comet.address,
         0,
         COMP.address,
@@ -1593,7 +1597,7 @@ describe('CometRewardsV2', () => {
         //).to.be.revertedWith(`custom error 'NotSupported("${comet.address}")`);
       ).to.be.revertedWithCustomError(rewards, 'NotSupported').withArgs(protocol2.comet.address);
       await expect(
-        rewardsV2.getRewardOwed(protocol2.comet.address, 0, COMP.address, alice.address, 1000, 0)
+        rewardsV2.getRewardsOwed(protocol2.comet.address, 0, COMP.address, alice.address, 1000, 0)
         //).to.be.revertedWith(`custom error 'NotSupported("${comet.address}")`);
       ).to.be.revertedWithCustomError(rewardsV2, 'NotSupported').withArgs(protocol2.comet.address, ethers.constants.AddressZero);
     });
@@ -1639,10 +1643,10 @@ describe('CometRewardsV2', () => {
       expect(ethers.BigNumber.from(_tx0.receipt.logs[0].data)).to.be.equal(ethers.BigNumber.from(2e6));
     
       expect(_tx1.receipt.logs.length).to.be.equal(2);
-      expect(_tx1.receipt.logs[1].topics[1]).to.be.equal(
+      expect(_tx1.receipt.logs[0].topics[1]).to.be.equal(
         ethers.utils.hexZeroPad(rewardsV2.address, 32).toLowerCase()
       );
-      expect(_tx1.receipt.logs[1].topics[2]).to.be.equal(
+      expect(_tx1.receipt.logs[0].topics[2]).to.be.equal(
         ethers.utils.hexZeroPad(alice.address, 32).toLowerCase()
       );
       expect(ethers.BigNumber.from(_tx1.receipt.logs[1].data)).to.be.equal(ethers.BigNumber.from(2e6));
@@ -1760,7 +1764,7 @@ describe('CometRewardsV2', () => {
       await USDC.connect(bob).approve(comet.address, 10e6);
       await comet.connect(bob).supply(USDC.address, 10e6);
   
-      const aliceRewardOwedV2COMP = await rewardsV2.callStatic.getRewardOwed(
+      const aliceRewardOwedV2COMP = await rewardsV2.callStatic.getRewardsOwed(
         comet.address,
         0,
         COMP.address,
@@ -1768,7 +1772,7 @@ describe('CometRewardsV2', () => {
         100,
         0
       );
-      const aliceRewardOwedV2USDC = await rewardsV2.callStatic.getRewardOwed(
+      const aliceRewardOwedV2USDC = await rewardsV2.callStatic.getRewardsOwed(
         comet.address,
         0,
         USDC.address,
@@ -1776,7 +1780,7 @@ describe('CometRewardsV2', () => {
         100,
         0
       );
-      const bobRewardOwed2COMP = await rewardsV2.callStatic.getRewardOwed(
+      const bobRewardOwed2COMP = await rewardsV2.callStatic.getRewardsOwed(
         comet.address,
         0,
         COMP.address,
@@ -1784,7 +1788,7 @@ describe('CometRewardsV2', () => {
         200,
         0
       );
-      const bobRewardOwed2USDC = await rewardsV2.callStatic.getRewardOwed(
+      const bobRewardOwed2USDC = await rewardsV2.callStatic.getRewardsOwed(
         comet.address,
         0,
         USDC.address,
@@ -1885,7 +1889,7 @@ describe('CometRewardsV2', () => {
         alice.address
       );
 
-      const aliceRewardsOwedBeforeV2COMP = await rewardsV2.callStatic.getRewardOwed(
+      const aliceRewardsOwedBeforeV2COMP = await rewardsV2.callStatic.getRewardsOwed(
         comet.address,
         0,
         COMP.address,
@@ -1894,7 +1898,7 @@ describe('CometRewardsV2', () => {
         0
       );
 
-      const aliceRewardsOwedBeforeV2USDC = await rewardsV2.callStatic.getRewardOwed(
+      const aliceRewardsOwedBeforeV2USDC = await rewardsV2.callStatic.getRewardsOwed(
         comet.address,
         0,
         USDC.address,
@@ -1975,7 +1979,7 @@ describe('CometRewardsV2', () => {
         
 
       // Check that rewards owed has been zeroed out
-      const aliceRewardsOwedAfterV2COMP = await rewardsV2.callStatic.getRewardOwed(
+      const aliceRewardsOwedAfterV2COMP = await rewardsV2.callStatic.getRewardsOwed(
         comet.address,
         0,
         COMP.address,
@@ -1983,7 +1987,7 @@ describe('CometRewardsV2', () => {
         100,
         0
       );
-      const aliceRewardsOwedAfterV2USDC = await rewardsV2.callStatic.getRewardOwed(
+      const aliceRewardsOwedAfterV2USDC = await rewardsV2.callStatic.getRewardsOwed(
         comet.address,
         0,
         USDC.address,
@@ -3334,6 +3338,9 @@ describe('CometRewardsV2', () => {
       const proofStart = await getProof(alice.address, tree);
       const finishTree = await generateTree([[alice.address, finalAccruedAlice.toString()], [bob.address, finalAccruedBob.toString()], ]);
       const proofFinish = await getProof(alice.address, finishTree);
+      const finishTime = (await rewardsV2.campaigns(comet.address, 0)).finishTimestamp;
+      await fastForward(finishTime.sub((await ethers.provider.getBlock('latest')).timestamp).toNumber() + 1);
+      await ethers.provider.send('evm_mine', []);
       await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
 
       const balanceBeforeCOMP = await COMP.balanceOf(alice.address);
@@ -3343,7 +3350,7 @@ describe('CometRewardsV2', () => {
         comet.address,
         0,
         alice.address,
-        true,
+        false,
         {
           startIndex: 1,
           finishIndex: 1,
@@ -3438,6 +3445,9 @@ describe('CometRewardsV2', () => {
       const finishTree = await generateTree([[
         alice.address, finalAccruedAlice.toString()], [bob.address, finalAccruedBob.toString()]]);
       const proofFinish = await getProof(alice.address, finishTree);
+      const finishTime = (await rewardsV2.campaigns(comet.address, 0)).finishTimestamp;
+      await fastForward(finishTime.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
+      await ethers.provider.send('evm_mine', []);
       await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
 
       const balanceBeforeCOMP = await COMP.balanceOf(alice.address);
@@ -3447,7 +3457,7 @@ describe('CometRewardsV2', () => {
         comet.address,
         0,
         alice.address,
-        true,
+        false,
         {
           startIndex: 1,
           finishIndex: 1,
@@ -3559,6 +3569,9 @@ describe('CometRewardsV2', () => {
       const proofFinishAlice = await getProof(alice.address, finishTree);
       const proofFinishCharlie = await getProof(charlie.address, finishTree);
       const proofFinishBob = await getProof(bob.address, finishTree);
+      const finishTime = (await rewardsV2.campaigns(comet.address, 0)).finishTimestamp;
+      await fastForward(finishTime.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
+      await ethers.provider.send('evm_mine', []);
       await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
 
       const balanceBeforeCOMP = await COMP.balanceOf(derek.address);
@@ -3569,7 +3582,7 @@ describe('CometRewardsV2', () => {
         0,
         bob.address,
         derek.address,
-        true,
+        false,
         [alice.address, charlie.address],
         [{
           startIndex: 1,
@@ -3674,6 +3687,9 @@ describe('CometRewardsV2', () => {
       const proofStartAlice = await getProof(alice.address, tree);
       const finishTree = await generateTree([[alice.address, finalAccruedAlice.toString()], [bob.address, finalAccruedBob.toString()]]);
       const proofFinishAlice = await getProof(alice.address, finishTree);
+      const finishTime = (await rewardsV2.campaigns(comet.address, 0)).finishTimestamp;
+      await fastForward(finishTime.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
+      await ethers.provider.send('evm_mine', []);
       await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
 
       const balanceBeforeCOMP = await COMP.balanceOf(alice.address);
@@ -3683,7 +3699,7 @@ describe('CometRewardsV2', () => {
         comet.address,
         0,
         alice.address,
-        true,
+        false,
         {
           startIndex: 1,
           finishIndex: 1,
@@ -3727,7 +3743,7 @@ describe('CometRewardsV2', () => {
         comet.address,
         0,
         alice.address,
-        true,
+        false,
         {
           startIndex: 1,
           finishIndex: 1,
@@ -3796,6 +3812,9 @@ describe('CometRewardsV2', () => {
       const proofStartAlice = await getProof(alice.address, tree);
       const finishTree = await generateTree([[alice.address, finalAccruedAlice.toString()], [bob.address, finalAccruedBob.toString()]]);
       const proofFinishAlice = await getProof(alice.address, finishTree);
+      const finishTime = (await rewardsV2.campaigns(comet.address, 0)).finishTimestamp;
+      await fastForward(finishTime.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
+      await ethers.provider.send('evm_mine', []);
       await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
 
 
@@ -3804,7 +3823,7 @@ describe('CometRewardsV2', () => {
           comet.address,
           0,
           alice.address,
-          true,
+          false,
           {
             startIndex: 1,
             finishIndex: 0,
@@ -3872,6 +3891,9 @@ describe('CometRewardsV2', () => {
       const proofFinishAlice = await getProof(alice.address, finishTree);
       const proofFinishCharlie = await getProof(charlie.address, finishTree);
 
+      const finishTime = (await rewardsV2.campaigns(comet.address, 0)).finishTimestamp;
+      await fastForward(finishTime.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
+      await ethers.provider.send('evm_mine', []);
       await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
 
       await expect(
@@ -3879,7 +3901,7 @@ describe('CometRewardsV2', () => {
           comet.address,
           0,
           bob.address,
-          true,
+          false,
           [alice.address, charlie.address],
           [{
             startIndex: 1,
@@ -4377,6 +4399,13 @@ describe('CometRewardsV2', () => {
       const finishTree = await generateTree([[alice.address, finalAccruedAlice.toString()], [bob.address, finalAccruedBob.toString()]]);
       const proofFinishAlice = await getProof(alice.address, finishTree);
 
+      const finishTime = (await rewardsV2.campaigns(comet.address, 0)).finishTimestamp;
+      await fastForward(finishTime.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
+      await ethers.provider.send('evm_mine', []);
+      
+      const finishTime2 = (await rewardsV2.campaigns(comet.address, 1)).finishTimestamp;
+      await fastForward(finishTime2.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
+      await ethers.provider.send('evm_mine', []);
       await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
       await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 1);
 
@@ -4387,7 +4416,7 @@ describe('CometRewardsV2', () => {
         comet.address,
         [0,1],
         alice.address,
-        true,
+        false,
         [{
           startIndex: 1,
           finishIndex: 1,
@@ -4516,6 +4545,13 @@ describe('CometRewardsV2', () => {
 
       const proofFinishBob = await getProof(bob.address, finishTree);
 
+      const finishTime = (await rewardsV2.campaigns(comet.address, 0)).finishTimestamp;
+      await fastForward(finishTime.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
+      await ethers.provider.send('evm_mine', []);
+      
+      const finishTime2 = (await rewardsV2.campaigns(comet.address, 1)).finishTimestamp;
+      await fastForward(finishTime2.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
+      await ethers.provider.send('evm_mine', []);
       await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
       await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 1);
 
@@ -4526,7 +4562,7 @@ describe('CometRewardsV2', () => {
         comet.address,
         [0,1],
         bob.address,
-        true,
+        false,
         [[alice.address, charlie.address], [alice.address, charlie.address]],
         [
           {
@@ -4689,6 +4725,13 @@ describe('CometRewardsV2', () => {
       const finishTree = await generateTree([[alice.address, '100'], [charlie.address, '200'], [bob.address, '555']]);
       const proofFinishBob = await getProof(bob.address, finishTree);
 
+      const finishTime = (await rewardsV2.campaigns(comet.address, 0)).finishTimestamp;
+      await fastForward(finishTime.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
+      await ethers.provider.send('evm_mine', []);
+      
+      const finishTime2 = (await rewardsV2.campaigns(comet.address, 1)).finishTimestamp;
+      await fastForward(finishTime2.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
+      await ethers.provider.send('evm_mine', []);
       await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
       await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 1);
       await comet.connect(bob).allow(derek.address, true);
@@ -4701,7 +4744,7 @@ describe('CometRewardsV2', () => {
         [0,1],
         bob.address,
         derek.address,
-        true,
+        false,
         [[alice.address, charlie.address], [alice.address, charlie.address]],
         [
           {
@@ -4865,6 +4908,13 @@ describe('CometRewardsV2', () => {
       const finishTree = await generateTree([[alice.address, finalAccruedAlice.toString()], [bob.address, finalAccruedBob.toString()]]);
       const proofFinishAlice = await getProof(alice.address, finishTree);
 
+      const finishTime = (await rewardsV2.campaigns(comet.address, 0)).finishTimestamp;
+      await fastForward(finishTime.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
+      await ethers.provider.send('evm_mine', []);
+      
+      const finishTime2 = (await rewardsV2.campaigns(comet.address, 1)).finishTimestamp;
+      await fastForward(finishTime2.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
+      await ethers.provider.send('evm_mine', []);
       await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
       await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 1);
       await comet.connect(alice).allow(bob.address, true);
@@ -4877,7 +4927,7 @@ describe('CometRewardsV2', () => {
         [0,1],
         alice.address,
         bob.address,
-        true,
+        false,
         [{
           startIndex: 1,
           finishIndex: 1,
@@ -5003,13 +5053,16 @@ describe('CometRewardsV2', () => {
       const finishTree = await generateTree([[alice.address, finalAccruedAlice.toString()], [bob.address, finalAccruedBob.toString()]]);
       const proofFinishAlice = await getProof(alice.address, finishTree);
 
+      const finishTime = (await rewardsV2.campaigns(comet.address, 0)).finishTimestamp;
+      await fastForward(finishTime.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
+      await ethers.provider.send('evm_mine', []);
       await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
 
       await expect(rewardsV2.claimBatch(
         comet.address,
         [0,1],
         alice.address,
-        true,
+        false,
         [{
           startIndex: 1,
           finishIndex: 2,
@@ -5509,7 +5562,7 @@ describe('CometRewardsV2', () => {
       }
       );
 
-      await expect(rewardsV2.getRewardOwed(
+      await expect(rewardsV2.getRewardsOwed(
         COMP.address,
         0,
         ethers.constants.AddressZero,
@@ -5518,7 +5571,7 @@ describe('CometRewardsV2', () => {
         0        
       )).to.be.revertedWithCustomError(rewardsV2, 'NotSupported').withArgs(COMP.address, ethers.constants.AddressZero);
 
-      await expect(rewardsV2.getRewardOwed(
+      await expect(rewardsV2.getRewardsOwed(
         comet.address,
         4,
         ethers.constants.AddressZero,
@@ -5527,7 +5580,7 @@ describe('CometRewardsV2', () => {
         0        
       )).to.be.revertedWithCustomError(rewardsV2, 'BadData');
 
-      await expect(rewardsV2.getRewardOwed(
+      await expect(rewardsV2.getRewardsOwed(
         comet.address,
         0,
         alice.address,
@@ -5536,7 +5589,7 @@ describe('CometRewardsV2', () => {
         0        
       )).to.be.revertedWithCustomError(rewardsV2, 'NotSupported').withArgs(comet.address, alice.address);
 
-      await expect(rewardsV2.getRewardOwedBatch(
+      await expect(rewardsV2.getRewardsOwedBatch(
         COMP.address,
         0,
         alice.address,
@@ -5544,7 +5597,7 @@ describe('CometRewardsV2', () => {
         0        
       )).to.be.revertedWithCustomError(rewardsV2, 'NotSupported').withArgs(COMP.address, ethers.constants.AddressZero);
 
-      await expect(rewardsV2.getRewardOwedBatch(
+      await expect(rewardsV2.getRewardsOwedBatch(
         comet.address,
         4,
         alice.address,
@@ -7032,7 +7085,7 @@ describe('CometRewardsV2', () => {
               (exp(86400, 18) * MULTIPLIER_FACTOR) / factorScale
             );
 
-            const result = await rewardsV2.callStatic.getRewardOwed(
+            const result = await rewardsV2.callStatic.getRewardsOwed(
               comet.address,
               0,
               COMP.address,
@@ -7097,7 +7150,7 @@ describe('CometRewardsV2', () => {
               (exp(86400, 4) * MULTIPLIER_FACTOR) / factorScale
             );
 
-            const result = await rewardsV2.callStatic.getRewardOwed(
+            const result = await rewardsV2.callStatic.getRewardsOwed(
               comet.address,
               0,
               COMP.address,
@@ -7162,7 +7215,7 @@ describe('CometRewardsV2', () => {
               (exp(86400, 7) * MULTIPLIER_FACTOR) / factorScale
             );
 
-            const result = await rewardsV2.callStatic.getRewardOwed(
+            const result = await rewardsV2.callStatic.getRewardsOwed(
               comet.address,
               0,
               COMP.address,
@@ -7227,7 +7280,7 @@ describe('CometRewardsV2', () => {
               (exp(86400, 5) * MULTIPLIER_FACTOR) / factorScale
             );
 
-            const result = await rewardsV2.callStatic.getRewardOwed(
+            const result = await rewardsV2.callStatic.getRewardsOwed(
               comet.address,
               0,
               COMP.address,
@@ -7291,7 +7344,7 @@ describe('CometRewardsV2', () => {
               (exp(86400, 6) * MULTIPLIER_FACTOR) / factorScale
             );
 
-            const result = await rewardsV2.callStatic.getRewardOwed(
+            const result = await rewardsV2.callStatic.getRewardsOwed(
               comet.address,
               0,
               COMP.address,
@@ -7373,7 +7426,7 @@ describe('CometRewardsV2', () => {
               )
             );
 
-            const result = await rewardsV2.callStatic.getRewardOwed(
+            const result = await rewardsV2.callStatic.getRewardsOwed(
               comet.address,
               0,
               COMP.address,
@@ -7407,7 +7460,7 @@ describe('CometRewardsV2', () => {
             ).to.be.revertedWithCustomError(rewards, 'NotSupported').withArgs(WBTC.address);
 
             await expect(
-              rewardsV2.getRewardOwed(comet.address, 0, WBTC.address, alice.address, 100, 0)
+              rewardsV2.getRewardsOwed(comet.address, 0, WBTC.address, alice.address, 100, 0)
             ).to.be.revertedWithCustomError(rewardsV2, 'NotSupported').withArgs(comet.address, WBTC.address);
           });
         });
