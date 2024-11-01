@@ -6,7 +6,7 @@ import { exp, proposal } from '../../../../src/deploy';
 const ETHX_ADDRESS = '0xA35b1B31Ce002FBF2058D22F30f95D405200A15b';
 const ETHX_PRICE_FEED_ADDRESS = '0xdd487947c579af433AeeF038Bf1573FdBB68d2d3';
 
-export default migration('1722603828_add_ethx_as_collaterals', {
+export default migration('1730466050_add_ethx_as_collaterals', {
   async prepare(deploymentManager: DeploymentManager) {
     const _ETHxScalingPriceFeed = await deploymentManager.deploy(
       'ETHx:priceFeed',
@@ -14,7 +14,8 @@ export default migration('1722603828_add_ethx_as_collaterals', {
       [
         ETHX_PRICE_FEED_ADDRESS,  // ETHx / ETH price feed
         8                         // decimals
-      ]
+      ],
+      true
     );
 
     return { ETHxScalingPriceFeed: _ETHxScalingPriceFeed.address };
