@@ -16,7 +16,7 @@ contract PriceFeedWith4626Support is IPriceFeed {
     error InvalidInt256();
 
     /// @notice Version of the price feed
-    uint public constant override version = 1;
+    uint public constant VERSION = 1;
 
     /// @notice Description of the price feed
     string public override description;
@@ -25,10 +25,10 @@ contract PriceFeedWith4626Support is IPriceFeed {
     uint8 public immutable override decimals;
 
     /// @notice Number of decimals for the 4626 rate provider
-    uint8 rateProviderDecimals;
+    uint8 internal immutable rateProviderDecimals;
 
     /// @notice Number of decimals for the underlying asset
-    uint8 underlyingDecimals;
+    uint8 internal immutable underlyingDecimals;
 
     /// @notice 4626 rate provider
     address public immutable rateProvider;
@@ -47,6 +47,7 @@ contract PriceFeedWith4626Support is IPriceFeed {
      * @param rateProvider_ The address of the 4626 rate provider
      * @param underlyingPriceFeed_ The address of the underlying asset price feed to fetch prices from
      * @param decimals_ The number of decimals for the returned prices
+     * @param description_ The description of the price feed
      **/
     constructor(address rateProvider_, address underlyingPriceFeed_, uint8 decimals_, string memory description_) {
         rateProvider = rateProvider_;
@@ -73,7 +74,6 @@ contract PriceFeedWith4626Support is IPriceFeed {
         uint256 rate = IERC4626(rateProvider).convertToAssets(10**rateProviderDecimals);
         (uint80 roundId_, int256 underlyingPrice, uint256 startedAt_, uint256 updatedAt_, uint80 answeredInRound_) = AggregatorV3Interface(underlyingPriceFeed).latestRoundData();
 
-        // We return the round data of the underlying asset price feed because of its shorter heartbeat (1hr vs 24hr)
         if (rate <= 0 || underlyingPrice <= 0) return (roundId_, 0, startedAt_, updatedAt_, answeredInRound_);
 
         int256 price = signed256(rate) * underlyingPrice * priceFeedScale / combinedScale;
@@ -83,5 +83,13 @@ contract PriceFeedWith4626Support is IPriceFeed {
     function signed256(uint256 n) internal pure returns (int256) {
         if (n > uint256(type(int256).max)) revert InvalidInt256();
         return int256(n);
+    }
+    
+    /**
+     * @notice Price for the latest round
+     * @return The version of the price feed contract
+     **/
+    function version() external pure returns (uint256) {
+        return VERSION;
     }
 }
