@@ -19,7 +19,8 @@ export default migration('1730371308_add_sfrax_collateral', {
         FRAX_TO_USD_PRICE_FEED_ADDRESS,   // FRAX / USD price feed
         8,                                // decimals
         'sFRAX / USD price feed',         // description
-      ]
+      ],
+      true
     );
     return { sFRAXPriceFeedAddress: _sFRAXPriceFeed.address };
   },
