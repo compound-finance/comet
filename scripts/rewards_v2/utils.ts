@@ -1,5 +1,4 @@
 import { BigNumber } from 'ethers';
-import hre, { ethers } from 'hardhat';
 import { StandardMerkleTree } from '@openzeppelin/merkle-tree';
 
 import { paramString } from '../../plugins/import/import';
@@ -7,6 +6,108 @@ import { get, getEtherscanApiKey, getEtherscanApiUrl } from '../../plugins/impor
 import { TransferEvent } from '../../build/types/Comet';
 import { IncentivizationCampaignData } from './types';
 import { CometInterface } from '../../build/types';
+
+import { mkdir, writeFile } from 'fs/promises';
+import path from 'path';
+import { DeploymentManager } from '../../plugins/deployment_manager';
+import { getEtherscanUrl } from '../../plugins/import/etherscan';
+import { multicallAddresses } from './constants';
+import { CampaignType } from './types';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
+
+export const generateMerkleTreeForCampaign = async (
+    deployment: string,
+    blockNumber: number,
+    type: CampaignType,
+    hre: HardhatRuntimeEnvironment
+) => {
+    console.log(`Generating Merkle tree for ${type} of campaign with deployment: ${deployment}`);
+
+    if (!deployment) {
+        throw new Error('missing required env variable: DEPLOYMENT');
+    }
+
+    if (!type || !['start', 'finish'].includes(type)) {
+        throw new Error('type should be start or finish');
+    }
+
+    if (blockNumber === 0) {
+        blockNumber = await hre.ethers.provider.getBlockNumber();
+        console.log(`Block number not provided or set to 0. Using latest block: ${blockNumber}`);
+    }
+
+    const generatedTimestamp = Date.now();
+    const network = hre.network.name;
+
+    const dm = new DeploymentManager(
+        network,
+        deployment,
+        hre,
+        {
+            writeCacheToDisk: true,
+            verificationStrategy: 'eager',
+        }
+    );
+
+    console.log(`Campaign block number ${blockNumber}`);
+    console.log(`Start fetching contracts for ${network}-${deployment} deployment`);
+
+    await dm.spider();
+
+    const contracts = await dm.contracts();
+    const comet = contracts.get('comet') as CometInterface;
+
+    const { blockNumber: cometDeployedBlockNumber, hash } = await getContractDeploymentData(network, comet.address);
+
+    console.log(`Comet address ${getEtherscanUrl(network)}/address/${comet.address}`);
+    console.log(`Comet deployed transaction ${getEtherscanUrl(network)}/trx/${hash}`);
+    console.log(`Comet deployed block ${cometDeployedBlockNumber}`);
+
+    const transferEvents = await getAllTransferEvents(comet, cometDeployedBlockNumber, blockNumber);
+    const users = getAllCometUsers(transferEvents);
+
+    console.log(`Transfer events count ${transferEvents.length}`);
+    console.log(`Transfer events unique addresses (both from and to) ${users.length}`);
+
+    const multicallAddress = multicallAddresses[network];
+    if (!multicallAddress) {
+        console.error(`Multicall is not supported by ${network} network`);
+        process.exit(1);
+    }
+
+    const { data } = await multicall(multicallAddress, comet.address, users, blockNumber, hre);
+
+    if (!data['0x0000000000000000000000000000000000000000']) {
+        data['0x0000000000000000000000000000000000000000'] = '0';
+    }
+
+    if (!data['0xffffffffffffffffffffffffffffffffffffffff']) {
+        data['0xffffffffffffffffffffffffffffffffffffffff'] = '0';
+    }
+
+    const sortedDataWithIndexes = Object.entries(data)
+        .sort((a, b) => a[0].localeCompare(b[0])) // Sort by address (key) in ascending order
+        .map(([address, accrued], index) => [address, index.toString(), accrued]);
+
+    const merklTree = generateMerklTree(sortedDataWithIndexes);
+
+    const file = createCampaignFile(
+        sortedDataWithIndexes,
+        merklTree,
+        { network, market: deployment, blockNumber, generatedTimestamp, type }
+    );
+
+    const filename = `${generatedTimestamp}-${blockNumber}-${type}.json`;
+    const filePath = `./campaigns/${network}-${deployment}/${filename}`;
+
+    // Ensure the directory exists
+    const directory = path.dirname(filePath);
+    await mkdir(directory, { recursive: true });
+
+    await writeFile(filePath, JSON.stringify(file, null, 2), 'utf-8');
+
+    console.log('Merkle tree successfully generated');
+}
 
 export const getContractDeploymentData = async (network: string, address: string): Promise<{ blockNumber: number, hash: string }> => {
     const params = {
@@ -42,9 +143,9 @@ export const padAddressTo64Chars = (address: string): string => {
     return paddedAddress
 }
 
-export const getFunctionSelector = (functionSignature: string): string => {
+export const getFunctionSelector = (functionSignature: string, hre: HardhatRuntimeEnvironment): string => {
     // Calculate the Keccak-256 hash of the function signature
-    const hash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(functionSignature));
+    const hash = hre.ethers.utils.keccak256(hre.ethers.utils.toUtf8Bytes(functionSignature));
 
     return hash.slice(2, 10); // first 8 hex characters
 }
@@ -83,17 +184,17 @@ export const getAllCometUsers = (transferEvents: TransferEvent[]) => {
     return Array.from(setOfAddresses).sort()
 }
 
-export const createMulticallCallsToGetBaseTrackingAccruedPerAddress = (cometAddress: string, userAddress: string) => {
+export const createMulticallCallsToGetBaseTrackingAccruedPerAddress = (cometAddress: string, userAddress: string, hre: HardhatRuntimeEnvironment) => {
     const calls = [
         // Updates baseTrackingAccrued for userAddress. Returns 0x
         {
             target: cometAddress,
-            callData: `0x${getFunctionSelector('accrueAccount(address)')}${padAddressTo64Chars(userAddress)}`
+            callData: `0x${getFunctionSelector('accrueAccount(address)', hre)}${padAddressTo64Chars(userAddress)}`
         },
         // Returns userBasic struct, which includes baseTrackingAccrued
         {
             target: cometAddress,
-            callData: `0x${getFunctionSelector('userBasic(address)')}${padAddressTo64Chars(userAddress)}`
+            callData: `0x${getFunctionSelector('userBasic(address)', hre)}${padAddressTo64Chars(userAddress)}`
         }
     ]
 
@@ -108,12 +209,12 @@ function chunkArray<T>(array: T[], chunkSize: number): T[][] {
     return chunks;
 }
 
-export const multicall = async (multicallAddress: string, cometAddress: string, userAddresses: string[], blockNumber: number) => {
+export const multicall = async (multicallAddress: string, cometAddress: string, userAddresses: string[], blockNumber: number, hre: HardhatRuntimeEnvironment) => {
     const multicallABI = [
         "function aggregate((address target, bytes callData)[] memory calls) external view returns (uint256 blockNumber, bytes[] memory returnData)"
     ];
 
-    const multicallContract = new ethers.Contract(multicallAddress, multicallABI, hre.ethers.provider);
+    const multicallContract = new hre.ethers.Contract(multicallAddress, multicallABI, hre.ethers.provider);
     const userAddressToAccrue: { [address: string]: string } = {};
 
     // Split user addresses into chunks of 1,000
@@ -124,7 +225,7 @@ export const multicall = async (multicallAddress: string, cometAddress: string, 
         const calls: { target: string, callData: string }[] = [];
 
         chunk.forEach(address => {
-            calls.push(...createMulticallCallsToGetBaseTrackingAccruedPerAddress(cometAddress, address));
+            calls.push(...createMulticallCallsToGetBaseTrackingAccruedPerAddress(cometAddress, address, hre));
         });
 
         const [, returnData] = await multicallContract.callStatic.aggregate(calls, {
@@ -139,7 +240,7 @@ export const multicall = async (multicallAddress: string, cometAddress: string, 
         // Decode results for this chunk
         returnData.forEach((data: string, index: number) => {
             if (index % 2 !== 0) {
-                const result = ethers.utils.defaultAbiCoder.decode(
+                const result = hre.ethers.utils.defaultAbiCoder.decode(
                     ["int104", "uint64", "uint64", "uint16", "uint8"],
                     data
                 ) as [BigNumber, BigNumber, BigNumber, number, number];

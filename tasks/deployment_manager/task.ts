@@ -5,6 +5,7 @@ import { HardhatRuntimeEnvironment, HardhatConfig } from 'hardhat/types';
 import { DeploymentManager, VerifyArgs } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import hreForBase from '../../plugins/scenario/utils/hreForBase';
+import { generateMerkleTreeForCampaign } from '../../scripts/rewards_v2/utils';
 
 // TODO: Don't depend on scenario's hreForBase
 function getForkEnv(env: HardhatRuntimeEnvironment, deployment: string): HardhatRuntimeEnvironment {
@@ -351,4 +352,21 @@ task('deploy_and_migrate', 'Runs deploy and migration')
         await writeEnacted(migration, dm, true);
       }
 
+    });
+
+task('generateMerkleTree', 'Generates a Merkle Tree for a given campaign')
+    .addParam('deployment', 'The deployment environment (e.g., mainnet, testnet)')
+    .addParam('type', 'The campaign type, either start or finish')
+    .addOptionalParam('blocknumber', 'The block number to use; if 0, latest block will be used', '0')
+    .setAction(async ({ deployment, type, blocknumber }, env) => {
+        try {
+            await generateMerkleTreeForCampaign(
+                deployment,
+                +blocknumber,
+                type,
+                env
+            );
+        } catch (error) {
+            console.error('Error during Merkle tree generation:', error);
+        }
     });
