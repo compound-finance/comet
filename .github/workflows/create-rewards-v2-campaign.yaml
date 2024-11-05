@@ -1,4 +1,4 @@
-name: Create rewards-v2 campaign
+name: Create RewardsV2 Campaign
 on:
   workflow_dispatch:
     inputs:
@@ -33,7 +33,7 @@ on:
         description: Enter block number or current block will be used
 jobs:
   create-rewards-v2-campaign:
-    name: Create rewards-v2 campaign
+    name: Create RewardsV2 Campaign
     runs-on: ubuntu-latest
     env:
       ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
