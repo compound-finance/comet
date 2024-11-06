@@ -31,7 +31,7 @@ const relationConfigMap: RelationConfigMap = {
             })
           );
         },
-        alias: async (token) => token.symbol(),
+        alias: async (token) =>  token.symbol(),
       },
       assetPriceFeeds: {
         field: async (comet) => {

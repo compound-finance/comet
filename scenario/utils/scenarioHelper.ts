@@ -10,11 +10,12 @@ const config = {
   liquidationBase1: 1000,
   liquidationAsset: 200,
   liquidationDenominator: 90,
+  liquidationNumerator: 90,
   rewardsAsset: 10000,
   rewardsBase: 1000,
   transferBase: 1000,
   transferAsset: 5000,
-  interestSeconds: 110
+  interestSeconds: 110,
 };
 
 export function getConfigForScenario(ctx: CometContext) {
@@ -40,6 +41,10 @@ export function getConfigForScenario(ctx: CometContext) {
     config.liquidationAsset = 100;
     config.liquidationDenominator = 84;
     config.interestSeconds = 70;
+  }
+
+  if (ctx.world.base.network === 'mainnet' && ctx.world.base.deployment === 'weth') {
+    config.liquidationNumerator = 60;
   }
 
   if (ctx.world.base.network === 'mainnet' && ctx.world.base.deployment === 'usds') {
