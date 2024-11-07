@@ -65,7 +65,7 @@ const {
   LINEASCAN_KEY,
   OPTIMISMSCAN_KEY,
   INFURA_KEY,
-  QUICKNODE_KEY,
+  ANKR_KEY,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
@@ -92,6 +92,7 @@ export function requireEnv(varName, msg?: string): string {
   'ETHERSCAN_KEY',
   'SNOWTRACE_KEY',
   'INFURA_KEY',
+  'ANKR_KEY',
   'POLYGONSCAN_KEY',
   'ARBISCAN_KEY',
   'LINEASCAN_KEY',
@@ -121,12 +122,12 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'optimism',
     chainId: 10,
-    url: `https://optimism-mainnet.infura.io/v3/${INFURA_KEY}`,
+    url: `https://rpc.ankr.com/optimism/${ANKR_KEY}`,
   },
   {
     network: 'base',
     chainId: 8453,
-    url: `https://fluent-prettiest-scion.base-mainnet.quiknode.pro/${QUICKNODE_KEY}`,
+    url: `https://rpc.ankr.com/base/${ANKR_KEY}`,
   },
   {
     network: 'arbitrum',
