@@ -11,10 +11,10 @@ const config = {
   liquidationAsset: 200,
   liquidationDenominator: 90,
   rewardsAsset: 10000,
-  rewardsBase: 1000,
   transferBase: 1000,
   transferAsset: 5000,
-  interestSeconds: 110
+  interestSeconds: 110,
+  rewardsBase: 100,
 };
 
 export function getConfigForScenario(ctx: CometContext) {

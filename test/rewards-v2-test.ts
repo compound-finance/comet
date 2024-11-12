@@ -647,7 +647,8 @@ describe('CometRewardsV2', () => {
         0,
         charlie.address,
         0,
-        555
+        555,
+        true
       );
 
       const amountCOMP = ethers.BigNumber.from('555').mul(exp(1,12));
@@ -1389,7 +1390,8 @@ describe('CometRewardsV2', () => {
         COMP.address,
         alice.address,
         1000,
-        0
+        0,
+        true
       );
       expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
       expect(result.token).to.be.equal(COMP.address);
@@ -1449,7 +1451,8 @@ describe('CometRewardsV2', () => {
         COMP.address,
         alice.address,
         1000,
-        0
+        0,
+        true
       );
       expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
       expect(result.token).to.be.equal(COMP.address);
@@ -1509,7 +1512,8 @@ describe('CometRewardsV2', () => {
         COMP.address,
         alice.address,
         1000,
-        0
+        0,
+        true
       );
       expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
       expect(result.token).to.be.equal(COMP.address);
@@ -1566,7 +1570,8 @@ describe('CometRewardsV2', () => {
         COMP.address,
         alice.address,
         1000,
-        0
+        0,
+        true
       );
       expect(result.token).to.be.equal(COMP.address);
       expect(result.owed).to.be.equal(ethers.BigNumber.from(exp(86400, 18)).sub(exp(1000, 12)));
@@ -1597,7 +1602,7 @@ describe('CometRewardsV2', () => {
         //).to.be.revertedWith(`custom error 'NotSupported("${comet.address}")`);
       ).to.be.revertedWithCustomError(rewards, 'NotSupported').withArgs(protocol2.comet.address);
       await expect(
-        rewardsV2.getRewardsOwed(protocol2.comet.address, 0, COMP.address, alice.address, 1000, 0)
+        rewardsV2.getRewardsOwed(protocol2.comet.address, 0, COMP.address, alice.address, 1000, 0, true)
         //).to.be.revertedWith(`custom error 'NotSupported("${comet.address}")`);
       ).to.be.revertedWithCustomError(rewardsV2, 'NotSupported').withArgs(protocol2.comet.address, ethers.constants.AddressZero);
     });
@@ -1770,7 +1775,8 @@ describe('CometRewardsV2', () => {
         COMP.address,
         alice.address,
         100,
-        0
+        0,
+        true
       );
       const aliceRewardOwedV2USDC = await rewardsV2.callStatic.getRewardsOwed(
         comet.address,
@@ -1778,7 +1784,8 @@ describe('CometRewardsV2', () => {
         USDC.address,
         alice.address,
         100,
-        0
+        0,
+        true
       );
       const bobRewardOwed2COMP = await rewardsV2.callStatic.getRewardsOwed(
         comet.address,
@@ -1786,7 +1793,8 @@ describe('CometRewardsV2', () => {
         COMP.address,
         alice.address,
         200,
-        0
+        0,
+        true
       );
       const bobRewardOwed2USDC = await rewardsV2.callStatic.getRewardsOwed(
         comet.address,
@@ -1794,7 +1802,8 @@ describe('CometRewardsV2', () => {
         USDC.address,
         alice.address,
         200,
-        0
+        0,
+        true
       );
       expect(aliceRewardOwed.owed).to.be.equal(0);
       expect(bobRewardOwed.owed).to.be.equal(0);
@@ -1895,7 +1904,8 @@ describe('CometRewardsV2', () => {
         COMP.address,
         alice.address,
         100,
-        0
+        0,
+        true
       );
 
       const aliceRewardsOwedBeforeV2USDC = await rewardsV2.callStatic.getRewardsOwed(
@@ -1904,7 +1914,8 @@ describe('CometRewardsV2', () => {
         USDC.address,
         alice.address,
         100,
-        0
+        0,
+        true
       );
       
       expect(aliceRewardOwedBefore.owed).to.be.equal(exp(86400, 18));
@@ -1985,7 +1996,8 @@ describe('CometRewardsV2', () => {
         COMP.address,
         alice.address,
         100,
-        0
+        0,
+        true
       );
       const aliceRewardsOwedAfterV2USDC = await rewardsV2.callStatic.getRewardsOwed(
         comet.address,
@@ -1993,7 +2005,8 @@ describe('CometRewardsV2', () => {
         USDC.address,
         alice.address,
         100,
-        0
+        0,
+        true
       );
         
       expect(
@@ -5568,7 +5581,8 @@ describe('CometRewardsV2', () => {
         ethers.constants.AddressZero,
         alice.address,
         0,
-        0        
+        0,
+        true       
       )).to.be.revertedWithCustomError(rewardsV2, 'NotSupported').withArgs(COMP.address, ethers.constants.AddressZero);
 
       await expect(rewardsV2.getRewardsOwed(
@@ -5577,7 +5591,8 @@ describe('CometRewardsV2', () => {
         ethers.constants.AddressZero,
         alice.address,
         0,
-        0        
+        0,
+        true
       )).to.be.revertedWithCustomError(rewardsV2, 'BadData');
 
       await expect(rewardsV2.getRewardsOwed(
@@ -5586,7 +5601,8 @@ describe('CometRewardsV2', () => {
         alice.address,
         alice.address,
         0,
-        0        
+        0,
+        true
       )).to.be.revertedWithCustomError(rewardsV2, 'NotSupported').withArgs(comet.address, alice.address);
 
       await expect(rewardsV2.getRewardsOwedBatch(
@@ -5594,7 +5610,8 @@ describe('CometRewardsV2', () => {
         0,
         alice.address,
         0,
-        0        
+        0,
+        true
       )).to.be.revertedWithCustomError(rewardsV2, 'NotSupported').withArgs(COMP.address, ethers.constants.AddressZero);
 
       await expect(rewardsV2.getRewardsOwedBatch(
@@ -5602,7 +5619,8 @@ describe('CometRewardsV2', () => {
         4,
         alice.address,
         0,
-        0        
+        0,
+        true
       )).to.be.revertedWithCustomError(rewardsV2, 'BadData');
 
       await expect(rewardsV2.claim(
@@ -7091,7 +7109,8 @@ describe('CometRewardsV2', () => {
               COMP.address,
               alice.address,
               100,
-              0
+              0,
+              true
             );
             const amountCOMP2 = ethers.BigNumber.from(exp(86400, 18)).mul(MULTIPLIER_FACTOR).div(factorScale)
               .sub(ethers.BigNumber.from(exp(100, 12)).mul(MULTIPLIER_FACTOR).div(factorScale));
@@ -7156,7 +7175,8 @@ describe('CometRewardsV2', () => {
               COMP.address,
               alice.address,
               100,
-              0
+              0,
+              true
             );
 
             const amountCOMP2 = ethers.BigNumber.from(exp(86400, 18)).mul(MULTIPLIER_FACTOR).div(factorScale)
@@ -7221,7 +7241,8 @@ describe('CometRewardsV2', () => {
               COMP.address,
               alice.address,
               100,
-              0
+              0,
+              true
             );
             const amountCOMP2 = ethers.BigNumber.from(exp(86400, 18)).mul(MULTIPLIER_FACTOR).div(factorScale)
               .sub(ethers.BigNumber.from(exp(100, 12)).mul(MULTIPLIER_FACTOR).div(factorScale)).div(exp(1, 11));
@@ -7286,7 +7307,8 @@ describe('CometRewardsV2', () => {
               COMP.address,
               alice.address,
               100,
-              0
+              0,
+              true
             );
             const amountCOMP2 = ethers.BigNumber.from(exp(86400, 18)).mul(MULTIPLIER_FACTOR).div(factorScale)
               .sub(ethers.BigNumber.from(exp(100, 12)).mul(MULTIPLIER_FACTOR).div(factorScale)).div(exp(1, 13));
@@ -7350,7 +7372,8 @@ describe('CometRewardsV2', () => {
               COMP.address,
               alice.address,
               100,
-              0
+              0,
+              true
             );
             const amountCOMP2 = ethers.BigNumber.from(exp(86400, 18)).mul(MULTIPLIER_FACTOR).div(factorScale)
               .sub(ethers.BigNumber.from(exp(100, 12)).mul(MULTIPLIER_FACTOR).div(factorScale)).div(exp(1, 12));
@@ -7432,7 +7455,8 @@ describe('CometRewardsV2', () => {
               COMP.address,
               alice.address,
               100,
-              0
+              0,
+              true
             );
             expect(result.token).to.be.equal(COMP.address);
             expect(result.owed).to.be.equal(0);
@@ -7460,7 +7484,7 @@ describe('CometRewardsV2', () => {
             ).to.be.revertedWithCustomError(rewards, 'NotSupported').withArgs(WBTC.address);
 
             await expect(
-              rewardsV2.getRewardsOwed(comet.address, 0, WBTC.address, alice.address, 100, 0)
+              rewardsV2.getRewardsOwed(comet.address, 0, WBTC.address, alice.address, 100, 0, true)
             ).to.be.revertedWithCustomError(rewardsV2, 'NotSupported').withArgs(comet.address, WBTC.address);
           });
         });
@@ -7501,7 +7525,7 @@ describe('CometRewardsV2', () => {
             });
 
             expect(
-              objectify(await rewardsV2.rewardConfig(comet.address, 0, COMP.address))
+              objectify(await rewardsV2.rewardConfigForToken(comet.address, 0, COMP.address))
             ).to.be.deep.equal({
               rescaleFactor: exp(1, 12),
               shouldUpscale: true,
@@ -7544,7 +7568,7 @@ describe('CometRewardsV2', () => {
             });
 
             expect(
-              objectify(await rewardsV2.rewardConfig(comet.address, 0, COMP.address))
+              objectify(await rewardsV2.rewardConfigForToken(comet.address, 0, COMP.address))
             ).to.be.deep.equal({
               rescaleFactor: exp(1, 4),
               shouldUpscale: false,
@@ -7587,7 +7611,7 @@ describe('CometRewardsV2', () => {
             });
 
             expect(
-              objectify(await rewardsV2.rewardConfig(comet.address, 0, COMP.address))
+              objectify(await rewardsV2.rewardConfigForToken(comet.address, 0, COMP.address))
             ).to.be.deep.equal({
               rescaleFactor: 10n,
               shouldUpscale: true,
@@ -7630,7 +7654,7 @@ describe('CometRewardsV2', () => {
             });
 
             expect(
-              objectify(await rewardsV2.rewardConfig(comet.address, 0, COMP.address))
+              objectify(await rewardsV2.rewardConfigForToken(comet.address, 0, COMP.address))
             ).to.be.deep.equal({
               rescaleFactor: 10n,
               shouldUpscale: false,
@@ -7673,7 +7697,7 @@ describe('CometRewardsV2', () => {
             });
 
             expect(
-              objectify(await rewardsV2.rewardConfig(comet.address, 0, COMP.address))
+              objectify(await rewardsV2.rewardConfigForToken(comet.address, 0, COMP.address))
             ).to.be.deep.equal({
               rescaleFactor: 1n,
               shouldUpscale: true,

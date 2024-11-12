@@ -18,11 +18,11 @@ import { CampaignType } from './types';
 import { generateMerkleTreeForCampaign } from './utils';
 
 const main = async () => {
-    console.log('Start Rewards V2 hash generation');
+  console.log('Start Rewards V2 hash generation');
 
-    let { DEPLOYMENT, BLOCK_NUMBER, TYPE } = process.env;
+  let { NETWORK, DEPLOYMENT, BLOCK_NUMBER, TYPE } = process.env;
 
-    await generateMerkleTreeForCampaign(DEPLOYMENT, +BLOCK_NUMBER, TYPE as CampaignType, hre);
-}
+  await generateMerkleTreeForCampaign(NETWORK, DEPLOYMENT, +BLOCK_NUMBER, TYPE as CampaignType, hre);
+};
 
 main().then().catch(console.error);

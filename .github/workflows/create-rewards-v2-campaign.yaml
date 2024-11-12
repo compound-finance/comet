@@ -69,5 +69,5 @@ jobs:
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
           git add campaigns/
-          git commit -m "Generated Merkle tree for ${{ github.event.inputs.root_type }} of campaign with deployment: ${{ github.event.inputs.deployment }}" || echo "No changes to commit"
+          git commit -m "Generated Merkle tree for ${{ github.event.inputs.root_type }} of campaign with deployment: ${{ github.event.inputs.network }}-${{ github.event.inputs.deployment }}" || echo "No changes to commit"
           git push origin

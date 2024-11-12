@@ -355,18 +355,20 @@ task('deploy_and_migrate', 'Runs deploy and migration')
     });
 
 task('generateMerkleTree', 'Generates a Merkle Tree for a given campaign')
-    .addParam('deployment', 'The deployment environment (e.g., mainnet, testnet)')
-    .addParam('type', 'The campaign type, either start or finish')
-    .addOptionalParam('blocknumber', 'The block number to use; if 0, latest block will be used', '0')
-    .setAction(async ({ deployment, type, blocknumber }, env) => {
-        try {
-            await generateMerkleTreeForCampaign(
-                deployment,
-                +blocknumber,
-                type,
-                env
-            );
-        } catch (error) {
-            console.error('Error during Merkle tree generation:', error);
-        }
-    });
+  .addParam('deployment', 'The deployment to use (e.g., usdc, weth)')
+  .addParam('type', 'The campaign type, either start or finish')
+  .addOptionalParam('blocknumber', 'The block number to use; if 0, latest block will be used', '0')
+  .setAction(async ({ deployment, type, blocknumber }, env) => {
+    const network = env.network.name;
+    try {
+      await generateMerkleTreeForCampaign(
+        network,
+        deployment,
+        +blocknumber,
+        type,
+        env
+      );
+    } catch (error) {
+      console.error('Error during Merkle tree generation:', error);
+    }
+  });

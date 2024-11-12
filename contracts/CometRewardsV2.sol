@@ -358,7 +358,8 @@ contract CometRewardsV2 {
         address token,
         address account,
         uint256 startAccrued,
-        uint256 finishAccrued
+        uint256 finishAccrued,
+        bool shouldAccrue
     ) external returns (RewardOwed memory) {        
         if(campaigns[comet].length == 0) revert NotSupported(comet, address(0));
         if(campaignId >= campaigns[comet].length) revert BadData();
@@ -368,7 +369,7 @@ contract CometRewardsV2 {
 
         if(config.multiplier == 0) revert NotSupported(comet, token);
 
-        if($.finishRoot == bytes32(0))
+        if($.finishRoot == bytes32(0) && shouldAccrue)
             CometInterface(comet).accrueAccount(account);
         uint256 claimed = $.claimed[account][token];
         uint256 accrued = getRewardsAccrued(
@@ -399,7 +400,8 @@ contract CometRewardsV2 {
         uint256 campaignId,
         address account,
         uint256 startAccrued,
-        uint256 finishAccrued
+        uint256 finishAccrued,
+        bool shouldAccrue
     ) external returns (RewardOwed[] memory) {
         if(campaigns[comet].length == 0) revert NotSupported(comet, address(0));
         if(campaignId >= campaigns[comet].length) revert BadData();
@@ -408,7 +410,7 @@ contract CometRewardsV2 {
         RewardOwed[] memory owed = new RewardOwed[]($.assets.length);
 
         
-        if($.finishRoot == bytes32(0))
+        if($.finishRoot == bytes32(0) && shouldAccrue)
             CometInterface(comet).accrueAccount(account);
 
         for (uint256 j; j < $.assets.length; j++) {
@@ -670,13 +672,56 @@ contract CometRewardsV2 {
     }
 
     /**
+     * @notice Returns the reward configuration for all tokens in a specific campaign
+     * @param comet Comet protocol address
+     * @param campaignId Id of the campaign
+     * @return The reward configuration
+     */
+    function rewardConfig(
+        address comet,
+        uint256 campaignId
+    ) external view returns(address[] memory, AssetConfig[] memory) {
+        Campaign storage $ = campaigns[comet][campaignId];
+        AssetConfig[] memory configs = new AssetConfig[]($.assets.length);
+        for (uint256 i; i < $.assets.length; i++) {
+            configs[i] = $.configs[$.assets[i]];
+        }
+        return ($.assets, configs);
+    }
+
+    /**
+     * @notice Returns all campaigns for a specific Comet instance
+     * @param comet Comet protocol address
+     * @return startRoots The start roots for each campaign
+     * @return finishRoots The finish roots for each campaign
+     * @return assets The reward tokens for each campaign
+     * @return finishTimestamps The finish timestamps for each campaign
+     */
+    function getCometCampaignsInfo(address comet) external view returns(
+        bytes32[] memory startRoots,
+        bytes32[] memory finishRoots,
+        address[][] memory assets,
+        uint256[] memory finishTimestamps
+        
+    ) {
+        for (uint256 i; i < campaigns[comet].length; i++) {
+            Campaign storage $ = campaigns[comet][i];
+            startRoots[i] = $.startRoot;
+            finishRoots[i] = $.finishRoot;
+            assets[i] = $.assets;
+            finishTimestamps[i] = $.finishTimestamp;
+        }
+    }
+
+
+    /**
      * @notice Returns the reward configuration for a specific token in a specific campaign
      * @param comet Comet protocol address
      * @param campaignId Id of the campaign
      * @param token The reward token address
      * @return The reward configuration
      */
-    function rewardConfig(
+    function rewardConfigForToken(
         address comet,
         uint256 campaignId,
         address token
