@@ -96,41 +96,50 @@ export const getLatestStartAndFinishMerkleTreeForCampaign = async (
   const startFile = result?.start;
   const finishFile = result?.finish;
 
+  let startTimestamp = 0;
+  let startBlockNumber = 0;
   if (!startFile) {
     console.log('Start file not found. Generating new start file');
     const currentBlock = await hre.ethers.provider.getBlock('latest');
     const previousBlockNumber = currentBlock.number - 1000;
     const previousBlock = await hre.ethers.provider.getBlock(previousBlockNumber);
-    console.log(`Previous block number: ${previousBlockNumber}`);
-    console.log(`currentBlock: ${currentBlock.number}`);
-    console.log(`previousBlock: ${previousBlock.number}`);
     
     await generateMerkleTreeForCampaign(network, deployment, previousBlockNumber, 'start', hre);
-    startFile.timestamp = previousBlock.timestamp;
-    startFile.blockNumber = previousBlockNumber;
+    startTimestamp = previousBlock.timestamp;
+    startBlockNumber = previousBlockNumber;
+  }else{
+    startTimestamp = startFile.timestamp;
+    startBlockNumber = startFile.blockNumber;
   }
 
+  let finishTimestamp = 0;
+  let finishBlockNumber = 0;
   if (!finishFile) {
     console.log('Finish file not found. Generating new finish file');
     const currentBlock = await hre.ethers.provider.getBlock('latest');
     const currentBlockNumber = currentBlock.number;
     await generateMerkleTreeForCampaign(network, deployment, currentBlockNumber, 'finish', hre);
-    finishFile.timestamp = currentBlock.timestamp;
-    finishFile.blockNumber = currentBlockNumber;
+    finishTimestamp = currentBlock.timestamp;
+    finishBlockNumber = currentBlockNumber;
+  }
+  else{
+    finishTimestamp = finishFile.timestamp;
+    finishBlockNumber = finishFile.blockNumber;
   }
 
-  const startData = await readFile(`${folderPath}/${startFile.timestamp}-${startFile.blockNumber}-start.json`, 'utf-8');
+
+  const startData = await readFile(`${folderPath}/${startTimestamp}-${startBlockNumber}-start.json`, 'utf-8');
   const startFileData = JSON.parse(startData) as IncentivizationCampaignData;
   const startTreeData = Object.entries(startFileData.data).map(([address, { index, accrue }]) => [address, index.toString(), accrue]);
   const startTree = generateMerkleTree(startTreeData);
 
-  const finishData = await readFile(`${folderPath}/${finishFile.timestamp}-${finishFile.blockNumber}-finish.json`, 'utf-8');
+  const finishData = await readFile(`${folderPath}/${finishTimestamp}-${finishBlockNumber}-finish.json`, 'utf-8');
   const finishFileData = JSON.parse(finishData) as IncentivizationCampaignData;
   const finishTreeData = Object.entries(finishFileData.data).map(([address, { index, accrue }]) => [address, index.toString(), accrue]);
   const finishTree = generateMerkleTree(finishTreeData);
 
-  console.log(`Latest start file: ${startFile.timestamp}-${startFile.blockNumber}-start.json`);
-  console.log(`Latest finish file: ${finishFile.timestamp}-${finishFile.blockNumber}-finish.json`);
+  console.log(`Latest start file: ${startTimestamp}-${startBlockNumber}-start.json`);
+  console.log(`Latest finish file: ${finishTimestamp}-${finishBlockNumber}-finish.json`);
   return { startTree, finishTree };
 };
 
@@ -338,7 +347,7 @@ export const multicall = async (multicallAddress: string, cometAddress: string, 
   const userAddressToAccrue: { [address: string]: string } = {};
 
   // Split user addresses into chunks of 1,000
-  const chunks = chunkArray(userAddresses, 500);
+  const chunks = chunkArray(userAddresses, 1000);
 
   // Process each chunk separately
   for (const chunk of chunks) {
