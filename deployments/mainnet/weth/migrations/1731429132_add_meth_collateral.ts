@@ -7,7 +7,7 @@ const METH_ADDRESS = '0xd5F7838F5C461fefF7FE49ea5ebaF7728bB0ADfa';
 const METH_EXCHANGE_RATE_PROVIDER_ADDRESS = '0xe3cBd06D7dadB3F4e6557bAb7EdD924CD1489E8f';
 let newPriceFeedAddress: string;
 
-export default migration('1726085857_add_meth_collateral', {
+export default migration('1731429132_add_meth_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
     const _mETHScalingPriceFeed = await deploymentManager.deploy(
       'mETH:priceFeed',
