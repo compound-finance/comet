@@ -15,7 +15,7 @@ contract METHExchangeRatePriceFeed is IPriceFeed {
     error BadDecimals();
 
     /// @notice Version of the price feed
-    uint public constant VERSION = 1;
+    uint internal constant VERSION = 1;
 
     /// @notice Description of the price feed
     string public description;
@@ -67,7 +67,6 @@ contract METHExchangeRatePriceFeed is IPriceFeed {
         uint256 updatedAt,
         uint80 answeredInRound
     ) {
-        // https://etherscan.io/address/0xe3cBd06D7dadB3F4e6557bAb7EdD924CD1489E8f#readProxyContract#F19
         // rate = 1 mETH in ETH
         uint256 rate = IRateProvider(underlyingPriceFeed).mETHToETH(1e18);
         // protocol uses only the answer value. Other data fields are not provided by the underlying pricefeed and are not used in Comet protocol
@@ -90,7 +89,7 @@ contract METHExchangeRatePriceFeed is IPriceFeed {
     }
 
     /**
-     * @notice Price for the latest round
+     * @notice Get the version of the price feed contract
      * @return The version of the price feed contract
      **/
     function version() external pure returns (uint256) {
