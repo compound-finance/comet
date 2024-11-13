@@ -6,7 +6,7 @@ import "../IPriceFeed.sol";
 
 /**
  * @title mETH Scaling price feed
- * @notice A custom price feed that scales up or down the price received from an underlying Renzo mETH / ETH exchange rate price feed and returns the result
+ * @notice A custom price feed that scales up or down the price received from an underlying Mantle mETH / ETH exchange rate price feed and returns the result
  * @author Compound
  */
 contract METHExchangeRatePriceFeed is IPriceFeed {
