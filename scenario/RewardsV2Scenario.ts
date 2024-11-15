@@ -15,6 +15,24 @@ import { TokenMultiplierStruct } from '../build/types/CometRewardsV2';
 import CometActor from './context/CometActor';
 import { StandardMerkleTree } from '@openzeppelin/merkle-tree';
 
+function generateTree(accountsPrepared: [string, string][]) {
+  // sort accounts by address (compare as bigints)
+  accountsPrepared.sort((a, b) => {
+    const addressA = BigInt(a[0]);
+    const addressB = BigInt(b[0]);
+    if (addressA < addressB) return -1;
+    if (addressA > addressB) return 1;
+    return 0;
+  });
+  // index all accounts
+  let accountsIndexed: [string, string, string][] = [];
+  for (let i = 0; i < accountsPrepared.length; i++) {
+    accountsIndexed.push([accountsPrepared[i][0], i.toString(), accountsPrepared[i][1],]);
+  }
+
+  return StandardMerkleTree.of(accountsIndexed, ['address', 'uint256', 'uint256']);
+}
+
 function calculateRewardsOwed(
   userBalance: bigint,
   totalBalance: bigint,
@@ -24,14 +42,15 @@ function calculateRewardsOwed(
   rewardTokenScale: bigint,
   rescaleFactor: bigint,
   startAccrued: bigint = 0n,
-  finishAccrued: bigint = 0n
+  finishAccrued: bigint = 0n,
+  shouldUpscale = true
 ): bigint {
   // accrued = (user balance / total balance) * (speed / trackingIndexScale) * time * reward token scale
   const accrued = userBalance * speed * BigInt(timeElapsed) * rewardTokenScale / totalBalance / trackingIndexScale;
 
   // truncate using rescaleFactor
   if(finishAccrued > 0n) {
-    return finishAccrued / rescaleFactor * rescaleFactor;
+    return shouldUpscale?((finishAccrued - startAccrued) * rescaleFactor): ((accrued - startAccrued) / rescaleFactor * rescaleFactor);
   }
   if(startAccrued <= accrued)
     return ((accrued - startAccrued) / rescaleFactor * rescaleFactor);
@@ -45,10 +64,9 @@ async function createNewCampaign(
   root: string,
   tokens: string[],
   duration: number,
-  withMultiplier: boolean,
   multipliers?: number[]
 ) : Promise<Numeric> {
-  if(withMultiplier) {
+  if(multipliers) {
     if(tokens.length !== multipliers.length) throw new Error('Arrays length mismatch');
     const assets: TokenMultiplierStruct[] = [];
 
@@ -85,21 +103,21 @@ async function createNewCampaign(
   }
 }
 
-async function getProof(address : string, tree: StandardMerkleTree<string[]>) {
+function getProof(address : string, tree: StandardMerkleTree<string[]>) {
   for (const [i, v] of tree.entries()) {
     if (v[0] === address) {
       const proof = tree.getProof(i);
       return { proof, v };
     }
   }
-  return undefined;
+  throw new Error('Address not found in tree');
 }
 
 function addressToBigInt(address: string): bigint {
   return BigInt(address.toLowerCase());
 }
 
-async function getProofsForNewUser(address: string, tree: StandardMerkleTree<string[]>) {
+function getProofsForNewUser(address: string, tree: StandardMerkleTree<string[]>) {
   const targetAddressBigInt = addressToBigInt(address);
   let previousAddress = ethers.constants.AddressZero;
   let previousAddressBigInt = addressToBigInt(previousAddress);
@@ -129,7 +147,7 @@ async function getProofsForNewUser(address: string, tree: StandardMerkleTree<str
         indexB: i,
         addressA: previousAddress,
         addressB: currentAddress,
-        accruedA: BigInt(v[2]),
+        accruedA: BigInt(tree.at(i - 1)[2]),
         accruedB: BigInt(tree.at(i)[2])
       };
     }
@@ -138,11 +156,29 @@ async function getProofsForNewUser(address: string, tree: StandardMerkleTree<str
     previousAddress = currentAddress;
     previousAddressBigInt = currentAddressBigInt;
   }
-
-  // If we reach here, the address was not found in the tree
-  return undefined;
+  throw new Error('No proof found');
 }
 
+// should find user who is NOT in start tree but is in finish tree
+function findNewUserWithFinishTree(
+  startTree: StandardMerkleTree<string[]>,
+  finishTree: StandardMerkleTree<string[]>
+) {
+  for (const [i, v] of finishTree.entries()) {
+    const address = v[0];
+    let found = false;
+    for (const [, u] of startTree.entries()) {
+      if (u[0] === address) {
+        found = true;
+        break;
+      }
+    }
+    if (!found && BigInt(v[2]) > 0n) {
+      return { address, index: i, accrued: BigInt(v[2]) };
+    }
+  }
+  throw new Error('No user found');
+}
 
 scenario.only(
   'Comet#rewardsV2 > can claim supply rewards for self as existing user in new campaign with no finish tree',
@@ -157,7 +193,7 @@ scenario.only(
   async ({ comet, rewardsV2, actors},  context, world) => {
     const { albert } = actors;
     const deploymentManager = world.deploymentManager;
-    const { startTree : startMerkleTree, finishTree : finishMerkleTree } = await getLatestStartAndFinishMerkleTreeForCampaign(
+    const { startTree : startMerkleTree } = await getLatestStartAndFinishMerkleTreeForCampaign(
       deploymentManager.network,
       deploymentManager.deployment,
       deploymentManager.hre
@@ -206,8 +242,7 @@ scenario.only(
       actors.admin.signer,
       root,
       [rewardTokens.rewardToken0.address, rewardTokens.rewardToken1.address],
-      90000, // 1 day + 1 hour
-      false
+      90000 // 1 day + 1 hour
     );
 
     const baseAssetAddress = await comet.baseToken();
@@ -266,7 +301,7 @@ scenario.only(
         finishIndex: userIndex,
         startAccrued: accrued.toString(),
         finishAccrued: accrued.toString(),
-        startMerkleProof: (await getProof(jay.address, startMerkleTree)).proof,
+        startMerkleProof: getProof(jay.address, startMerkleTree).proof,
         finishMerkleProof: []
       }
     )).wait();
@@ -342,7 +377,7 @@ scenario.only(
   async ({ comet, rewardsV2, actors},  context, world) => {
     const { albert } = actors;
     const deploymentManager = world.deploymentManager;
-    const { startTree : startMerkleTree, finishTree : finishMerkleTree } = await getLatestStartAndFinishMerkleTreeForCampaign(
+    const { startTree : startMerkleTree } = await getLatestStartAndFinishMerkleTreeForCampaign(
       deploymentManager.network,
       deploymentManager.deployment,
       deploymentManager.hre
@@ -365,8 +400,7 @@ scenario.only(
       actors.admin.signer,
       root,
       [rewardTokens.rewardToken0.address, rewardTokens.rewardToken1.address],
-      90000, // 1 day + 1 hour
-      false
+      90000 // 1 day + 1 hour
     );
 
     const baseAssetAddress = await comet.baseToken();
@@ -396,7 +430,7 @@ scenario.only(
       0,
       false
     );   
-    const { proofA, proofB, indexA, indexB, addressA, addressB, accruedA, accruedB } = await getProofsForNewUser(albert.address, startMerkleTree) || {};
+    const { proofA, proofB, indexA, indexB, addressA, addressB, accruedA, accruedB } = getProofsForNewUser(albert.address, startMerkleTree) || {};
 
     const txn = await (await rewardsV2.connect(albert.signer).claimForNewMember(
       comet.address,
@@ -485,6 +519,380 @@ scenario.only(
     return txn; // return txn to measure gas
   });
 
+scenario.only(
+  'Comet#rewardsV2 > can claim supply rewards for self as existing user in new campaign with finish tree',
+  {
+    filter: async (ctx) => await isRewardSupported(ctx),
+  },
+  async ({ comet, rewardsV2, actors},  context, world) => {
+    const deploymentManager = world.deploymentManager;
+    const { startTree : startMerkleTree, finishTree : finishMerkleTree } = await getLatestStartAndFinishMerkleTreeForCampaign(
+      deploymentManager.network,
+      deploymentManager.deployment,
+      deploymentManager.hre
+    );
+  
+    // impersonate someone from the tree with accrue > 10000
+    let addressToImpersonate: string;
+    let userIndexStart = 0n;
+    let accruedStart = 0n;
+
+    let userIndexFinish = 0n;
+    let accruedFinish = 0n;
+    for(let i = 0; i < startMerkleTree.length; i++) {
+      const [_addressStart, _indexStart, _accrueStart] = startMerkleTree.at(i);
+
+      if(+_accrueStart >= 10000) {
+        addressToImpersonate = _addressStart;
+        accruedStart = BigInt(+_accrueStart);
+        userIndexStart = BigInt(+_indexStart);
+
+        for (const [, v] of finishMerkleTree.entries()) {
+          if(v[0] === _addressStart && BigInt(v[2]) > accruedStart * 11n / 10n) {
+            accruedFinish = BigInt(v[2]);
+            userIndexFinish = BigInt(v[1]);
+            break;
+          }
+        }
+        if(accruedFinish > 0n) break;
+      }
+    }
+
+    await deploymentManager.hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [addressToImpersonate],
+    });
+    const signer = await deploymentManager.getSigner(addressToImpersonate);
+    // set balance
+    await deploymentManager.hre.ethers.provider.send('hardhat_setBalance', [
+      signer.address,
+      deploymentManager.hre.ethers.utils.hexStripZeros(deploymentManager.hre.ethers.utils.parseUnits('100', 'ether').toHexString()),
+    ]);
+  
+    const jay = new CometActor('jay', signer, signer.address, context);
+  
+    const FaucetTokenFactory = (await deploymentManager.hre.ethers.getContractFactory('FaucetToken')) as FaucetToken__factory;
+    
+    const rewardTokens = {
+      rewardToken0: await FaucetTokenFactory.deploy(exp(100_000, 18), 'RewardToken0', 18, 'RewardToken0'),
+      rewardToken1: await FaucetTokenFactory.deploy(exp(100_000, 6), 'RewardToken1', 6, 'RewardToken1')
+    };
+    const root = startMerkleTree.root;
+  
+    await rewardTokens.rewardToken0.transfer(rewardsV2.address, exp(100_000, 18));
+    await rewardTokens.rewardToken1.transfer(rewardsV2.address, exp(100_000, 6));
+
+    const newCampaignId = await createNewCampaign(
+      comet,
+      rewardsV2,
+      actors.admin.signer,
+      root,
+      [rewardTokens.rewardToken0.address, rewardTokens.rewardToken1.address],
+      60 // 1 minute
+    );
+
+    const tokensAndConfig = await rewardsV2.rewardConfig(comet.address, newCampaignId);
+
+    const tokens = tokensAndConfig[0];
+    const configs = tokensAndConfig[1];
+
+    const supplyTimestamp = await world.timestamp();
+    const jayBalance = await jay.getCometBaseBalance();
+    const totalSupplyBalance = (await comet.totalSupply()).toBigInt();
+    await world.increaseTime(60); // fast forward a day
+    await rewardsV2.connect(actors.admin.signer).setCampaignFinishRoot(comet.address, newCampaignId, finishMerkleTree.root);
+
+    const preTxnTimestamp = await world.timestamp();
+
+    await comet.connect(jay.signer).accrueAccount(jay.address);
+    const rewardsOwedBefore = await rewardsV2.callStatic.getRewardsOwedBatch(
+      comet.address,
+      newCampaignId,
+      jay.address,
+      accruedStart,
+      accruedFinish,
+      false
+    );
+    const txn = await (await rewardsV2.connect(jay.signer).claim(
+      comet.address,
+      newCampaignId,
+      jay.address,
+      false,
+      {
+        startIndex: userIndexStart,
+        finishIndex: userIndexFinish,
+        startAccrued: accruedStart.toString(),
+        finishAccrued: accruedFinish.toString(),
+        startMerkleProof: (await getProof(jay.address, startMerkleTree)).proof,
+        finishMerkleProof: (await getProof(jay.address, finishMerkleTree)).proof
+      }
+    )).wait();
+    const rewardsOwedAfter = await rewardsV2.callStatic.getRewardsOwedBatch(
+      comet.address,
+      newCampaignId,
+      jay.address,
+      accruedStart,
+      accruedFinish,
+      false
+    );
+    const postTxnTimestamp = await world.timestamp();
+    const timeElapsed = postTxnTimestamp - preTxnTimestamp;
+    const supplySpeed = (await comet.baseTrackingSupplySpeed()).toBigInt();
+    const trackingIndexScale = (await comet.trackingIndexScale()).toBigInt();
+    const timestampDelta = preTxnTimestamp - supplyTimestamp;
+    let expectedRewardsOwed = 0n;
+    let expectedRewardsReceived = 0n;
+
+    for(let i = 0; i < tokens.length - 1; i++) {
+      const rewardToken = new Contract(
+        tokens[i],
+        ERC20__factory.createInterface(),
+        world.deploymentManager.hre.ethers.provider
+      );
+      const rewardScale = exp(1, await rewardToken.decimals());
+
+      expectedRewardsOwed = calculateRewardsOwed(
+        jayBalance,
+        totalSupplyBalance,
+        supplySpeed,
+        timestampDelta + 1,
+        trackingIndexScale,
+        rewardScale,
+        configs[i].rescaleFactor.toBigInt(),
+        accruedStart,
+        accruedFinish
+      );
+      expectedRewardsReceived = calculateRewardsOwed(
+        jayBalance,
+        totalSupplyBalance,
+        supplySpeed,
+        timestampDelta + timeElapsed - 1,
+        trackingIndexScale,
+        rewardScale,
+        configs[i].rescaleFactor.toBigInt(),
+        accruedStart,
+        accruedFinish
+        
+      );
+      // Occasionally `timestampDelta` is equal to 61
+      expect(timestampDelta).to.be.greaterThanOrEqual(60);
+      expect(rewardsOwedBefore[i].owed.toBigInt()).to.be.equal(expectedRewardsOwed);
+      expect(await rewardToken.balanceOf(jay.address)).to.be.equal(rewardsOwedBefore[i].owed);
+      expect(await rewardToken.balanceOf(jay.address)).to.be.equal(expectedRewardsReceived);
+      expect(rewardsOwedAfter[i].owed.toBigInt()).to.be.equal(0n);
+    }
+    return txn; // return txn to measure gas
+  });
+
+scenario.only(
+  'Comet#rewardsV2 > can claim supply rewards for self as a new user in new campaign with finish tree',
+  {
+    filter: async (ctx) => await isRewardSupported(ctx),
+  }, 
+  async ({ comet, rewardsV2, actors},  context, world) => {
+    const deploymentManager = world.deploymentManager;
+    const { startTree : startMerkleTree, finishTree : finishMerkleTree } = await getLatestStartAndFinishMerkleTreeForCampaign(
+      deploymentManager.network,
+      deploymentManager.deployment,
+      deploymentManager.hre
+    );
+
+    const FaucetTokenFactory = (await deploymentManager.hre.ethers.getContractFactory('FaucetToken')) as FaucetToken__factory;
+    let addressToImpersonate: string, userIndex: number, accruedFinish: bigint, newStartMerkleTree: StandardMerkleTree<string[]>;
+    try{
+      const { address, index, accrued } = findNewUserWithFinishTree(startMerkleTree, finishMerkleTree);
+      addressToImpersonate = address;
+      userIndex = index;
+      accruedFinish = accrued;
+    }
+    catch(e) {
+      if(e.message === 'No user found') {
+        // create new tree without the user
+        for(let i = 0; i < startMerkleTree.length; i++) {
+          const [address, index, accrue] = finishMerkleTree.at(i);
+          if(+accrue >= 10000) {
+            addressToImpersonate = address;
+            accruedFinish = BigInt(+accrue);
+            userIndex = +index;
+            break;
+          }
+        }
+
+        const accountsPrepared: [string, string][] = [];
+
+        for (const [, v] of startMerkleTree.entries()) {
+          if(v[0].toLowerCase() !== addressToImpersonate.toLowerCase()) {
+            accountsPrepared.push([v[0], v[2]]);
+          }
+        }
+        newStartMerkleTree = generateTree(accountsPrepared);
+      }
+      else throw e;
+    }
+
+    await deploymentManager.hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [addressToImpersonate],
+    });
+    const signer = await deploymentManager.getSigner(addressToImpersonate);
+    // set balance
+    await deploymentManager.hre.ethers.provider.send('hardhat_setBalance', [
+      signer.address,
+      deploymentManager.hre.ethers.utils.hexStripZeros(deploymentManager.hre.ethers.utils.parseUnits('100', 'ether').toHexString()),
+    ]);
+
+    const jay = new CometActor('jay', signer, signer.address, context);
+
+    const rewardTokens = {
+      rewardToken0: await FaucetTokenFactory.deploy(exp(100_000, 18), 'RewardToken0', 18, 'RewardToken0'),
+      rewardToken1: await FaucetTokenFactory.deploy(exp(100_000, 6), 'RewardToken1', 6, 'RewardToken1')
+    };
+    const root = newStartMerkleTree? newStartMerkleTree.root : startMerkleTree.root;
+
+    await rewardTokens.rewardToken0.transfer(rewardsV2.address, exp(100_000, 18));
+    await rewardTokens.rewardToken1.transfer(rewardsV2.address, exp(100_000, 6));
+
+    const newCampaignId = await createNewCampaign(
+      comet,
+      rewardsV2,
+      actors.admin.signer,
+      root,
+      [rewardTokens.rewardToken0.address, rewardTokens.rewardToken1.address],
+      60 // 1 minute
+    );
+
+    const tokensAndConfig = await rewardsV2.rewardConfig(comet.address, newCampaignId);
+
+    const tokens = tokensAndConfig[0];
+    const configs = tokensAndConfig[1];
+
+    
+    const supplyTimestamp = await world.timestamp();
+    const jayBalance = await jay.getCometBaseBalance();
+    const totalSupplyBalance = (await comet.totalSupply()).toBigInt();
+    await world.increaseTime(60); // fast forward a day
+    await rewardsV2.connect(actors.admin.signer).setCampaignFinishRoot(comet.address, newCampaignId, finishMerkleTree.root);
+
+    const preTxnTimestamp = await world.timestamp();
+
+    await comet.connect(jay.signer).accrueAccount(jay.address);
+    const rewardsOwedBefore = await rewardsV2.callStatic.getRewardsOwedBatch(
+      comet.address,
+      newCampaignId,
+      jay.address,
+      0,
+      accruedFinish,
+      false
+    );   
+    const {
+      proofA,
+      proofB,
+      indexA,
+      indexB,
+      addressA,
+      addressB,
+      accruedA,
+      accruedB
+    } = getProofsForNewUser(jay.address, newStartMerkleTree? newStartMerkleTree : startMerkleTree) || {};
+
+    const finishProofDataA = getProof(addressA, finishMerkleTree);
+    const finishProofDataB = getProof(addressB, finishMerkleTree);
+
+    const finishIndexA = +finishProofDataA.v[1];
+    const finishIndexB = +finishProofDataB.v[1];
+
+    const finishProofA = finishProofDataA.proof;
+    const finishProofB = finishProofDataB.proof;
+
+    const finishAccruedA = BigInt(finishProofDataA.v[2]);
+    const finishAccruedB = BigInt(finishProofDataB.v[2]);
+
+    const txn = await (await rewardsV2.connect(jay.signer).claimForNewMember(
+      comet.address,
+      newCampaignId,
+      jay.address,
+      false,
+      [addressA, addressB],
+      [
+        {
+          startIndex: indexA,
+          finishIndex: finishIndexA,
+          startAccrued: accruedA,
+          finishAccrued: finishAccruedA,
+          startMerkleProof: proofA,
+          finishMerkleProof: finishProofA
+        },
+        {
+          startIndex: indexB,
+          finishIndex: finishIndexB,
+          startAccrued: accruedB,
+          finishAccrued: finishAccruedB,
+          startMerkleProof: proofB,
+          finishMerkleProof: finishProofB
+        }
+      ],
+      {
+        finishIndex: userIndex,
+        finishAccrued: accruedFinish,
+        finishMerkleProof: getProof(jay.address, finishMerkleTree).proof
+      }
+    )).wait();
+    const rewardsOwedAfter = await rewardsV2.callStatic.getRewardsOwedBatch(
+      comet.address,
+      newCampaignId,
+      jay.address,
+      0,
+      accruedFinish,
+      false
+    );
+    const postTxnTimestamp = await world.timestamp();
+    const timeElapsed = postTxnTimestamp - preTxnTimestamp;
+    const supplySpeed = (await comet.baseTrackingSupplySpeed()).toBigInt();
+    const trackingIndexScale = (await comet.trackingIndexScale()).toBigInt();
+    const timestampDelta = preTxnTimestamp - supplyTimestamp;
+    let expectedRewardsOwed = 0n;
+    let expectedRewardsReceived = 0n;
+
+    for(let i = 0; i < tokens.length - 1; i++) {
+      const rewardToken = new Contract(
+        tokens[i],
+        ERC20__factory.createInterface(),
+        world.deploymentManager.hre.ethers.provider
+      );
+      const rewardScale = exp(1, await rewardToken.decimals());
+
+      expectedRewardsOwed = calculateRewardsOwed(
+        jayBalance,
+        totalSupplyBalance,
+        supplySpeed,
+        timestampDelta + 1,
+        trackingIndexScale,
+        rewardScale,
+        configs[i].rescaleFactor.toBigInt(),
+        BigInt(0),
+        accruedFinish
+      );
+      expectedRewardsReceived = calculateRewardsOwed(
+        jayBalance,
+        totalSupplyBalance,
+        supplySpeed,
+        timestampDelta + timeElapsed - 1,
+        trackingIndexScale,
+        rewardScale,
+        configs[i].rescaleFactor.toBigInt(),
+        BigInt(0),
+        accruedFinish
+      );
+
+      // Occasionally `timestampDelta` is equal to 61
+      expect(timestampDelta).to.be.greaterThanOrEqual(60);
+      expect(rewardsOwedBefore[i].owed.toBigInt()).to.be.equal(expectedRewardsOwed);
+      expect(await rewardToken.balanceOf(jay.address)).to.be.equal(rewardsOwedBefore[i].owed);
+      expect(await rewardToken.balanceOf(jay.address)).to.be.equal(expectedRewardsReceived);
+      expect(rewardsOwedAfter[i].owed.toBigInt()).to.be.equal(0n);
+    }
+    return txn; // return txn to measure gas
+  });
 // scenario(
 //   'Comet#rewardsV2 > manager can claimTo supply rewards from a managed account',
 //   {

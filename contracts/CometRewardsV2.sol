@@ -300,13 +300,13 @@ contract CometRewardsV2 {
     /**
      * @notice Set finish root for a campaign
      * @param comet The protocol instance
-     * @param finishRoot The root of the Merkle tree for the finishAccrued
      * @param campaignId The id of the campaign
+     * @param finishRoot The root of the Merkle tree for the finishAccrued
      */
     function setCampaignFinishRoot(
         address comet,
-        bytes32 finishRoot,
-        uint256 campaignId
+        uint256 campaignId,
+        bytes32 finishRoot
     ) public {
         if(msg.sender != governor) revert NotPermitted(msg.sender);
         if(finishRoot == bytes32(0)) revert BadData();
@@ -711,6 +711,29 @@ contract CometRewardsV2 {
             assets[i] = $.assets;
             finishTimestamps[i] = $.finishTimestamp;
         }
+    }
+
+    /**
+     * @notice Returns true if the proof is valid
+     * @param root The root of the Merkle tree
+     * @param proofs The Merkle proofs
+     * @param account The account to check for
+     * @param index The index of the account
+     * @param accrued The accrued value for the account
+     * @return True if the proof is valid
+     */
+    function verifyProof(
+        bytes32 root,
+        bytes32[] calldata proofs,
+        address account,
+        uint256 index,
+        uint256 accrued
+    ) external pure returns(bool) {
+        return MerkleProof.verifyCalldata(
+            proofs,
+            root,
+            keccak256(bytes.concat(keccak256(abi.encode(account, index, accrued))))
+        );
     }
 
 

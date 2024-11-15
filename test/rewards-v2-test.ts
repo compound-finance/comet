@@ -639,7 +639,7 @@ describe('CometRewardsV2', () => {
       const finishTime = (await rewardsV2.campaigns(comet.address, 0)).finishTimestamp;
       await fastForward(finishTime.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
       await ethers.provider.send('evm_mine', []);
-      await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
+      await rewardsV2.setCampaignFinishRoot(comet.address, 0, finishTree.root);
 
 
       const result = await rewardsV2.callStatic.getRewardsOwedBatch(
@@ -2244,8 +2244,8 @@ describe('CometRewardsV2', () => {
 
       await expect(rewardsV2.connect(alice).setCampaignFinishRoot(
         comet.address,
-        ethers.constants.HashZero,
-        0
+        0,
+        ethers.constants.HashZero
       )).to.be.revertedWithCustomError(rewardsV2, 'NotPermitted').withArgs(alice.address);
 
       await expect(rewardsV2.connect(alice).withdrawToken(
@@ -3354,7 +3354,7 @@ describe('CometRewardsV2', () => {
       const finishTime = (await rewardsV2.campaigns(comet.address, 0)).finishTimestamp;
       await fastForward(finishTime.sub((await ethers.provider.getBlock('latest')).timestamp).toNumber() + 1);
       await ethers.provider.send('evm_mine', []);
-      await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
+      await rewardsV2.setCampaignFinishRoot(comet.address, 0, finishTree.root, );
 
       const balanceBeforeCOMP = await COMP.balanceOf(alice.address);
       const balanceBeforeUSDC = await USDC.balanceOf(alice.address);
@@ -3461,7 +3461,7 @@ describe('CometRewardsV2', () => {
       const finishTime = (await rewardsV2.campaigns(comet.address, 0)).finishTimestamp;
       await fastForward(finishTime.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
       await ethers.provider.send('evm_mine', []);
-      await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
+      await rewardsV2.setCampaignFinishRoot(comet.address, 0, finishTree.root);
 
       const balanceBeforeCOMP = await COMP.balanceOf(alice.address);
       const balanceBeforeUSDC = await USDC.balanceOf(alice.address);
@@ -3585,7 +3585,7 @@ describe('CometRewardsV2', () => {
       const finishTime = (await rewardsV2.campaigns(comet.address, 0)).finishTimestamp;
       await fastForward(finishTime.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
       await ethers.provider.send('evm_mine', []);
-      await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
+      await rewardsV2.setCampaignFinishRoot(comet.address, 0, finishTree.root);
 
       const balanceBeforeCOMP = await COMP.balanceOf(derek.address);
       const balanceBeforeUSDC = await USDC.balanceOf(derek.address);
@@ -3703,7 +3703,7 @@ describe('CometRewardsV2', () => {
       const finishTime = (await rewardsV2.campaigns(comet.address, 0)).finishTimestamp;
       await fastForward(finishTime.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
       await ethers.provider.send('evm_mine', []);
-      await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
+      await rewardsV2.setCampaignFinishRoot(comet.address, 0, finishTree.root);
 
       const balanceBeforeCOMP = await COMP.balanceOf(alice.address);
       const balanceBeforeUSDC = await USDC.balanceOf(alice.address);
@@ -3828,7 +3828,7 @@ describe('CometRewardsV2', () => {
       const finishTime = (await rewardsV2.campaigns(comet.address, 0)).finishTimestamp;
       await fastForward(finishTime.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
       await ethers.provider.send('evm_mine', []);
-      await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
+      await rewardsV2.setCampaignFinishRoot(comet.address, 0, finishTree.root);
 
 
       await expect(
@@ -3907,7 +3907,7 @@ describe('CometRewardsV2', () => {
       const finishTime = (await rewardsV2.campaigns(comet.address, 0)).finishTimestamp;
       await fastForward(finishTime.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
       await ethers.provider.send('evm_mine', []);
-      await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
+      await rewardsV2.setCampaignFinishRoot(comet.address, 0, finishTree.root);
 
       await expect(
         rewardsV2.claimForNewMember(
@@ -4419,8 +4419,8 @@ describe('CometRewardsV2', () => {
       const finishTime2 = (await rewardsV2.campaigns(comet.address, 1)).finishTimestamp;
       await fastForward(finishTime2.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
       await ethers.provider.send('evm_mine', []);
-      await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
-      await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 1);
+      await rewardsV2.setCampaignFinishRoot(comet.address, 0, finishTree.root);
+      await rewardsV2.setCampaignFinishRoot(comet.address, 1, finishTree.root);
 
       const balanceBeforeCOMP = await COMP.balanceOf(alice.address);
       const balanceBeforeUSDC = await USDC.balanceOf(alice.address);
@@ -4565,8 +4565,8 @@ describe('CometRewardsV2', () => {
       const finishTime2 = (await rewardsV2.campaigns(comet.address, 1)).finishTimestamp;
       await fastForward(finishTime2.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
       await ethers.provider.send('evm_mine', []);
-      await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
-      await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 1);
+      await rewardsV2.setCampaignFinishRoot(comet.address, 0, finishTree.root);
+      await rewardsV2.setCampaignFinishRoot(comet.address, 1, finishTree.root);
 
       const balanceBeforeCOMP = await COMP.balanceOf(bob.address);
       const balanceBeforeUSDC = await USDC.balanceOf(bob.address);
@@ -4745,8 +4745,8 @@ describe('CometRewardsV2', () => {
       const finishTime2 = (await rewardsV2.campaigns(comet.address, 1)).finishTimestamp;
       await fastForward(finishTime2.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
       await ethers.provider.send('evm_mine', []);
-      await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
-      await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 1);
+      await rewardsV2.setCampaignFinishRoot(comet.address, 0, finishTree.root);
+      await rewardsV2.setCampaignFinishRoot(comet.address, 1, finishTree.root);
       await comet.connect(bob).allow(derek.address, true);
 
       const balanceBeforeCOMP = await COMP.balanceOf(derek.address);
@@ -4928,8 +4928,8 @@ describe('CometRewardsV2', () => {
       const finishTime2 = (await rewardsV2.campaigns(comet.address, 1)).finishTimestamp;
       await fastForward(finishTime2.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
       await ethers.provider.send('evm_mine', []);
-      await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
-      await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 1);
+      await rewardsV2.setCampaignFinishRoot(comet.address, 0, finishTree.root);
+      await rewardsV2.setCampaignFinishRoot(comet.address, 1, finishTree.root);
       await comet.connect(alice).allow(bob.address, true);
 
       const balanceBeforeCOMP = await COMP.balanceOf(bob.address);
@@ -5069,7 +5069,7 @@ describe('CometRewardsV2', () => {
       const finishTime = (await rewardsV2.campaigns(comet.address, 0)).finishTimestamp;
       await fastForward(finishTime.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
       await ethers.provider.send('evm_mine', []);
-      await rewardsV2.setCampaignFinishRoot(comet.address, finishTree.root, 0);
+      await rewardsV2.setCampaignFinishRoot(comet.address, 0, finishTree.root);
 
       await expect(rewardsV2.claimBatch(
         comet.address,
@@ -5207,7 +5207,11 @@ describe('CometRewardsV2', () => {
         accountsPrepared: [[alice.address, '100'], [bob.address, '200']]
       });
 
-      await expect(rewardsV2.setCampaignFinishRoot(comet.address, ethers.constants.HashZero, 0)).to.be.revertedWithCustomError(rewardsV2, 'BadData');
+      await expect(rewardsV2.setCampaignFinishRoot(
+        comet.address,
+        0,
+        ethers.constants.HashZero
+      )).to.be.revertedWithCustomError(rewardsV2, 'BadData');
     });
 
     it('should fail transferring governance to zero address', async () => {
