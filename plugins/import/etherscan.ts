@@ -23,6 +23,7 @@ export function getEtherscanApiUrl(network: string): string {
     'base-goerli': 'api-goerli.basescan.org',
     'linea-goerli': 'api-goerli.lineascan.build',
     optimism: 'api-optimistic.etherscan.io',
+    mantle: 'api.mantlescan.xyz',
     'scroll-goerli': 'alpha-blockscout.scroll.io',
     scroll: 'api.scrollscan.com'
   }[network];
@@ -51,6 +52,7 @@ export function getEtherscanUrl(network: string): string {
     'base-goerli': 'goerli.basescan.org',
     'linea-goerli': 'goerli.lineascan.build',
     optimism: 'optimistic.etherscan.io',
+    mantle: 'mantlescan.xyz',
     'scroll-goerli': 'alpha-blockscout.scroll.io',
     scroll: 'scrollscan.com'
   }[network];
@@ -79,6 +81,7 @@ export function getEtherscanApiKey(network: string): string {
     'base-goerli': process.env.BASESCAN_KEY,
     'linea-goerli': process.env.LINEASCAN_KEY,
     optimism: process.env.OPTIMISMSCAN_KEY,
+    mantle: process.env.MANTLESCAN_KEY,
     'scroll-goerli': process.env.ETHERSCAN_KEY,
     scroll: process.env.ETHERSCAN_KEY
   }[network];
