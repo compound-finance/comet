@@ -63,6 +63,7 @@ const {
   LINEASCAN_KEY,
   OPTIMISMSCAN_KEY,
   INFURA_KEY,
+  ANKR_KEY,
   QUICKNODE_KEY,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
@@ -119,7 +120,7 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'optimism',
     chainId: 10,
-    url: `https://optimism-mainnet.infura.io/v3/${INFURA_KEY}`,
+    url: `https://rpc.ankr.com/optimism/${ANKR_KEY}`,
   },
   {
     network: 'base',

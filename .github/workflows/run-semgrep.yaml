@@ -17,6 +17,7 @@ jobs:
       ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
       SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
+      ANKR_KEY: ${{ secrets.ANKR_KEY }}
       POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
       OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
     container:
