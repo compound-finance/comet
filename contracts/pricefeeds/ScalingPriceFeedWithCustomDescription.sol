@@ -9,7 +9,7 @@ import "../IPriceFeed.sol";
  * @notice A custom price feed that scales up or down the price received from an underlying price feed and returns the result
  * @author Compound
  */
-contract ScalingPriceFeed is IPriceFeed {
+contract ScalingPriceFeedWithCustomDescription is IPriceFeed {
     /** Custom errors **/
     error InvalidInt256();
 
@@ -36,10 +36,10 @@ contract ScalingPriceFeed is IPriceFeed {
      * @param underlyingPriceFeed_ The address of the underlying price feed to fetch prices from
      * @param decimals_ The number of decimals for the returned prices
      **/
-    constructor(address underlyingPriceFeed_, uint8 decimals_) {
+    constructor(address underlyingPriceFeed_, uint8 decimals_, string memory description_) {
         underlyingPriceFeed = underlyingPriceFeed_;
         decimals = decimals_;
-        description = AggregatorV3Interface(underlyingPriceFeed_).description();
+        description = description_;
 
         uint8 underlyingPriceFeedDecimals = AggregatorV3Interface(underlyingPriceFeed_).decimals();
         // Note: Solidity does not allow setting immutables in if/else statements
