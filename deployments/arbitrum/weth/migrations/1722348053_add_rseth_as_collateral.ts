@@ -144,7 +144,7 @@ export default migration('1722348053_add_rseth_as_collateral', {
   },
 
   async enacted(): Promise<boolean> {
-    return false;
+    return true;
   }, 
 
   async verify(deploymentManager: DeploymentManager) {
