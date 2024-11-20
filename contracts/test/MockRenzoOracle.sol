@@ -8,7 +8,7 @@ import "../vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface
  * @notice Mock oracle to test the scaling price feed with updated update time
  * @author Compound
  */
-contract MockOracle {
+contract MockRenzoOracle {
 
     /// @notice Number of decimals for returned prices
     uint8 public immutable decimals;

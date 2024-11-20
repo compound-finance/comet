@@ -260,7 +260,7 @@ task('deploy_and_migrate', 'Runs deploy and migration')
       );
 
       if (noDeploy) {
-      // Don't run the deploy script
+        // Don't run the deploy script
       } else {
         try {
           const overrides = undefined; // TODO: pass through cli args
@@ -275,7 +275,7 @@ task('deploy_and_migrate', 'Runs deploy and migration')
       const verify = noVerify ? false : !simulate;
       const desc = verify ? 'Verify' : 'Would verify';
       if (noVerify && simulate) {
-      // Don't even print if --no-verify is set with --simulate
+        // Don't even print if --no-verify is set with --simulate
       } else {
         await dm.verifyContracts(async (address, args) => {
           if (args.via === 'buildfile') {
@@ -288,9 +288,9 @@ task('deploy_and_migrate', 'Runs deploy and migration')
         });
 
         if (noVerifyImpl) {
-        // Don't even try if --no-verify-impl
+          // Don't even try if --no-verify-impl
         } else {
-        // Maybe verify the comet impl too
+          // Maybe verify the comet impl too
           const comet = await dm.contract('comet');
           const cometImpl = await dm.contract('comet:implementation');
           const configurator = await dm.contract('configurator');
