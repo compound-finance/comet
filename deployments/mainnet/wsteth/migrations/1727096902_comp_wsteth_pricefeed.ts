@@ -22,7 +22,7 @@ export default migration('1727096902_comp_wsteth_pricefeed', {
   async enact() {},
 
   async enacted(): Promise<boolean> {
-    return false;
+    return true;
   },
 
   async verify() {}
