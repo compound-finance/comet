@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -30,6 +30,7 @@ jobs:
           ARBISCAN_KEY: ${{ secrets.ARBISCAN_KEY }}
           LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
           OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
+          MANTLESCAN_KEY: ${{ secrets.MANTLESCAN_KEY }}
 
       - name: Build Comet with older solc versions
         run: |

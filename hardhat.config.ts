@@ -27,6 +27,7 @@ import mainnetRelationConfigMap from './deployments/mainnet/usdc/relations';
 import mainnetWethRelationConfigMap from './deployments/mainnet/weth/relations';
 import mainnetUsdtRelationConfigMap from './deployments/mainnet/usdt/relations';
 import mainnetWstETHRelationConfigMap from './deployments/mainnet/wsteth/relations';
+import mainnetUsdsRelationConfigMap from './deployments/mainnet/usds/relations';
 import polygonRelationConfigMap from './deployments/polygon/usdc/relations';
 import polygonUsdtRelationConfigMap from './deployments/polygon/usdt/relations';
 import arbitrumBridgedUsdcRelationConfigMap from './deployments/arbitrum/usdc.e/relations';
@@ -38,12 +39,14 @@ import arbitrumUsdtRelationConfigMap from './deployments/arbitrum/usdt/relations
 import baseUsdbcRelationConfigMap from './deployments/base/usdbc/relations';
 import baseWethRelationConfigMap from './deployments/base/weth/relations';
 import baseUsdcRelationConfigMap from './deployments/base/usdc/relations';
+import baseAeroRelationConfigMap from './deployments/base/aero/relations';
 import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relations';
 import baseGoerliWethRelationConfigMap from './deployments/base-goerli/weth/relations';
 import lineaGoerliRelationConfigMap from './deployments/linea-goerli/usdc/relations';
 import optimismRelationConfigMap from './deployments/optimism/usdc/relations';
 import optimismUsdtRelationConfigMap from './deployments/optimism/usdt/relations';
 import optimismWethRelationConfigMap from './deployments/optimism/weth/relations';
+import mantleRelationConfigMap from './deployments/mantle/usde/relations';
 import scrollGoerliRelationConfigMap from './deployments/scroll-goerli/usdc/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
 
@@ -62,6 +65,7 @@ const {
   BASESCAN_KEY,
   LINEASCAN_KEY,
   OPTIMISMSCAN_KEY,
+  MANTLESCAN_KEY,
   INFURA_KEY,
   QUICKNODE_KEY,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
@@ -72,7 +76,7 @@ const {
   REMOTE_ACCOUNTS = ''
 } = process.env;
 
-function *deriveAccounts(pk: string, n: number = 10) {
+function* deriveAccounts(pk: string, n: number = 10) {
   for (let i = 0; i < n; i++)
     yield (BigInt('0x' + pk) + BigInt(i)).toString(16);
 }
@@ -93,7 +97,8 @@ export function requireEnv(varName, msg?: string): string {
   'POLYGONSCAN_KEY',
   'ARBISCAN_KEY',
   'LINEASCAN_KEY',
-  'OPTIMISMSCAN_KEY'
+  'OPTIMISMSCAN_KEY',
+  'MANTLESCAN_KEY',
 ].map((v) => requireEnv(v));
 
 // Networks
@@ -120,6 +125,14 @@ const networkConfigs: NetworkConfig[] = [
     network: 'optimism',
     chainId: 10,
     url: `https://optimism-mainnet.infura.io/v3/${INFURA_KEY}`,
+  },
+  {
+    network: 'mantle',
+    chainId: 5000,
+    // link for scenarios
+    url: `https://mantle-mainnet.infura.io/v3/${INFURA_KEY}`,
+    // link for deployment
+    // url: `https://rpc.mantle.xyz`,
   },
   {
     network: 'base',
@@ -188,7 +201,7 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
         getDefaultProviderURL(netConfig.network),
       gas: netConfig.gas || 'auto',
       gasPrice: netConfig.gasPrice || 'auto',
-      accounts: REMOTE_ACCOUNTS ? 'remote' : ( ETH_PK ? [...deriveAccounts(ETH_PK)] : { mnemonic: MNEMONIC } ),
+      accounts: REMOTE_ACCOUNTS ? 'remote' : (ETH_PK ? [...deriveAccounts(ETH_PK)] : { mnemonic: MNEMONIC }),
     };
   }
 }
@@ -261,8 +274,10 @@ const config: HardhatUserConfig = {
       'base-goerli': BASESCAN_KEY,
       // Linea
       'linea-goerli': LINEASCAN_KEY,
-      optimism: OPTIMISMSCAN_KEY,
+      // optimism: OPTIMISMSCAN_KEY,
       optimisticEthereum: OPTIMISMSCAN_KEY,
+      // Mantle
+      mantle: MANTLESCAN_KEY,
       // Scroll Testnet
       'scroll-goerli': ETHERSCAN_KEY,
       // Scroll
@@ -328,6 +343,19 @@ const config: HardhatUserConfig = {
           apiURL: 'https://api.scrollscan.com/api',
           browserURL: 'https://scrollscan.com/'
         }
+      },
+      {
+        network: 'mantle',
+        chainId: 5000,
+        urls: {
+          // apiURL: 'https://rpc.mantle.xyz',
+          // links for scenarios
+          apiURL: 'https://explorer.mantle.xyz/api',
+          browserURL: 'https://explorer.mantle.xyz/'
+          // links for deployment
+          // apiURL: 'https://api.mantlescan.xyz/api',
+          // browserURL: 'https://mantlescan.xyz/'
+        }
       }
     ]
   },
@@ -355,7 +383,8 @@ const config: HardhatUserConfig = {
         usdc: mainnetRelationConfigMap,
         weth: mainnetWethRelationConfigMap,
         usdt: mainnetUsdtRelationConfigMap,
-        wsteth: mainnetWstETHRelationConfigMap
+        wsteth: mainnetWstETHRelationConfigMap,
+        usds: mainnetUsdsRelationConfigMap,
       },
       polygon: {
         usdc: polygonRelationConfigMap,
@@ -374,7 +403,8 @@ const config: HardhatUserConfig = {
       'base': {
         usdbc: baseUsdbcRelationConfigMap,
         weth: baseWethRelationConfigMap,
-        usdc: baseUsdcRelationConfigMap
+        usdc: baseUsdcRelationConfigMap,
+        aero: baseAeroRelationConfigMap
       },
       'base-goerli': {
         usdc: baseGoerliRelationConfigMap,
@@ -387,6 +417,9 @@ const config: HardhatUserConfig = {
         usdc: optimismRelationConfigMap,
         usdt: optimismUsdtRelationConfigMap,
         weth: optimismWethRelationConfigMap
+      },
+      'mantle': {
+        'usde': mantleRelationConfigMap
       },
       'scroll-goerli': {
         usdc: scrollGoerliRelationConfigMap
@@ -419,6 +452,11 @@ const config: HardhatUserConfig = {
         name: 'mainnet-wsteth',
         network: 'mainnet',
         deployment: 'wsteth'
+      },
+      {
+        name: 'mainnet-usds',
+        network: 'mainnet',
+        deployment: 'usds'
       },
       {
         name: 'development',
@@ -523,6 +561,12 @@ const config: HardhatUserConfig = {
         auxiliaryBase: 'mainnet'
       },
       {
+        name: 'base-aero',
+        network: 'base',
+        deployment: 'aero',
+        auxiliaryBase: 'mainnet'
+      },
+      {
         name: 'base-goerli',
         network: 'base-goerli',
         deployment: 'usdc',
@@ -556,6 +600,12 @@ const config: HardhatUserConfig = {
         name: 'optimism-weth',
         network: 'optimism',
         deployment: 'weth',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'mantle-usde',
+        network: 'mantle',
+        deployment: 'usde',
         auxiliaryBase: 'mainnet'
       },
       {
