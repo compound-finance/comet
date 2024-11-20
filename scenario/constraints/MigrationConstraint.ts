@@ -1,7 +1,7 @@
 import { StaticConstraint, Solution, World, debug } from '../../plugins/scenario';
 import { CometContext, MigrationData } from '../context/CometContext';
 import { Migration, loadMigrations, Actions } from '../../plugins/deployment_manager/Migration';
-import { modifiedPaths } from '../utils';
+import { modifiedPaths, subsets } from '../utils';
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import { exp } from '../../test/helpers';
@@ -22,17 +22,7 @@ export class MigrationConstraint<T extends CometContext> implements StaticConstr
   async solve(world: World) {
     const label = `[${world.base.name}] {MigrationConstraint}`;
     const solutions: Solution<T>[] = [];
-    const migrations = await getMigrations(world);
-    
-    // remove enacted migrations
-    for(let i = 0; i < migrations.length; i++) {
-      if (await isEnacted(migrations[i].actions, world.deploymentManager, world.deploymentManager)) {
-        migrations.splice(i, 1);
-        i--;
-      }
-    }
-
-    const migrationPaths = [migrations];
+    const migrationPaths = [...subsets(await getMigrations(world))];
 
     for (const migrationList of migrationPaths) {
       if (migrationList.length == 0 && migrationPaths.length > 1) {
