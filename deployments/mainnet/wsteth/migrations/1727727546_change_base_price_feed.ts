@@ -51,7 +51,7 @@ export default migration('1727727546_change_base_price_feed', {
   },
 
   async enacted(): Promise<boolean> {
-    return false;
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {
