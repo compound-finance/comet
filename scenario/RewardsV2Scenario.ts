@@ -4,7 +4,7 @@ import { ethers, exp, Numeric } from '../test/helpers';
 import { isRewardSupported, matchesDeployment } from './utils';
 import { Contract, ContractReceipt, Signer } from 'ethers';
 import { ERC20__factory } from '../build/types';
-import {World} from '../plugins/scenario';
+import { World } from '../plugins/scenario';
 import { getLatestStartAndFinishMerkleTreeForCampaign } from '../scripts/rewards_v2/utils';
 import { getConfigForScenario } from './utils/scenarioHelper';
 import {

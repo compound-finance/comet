@@ -217,11 +217,11 @@ export const generateMerkleTreeForCampaign = async (
     .sort((a, b) => a[0].localeCompare(b[0])) // Sort by address (key) in ascending order
     .map(([address, accrued], index) => [address, index.toString(), accrued]);
 
-  const merklTree = generateMerkleTree(sortedDataWithIndexes);
+  const merkleTree = generateMerkleTree(sortedDataWithIndexes);
 
   const file = createCampaignFile(
     sortedDataWithIndexes,
-    merklTree,
+    merkleTree,
     { network, market: deployment, blockNumber, generatedTimestamp, type }
   );
 
@@ -235,7 +235,7 @@ export const generateMerkleTreeForCampaign = async (
   await writeFile(filePath, JSON.stringify(file, null, 2), 'utf-8');
 
   console.log('Merkle tree successfully generated');
-  return merklTree;
+  return merkleTree;
 };
 
 export const getContractDeploymentData = async (network: string, address: string): Promise<{ blockNumber: number, hash: string }> => {
@@ -292,7 +292,7 @@ export const generateMerkleTree = (data: string[][]) => {
   ]);
 };
 
-export const getMerklTreeProof = (address: string, tree: StandardMerkleTree<string[]>) => {
+export const getMerkleTreeProof = (address: string, tree: StandardMerkleTree<string[]>) => {
   for (const [i, v] of tree.entries()) {
     if (v[0] === address) {
       const proof = tree.getProof(i);
@@ -397,7 +397,7 @@ export const createCampaignFile = (data: string[][], tree: StandardMerkleTree<st
 
   data.forEach(d => payload[d[0]] = {
     index: +d[1],
-    proof: getMerklTreeProof(d[0], tree),
+    proof: getMerkleTreeProof(d[0], tree),
     accrue: d[2]
   });
 
