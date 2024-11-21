@@ -19,6 +19,7 @@ import { getEtherscanUrl } from '../../plugins/import/etherscan';
 import { multicallAddresses } from './constants';
 import { CampaignType } from './types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { ethers } from 'ethers';
 
 interface FileData {
   timestamp: number;
@@ -421,4 +422,31 @@ export const getAllTransferEvents = async (comet: CometInterface, startBlock: nu
   }
 
   return allEvents;
+};
+
+export const calculateMultiplier = async (totalSpeed: bigint, duration: number, amount: bigint) => {
+  // to distribute exactly the amount of rewards in the given duration
+  //    we need to adjust the speed with the multiplier
+  
+  // amount = totalSpeed * multiplier * duration
+  // multiplier = amount / (totalSpeed * duration)
+  const multiplier = BigNumber.from(amount * BigInt(1e15) * BigInt(1e18)).div((totalSpeed * BigInt(duration)));
+  
+  console.log(`\n=========================================`);
+  console.log(`Amount to of tokens distribute:   ${amount}`);
+  console.log(`Duration in seconds:              ${duration}`);
+  console.log(`=========================================`);
+
+  console.log(`\n=========================================`);
+  console.log(`Total speed per day:              ${ethers.utils.formatUnits(totalSpeed * BigInt(86400), 15)}`);
+  console.log(`Basic rewards for given duration: ${ethers.utils.formatUnits(totalSpeed * BigInt(duration), 15)}`);
+  console.log(`Formula for multiplier:           amount / (totalSpeed * duration)`);
+  console.log(`=========================================`);
+
+  console.log(`\n=========================================`);
+  console.log(`Multiplier %:                     ${ethers.utils.formatUnits(multiplier.mul(100), 18).toString()}`);
+  console.log(`Multiplier with decimals:         ${multiplier.toString()}`);
+  console.log(`=========================================\n`);
+
+  return multiplier;
 };
