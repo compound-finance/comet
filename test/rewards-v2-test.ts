@@ -658,6 +658,92 @@ describe('CometRewardsV2', () => {
       expect(result[1].owed).to.be.equal(amountUSDC);
     });
 
+    it('can calculate rewards for all tokens in campaign without finish set for new user', async () => {
+      const {
+        comet,
+        governor,
+        tokens: { USDC, COMP },
+        users: [alice, bob, charlie],
+      } = await makeProtocol({
+        baseMinForRewards: 10e6,
+      });
+      const { rewardsV2, rewards } = await makeRewardsV2({
+        governor: governor,
+        configs: [[comet, COMP]],
+      },
+      {
+        governor: governor,
+        configs: [
+          [comet, [COMP, USDC], [exp(1, 18), exp(1, 18)]]
+        ],
+        accountsPrepared: [[alice.address, '100'], [bob.address, '200']],
+        duration: 86600
+      },
+      );
+
+      // allocate and approve transfers
+      await COMP.allocateTo(rewards.address, exp(86500, 18));
+      await USDC.allocateTo(alice.address, 10e6);
+      await USDC.connect(alice).approve(comet.address, 10e6);
+      await comet.connect(alice).supply(USDC.address, 10e6);
+      
+      await USDC.allocateTo(charlie.address, 10e6);
+      await USDC.connect(charlie).approve(comet.address, 10e6);
+      await comet.connect(charlie).supply(USDC.address, 10e6);
+      await fastForward(86400);
+      expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
+      const txn = await wait(await rewards.claim(comet.address, alice.address, true));
+
+      expect(await COMP.balanceOf(alice.address)).to.be.equal(exp(43203, 18));
+
+      // Note: First event is an ERC20 Transfer event
+
+      expect(event(txn, 1)).to.be.deep.equal({
+        RewardClaimed: {
+          src: alice.address,
+          recipient: alice.address,
+          token: COMP.address,
+          amount: exp(43203, 18),
+        },
+      });
+
+      const finishTime = (await rewardsV2.campaigns(comet.address, 0)).finishTimestamp;
+      await fastForward(finishTime.sub((await ethers.provider.getBlock('latest')).timestamp + 1).toNumber());
+      await ethers.provider.send('evm_mine', []);
+
+
+      const result = await rewardsV2.callStatic.getRewardsOwedBatch(
+        comet.address,
+        0,
+        charlie.address,
+        0,
+        0,
+        true
+      );
+
+      expect(result[0].owed).to.be.greaterThan(0);
+      expect(result[1].owed).to.be.greaterThan(0);
+
+      expect((await rewardsV2.callStatic.getRewardsOwed(
+        comet.address,
+        0,
+        COMP.address,
+        charlie.address,
+        0,
+        0,
+        true
+      )).owed).to.be.equal(result[0].owed);
+      expect((await rewardsV2.callStatic.getRewardsOwed(
+        comet.address,
+        0,
+        USDC.address,
+        charlie.address,
+        0,
+        0,
+        true
+      )).owed).to.be.equal(result[1].owed);
+    });
+
     it('should fail if proof is invalid', async () => {
       const {
         comet,
@@ -5134,6 +5220,64 @@ describe('CometRewardsV2', () => {
         }], 604800)).to.be.revertedWithCustomError(rewardsV2, 'BadData');
     });
 
+    it('should fail creating campaign without assets', async () => {
+      const {
+        comet,
+        governor,
+        tokens: { USDC, COMP },
+        users: [alice, bob],
+      } = await makeProtocol({
+        baseMinForRewards: 10e6,
+      });
+      const { rewardsV2} = await makeRewardsV2({
+        governor: governor,
+        configs: [[comet, COMP]],
+      },
+      {
+        governor: governor,
+        configs: [
+          [comet, [COMP, USDC], [exp(1, 18), exp(1, 18)]],
+          [comet, [COMP, USDC], [exp(1, 18), exp(1, 18)]]
+        ],
+        accountsPrepared: [[alice.address, '100'], [bob.address, '200']]
+      }
+      );
+
+      await expect(rewardsV2.setNewCampaignWithCustomTokenMultiplier(comet.address, ethers.utils.keccak256('0x12'), 
+        [], 604800)).to.be.revertedWithCustomError(rewardsV2, 'BadData');
+    });
+
+    it('should fail creating campaign with multiplier == 0', async () => {
+      const {
+        comet,
+        governor,
+        tokens: { USDC, COMP },
+        users: [alice, bob],
+      } = await makeProtocol({
+        baseMinForRewards: 10e6,
+      });
+      const { rewardsV2} = await makeRewardsV2({
+        governor: governor,
+        configs: [[comet, COMP]],
+      },
+      {
+        governor: governor,
+        configs: [
+          [comet, [COMP, USDC], [exp(1, 18), exp(1, 18)]],
+          [comet, [COMP, USDC], [exp(1, 18), exp(1, 18)]]
+        ],
+        accountsPrepared: [[alice.address, '100'], [bob.address, '200']]
+      }
+      );
+
+      await expect(rewardsV2.setNewCampaignWithCustomTokenMultiplier(comet.address, ethers.utils.keccak256('0x12'), 
+        [{
+          token: COMP.address,
+          multiplier: 0
+        }], 604800)).to.be.revertedWithCustomError(rewardsV2, 'BadData');
+    });
+
+
     it('should fail setting rewards with different array length mismatch', async () => {
       const {
         comet,
@@ -5211,6 +5355,40 @@ describe('CometRewardsV2', () => {
         comet.address,
         0,
         ethers.constants.HashZero
+      )).to.be.revertedWithCustomError(rewardsV2, 'BadData');
+    });
+
+    it('should fail setting campaign finish root for non-existent campaign', async () => {
+      const {
+        comet,
+        governor,
+        tokens: { USDC, COMP },
+        users: [alice, bob],
+      } = await makeProtocol({
+        baseMinForRewards: 10e6,
+      });
+      const { rewardsV2} = await makeRewardsV2({
+        governor: governor,
+        configs: [[comet, COMP]],
+      },
+      {
+        governor: governor,
+        configs: [
+          [comet, [COMP, USDC], [exp(1, 18), exp(1, 18)]]
+        ],
+        accountsPrepared: [[alice.address, '100'], [bob.address, '200']]
+      });
+
+      await expect(rewardsV2.setCampaignFinishRoot(
+        alice.address,
+        1,
+        ethers.utils.keccak256('0x12')
+      )).to.be.revertedWithCustomError(rewardsV2, 'NotSupported').withArgs(alice.address, ethers.constants.AddressZero);
+      
+      await expect(rewardsV2.setCampaignFinishRoot(
+        comet.address,
+        1,
+        ethers.utils.keccak256('0x12')
       )).to.be.revertedWithCustomError(rewardsV2, 'BadData');
     });
 
@@ -5506,6 +5684,101 @@ describe('CometRewardsV2', () => {
             finishMerkleProof: []
           }
         ]
+      )).to.be.revertedWithCustomError(rewardsV2, 'BadData');
+
+      await expect(rewardsV2.claimBatchForNewMember(
+        comet.address,
+        [1],
+        charlie.address,
+        true,
+        [[alice.address, bob.address], [alice.address, bob.address]],
+        [
+          {
+            proofs:[{
+              startIndex: 1,
+              finishIndex: 0,
+              startAccrued: 100,
+              finishAccrued: 0,
+              startMerkleProof: [],
+              finishMerkleProof: []
+            },
+            {
+              startIndex: 2,
+              finishIndex: 0,
+              startAccrued: 200,
+              finishAccrued: 0,
+              startMerkleProof: [],
+              finishMerkleProof: []
+            }]
+          },
+          {
+            proofs:[{
+              startIndex: 1,
+              finishIndex: 0,
+              startAccrued: 100,
+              finishAccrued: 0,
+              startMerkleProof: [],
+              finishMerkleProof: []
+            },
+            {
+              startIndex: 2,
+              finishIndex: 0,
+              startAccrued: 200,
+              finishAccrued: 0,
+              startMerkleProof: [],
+              finishMerkleProof: []
+            }]
+          }
+        ],
+        []
+      )).to.be.revertedWithCustomError(rewardsV2, 'BadData');
+
+      await expect(rewardsV2.claimToBatchForNewMember(
+        comet.address,
+        [1],
+        charlie.address,
+        alice.address,
+        true,
+        [[alice.address, bob.address], [alice.address, bob.address]],
+        [
+          {
+            proofs:[{
+              startIndex: 1,
+              finishIndex: 0,
+              startAccrued: 100,
+              finishAccrued: 0,
+              startMerkleProof: [],
+              finishMerkleProof: []
+            },
+            {
+              startIndex: 2,
+              finishIndex: 0,
+              startAccrued: 200,
+              finishAccrued: 0,
+              startMerkleProof: [],
+              finishMerkleProof: []
+            }]
+          },
+          {
+            proofs:[{
+              startIndex: 1,
+              finishIndex: 0,
+              startAccrued: 100,
+              finishAccrued: 0,
+              startMerkleProof: [],
+              finishMerkleProof: []
+            },
+            {
+              startIndex: 2,
+              finishIndex: 0,
+              startAccrued: 200,
+              finishAccrued: 0,
+              startMerkleProof: [],
+              finishMerkleProof: []
+            }]
+          }
+        ],
+        []
       )).to.be.revertedWithCustomError(rewardsV2, 'BadData');
     });
 
@@ -7460,7 +7733,7 @@ describe('CometRewardsV2', () => {
               alice.address,
               100,
               0,
-              true
+              false
             );
             expect(result.token).to.be.equal(COMP.address);
             expect(result.owed).to.be.equal(0);
@@ -7490,6 +7763,113 @@ describe('CometRewardsV2', () => {
             await expect(
               rewardsV2.getRewardsOwed(comet.address, 0, WBTC.address, alice.address, 100, 0, true)
             ).to.be.revertedWithCustomError(rewardsV2, 'NotSupported').withArgs(comet.address, WBTC.address);
+
+            await expect(
+              rewardsV2.claimBatchForNewMember(
+                alice.address,
+                [0],
+                alice.address,
+                true,
+                [[alice.address, alice.address]],
+                [
+                  {
+                    proofs:[{
+                      startIndex: 0,
+                      finishIndex: 0,
+                      startAccrued: 0,
+                      finishAccrued: 0,
+                      startMerkleProof: [],
+                      finishMerkleProof: []
+                    },
+                    {
+                      startIndex: 0,
+                      finishIndex: 0,
+                      startAccrued: 0,
+                      finishAccrued: 0,
+                      startMerkleProof: [],
+                      finishMerkleProof: []
+                    }]
+                  }
+                ],
+                [
+                  {
+                    finishIndex: 0,
+                    finishAccrued: 0,
+                    finishMerkleProof: []
+                  }
+                ]
+              )
+            ).to.be.revertedWithCustomError(rewardsV2, 'NotSupported').withArgs(alice.address, ethers.constants.AddressZero);
+
+            await expect(
+              rewardsV2.claimToForNewMember(
+                alice.address,
+                0,
+                alice.address,
+                alice.address,
+                true,
+                [alice.address, alice.address],
+                [{
+                  startIndex: 0,
+                  finishIndex: 0,
+                  startAccrued: 0,
+                  finishAccrued: 0,
+                  startMerkleProof: [],
+                  finishMerkleProof: []
+                },
+                {
+                  startIndex: 0,
+                  finishIndex: 0,
+                  startAccrued: 0,
+                  finishAccrued: 0,
+                  startMerkleProof: [],
+                  finishMerkleProof: []
+                }],
+                {
+                  finishIndex: 0,
+                  finishAccrued: 0,
+                  finishMerkleProof: []
+                }
+              )
+            ).to.be.revertedWithCustomError(rewardsV2, 'NotSupported').withArgs(alice.address, ethers.constants.AddressZero);
+
+            await expect(
+              rewardsV2.claimToBatchForNewMember(
+                alice.address,
+                [0],
+                alice.address,
+                alice.address,
+                true,
+                [[alice.address, alice.address]],
+                [
+                  {
+                    proofs:[{
+                      startIndex: 0,
+                      finishIndex: 0,
+                      startAccrued: 0,
+                      finishAccrued: 0,
+                      startMerkleProof: [],
+                      finishMerkleProof: []
+                    },
+                    {
+                      startIndex: 0,
+                      finishIndex: 0,
+                      startAccrued: 0,
+                      finishAccrued: 0,
+                      startMerkleProof: [],
+                      finishMerkleProof: []
+                    }]
+                  }
+                ],
+                [
+                  {
+                    finishIndex: 0,
+                    finishAccrued: 0,
+                    finishMerkleProof: []
+                  }
+                ]
+              )
+            ).to.be.revertedWithCustomError(rewardsV2, 'NotSupported').withArgs(alice.address, ethers.constants.AddressZero);
           });
         });
 

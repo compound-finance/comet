@@ -134,6 +134,7 @@ export type RewardsV2Opts = {
   governor?: SignerWithAddress;
   configs?: [Comet, (FaucetToken | NonStandardFaucetFeeToken)[], Numeric[]?][];
   accountsPrepared?: [string, string][];
+  duration?: Numeric;
 };
 
 export type Rewards = {
@@ -724,13 +725,14 @@ export async function makeRewardsV2(
   
   await rewardsV2.deployed();
   const tree = await generateTree(optsV2.accountsPrepared);
+  const duration = optsV2.duration || 604800; // 604800 = 7 days
   for (const [comet, tokens, multipliers] of configs) {
     if (multipliers === undefined) {
       const _tokens = [];
       for (const token of tokens) {
         _tokens.push(token.address);
       }
-      await wait(rewardsV2.setNewCampaign(comet.address, tree.root, _tokens, 604800)); // 604800 = 7 days
+      await wait(rewardsV2.setNewCampaign(comet.address, tree.root, _tokens, duration));
     } else {
       if(tokens.length !== multipliers.length) throw new Error('Arrays length mismatch');
       let assets: TokenMultiplierStruct[] = [];
@@ -739,7 +741,7 @@ export async function makeRewardsV2(
         assets.push({ token: tokens[i].address, multiplier: multipliers[i].toString()});
       }
 
-      await wait(rewardsV2.setNewCampaignWithCustomTokenMultiplier(comet.address, tree.root, assets, 604800));
+      await wait(rewardsV2.setNewCampaignWithCustomTokenMultiplier(comet.address, tree.root, assets, duration));
     }
   }
 

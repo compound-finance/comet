@@ -181,7 +181,6 @@ contract CometRewardsV2 {
     error InvalidProof();
     error NotANewMember(address);
     error CampaignEnded(address, uint256);
-    error CampaignNotEnded(address, uint256);
 
     /**
      * @notice Construct a new rewards pool
@@ -216,6 +215,7 @@ contract CometRewardsV2 {
         campaignId = campaigns[comet].length - 1;
         $.startRoot = startRoot;
         for (uint256 i = 0; i < assets.length; i++) {
+            if(assets[i].multiplier == 0) revert BadData();
             uint128 tokenScale = safe128(10 ** IERC20NonStandard(assets[i].token).decimals());
 
             emit ConfigUpdated(campaignId, comet, assets[i].token, assets[i].multiplier);
@@ -312,7 +312,6 @@ contract CometRewardsV2 {
         if(finishRoot == bytes32(0)) revert BadData();
         if(campaigns[comet].length == 0) revert NotSupported(comet, address(0));
         if(campaignId >= campaigns[comet].length) revert BadData();
-        if(campaigns[comet][campaignId].finishTimestamp > block.timestamp) revert CampaignNotEnded(comet, campaignId);
         
         emit NewCampaignFinishRoot(comet, finishRoot, campaignId);
         campaigns[comet][campaignId].finishRoot = finishRoot;
@@ -822,7 +821,7 @@ contract CometRewardsV2 {
         address comet,
         address src,
         address to,
-        uint256 campaignId, //add array support
+        uint256 campaignId,
         bool shouldAccrue,
         FinishProof calldata finishProof
     ) internal {
@@ -838,7 +837,6 @@ contract CometRewardsV2 {
         }
         else if($.finishTimestamp < block.timestamp) revert CampaignEnded(comet, campaignId);
         if(shouldAccrue) {
-            //remove from loop
             CometInterface(comet).accrueAccount(src);
         }
         for (uint256 j; j < $.assets.length; j++) {
@@ -869,7 +867,7 @@ contract CometRewardsV2 {
         address comet,
         address src,
         address to,
-        uint256 campaignId, //add array support
+        uint256 campaignId,
         Proofs calldata proofs,
         bool shouldAccrue
     ) internal {
@@ -929,7 +927,7 @@ contract CometRewardsV2 {
         address comet,
         address src,
         address to,
-        uint256[] memory campaignIds, //add array support
+        uint256[] memory campaignIds,
         Proofs[] calldata proofs,
         bool shouldAccrue
     ) internal {

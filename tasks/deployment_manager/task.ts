@@ -5,7 +5,7 @@ import { HardhatRuntimeEnvironment, HardhatConfig } from 'hardhat/types';
 import { DeploymentManager, VerifyArgs } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import hreForBase from '../../plugins/scenario/utils/hreForBase';
-import { generateMerkleTreeForCampaign } from '../../scripts/rewards_v2/utils';
+import { generateMerkleTreeForCampaign, calculateMultiplier } from '../../scripts/rewards_v2/utils';
 
 // TODO: Don't depend on scenario's hreForBase
 function getForkEnv(env: HardhatRuntimeEnvironment, deployment: string): HardhatRuntimeEnvironment {
@@ -371,4 +371,33 @@ task('generateMerkleTree', 'Generates a Merkle Tree for a given campaign')
     } catch (error) {
       console.error('Error during Merkle tree generation:', error);
     }
+  });
+
+task('calculateMultiplier', 'Calculates the multiplier for a rewardsV2 campaign')
+  .addParam('deployment', 'The deployment to use (e.g., usdc, weth)')
+  .addParam('duration', 'The duration of the campaign in seconds')
+  .addParam('amount', 'The amount of rewards to distribute in tokens, not wei, e.g., 10, 50, 100')
+  .setAction(async ({ deployment, duration, amount }, env) => {
+    const network = env.network.name;
+    const dm = new DeploymentManager(
+      network,
+      deployment,
+      getForkEnv(env, deployment)
+    );
+
+    const comet = await dm.contract('comet');
+    if (!comet) {
+      throw new Error('Comet contract not found');
+    }  
+    const supplySpeed = await comet.baseTrackingSupplySpeed();
+    const borrowSpeed = await comet.baseTrackingBorrowSpeed();
+  
+    calculateMultiplier(
+      supplySpeed.toBigInt(),
+      borrowSpeed.toBigInt(),
+      +duration,
+      BigInt(amount)
+    );
+
+    console.log('Finished!');
   });
