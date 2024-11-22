@@ -181,7 +181,6 @@ contract CometRewardsV2 {
     error InvalidProof();
     error NotANewMember(address);
     error CampaignEnded(address, uint256);
-    error CampaignNotEnded(address, uint256);
 
     /**
      * @notice Construct a new rewards pool
@@ -313,7 +312,6 @@ contract CometRewardsV2 {
         if(finishRoot == bytes32(0)) revert BadData();
         if(campaigns[comet].length == 0) revert NotSupported(comet, address(0));
         if(campaignId >= campaigns[comet].length) revert BadData();
-        if(campaigns[comet][campaignId].finishTimestamp > block.timestamp) revert CampaignNotEnded(comet, campaignId);
         
         emit NewCampaignFinishRoot(comet, finishRoot, campaignId);
         campaigns[comet][campaignId].finishRoot = finishRoot;

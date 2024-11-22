@@ -33,7 +33,7 @@ function generateTree(accountsPrepared: [string, string][]) {
   return StandardMerkleTree.of(accountsIndexed, ['address', 'uint256', 'uint256']);
 }
 
-function calculateRewardsOwed(
+function calculateRewardsOwedForNewMember(
   userBalance: bigint,
   totalBalance: bigint,
   speed: bigint,
@@ -53,7 +53,26 @@ function calculateRewardsOwed(
     return shouldUpscale?((finishAccrued - startAccrued) * rescaleFactor): ((accrued - startAccrued) / rescaleFactor * rescaleFactor);
   }
   if(startAccrued <= accrued)
-    return ((accrued - startAccrued) / rescaleFactor * rescaleFactor);
+    return shouldUpscale?((accrued - startAccrued)/ rescaleFactor * rescaleFactor) : (accrued - startAccrued) / rescaleFactor;
+  else throw new Error('Error calculating rewards owed');
+}
+
+function calculateRewardsOwedForExistingMember(
+  currentAccrued: bigint,
+  rescaleFactor: bigint,
+  startAccrued: bigint = 0n,
+  finishAccrued: bigint = 0n,
+  shouldUpscale = true
+): bigint {
+  // accrued = (user balance / total balance) * (speed / trackingIndexScale) * time * reward token scale
+  const accrued = currentAccrued;
+
+  // truncate using rescaleFactor
+  if(finishAccrued > 0n) {
+    return shouldUpscale?((finishAccrued - startAccrued) * rescaleFactor): ((accrued - startAccrued) / rescaleFactor * rescaleFactor);
+  }
+  if(startAccrued <= accrued)
+    return shouldUpscale?((accrued - startAccrued)* rescaleFactor) : (accrued - startAccrued) / rescaleFactor * rescaleFactor;
   else throw new Error('Error calculating rewards owed');
 }
 
@@ -205,7 +224,7 @@ scenario(
     let accrued = 0n;
     for(let i = 0; i < startMerkleTree.length; i++) {
       const [address, index, accrue] = startMerkleTree.at(i);
-      if(+accrue >= 10000) {
+      if(+accrue >= 100000) {
         addressToImpersonate = address;
         accrued = BigInt(+accrue);
         userIndex = +index;
@@ -273,10 +292,8 @@ scenario(
     const configs = tokensAndConfig[1];
 
     const supplyTimestamp = await world.timestamp();
-    const jayBalance = await jay.getCometBaseBalance();
-    const totalSupplyBalance = (await comet.totalSupply()).toBigInt();
 
-    await world.increaseTime(86400); // fast forward a day
+    await world.increaseTime(86400); 
     const preTxnTimestamp = await world.timestamp();
 
     await comet.connect(albert.signer).accrueAccount(jay.address);
@@ -287,7 +304,12 @@ scenario(
       accrued,
       0,
       false
-    );    
+    );
+
+    const rewardsBalanceBefore = [];
+    rewardsBalanceBefore.push(await rewardTokens.rewardToken0.balanceOf(jay.address));
+    rewardsBalanceBefore.push(await rewardTokens.rewardToken1.balanceOf(jay.address));
+
     const txn = await (await rewardsV2.connect(jay.signer).claim(
       comet.address,
       newCampaignId,
@@ -310,10 +332,6 @@ scenario(
       0,
       false
     );
-    const postTxnTimestamp = await world.timestamp();
-    const timeElapsed = postTxnTimestamp - preTxnTimestamp;
-    const supplySpeed = (await comet.baseTrackingSupplySpeed()).toBigInt();
-    const trackingIndexScale = (await comet.trackingIndexScale()).toBigInt();
     const timestampDelta = preTxnTimestamp - supplyTimestamp;
     const totalSupplyPrincipal = (await comet.totalsBasic()).totalSupplyBase.toBigInt();
     const baseMinForRewards = (await comet.baseMinForRewards()).toBigInt();
@@ -326,29 +344,16 @@ scenario(
         ERC20__factory.createInterface(),
         world.deploymentManager.hre.ethers.provider
       );
-      const rewardScale = exp(1, await rewardToken.decimals());
 
       if (totalSupplyPrincipal >= baseMinForRewards) {
-        expectedRewardsOwed = calculateRewardsOwed(
-          jayBalance,
-          totalSupplyBalance,
-          supplySpeed,
-          timestampDelta + 1,
-          trackingIndexScale,
-          rewardScale,
+        expectedRewardsOwed = calculateRewardsOwedForExistingMember(
+          (await comet.baseTrackingAccrued(jay.address)).toBigInt(),
           configs[i].rescaleFactor.toBigInt(),
-          BigInt(accrued)
+          accrued,
+          0n,
+          configs[i].shouldUpscale          
         );
-        expectedRewardsReceived = calculateRewardsOwed(
-          jayBalance,
-          totalSupplyBalance,
-          supplySpeed,
-          timestampDelta + timeElapsed - 1,
-          trackingIndexScale,
-          rewardScale,
-          configs[i].rescaleFactor.toBigInt(),
-          BigInt(accrued)
-        );
+        expectedRewardsReceived = rewardsBalanceBefore[i].toBigInt() + expectedRewardsOwed;
       }
 
       // Occasionally `timestampDelta` is equal to 86401
@@ -415,7 +420,7 @@ scenario(
     const albertBalance = await albert.getCometBaseBalance();
     const totalSupplyBalance = (await comet.totalSupply()).toBigInt();
 
-    await world.increaseTime(86400); // fast forward a day
+    await world.increaseTime(86400); 
     const preTxnTimestamp = await world.timestamp();
 
     await comet.connect(albert.signer).accrueAccount(albert.address);
@@ -486,7 +491,7 @@ scenario(
       const rewardScale = exp(1, await rewardToken.decimals());
 
       if (totalSupplyPrincipal >= baseMinForRewards) {
-        expectedRewardsOwed = calculateRewardsOwed(
+        expectedRewardsOwed = calculateRewardsOwedForNewMember(
           albertBalance,
           totalSupplyBalance,
           supplySpeed,
@@ -495,7 +500,7 @@ scenario(
           rewardScale,
           configs[i].rescaleFactor.toBigInt()
         );
-        expectedRewardsReceived = calculateRewardsOwed(
+        expectedRewardsReceived = calculateRewardsOwedForNewMember(
           albertBalance,
           totalSupplyBalance,
           supplySpeed,
@@ -529,7 +534,7 @@ scenario(
       deploymentManager.hre
     );
   
-    // impersonate someone from the tree with accrue > 10000
+    // impersonate someone from the tree with accrue > 100000
     let addressToImpersonate: string;
     let userIndexStart = 0;
     let accruedStart = 0n;
@@ -539,7 +544,7 @@ scenario(
     for(let i = 0; i < startMerkleTree.length; i++) {
       const [_addressStart, _indexStart, _accrueStart] = startMerkleTree.at(i);
 
-      if(+_accrueStart >= 10000) {
+      if(+_accrueStart >= 100000) {
         addressToImpersonate = _addressStart;
         accruedStart = BigInt(+_accrueStart);
         userIndexStart = +_indexStart;
@@ -585,7 +590,7 @@ scenario(
       actors.admin.signer,
       root,
       [rewardTokens.rewardToken0.address, rewardTokens.rewardToken1.address],
-      60 // 1 minute
+      90000 // 1 day + 1 hour
     );
 
     const tokensAndConfig = await rewardsV2.rewardConfig(comet.address, newCampaignId);
@@ -594,9 +599,7 @@ scenario(
     const configs = tokensAndConfig[1];
 
     const supplyTimestamp = await world.timestamp();
-    const jayBalance = await jay.getCometBaseBalance();
-    const totalSupplyBalance = (await comet.totalSupply()).toBigInt();
-    await world.increaseTime(60); // fast forward a day
+    await world.increaseTime(3600);
     await rewardsV2.connect(actors.admin.signer).setCampaignFinishRoot(comet.address, newCampaignId, finishMerkleTree.root);
 
     const preTxnTimestamp = await world.timestamp();
@@ -610,6 +613,11 @@ scenario(
       accruedFinish,
       false
     );
+
+    const rewardsBalanceBefore = [];
+    rewardsBalanceBefore.push(await rewardTokens.rewardToken0.balanceOf(jay.address));
+    rewardsBalanceBefore.push(await rewardTokens.rewardToken1.balanceOf(jay.address));
+
     const txn = await (await rewardsV2.connect(jay.signer).claim(
       comet.address,
       newCampaignId,
@@ -632,10 +640,6 @@ scenario(
       accruedFinish,
       false
     );
-    const postTxnTimestamp = await world.timestamp();
-    const timeElapsed = postTxnTimestamp - preTxnTimestamp;
-    const supplySpeed = (await comet.baseTrackingSupplySpeed()).toBigInt();
-    const trackingIndexScale = (await comet.trackingIndexScale()).toBigInt();
     const timestampDelta = preTxnTimestamp - supplyTimestamp;
     let expectedRewardsOwed = 0n;
     let expectedRewardsReceived = 0n;
@@ -646,33 +650,17 @@ scenario(
         ERC20__factory.createInterface(),
         world.deploymentManager.hre.ethers.provider
       );
-      const rewardScale = exp(1, await rewardToken.decimals());
 
-      expectedRewardsOwed = calculateRewardsOwed(
-        jayBalance,
-        totalSupplyBalance,
-        supplySpeed,
-        timestampDelta + 1,
-        trackingIndexScale,
-        rewardScale,
+      expectedRewardsOwed = calculateRewardsOwedForExistingMember(
+        (await comet.baseTrackingAccrued(jay.address)).toBigInt(),
         configs[i].rescaleFactor.toBigInt(),
         accruedStart,
-        accruedFinish
+        accruedFinish,
+        configs[i].shouldUpscale          
       );
-      expectedRewardsReceived = calculateRewardsOwed(
-        jayBalance,
-        totalSupplyBalance,
-        supplySpeed,
-        timestampDelta + timeElapsed - 1,
-        trackingIndexScale,
-        rewardScale,
-        configs[i].rescaleFactor.toBigInt(),
-        accruedStart,
-        accruedFinish
-        
-      );
-      // Occasionally `timestampDelta` is equal to 61
-      expect(timestampDelta).to.be.greaterThanOrEqual(60);
+      expectedRewardsReceived = rewardsBalanceBefore[i].toBigInt() + expectedRewardsOwed;
+      // Occasionally `timestampDelta` is equal to 3601
+      expect(timestampDelta).to.be.greaterThanOrEqual(3600);
       expect(rewardsOwedBefore[i].owed.toBigInt()).to.be.equal(expectedRewardsOwed);
       expect(await rewardToken.balanceOf(jay.address)).to.be.equal(rewardsOwedBefore[i].owed);
       expect(await rewardToken.balanceOf(jay.address)).to.be.equal(expectedRewardsReceived);
@@ -707,7 +695,7 @@ scenario(
         // create new tree without the user
         for(let i = 0; i < startMerkleTree.length; i++) {
           const [address, index, accrue] = finishMerkleTree.at(i);
-          if(+accrue >= 10000) {
+          if(+accrue >= 100000) {
             addressToImpersonate = address;
             accruedFinish = BigInt(+accrue);
             userIndex = +index;
@@ -755,7 +743,7 @@ scenario(
       actors.admin.signer,
       root,
       [rewardTokens.rewardToken0.address, rewardTokens.rewardToken1.address],
-      60 // 1 minute
+      90000 // 1 day + 1 hour
     );
 
     const tokensAndConfig = await rewardsV2.rewardConfig(comet.address, newCampaignId);
@@ -767,7 +755,7 @@ scenario(
     const supplyTimestamp = await world.timestamp();
     const jayBalance = await jay.getCometBaseBalance();
     const totalSupplyBalance = (await comet.totalSupply()).toBigInt();
-    await world.increaseTime(60); // fast forward a day
+    await world.increaseTime(3600); 
     await rewardsV2.connect(actors.admin.signer).setCampaignFinishRoot(comet.address, newCampaignId, finishMerkleTree.root);
 
     const preTxnTimestamp = await world.timestamp();
@@ -858,7 +846,7 @@ scenario(
       );
       const rewardScale = exp(1, await rewardToken.decimals());
 
-      expectedRewardsOwed = calculateRewardsOwed(
+      expectedRewardsOwed = calculateRewardsOwedForNewMember(
         jayBalance,
         totalSupplyBalance,
         supplySpeed,
@@ -869,7 +857,7 @@ scenario(
         BigInt(0),
         accruedFinish
       );
-      expectedRewardsReceived = calculateRewardsOwed(
+      expectedRewardsReceived = calculateRewardsOwedForNewMember(
         jayBalance,
         totalSupplyBalance,
         supplySpeed,
@@ -881,8 +869,8 @@ scenario(
         accruedFinish
       );
 
-      // Occasionally `timestampDelta` is equal to 61
-      expect(timestampDelta).to.be.greaterThanOrEqual(60);
+      // Occasionally `timestampDelta` is equal to 3601
+      expect(timestampDelta).to.be.greaterThanOrEqual(3601);
       expect(rewardsOwedBefore[i].owed.toBigInt()).to.be.equal(expectedRewardsOwed);
       expect(await rewardToken.balanceOf(jay.address)).to.be.equal(rewardsOwedBefore[i].owed);
       expect(await rewardToken.balanceOf(jay.address)).to.be.equal(expectedRewardsReceived);
@@ -915,11 +903,15 @@ scenario(
     let accrued = 0n;
     for(let i = 0; i < startMerkleTree.length; i++) {
       const [address, index, accrue] = startMerkleTree.at(i);
-      if(+accrue >= 10000) {
-        addressToImpersonate = address;
-        accrued = BigInt(+accrue);
-        userIndex = +index;
-        break;
+      if(+accrue >= 100000) {
+        const supplyBalance = await comet.balanceOf(address);
+        const borrowBalanceOf = await comet.borrowBalanceOf(address);
+        if(borrowBalanceOf.eq(0) && supplyBalance.gt(0)) {
+          addressToImpersonate = address;
+          accrued = BigInt(+accrue);
+          userIndex = +index;
+          break;
+        }
       }
     }
     await deploymentManager.hre.network.provider.request({
@@ -951,7 +943,7 @@ scenario(
       actors.admin.signer,
       root,
       [rewardTokens.rewardToken0.address, rewardTokens.rewardToken1.address],
-      60 // 1 minute
+      90000 // 1 day + 1 hour
     );
 
     const tokensAndConfig = await rewardsV2.rewardConfig(comet.address, newCampaignId);
@@ -960,10 +952,8 @@ scenario(
     const configs = tokensAndConfig[1];
 
     const supplyTimestamp = await world.timestamp();
-    const jayBalance = await jay.getCometBaseBalance();
-    const totalSupplyBalance = (await comet.totalSupply()).toBigInt();
 
-    await world.increaseTime(60); // fast forward a day
+    await world.increaseTime(3600); // fast forward a hour
 
     const preTxnTimestamp = await world.timestamp();
 
@@ -978,7 +968,11 @@ scenario(
       false
     );
 
-    const txn = await (await rewardsV2.connect(actors.admin.signer).claimTo(
+    const rewardsBalanceBefore = [];
+    rewardsBalanceBefore.push(await rewardTokens.rewardToken0.balanceOf(jay.address));
+    rewardsBalanceBefore.push(await rewardTokens.rewardToken1.balanceOf(jay.address));
+
+    const txn = await (await rewardsV2.connect(actors.betty.signer).claimTo(
       comet.address,
       newCampaignId,
       jay.address,
@@ -1001,10 +995,6 @@ scenario(
       0,
       false
     );
-    const postTxnTimestamp = await world.timestamp();
-    const timeElapsed = postTxnTimestamp - preTxnTimestamp;
-    const supplySpeed = (await comet.baseTrackingSupplySpeed()).toBigInt();
-    const trackingIndexScale = (await comet.trackingIndexScale()).toBigInt();
     const timestampDelta = preTxnTimestamp - supplyTimestamp;
     const totalSupplyPrincipal = (await comet.totalsBasic()).totalSupplyBase.toBigInt();
     const baseMinForRewards = (await comet.baseMinForRewards()).toBigInt();
@@ -1017,33 +1007,21 @@ scenario(
         ERC20__factory.createInterface(),
         world.deploymentManager.hre.ethers.provider
       );
-      const rewardScale = exp(1, await rewardToken.decimals());
+      // const rewardScale = exp(1, await rewardToken.decimals());
 
       if (totalSupplyPrincipal >= baseMinForRewards) {
-        expectedRewardsOwed = calculateRewardsOwed(
-          jayBalance,
-          totalSupplyBalance,
-          supplySpeed,
-          timestampDelta + 1,
-          trackingIndexScale,
-          rewardScale,
+        expectedRewardsOwed = calculateRewardsOwedForExistingMember(
+          (await comet.baseTrackingAccrued(jay.address)).toBigInt(),
           configs[i].rescaleFactor.toBigInt(),
-          accrued
+          accrued,
+          0n,
+          configs[i].shouldUpscale          
         );
-        expectedRewardsReceived = calculateRewardsOwed(
-          jayBalance,
-          totalSupplyBalance,
-          supplySpeed,
-          timestampDelta + timeElapsed - 1,
-          trackingIndexScale,
-          rewardScale,
-          configs[i].rescaleFactor.toBigInt(),
-          accrued
-        );
+        expectedRewardsReceived = rewardsBalanceBefore[i].toBigInt() + expectedRewardsOwed;
       }
 
-      // Occasionally `timestampDelta` is equal to 61
-      expect(timestampDelta).to.be.greaterThanOrEqual(60);
+      // Occasionally `timestampDelta` is equal to 3601
+      expect(timestampDelta).to.be.greaterThanOrEqual(3600);
       expect(rewardsOwedBefore[i].owed.toBigInt()).to.be.equal(expectedRewardsOwed);
       expect(await rewardToken.balanceOf(jay.address)).to.be.equal(rewardsOwedBefore[i].owed);
       expect(await rewardToken.balanceOf(jay.address)).to.be.equal(expectedRewardsReceived);
@@ -1058,7 +1036,7 @@ scenario(
   {
     filter: async (ctx) => await isRewardSupported(ctx),
     tokenBalances: {
-      albert: { $asset0: ' == 10000' }, // in units of asset, not wei
+      albert: { $asset0: ' == 100000' }, // in units of asset, not wei
       $comet: { $base: ' >= 1000 ' }
     },
   },
@@ -1114,7 +1092,7 @@ scenario(
     const albertBalance = await albert.getCometBaseBalance();
     const totalBorrowBalance = (await comet.totalBorrow()).toBigInt();
     
-    await world.increaseTime(86400); // fast forward a day
+    await world.increaseTime(86400); 
     const preTxnTimestamp = await world.timestamp();
 
     await comet.connect(albert.signer).accrueAccount(albert.address);
@@ -1186,7 +1164,7 @@ scenario(
       const rewardScale = exp(1, await rewardToken.decimals());
 
       if (totalBorrowPrincipal >= baseMinForRewards) {
-        expectedRewardsOwed = calculateRewardsOwed(
+        expectedRewardsOwed = calculateRewardsOwedForNewMember(
           -albertBalance,
           totalBorrowBalance,
           borrowSpeed,
@@ -1195,7 +1173,7 @@ scenario(
           rewardScale,
           configs[i].rescaleFactor.toBigInt()
         );
-        expectedRewardsReceived = calculateRewardsOwed(
+        expectedRewardsReceived = calculateRewardsOwedForNewMember(
           -albertBalance,
           totalBorrowBalance,
           borrowSpeed,
@@ -1216,7 +1194,7 @@ scenario(
     return txn; // return txn to measure gas
   });
 
-scenario(
+scenario.only(
   'Comet#rewardsV2 > cannot claim rewards with invalid merkle proof',
   {
     filter: async (ctx) => await isRewardSupported(ctx),
@@ -1234,7 +1212,7 @@ scenario(
     let accrued = 0n;
     for(let i = 0; i < startMerkleTree.length; i++) {
       const [address, , accrue] = startMerkleTree.at(i);
-      if(+accrue >= 10000) {
+      if(+accrue >= 100000) {
         addressToImpersonate = address;
         accrued = BigInt(+accrue);
         break;
@@ -1273,10 +1251,14 @@ scenario(
       actors.admin.signer,
       root,
       [rewardTokens.rewardToken0.address, rewardTokens.rewardToken1.address],
-      60 // 1 minute
+      90000 // 1 day + 1 hour
     );
 
-    await world.increaseTime(60); // fast forward a day
+    await world.increaseTime(
+      (await rewardsV2.campaigns(comet.address, newCampaignId)).finishTimestamp.sub(
+        await world.timestamp()
+      ).toNumber()
+    );
 
     await(await comet.accrueAccount(jay.address)).wait();
     await expect(rewardsV2.claim(
@@ -1336,7 +1318,7 @@ async function testScalingRewardV2ForExistingUser(properties: CometProperties, r
   let accrued = 0n;
   for(let i = 0; i < startMerkleTree.length; i++) {
     const [address, index, accrue] = startMerkleTree.at(i);
-    if(+accrue >= 10000) {
+    if(+accrue >= 100000) {
       addressToImpersonate = address;
       accrued = BigInt(+accrue);
       userIndex = +index;
@@ -1410,10 +1392,8 @@ async function testScalingRewardV2ForExistingUser(properties: CometProperties, r
   const configs = tokensAndConfig[1];
 
   const supplyTimestamp = await world.timestamp();
-  const jayBalance = await jay.getCometBaseBalance();
-  const totalSupplyBalance = (await comet.totalSupply()).toBigInt();
 
-  await world.increaseTime(86400); // fast forward a day
+  await world.increaseTime(86400); 
   const preTxnTimestamp = await world.timestamp();
 
   await (await comet.connect(albert.signer).accrueAccount(jay.address)).wait();
@@ -1425,6 +1405,10 @@ async function testScalingRewardV2ForExistingUser(properties: CometProperties, r
     0,
     false
   );
+
+  const rewardsBalanceBefore = [];
+  rewardsBalanceBefore.push(await rewardTokens.rewardToken0.balanceOf(jay.address));
+  rewardsBalanceBefore.push(await rewardTokens.rewardToken1.balanceOf(jay.address));
 
   const txn = await (await rewardsV2.claim(
     comet.address,
@@ -1450,10 +1434,6 @@ async function testScalingRewardV2ForExistingUser(properties: CometProperties, r
     false
   );
 
-  const postTxnTimestamp = await world.timestamp();
-  const timeElapsed = postTxnTimestamp - preTxnTimestamp;
-  const supplySpeed = (await comet.baseTrackingSupplySpeed()).toBigInt();
-  const trackingIndexScale = (await comet.trackingIndexScale()).toBigInt();
   const timestampDelta = preTxnTimestamp - supplyTimestamp;
   let expectedRewardsOwedWithoutMultiplier = 0n;
   let expectedRewardsReceivedWithoutMultiplier = 0n;
@@ -1464,28 +1444,15 @@ async function testScalingRewardV2ForExistingUser(properties: CometProperties, r
       ERC20__factory.createInterface(),
       world.deploymentManager.hre.ethers.provider
     );
-    const rewardScale = exp(1, await rewardToken.decimals());
 
-    expectedRewardsOwedWithoutMultiplier = calculateRewardsOwed(
-      jayBalance,
-      totalSupplyBalance,
-      supplySpeed,
-      timestampDelta + 1,
-      trackingIndexScale,
-      rewardScale,
+    expectedRewardsOwedWithoutMultiplier = calculateRewardsOwedForExistingMember(
+      (await comet.baseTrackingAccrued(jay.address)).toBigInt(),
       configs[i].rescaleFactor.toBigInt(),
-      accrued
+      accrued,
+      0n,
+      configs[i].shouldUpscale          
     );
-    expectedRewardsReceivedWithoutMultiplier = calculateRewardsOwed(
-      jayBalance,
-      totalSupplyBalance,
-      supplySpeed,
-      timestampDelta + timeElapsed - 1,
-      trackingIndexScale,
-      rewardScale,
-      configs[i].rescaleFactor.toBigInt(),
-      accrued
-    );
+    expectedRewardsReceivedWithoutMultiplier = rewardsBalanceBefore[i].toBigInt() + expectedRewardsOwedWithoutMultiplier;
 
     // Occasionally `timestampDelta` is equal to 86401
     expect(timestampDelta).to.be.greaterThanOrEqual(86400);

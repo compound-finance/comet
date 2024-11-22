@@ -103,11 +103,19 @@ export const getLatestStartAndFinishMerkleTreeForCampaign = async (
     console.log('Start file not found. Generating new start file');
     const currentBlock = await hre.ethers.provider.getBlock('latest');
     const previousBlockNumber = currentBlock.number - 1000;
-    const previousBlock = await hre.ethers.provider.getBlock(previousBlockNumber);
     
     await generateMerkleTreeForCampaign(network, deployment, previousBlockNumber, 'start', hre);
-    startTimestamp = previousBlock.timestamp;
-    startBlockNumber = previousBlockNumber;
+    const newResult = findLastStartFinishPair(readdirSync(folderPath).map(filename => {
+      const [timestampStr, blockNumberStr, typeWithExtension] = filename.split('-');
+      const type = typeWithExtension.replace('.json', '') as 'start' | 'finish'; // remove .json from type
+      return {
+        timestamp: Number(timestampStr),
+        blockNumber: Number(blockNumberStr),
+        type
+      };
+    }));
+    startTimestamp = newResult.start.timestamp;
+    startBlockNumber = newResult.start.blockNumber;
   }else{
     startTimestamp = startFile.timestamp;
     startBlockNumber = startFile.blockNumber;
@@ -120,8 +128,18 @@ export const getLatestStartAndFinishMerkleTreeForCampaign = async (
     const currentBlock = await hre.ethers.provider.getBlock('latest');
     const currentBlockNumber = currentBlock.number;
     await generateMerkleTreeForCampaign(network, deployment, currentBlockNumber, 'finish', hre);
-    finishTimestamp = currentBlock.timestamp;
-    finishBlockNumber = currentBlockNumber;
+
+    const newResult = findLastStartFinishPair(readdirSync(folderPath).map(filename => {
+      const [timestampStr, blockNumberStr, typeWithExtension] = filename.split('-');
+      const type = typeWithExtension.replace('.json', '') as 'start' | 'finish'; // remove .json from type
+      return {
+        timestamp: Number(timestampStr),
+        blockNumber: Number(blockNumberStr),
+        type
+      };
+    }));
+    finishTimestamp = newResult.finish.timestamp;
+    finishBlockNumber = newResult.finish.blockNumber;
   }
   else{
     finishTimestamp = finishFile.timestamp;
@@ -129,12 +147,12 @@ export const getLatestStartAndFinishMerkleTreeForCampaign = async (
   }
 
 
-  const startData = await readFile(`${folderPath}/${startTimestamp}-${startBlockNumber}-start.json`, 'utf-8');
+  const startData = await readFile(`${folderPath}${startTimestamp}-${startBlockNumber}-start.json`, 'utf-8');
   const startFileData = JSON.parse(startData) as IncentivizationCampaignData;
   const startTreeData = Object.entries(startFileData.data).map(([address, { index, accrue }]) => [address, index.toString(), accrue]);
   const startTree = generateMerkleTree(startTreeData);
 
-  const finishData = await readFile(`${folderPath}/${finishTimestamp}-${finishBlockNumber}-finish.json`, 'utf-8');
+  const finishData = await readFile(`${folderPath}${finishTimestamp}-${finishBlockNumber}-finish.json`, 'utf-8');
   const finishFileData = JSON.parse(finishData) as IncentivizationCampaignData;
   const finishTreeData = Object.entries(finishFileData.data).map(([address, { index, accrue }]) => [address, index.toString(), accrue]);
   const finishTree = generateMerkleTree(finishTreeData);
@@ -341,7 +359,7 @@ function chunkArray<T>(array: T[], chunkSize: number): T[][] {
 
 export const multicall = async (multicallAddress: string, cometAddress: string, userAddresses: string[], blockNumber: number, hre: HardhatRuntimeEnvironment) => {
   const multicallABI = [
-    'function aggregate((address target, bytes callData)[] memory calls) external view returns (uint256 blockNumber, bytes[] memory returnData)'
+    'function aggregate((address target, bytes callData)[] memory calls) external returns (uint256 blockNumber, bytes[] memory returnData)'
   ];
 
   const multicallContract = new hre.ethers.Contract(multicallAddress, multicallABI, hre.ethers.provider);
@@ -424,12 +442,14 @@ export const getAllTransferEvents = async (comet: CometInterface, startBlock: nu
   return allEvents;
 };
 
-export const calculateMultiplier = async (totalSpeed: bigint, duration: number, amount: bigint) => {
+export const calculateMultiplier = async (supplySpeed: bigint, borrowSpeed:bigint, duration: number, amount: bigint) => {
   // to distribute exactly the amount of rewards in the given duration
   //    we need to adjust the speed with the multiplier
   
   // amount = totalSpeed * multiplier * duration
   // multiplier = amount / (totalSpeed * duration)
+  const totalSpeed = supplySpeed + borrowSpeed;
+
   const multiplier = BigNumber.from(amount * BigInt(1e15) * BigInt(1e18)).div((totalSpeed * BigInt(duration)));
   
   console.log(`\n=========================================`);
@@ -438,12 +458,16 @@ export const calculateMultiplier = async (totalSpeed: bigint, duration: number, 
   console.log(`=========================================`);
 
   console.log(`\n=========================================`);
+  console.log(`Supply speed per day:             ${ethers.utils.formatUnits(supplySpeed * BigInt(86400), 15)}`);
+  console.log(`Borrow speed per day:             ${ethers.utils.formatUnits(borrowSpeed * BigInt(86400), 15)}`);
   console.log(`Total speed per day:              ${ethers.utils.formatUnits(totalSpeed * BigInt(86400), 15)}`);
   console.log(`Basic rewards for given duration: ${ethers.utils.formatUnits(totalSpeed * BigInt(duration), 15)}`);
   console.log(`Formula for multiplier:           amount / (totalSpeed * duration)`);
   console.log(`=========================================`);
 
   console.log(`\n=========================================`);
+  console.log(`Supply rewards per day:           ${ethers.utils.formatUnits(supplySpeed * multiplier.toBigInt() * BigInt(86400) / BigInt(1e18), 15)}`);
+  console.log(`Borrow rewards per day:           ${ethers.utils.formatUnits(borrowSpeed * multiplier.toBigInt() * BigInt(86400) / BigInt(1e18), 15)}`);
   console.log(`Multiplier %:                     ${ethers.utils.formatUnits(multiplier.mul(100), 18).toString()}`);
   console.log(`Multiplier with decimals:         ${multiplier.toString()}`);
   console.log(`=========================================\n`);

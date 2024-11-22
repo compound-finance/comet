@@ -392,10 +392,9 @@ task('calculateMultiplier', 'Calculates the multiplier for a rewardsV2 campaign'
     const supplySpeed = await comet.baseTrackingSupplySpeed();
     const borrowSpeed = await comet.baseTrackingBorrowSpeed();
   
-    const totalSpeed = supplySpeed.add(borrowSpeed).toBigInt();
-
     calculateMultiplier(
-      totalSpeed,
+      supplySpeed.toBigInt(),
+      borrowSpeed.toBigInt(),
       +duration,
       BigInt(amount)
     );
