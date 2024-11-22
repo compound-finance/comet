@@ -5,6 +5,7 @@ import { HardhatRuntimeEnvironment, HardhatConfig } from 'hardhat/types';
 import { DeploymentManager, VerifyArgs } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import hreForBase from '../../plugins/scenario/utils/hreForBase';
+import { generateMerkleTreeForCampaign, calculateMultiplier } from '../../scripts/rewards_v2/utils';
 
 // TODO: Don't depend on scenario's hreForBase
 function getForkEnv(env: HardhatRuntimeEnvironment, deployment: string): HardhatRuntimeEnvironment {
@@ -260,7 +261,7 @@ task('deploy_and_migrate', 'Runs deploy and migration')
       );
 
       if (noDeploy) {
-      // Don't run the deploy script
+        // Don't run the deploy script
       } else {
         try {
           const overrides = undefined; // TODO: pass through cli args
@@ -275,7 +276,7 @@ task('deploy_and_migrate', 'Runs deploy and migration')
       const verify = noVerify ? false : !simulate;
       const desc = verify ? 'Verify' : 'Would verify';
       if (noVerify && simulate) {
-      // Don't even print if --no-verify is set with --simulate
+        // Don't even print if --no-verify is set with --simulate
       } else {
         await dm.verifyContracts(async (address, args) => {
           if (args.via === 'buildfile') {
@@ -288,9 +289,9 @@ task('deploy_and_migrate', 'Runs deploy and migration')
         });
 
         if (noVerifyImpl) {
-        // Don't even try if --no-verify-impl
+          // Don't even try if --no-verify-impl
         } else {
-        // Maybe verify the comet impl too
+          // Maybe verify the comet impl too
           const comet = await dm.contract('comet');
           const cometImpl = await dm.contract('comet:implementation');
           const configurator = await dm.contract('configurator');
@@ -352,3 +353,52 @@ task('deploy_and_migrate', 'Runs deploy and migration')
       }
 
     });
+
+task('generateMerkleTree', 'Generates a Merkle Tree for a given campaign')
+  .addParam('deployment', 'The deployment to use (e.g., usdc, weth)')
+  .addParam('type', 'The campaign type, either start or finish')
+  .addOptionalParam('blocknumber', 'The block number to use; if 0, latest block will be used', '0')
+  .setAction(async ({ deployment, type, blocknumber }, env) => {
+    const network = env.network.name;
+    try {
+      await generateMerkleTreeForCampaign(
+        network,
+        deployment,
+        +blocknumber,
+        type,
+        env
+      );
+    } catch (error) {
+      console.error('Error during Merkle tree generation:', error);
+    }
+  });
+
+task('calculateMultiplier', 'Calculates the multiplier for a rewardsV2 campaign')
+  .addParam('deployment', 'The deployment to use (e.g., usdc, weth)')
+  .addParam('duration', 'The duration of the campaign in seconds')
+  .addParam('amount', 'The amount of rewards to distribute in tokens, not wei, e.g., 10, 50, 100')
+  .setAction(async ({ deployment, duration, amount }, env) => {
+    const network = env.network.name;
+    const dm = new DeploymentManager(
+      network,
+      deployment,
+      getForkEnv(env, deployment)
+    );
+
+    const comet = await dm.contract('comet');
+    if (!comet) {
+      throw new Error('Comet contract not found');
+    }  
+    const supplySpeed = await comet.baseTrackingSupplySpeed();
+    const borrowSpeed = await comet.baseTrackingBorrowSpeed();
+  
+    const totalSpeed = supplySpeed.add(borrowSpeed).toBigInt();
+
+    calculateMultiplier(
+      totalSpeed,
+      +duration,
+      BigInt(amount)
+    );
+
+    console.log('Finished!');
+  });

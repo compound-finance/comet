@@ -2,7 +2,7 @@
 pragma solidity 0.8.15;
 
 import "./CometInterface.sol";
-import "./ERC20.sol";
+import "./IERC20NonStandard.sol";
 import "./MerkleProof.sol";
 
 /**
@@ -33,7 +33,7 @@ contract CometRewardsV2 {
      */
     struct AssetConfig {
         uint256 multiplier;
-        uint64 rescaleFactor;
+        uint128 rescaleFactor;
         bool shouldUpscale;
     }
 
@@ -174,13 +174,14 @@ contract CometRewardsV2 {
     /** Custom errors **/
 
     error BadData();
-    error InvalidUint64(uint256);
+    error InvalidUint128(uint256);
     error NotPermitted(address);
     error NotSupported(address, address);
     error NullGovernor();
     error InvalidProof();
     error NotANewMember(address);
     error CampaignEnded(address, uint256);
+    error CampaignNotEnded(address, uint256);
 
     /**
      * @notice Construct a new rewards pool
@@ -207,6 +208,7 @@ contract CometRewardsV2 {
     ) public returns(uint256 campaignId) {
         if(msg.sender != governor) revert NotPermitted(msg.sender);
         if(startRoot == bytes32(0)) revert BadData();
+        if(assets.length == 0) revert BadData();
         if(duration > MAX_CAMPAIGN_DURATION) revert BadData();
 
         uint64 accrualScale = CometInterface(comet).baseAccrualScale();
@@ -214,7 +216,8 @@ contract CometRewardsV2 {
         campaignId = campaigns[comet].length - 1;
         $.startRoot = startRoot;
         for (uint256 i = 0; i < assets.length; i++) {
-            uint64 tokenScale = safe64(10 ** ERC20(assets[i].token).decimals());
+            if(assets[i].multiplier == 0) revert BadData();
+            uint128 tokenScale = safe128(10 ** IERC20NonStandard(assets[i].token).decimals());
 
             emit ConfigUpdated(campaignId, comet, assets[i].token, assets[i].multiplier);
 
@@ -296,18 +299,21 @@ contract CometRewardsV2 {
     }
 
     /**
-     * @notice Set the reward token for a Comet instance
+     * @notice Set finish root for a campaign
      * @param comet The protocol instance
-     * @param finishRoot The root of the Merkle tree for the finishAccrued
      * @param campaignId The id of the campaign
+     * @param finishRoot The root of the Merkle tree for the finishAccrued
      */
     function setCampaignFinishRoot(
         address comet,
-        bytes32 finishRoot,
-        uint256 campaignId
+        uint256 campaignId,
+        bytes32 finishRoot
     ) public {
         if(msg.sender != governor) revert NotPermitted(msg.sender);
         if(finishRoot == bytes32(0)) revert BadData();
+        if(campaigns[comet].length == 0) revert NotSupported(comet, address(0));
+        if(campaignId >= campaigns[comet].length) revert BadData();
+        if(campaigns[comet][campaignId].finishTimestamp > block.timestamp) revert CampaignNotEnded(comet, campaignId);
         
         emit NewCampaignFinishRoot(comet, finishRoot, campaignId);
         campaigns[comet][campaignId].finishRoot = finishRoot;
@@ -322,8 +328,8 @@ contract CometRewardsV2 {
     function withdrawToken(address token, address to, uint256 amount) external {
         if(msg.sender != governor) revert NotPermitted(msg.sender);
 
-        emit TokenWithdrawn(token, to, amount);
-        doTransferOut(token, to, amount);
+        if(doTransferOut(token, to, amount) > 0)
+            emit TokenWithdrawn(token, to, amount);
     }
 
     /**
@@ -347,13 +353,14 @@ contract CometRewardsV2 {
      * @param startAccrued Start accrued value
      * @param finishAccrued Finish accrued value if finishRoot is set
      */
-    function getRewardOwed(
+    function getRewardsOwed(
         address comet,
         uint256 campaignId,
         address token,
         address account,
         uint256 startAccrued,
-        uint256 finishAccrued
+        uint256 finishAccrued,
+        bool shouldAccrue
     ) external returns (RewardOwed memory) {        
         if(campaigns[comet].length == 0) revert NotSupported(comet, address(0));
         if(campaignId >= campaigns[comet].length) revert BadData();
@@ -363,9 +370,10 @@ contract CometRewardsV2 {
 
         if(config.multiplier == 0) revert NotSupported(comet, token);
 
-        CometInterface(comet).accrueAccount(account);
+        if($.finishRoot == bytes32(0) && shouldAccrue)
+            CometInterface(comet).accrueAccount(account);
         uint256 claimed = $.claimed[account][token];
-        uint256 accrued = getRewardAccrued(
+        uint256 accrued = getRewardsAccrued(
                 comet,
                 account,
                 startAccrued,
@@ -388,12 +396,13 @@ contract CometRewardsV2 {
      * @param finishAccrued Finish accrued value if finishRoot is set
      * @return owed List of RewardOwed
      */
-    function getRewardOwedBatch(
+    function getRewardsOwedBatch(
         address comet,
         uint256 campaignId,
         address account,
         uint256 startAccrued,
-        uint256 finishAccrued
+        uint256 finishAccrued,
+        bool shouldAccrue
     ) external returns (RewardOwed[] memory) {
         if(campaigns[comet].length == 0) revert NotSupported(comet, address(0));
         if(campaignId >= campaigns[comet].length) revert BadData();
@@ -401,14 +410,16 @@ contract CometRewardsV2 {
         Campaign storage $ = campaigns[comet][campaignId];
         RewardOwed[] memory owed = new RewardOwed[]($.assets.length);
 
-        CometInterface(comet).accrueAccount(account);
+        
+        if($.finishRoot == bytes32(0) && shouldAccrue)
+            CometInterface(comet).accrueAccount(account);
 
         for (uint256 j; j < $.assets.length; j++) {
             address token = $.assets[j];
             AssetConfig memory config = $.configs[token];
 
             uint256 claimed = $.claimed[account][token];
-            uint256 accrued = getRewardAccrued(
+            uint256 accrued = getRewardsAccrued(
                 comet,
                 account,
                 startAccrued,
@@ -473,7 +484,7 @@ contract CometRewardsV2 {
      * @param shouldAccrue Whether or not to call accrue first
      * @param neighbors The neighbors of the account
      * @param multiProofs The Merkle proofs for each neighbor
-     * @param finishProof The Merkle proof for the finish accrued if finishRoot is set
+     * @param finishProofs The Merkle proof for the finish accrued if finishRoot is set
      */
     function claimBatchForNewMember(
         address comet,
@@ -482,11 +493,11 @@ contract CometRewardsV2 {
         bool shouldAccrue,
         address[2][] calldata neighbors,
         MultiProofs[] calldata multiProofs,
-        FinishProof[] calldata finishProof
+        FinishProof[] calldata finishProofs
     ) external {
         if(campaignIDs.length != neighbors.length) revert BadData();
         if(campaignIDs.length != multiProofs.length) revert BadData();
-        if(campaignIDs.length != finishProof.length) revert BadData();
+        if(campaignIDs.length != finishProofs.length) revert BadData();
         if(campaigns[comet].length == 0) revert NotSupported(comet, address(0));
         if(shouldAccrue)
             CometInterface(comet).accrueAccount(src);
@@ -499,7 +510,7 @@ contract CometRewardsV2 {
                 src,
                 campaignIDs[i],
                 false,
-                finishProof[i]
+                finishProofs[i]
             );
         }
     }
@@ -550,7 +561,7 @@ contract CometRewardsV2 {
      * @param shouldAccrue Whether or not to call accrue first
      * @param neighbors The neighbors of the account
      * @param multiProofs The Merkle proofs for each neighbor
-     * @param finishProof The Merkle proof for the finish accrued if finishRoot is set
+     * @param finishProofs The Merkle proof for the finish accrued if finishRoot is set
      */
     function claimToBatchForNewMember(
         address comet,
@@ -560,10 +571,11 @@ contract CometRewardsV2 {
         bool shouldAccrue,
         address[2][] calldata neighbors,
         MultiProofs[] calldata multiProofs,
-        FinishProof[] calldata finishProof
+        FinishProof[] calldata finishProofs
     ) external {
         if(campaignIDs.length != neighbors.length) revert BadData();
         if(campaignIDs.length != multiProofs.length) revert BadData();
+        if(campaignIDs.length != finishProofs.length) revert BadData();
         if(campaigns[comet].length == 0) revert NotSupported(comet, address(0));
         if(shouldAccrue)
             CometInterface(comet).accrueAccount(src);
@@ -579,7 +591,7 @@ contract CometRewardsV2 {
                 to,
                 campaignIDs[i],
                 false,
-                finishProof[i]
+                finishProofs[i]
             );
         }
     }
@@ -661,13 +673,79 @@ contract CometRewardsV2 {
     }
 
     /**
+     * @notice Returns the reward configuration for all tokens in a specific campaign
+     * @param comet Comet protocol address
+     * @param campaignId Id of the campaign
+     * @return The reward configuration
+     */
+    function rewardConfig(
+        address comet,
+        uint256 campaignId
+    ) external view returns(address[] memory, AssetConfig[] memory) {
+        Campaign storage $ = campaigns[comet][campaignId];
+        AssetConfig[] memory configs = new AssetConfig[]($.assets.length);
+        for (uint256 i; i < $.assets.length; i++) {
+            configs[i] = $.configs[$.assets[i]];
+        }
+        return ($.assets, configs);
+    }
+
+    /**
+     * @notice Returns all campaigns for a specific Comet instance
+     * @param comet Comet protocol address
+     * @return startRoots The start roots for each campaign
+     * @return finishRoots The finish roots for each campaign
+     * @return assets The reward tokens for each campaign
+     * @return finishTimestamps The finish timestamps for each campaign
+     */
+    function getCometCampaignsInfo(address comet) external view returns(
+        bytes32[] memory startRoots,
+        bytes32[] memory finishRoots,
+        address[][] memory assets,
+        uint256[] memory finishTimestamps
+        
+    ) {
+        for (uint256 i; i < campaigns[comet].length; i++) {
+            Campaign storage $ = campaigns[comet][i];
+            startRoots[i] = $.startRoot;
+            finishRoots[i] = $.finishRoot;
+            assets[i] = $.assets;
+            finishTimestamps[i] = $.finishTimestamp;
+        }
+    }
+
+    /**
+     * @notice Returns true if the proof is valid
+     * @param root The root of the Merkle tree
+     * @param proofs The Merkle proofs
+     * @param account The account to check for
+     * @param index The index of the account
+     * @param accrued The accrued value for the account
+     * @return True if the proof is valid
+     */
+    function verifyProof(
+        bytes32 root,
+        bytes32[] calldata proofs,
+        address account,
+        uint256 index,
+        uint256 accrued
+    ) external pure returns(bool) {
+        return MerkleProof.verifyCalldata(
+            proofs,
+            root,
+            keccak256(bytes.concat(keccak256(abi.encode(account, index, accrued))))
+        );
+    }
+
+
+    /**
      * @notice Returns the reward configuration for a specific token in a specific campaign
      * @param comet Comet protocol address
      * @param campaignId Id of the campaign
      * @param token The reward token address
      * @return The reward configuration
      */
-    function rewardConfig(
+    function rewardConfigForToken(
         address comet,
         uint256 campaignId,
         address token
@@ -745,7 +823,7 @@ contract CometRewardsV2 {
         address comet,
         address src,
         address to,
-        uint256 campaignId, //add array support
+        uint256 campaignId,
         bool shouldAccrue,
         FinishProof calldata finishProof
     ) internal {
@@ -761,39 +839,25 @@ contract CometRewardsV2 {
         }
         else if($.finishTimestamp < block.timestamp) revert CampaignEnded(comet, campaignId);
         if(shouldAccrue) {
-            //remove from loop
             CometInterface(comet).accrueAccount(src);
         }
         for (uint256 j; j < $.assets.length; j++) {
             AssetConfig memory config = $.configs[$.assets[j]];
             address token = $.assets[j];
             uint256 claimed = $.claimed[src][token];
-            uint256 accrued;
-            if($.finishRoot == bytes32(0))
-            {
-                accrued = CometInterface(comet).baseTrackingAccrued(src);
-                if(config.shouldUpscale) {
-                    accrued *= config.rescaleFactor;
-                } else {
-                    accrued /= config.rescaleFactor;
-                }
-                accrued = (accrued * config.multiplier) / FACTOR_SCALE;
-            }
-            else{
-                accrued = getRewardAccrued(
-                    comet,
-                    src,
-                    0,
-                    $.finishRoot != bytes32(0) ? finishProof.finishAccrued : 0,
-                    config
-                );
-            }
+            uint256 accrued = getRewardsAccrued(
+                comet,
+                src,
+                0,
+                $.finishRoot != bytes32(0) ? finishProof.finishAccrued : 0,
+                config
+            );
             if(accrued > claimed) {
                 uint256 owed = accrued - claimed;
-                $.claimed[src][token] = accrued;
-                doTransferOut(token, to, owed);
-
-                emit RewardClaimed(campaignId, comet, src, to, token, owed);
+                if(doTransferOut(token, to, owed) > 0){
+                    $.claimed[src][token] = accrued;                    
+                    emit RewardClaimed(campaignId, comet, src, to, token, owed);
+                }
             }
         }
     }
@@ -805,7 +869,7 @@ contract CometRewardsV2 {
         address comet,
         address src,
         address to,
-        uint256 campaignId, //add array support
+        uint256 campaignId,
         Proofs calldata proofs,
         bool shouldAccrue
     ) internal {
@@ -841,20 +905,19 @@ contract CometRewardsV2 {
 
 
             uint256 claimed = $.claimed[src][token];
-            uint256 accrued = getRewardAccrued(
+            uint256 accrued = getRewardsAccrued(
                 comet,
                 src,
                 proofs.startAccrued,
                 $.finishRoot != bytes32(0) ? proofs.finishAccrued : 0,
                 config
             );
-
             if(accrued > claimed) {
                 uint256 owed = accrued - claimed;
-                $.claimed[src][token] = accrued;
-                doTransferOut(token, to, owed);
-
-                emit RewardClaimed(campaignId, comet, src, to, token, owed);
+                if(doTransferOut(token, to, owed) > 0){
+                    $.claimed[src][token] = accrued;                    
+                    emit RewardClaimed(campaignId, comet, src, to, token, owed);
+                }
             }
         }
     }
@@ -866,7 +929,7 @@ contract CometRewardsV2 {
         address comet,
         address src,
         address to,
-        uint256[] memory campaignIds, //add array support
+        uint256[] memory campaignIds,
         Proofs[] calldata proofs,
         bool shouldAccrue
     ) internal {
@@ -890,10 +953,10 @@ contract CometRewardsV2 {
     /**
      * @dev Calculate the accrued value
      */
-    function getRewardAccrued(
+    function getRewardsAccrued(
         address comet,
         address account,
-        uint256 startAccrued, //if startAccrued = 0 => it new member
+        uint256 startAccrued, //if startAccrued = 0 => it is a new member
         uint256 finishAccrued,
         AssetConfig memory config
     ) internal view returns (uint256 accrued) {
@@ -914,16 +977,32 @@ contract CometRewardsV2 {
     /**
      * @dev Safe ERC20 transfer out
      */
-    function doTransferOut(address token, address to, uint256 amount) internal {
-        bool success = ERC20(token).transfer(to, amount);
+    function doTransferOut(address token, address to, uint256 amount) internal returns(uint256 amountOut) {
+        if(amount == 0) return 0;
+        IERC20NonStandard(token).transfer(to, amount);
+        bool success;
+        assembly ("memory-safe") {
+            switch returndatasize()
+                case 0 {                       // This is a non-standard ERC-20
+                    success := not(0)          // set success to true
+                }
+                case 32 {                      // This is a compliant ERC-20
+                    returndatacopy(0, 0, 32)
+                    success := mload(0)        // Set `success = returndata` of override external call
+                }
+                default {                      // This is an excessively non-compliant ERC-20, revert.
+                    revert(0, 0)
+                }
+        }
         if(!success) emit TransferOutFailed(token, to, amount);
+        else return amount;
     }
 
     /**
-     * @dev Safe cast to uint64
+     * @dev Safe cast to uint128
      */
-    function safe64(uint256 n) internal pure returns (uint64) {
-        if(n > type(uint64).max) revert InvalidUint64(n);
-        return uint64(n);
+    function safe128(uint256 n) internal pure returns (uint128) {
+        if(n > type(uint128).max) revert InvalidUint128(n);
+        return uint128(n);
     }
 }

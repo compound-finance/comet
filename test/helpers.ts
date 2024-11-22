@@ -694,7 +694,7 @@ export async function generateTree(accountsPrepared: [string, string][]) {
   return StandardMerkleTree.of(accountsIndexed, ['address', 'uint256', 'uint256']);
 }
 
-export async function getProof(address : string, tree) {
+export async function getProof(address : string, tree: StandardMerkleTree<[string, string, string]>) {
   for (const [i, v] of tree.entries()) {
     if (v[0] === address) {
       const proof = tree.getProof(i);
@@ -730,8 +730,7 @@ export async function makeRewardsV2(
       for (const token of tokens) {
         _tokens.push(token.address);
       }
-
-      await wait(rewardsV2.setNewCampaign(comet.address, tree.root, _tokens, 604800));
+      await wait(rewardsV2.setNewCampaign(comet.address, tree.root, _tokens, 604800)); // 604800 = 7 days
     } else {
       if(tokens.length !== multipliers.length) throw new Error('Arrays length mismatch');
       let assets: TokenMultiplierStruct[] = [];
