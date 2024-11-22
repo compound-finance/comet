@@ -16,10 +16,11 @@ import { readdirSync } from 'fs';
 import path from 'path';
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import { getEtherscanUrl } from '../../plugins/import/etherscan';
-import { multicallAddresses } from './constants';
+import { multicallAddresses, transferEventsFetchSettings } from './constants';
 import { CampaignType } from './types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { ethers } from 'ethers';
+import { delay } from '@nomiclabs/hardhat-etherscan/dist/src/etherscan/EtherscanService';
 
 interface FileData {
   timestamp: number;
@@ -28,8 +29,8 @@ interface FileData {
 }
 
 function findLastStartFinishPair(files: FileData[]) {
-  if(files.length === 0) {
-    return {start: null, finish: null};
+  if (files.length === 0) {
+    return { start: null, finish: null };
   }
   // sort files by timestamp
   files.sort((a, b) => a.timestamp - b.timestamp);
@@ -37,16 +38,16 @@ function findLastStartFinishPair(files: FileData[]) {
   // find latest finish file
   let finish: FileData | null = null;
   let start: FileData | null = null;
-  for(let i = files.length - 1; i >= 0; i--) {
+  for (let i = files.length - 1; i >= 0; i--) {
     const file = files[i];
     if (file.type === 'finish') {
       finish = file;
       break;
     }
   }
-  if(finish) {
+  if (finish) {
     // find latest start file before finish file
-    for(let i = files.indexOf(finish) - 1; i >= 0; i--) {
+    for (let i = files.indexOf(finish) - 1; i >= 0; i--) {
       const file = files[i];
       if (file.type === 'start') {
         start = file;
@@ -56,7 +57,7 @@ function findLastStartFinishPair(files: FileData[]) {
   }
   else {
     // find latest start file
-    for(let i = files.length - 1; i >= 0; i--) {
+    for (let i = files.length - 1; i >= 0; i--) {
       const file = files[i];
       if (file.type === 'start') {
         start = file;
@@ -64,7 +65,7 @@ function findLastStartFinishPair(files: FileData[]) {
       }
     }
   }
-  return {start, finish};
+  return { start, finish };
 }
 
 
@@ -78,7 +79,7 @@ export const getLatestStartAndFinishMerkleTreeForCampaign = async (
   // Ensure the directory exists
   await mkdir(folderPath, { recursive: true });
   let result: { start: FileData, finish: FileData };
-  try{
+  try {
     const files: FileData[] = readdirSync(folderPath).map(filename => {
       const [timestampStr, blockNumberStr, typeWithExtension] = filename.split('-');
       const type = typeWithExtension.replace('.json', '') as 'start' | 'finish'; // remove .json from type
@@ -90,9 +91,9 @@ export const getLatestStartAndFinishMerkleTreeForCampaign = async (
     });
     result = findLastStartFinishPair(files);
   }
-  catch(e) {
+  catch (e) {
     console.error('Error reading files from folder:', e);
-    result = {start: null, finish: null};
+    result = { start: null, finish: null };
   }
   const startFile = result?.start;
   const finishFile = result?.finish;
@@ -103,7 +104,7 @@ export const getLatestStartAndFinishMerkleTreeForCampaign = async (
     console.log('Start file not found. Generating new start file');
     const currentBlock = await hre.ethers.provider.getBlock('latest');
     const previousBlockNumber = currentBlock.number - 1000;
-    
+
     await generateMerkleTreeForCampaign(network, deployment, previousBlockNumber, 'start', hre);
     const newResult = findLastStartFinishPair(readdirSync(folderPath).map(filename => {
       const [timestampStr, blockNumberStr, typeWithExtension] = filename.split('-');
@@ -116,7 +117,7 @@ export const getLatestStartAndFinishMerkleTreeForCampaign = async (
     }));
     startTimestamp = newResult.start.timestamp;
     startBlockNumber = newResult.start.blockNumber;
-  }else{
+  } else {
     startTimestamp = startFile.timestamp;
     startBlockNumber = startFile.blockNumber;
   }
@@ -141,7 +142,7 @@ export const getLatestStartAndFinishMerkleTreeForCampaign = async (
     finishTimestamp = newResult.finish.timestamp;
     finishBlockNumber = newResult.finish.blockNumber;
   }
-  else{
+  else {
     finishTimestamp = finishFile.timestamp;
     finishBlockNumber = finishFile.blockNumber;
   }
@@ -210,11 +211,12 @@ export const generateMerkleTreeForCampaign = async (
   console.log(`Comet deployed transaction ${getEtherscanUrl(network)}/trx/${hash}`);
   console.log(`Comet deployed block ${cometDeployedBlockNumber}`);
 
-  const transferEvents = await getAllTransferEvents(comet, cometDeployedBlockNumber, blockNumber);
+  const fetchSettings = transferEventsFetchSettings[network]
+  const transferEvents = await getAllTransferEvents(comet, cometDeployedBlockNumber, blockNumber, fetchSettings?.chunkSize, fetchSettings?.delaySeconds);
   const users = getAllCometUsers(transferEvents);
 
   console.log(`Transfer events count ${transferEvents.length}`);
-  console.log(`Transfer events unique addresses (both from and to) ${users.length}`);
+  console.log(`Transfer events unique addresses ${users.length}`);
 
   const multicallAddress = multicallAddresses[network];
   if (!multicallAddress) {
@@ -233,8 +235,8 @@ export const generateMerkleTreeForCampaign = async (
   }
 
   const sortedDataWithIndexes = Object.entries(data)
-    .sort((a, b) => a[0].localeCompare(b[0])) // Sort by address (key) in ascending order
-    .map(([address, accrued], index) => [address, index.toString(), accrued]);
+    .sort((a, b) => a[0].toLowerCase().localeCompare(b[0].toLowerCase())) // Sort by address (key) in ascending order
+    .map(([address, accrued], index) => [address.toLowerCase(), index.toString(), accrued]);
 
   const merkleTree = generateMerkleTree(sortedDataWithIndexes);
 
@@ -381,8 +383,7 @@ export const multicall = async (multicallAddress: string, cometAddress: string, 
     });
 
     if (!returnData || returnData.length !== chunk.length * 2) {
-      console.error('Incorrect multicall');
-      process.exit(1);
+      throw new Error('Incorrect multicall request')
     }
 
     // Decode results for this chunk
@@ -425,7 +426,7 @@ export const createCampaignFile = (data: string[][], tree: StandardMerkleTree<st
   return file;
 };
 
-export const getAllTransferEvents = async (comet: CometInterface, startBlock: number, endBlock: number, chunkSize: number = 500000) => {
+export const getAllTransferEvents = async (comet: CometInterface, startBlock: number, endBlock: number, chunkSize: number = 100000, delaySeconds: number = 5) => {
   let allEvents: any[] = [];
 
   for (let fromBlock = startBlock; fromBlock < endBlock; fromBlock += chunkSize) {
@@ -434,24 +435,25 @@ export const getAllTransferEvents = async (comet: CometInterface, startBlock: nu
       const events = await comet.queryFilter(comet.filters.Transfer(), fromBlock, toBlock);
       allEvents = allEvents.concat(events);
       console.log(`Fetched events from block ${fromBlock} to ${toBlock}`);
+      await delay(delaySeconds * 1000)
     } catch (error) {
-      console.error(`Error fetching events from block ${fromBlock} to ${toBlock}:`, error);
+      throw new Error(`Error fetching events from block ${fromBlock} to ${toBlock}: ${error}`)
     }
   }
 
   return allEvents;
 };
 
-export const calculateMultiplier = async (supplySpeed: bigint, borrowSpeed:bigint, duration: number, amount: bigint) => {
+export const calculateMultiplier = async (supplySpeed: bigint, borrowSpeed: bigint, duration: number, amount: bigint) => {
   // to distribute exactly the amount of rewards in the given duration
   //    we need to adjust the speed with the multiplier
-  
+
   // amount = totalSpeed * multiplier * duration
   // multiplier = amount / (totalSpeed * duration)
   const totalSpeed = supplySpeed + borrowSpeed;
 
   const multiplier = BigNumber.from(amount * BigInt(1e15) * BigInt(1e18)).div((totalSpeed * BigInt(duration)));
-  
+
   console.log(`\n=========================================`);
   console.log(`Amount to of tokens distribute:   ${amount}`);
   console.log(`Duration in seconds:              ${duration}`);

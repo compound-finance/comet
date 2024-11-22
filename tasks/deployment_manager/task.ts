@@ -354,6 +354,7 @@ task('deploy_and_migrate', 'Runs deploy and migration')
 
     });
 
+// Can be validated using DUNE - https://dune.com/queries/4320237
 task('generateMerkleTree', 'Generates a Merkle Tree for a given campaign')
   .addParam('deployment', 'The deployment to use (e.g., usdc, weth)')
   .addParam('type', 'The campaign type, either start or finish')
