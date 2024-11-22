@@ -2,6 +2,11 @@
 
 The purpose of this script is to generate proofs for Rewards V2. Detailed information about the Rewards V2 implementation can be found in the [RewardsV2.md](../../docs/RewardsV2.md).
 
+## How to generate Merkle tree with proofs?
+
+1. You can run the script locally by the command `yarn hardhat generateMerkleTree --network mainnet --deployment usdc --type start --blocknumber 21114579`
+2. Run `create-rewards-v2-campaign` Github Workflow
+
 ## Script Workflow
 
 1. User Collection. Retrieve all users that interacted with the Comet starting from the Comet creation block up to a specified block.
