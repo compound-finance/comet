@@ -16,7 +16,6 @@ import { readdirSync } from 'fs';
 import path from 'path';
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import { getEtherscanUrl } from '../../plugins/import/etherscan';
-import { multicallAddresses } from './constants';
 import { CampaignType } from './types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { ethers } from 'ethers';
@@ -216,11 +215,7 @@ export const generateMerkleTreeForCampaign = async (
   console.log(`Transfer events count ${transferEvents.length}`);
   console.log(`Transfer events unique addresses (both from and to) ${users.length}`);
 
-  const multicallAddress = multicallAddresses[network];
-  if (!multicallAddress) {
-    console.error(`Multicall is not supported by ${network} network`);
-    process.exit(1);
-  }
+  const multicallAddress = '0xcA11bde05977b3631167028862bE2a173976CA11';
 
   const { data } = await multicall(multicallAddress, comet.address, users, blockNumber, hre);
 
