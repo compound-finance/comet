@@ -218,10 +218,9 @@ export const generateMerkleTreeForCampaign = async (
   console.log(`Transfer events count ${transferEvents.length}`);
   console.log(`Transfer events unique addresses ${users.length}`);
 
-  const multicallAddress = multicallAddresses[network];
+  const multicallAddress = multicallAddresses[network]
   if (!multicallAddress) {
-    console.error(`Multicall is not supported by ${network} network`);
-    process.exit(1);
+    throw new Error("Network is not supported")
   }
 
   const { data } = await multicall(multicallAddress, comet.address, users, blockNumber, hre);

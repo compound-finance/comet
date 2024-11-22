@@ -3,8 +3,8 @@ import { DeploymentManager } from '../../../../plugins/deployment_manager/Deploy
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { exp } from '../../../../src/deploy';
 
-const MULTISIG_ADDRESS = "0xD0DD789BcF66b36046b0424EfE8b2D83be36FE89";
-const FAUCETEER_ADDRESS = "0x68793eA49297eB75DFB4610B68e076D2A5c7646C";
+const MULTISIG_ADDRESS = '0xD0DD789BcF66b36046b0424EfE8b2D83be36FE89';
+const FAUCETEER_ADDRESS = '0x68793eA49297eB75DFB4610B68e076D2A5c7646C';
 
 const config = {
   adminUSDC: exp(100_000, 6),
@@ -54,7 +54,8 @@ export default migration('1730291787_add_rewards_v2', {
     return { cometRewardsV2Address: cometRewardsV2.address };
   },
 
-  enact: async (deploymentManager: DeploymentManager, _, { cometRewardsV2Address }) => {
+  enact: async () => {
+    // 
   },
 
   async enacted(): Promise<boolean> {
