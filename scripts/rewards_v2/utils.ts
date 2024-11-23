@@ -211,16 +211,16 @@ export const generateMerkleTreeForCampaign = async (
   console.log(`Comet deployed transaction ${getEtherscanUrl(network)}/trx/${hash}`);
   console.log(`Comet deployed block ${cometDeployedBlockNumber}`);
 
-  const fetchSettings = transferEventsFetchSettings[network]
+  const fetchSettings = transferEventsFetchSettings[network];
   const transferEvents = await getAllTransferEvents(comet, cometDeployedBlockNumber, blockNumber, dm, fetchSettings?.chunkSize, fetchSettings?.delaySeconds);
   const users = getAllCometUsers(transferEvents);
 
   console.log(`Transfer events count ${transferEvents.length}`);
   console.log(`Transfer events unique addresses ${users.length}`);
 
-  const multicallAddress = multicallAddresses[network]
+  const multicallAddress = multicallAddresses[network];
   if (!multicallAddress) {
-    throw new Error("Network is not supported")
+    throw new Error('Network is not supported');
   }
 
   const { data } = await multicall(multicallAddress, comet.address, users, blockNumber, dm);
@@ -382,7 +382,7 @@ export const multicall = async (multicallAddress: string, cometAddress: string, 
     });
 
     if (!returnData || returnData.length !== chunk.length * 2) {
-      throw new Error('Incorrect multicall request')
+      throw new Error('Incorrect multicall request');
     }
 
     // Decode results for this chunk
@@ -432,13 +432,13 @@ export const getAllTransferEvents = async (comet: CometInterface, startBlock: nu
     const toBlock = Math.min(fromBlock + chunkSize - 1, endBlock);
     try {
       const events = await dm.retry(() => {
-        return comet.queryFilter(comet.filters.Transfer(), fromBlock, toBlock)
-      })
+        return comet.queryFilter(comet.filters.Transfer(), fromBlock, toBlock);
+      });
       allEvents = allEvents.concat(events);
       console.log(`Fetched events from block ${fromBlock} to ${toBlock}`);
-      await delay(delaySeconds * 1000)
+      await delay(delaySeconds * 1000);
     } catch (error) {
-      throw new Error(`Error fetching events from block ${fromBlock} to ${toBlock}: ${error}`)
+      throw new Error(`Error fetching events from block ${fromBlock} to ${toBlock}: ${error}`);
     }
   }
 

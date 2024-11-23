@@ -1,4 +1,4 @@
-import { MulticallAddressesConfig, TransferEventsFetchSettings } from "./types";
+import { MulticallAddressesConfig, TransferEventsFetchSettings } from './types';
 
 // from https://www.multicall3.com/deployments
 export const multicallAddresses: MulticallAddressesConfig = {
@@ -21,4 +21,4 @@ export const transferEventsFetchSettings: TransferEventsFetchSettings = {
   mantle: { delaySeconds: 5, chunkSize: 100000 },
   scroll: { delaySeconds: 5, chunkSize: 100000 },
   sepolia: { delaySeconds: 5, chunkSize: 100000 },
-}
+};
