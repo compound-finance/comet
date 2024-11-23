@@ -23,5 +23,5 @@ export type MulticallAddressesConfig = {
 }
 
 export type TransferEventsFetchSettings = {
-    [network: string]: { delaySeconds: number, chunkSize: number }; // address of multicall contract
+    [network: string]: { delaySeconds: number, chunkSize: number };
 }
