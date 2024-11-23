@@ -15,5 +15,11 @@ The purpose of this script is to generate proofs for Rewards V2. Detailed inform
 4. Merkle Tree Generation. Construct a sorted Merkle tree using the prepared input data.
 5. File Generation and Storage. Generate the proof file and save it for later use in the [/campaigns](../../campaigns/) directory.
 
+## Verify user in campaign
+To verify that the user was included into the Comet with the proper accrue value, user can run [verify-address-in-campaign.ts](./verify-address-in-campaign.ts) script. `ADDRESS=0xUserAddress CAMPAIGN='1732326736947-21247270-start.json' DEPLOYMENT=usdt BLOCK_NUMBER=21074594 yarn run rewards-v2-verify-address -- --network mainnet`
+
+## Get proofs
+To get user's proof or to get user neighbors' proofs use [verify-address-in-campaign.ts](./verify-address-in-campaign.ts) script. `ADDRESS=0xUserAddress CAMPAIGN='1732326736947-21247270-start.json' DEPLOYMENT=usdt BLOCK_NUMBER=21074594 yarn run rewards-v2-verify-address -- --network mainnet`
+
 ## 
 To validate the list of interacted addresses with Comet please use [Dune Query](https://dune.com/queries/4320237)

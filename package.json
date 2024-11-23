@@ -42,7 +42,8 @@
     "audit:vendor": "vendoza contracts/vendor/manifest.json",
     "slither:fn-clashes": "slither-check-upgradeability contracts/Configurator.sol Configurator --proxy-filename contracts/ConfiguratorProxy.sol --proxy-name ConfiguratorProxy",
     "liquidation-bot": "hardhat run scripts/liquidation_bot/index.ts",
-    "rewards-v2": "hardhat run scripts/rewards_v2/index.ts"
+    "rewards-v2": "hardhat run scripts/rewards_v2/index.ts",
+    "rewards-v2-verify-address": "hardhat run scripts/rewards_v2/verify-address-in-campaign.ts"
   },
   "keywords": [],
   "author": "Compound Finance",

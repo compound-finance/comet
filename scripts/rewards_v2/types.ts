@@ -8,10 +8,12 @@ export type IncentivizationCampaignData = {
     blockNumber: number;
     generatedTimestamp: number;
     data: {
-        [address: string]: {
-            accrue: string;
-            proof: string[];
-            index: number;
-        };
+        [address: string]: Proof;
     };
+}
+
+export type Proof = {
+    accrue: string;
+    proof: string[];
+    index: number;
 }
