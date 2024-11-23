@@ -1,10 +1,4 @@
-type MulticallAddressesConfig = {
-  [network: string]: string; // address of multicall contract
-}
-
-type TransferEventsFetchSettings = {
-  [network: string]: { delaySeconds: number, chunkSize: number }; // address of multicall contract
-}
+import { MulticallAddressesConfig, TransferEventsFetchSettings } from "./types";
 
 // from https://www.multicall3.com/deployments
 export const multicallAddresses: MulticallAddressesConfig = {

@@ -17,3 +17,11 @@ export type Proof = {
     proof: string[];
     index: number;
 }
+
+export type MulticallAddressesConfig = {
+    [network: string]: string; // address of multicall contract
+}
+
+export type TransferEventsFetchSettings = {
+    [network: string]: { delaySeconds: number, chunkSize: number }; // address of multicall contract
+}

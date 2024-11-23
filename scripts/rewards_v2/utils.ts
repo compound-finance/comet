@@ -212,7 +212,7 @@ export const generateMerkleTreeForCampaign = async (
   console.log(`Comet deployed block ${cometDeployedBlockNumber}`);
 
   const fetchSettings = transferEventsFetchSettings[network]
-  const transferEvents = await getAllTransferEvents(comet, cometDeployedBlockNumber, blockNumber, fetchSettings?.chunkSize, fetchSettings?.delaySeconds);
+  const transferEvents = await getAllTransferEvents(comet, cometDeployedBlockNumber, blockNumber, dm, fetchSettings?.chunkSize, fetchSettings?.delaySeconds);
   const users = getAllCometUsers(transferEvents);
 
   console.log(`Transfer events count ${transferEvents.length}`);
@@ -223,7 +223,7 @@ export const generateMerkleTreeForCampaign = async (
     throw new Error("Network is not supported")
   }
 
-  const { data } = await multicall(multicallAddress, comet.address, users, blockNumber, hre);
+  const { data } = await multicall(multicallAddress, comet.address, users, blockNumber, dm);
 
   if (!data['0x0000000000000000000000000000000000000000']) {
     data['0x0000000000000000000000000000000000000000'] = '0';
@@ -358,12 +358,12 @@ function chunkArray<T>(array: T[], chunkSize: number): T[][] {
   return chunks;
 }
 
-export const multicall = async (multicallAddress: string, cometAddress: string, userAddresses: string[], blockNumber: number, hre: HardhatRuntimeEnvironment) => {
+export const multicall = async (multicallAddress: string, cometAddress: string, userAddresses: string[], blockNumber: number, dm: DeploymentManager) => {
   const multicallABI = [
     'function aggregate((address target, bytes callData)[] memory calls) external returns (uint256 blockNumber, bytes[] memory returnData)'
   ];
 
-  const multicallContract = new hre.ethers.Contract(multicallAddress, multicallABI, hre.ethers.provider);
+  const multicallContract = new dm.hre.ethers.Contract(multicallAddress, multicallABI, dm.hre.ethers.provider);
   const userAddressToAccrue: { [address: string]: string } = {};
 
   // Split user addresses into chunks of 1,000
@@ -374,7 +374,7 @@ export const multicall = async (multicallAddress: string, cometAddress: string, 
     const calls: { target: string, callData: string }[] = [];
 
     chunk.forEach(address => {
-      calls.push(...createMulticallCallsToGetBaseTrackingAccruedPerAddress(cometAddress, address, hre));
+      calls.push(...createMulticallCallsToGetBaseTrackingAccruedPerAddress(cometAddress, address, dm.hre));
     });
 
     const [, returnData] = await multicallContract.callStatic.aggregate(calls, {
@@ -388,7 +388,7 @@ export const multicall = async (multicallAddress: string, cometAddress: string, 
     // Decode results for this chunk
     returnData.forEach((data: string, index: number) => {
       if (index % 2 !== 0) {
-        const result = hre.ethers.utils.defaultAbiCoder.decode(
+        const result = dm.hre.ethers.utils.defaultAbiCoder.decode(
           ['int104', 'uint64', 'uint64', 'uint16', 'uint8'],
           data
         ) as [BigNumber, BigNumber, BigNumber, number, number];
@@ -425,13 +425,15 @@ export const createCampaignFile = (data: string[][], tree: StandardMerkleTree<st
   return file;
 };
 
-export const getAllTransferEvents = async (comet: CometInterface, startBlock: number, endBlock: number, chunkSize: number = 100000, delaySeconds: number = 5) => {
+export const getAllTransferEvents = async (comet: CometInterface, startBlock: number, endBlock: number, dm: DeploymentManager, chunkSize: number = 100000, delaySeconds: number = 5) => {
   let allEvents: any[] = [];
 
   for (let fromBlock = startBlock; fromBlock < endBlock; fromBlock += chunkSize) {
     const toBlock = Math.min(fromBlock + chunkSize - 1, endBlock);
     try {
-      const events = await comet.queryFilter(comet.filters.Transfer(), fromBlock, toBlock);
+      const events = await dm.retry(() => {
+        return comet.queryFilter(comet.filters.Transfer(), fromBlock, toBlock)
+      })
       allEvents = allEvents.concat(events);
       console.log(`Fetched events from block ${fromBlock} to ${toBlock}`);
       await delay(delaySeconds * 1000)

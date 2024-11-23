@@ -50,7 +50,7 @@ const getAddressAccrueValue = async (address: string, network: string, deploymen
         throw new Error("Network is not supported")
     }
 
-    const { data } = await multicall(multicallAddress, comet.address, [address], blockNumber, hre)
+    const { data } = await multicall(multicallAddress, comet.address, [address], blockNumber, dm)
     const [addr, accrue] = Object.entries(data)[0] as [string, string]
 
     return { address: addr, accrue, blockNumber, comet: comet.address }
