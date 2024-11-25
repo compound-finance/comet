@@ -1059,7 +1059,6 @@ scenario(
     return txn; // return txn to measure gas
   });
 
-    
 scenario(
   'Comet#rewardsV2 > can claim borrow rewards for self as a new user in new campaign with no finish tree',
   {
@@ -1106,8 +1105,8 @@ scenario(
     const { asset: collateralAssetAddress, scale: scaleBN } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
     const scale = scaleBN.toBigInt();
-    const toSupply = 10_000n * scale;
-    const toBorrow = 1_000n * baseScale;
+    const toSupply = BigInt(getConfigForScenario(context).rewardsBase) * scale;
+    const toBorrow = BigInt(getConfigForScenario(context).rewardsBase) / 10n  * baseScale;
 
     await collateralAsset.approve(albert, comet.address);
     await albert.safeSupplyAsset({ asset: collateralAssetAddress, amount: toSupply });

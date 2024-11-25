@@ -332,10 +332,6 @@ export class CometContext {
 }
 
 async function buildActor(name: string, signer: SignerWithAddress, context: CometContext): Promise<CometActor> {
-  await context.world.deploymentManager.hre.ethers.provider.send('hardhat_setBalance', [
-    signer.address,
-    context.world.deploymentManager.hre.ethers.utils.hexStripZeros(context.world.deploymentManager.hre.ethers.utils.parseUnits('1000000', 'ether').toHexString()),
-  ]);
   return new CometActor(name, signer, await signer.getAddress(), context);
 }
 
