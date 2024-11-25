@@ -103,9 +103,8 @@ export const getLatestStartAndFinishMerkleTreeForCampaign = async (
   if (!startFile) {
     console.log('Start file not found. Generating new start file');
     const currentBlock = await hre.ethers.provider.getBlock('latest');
-    const previousBlockNumber = currentBlock.number - 1000;
 
-    await generateMerkleTreeForCampaign(network, deployment, previousBlockNumber, 'start', hre);
+    await generateMerkleTreeForCampaign(network, deployment, currentBlock.number, 'start', hre);
     const newResult = findLastStartFinishPair(readdirSync(folderPath).map(filename => {
       const [timestampStr, blockNumberStr, typeWithExtension] = filename.split('-');
       const type = typeWithExtension.replace('.json', '') as 'start' | 'finish'; // remove .json from type
@@ -126,9 +125,18 @@ export const getLatestStartAndFinishMerkleTreeForCampaign = async (
   let finishBlockNumber = 0;
   if (!finishFile) {
     console.log('Finish file not found. Generating new finish file');
-    const currentBlock = await hre.ethers.provider.getBlock('latest');
-    const currentBlockNumber = currentBlock.number;
-    await generateMerkleTreeForCampaign(network, deployment, currentBlockNumber, 'finish', hre);
+    // wait 1000 seconds
+    await hre.network.provider.request({
+      method: 'evm_increaseTime',
+      params: [60 * 60 * 24 * 30], // month
+    });
+    await hre.network.provider.request({
+      method: 'evm_mine',
+      params: [],
+    });
+    const newBlock = await hre.ethers.provider.getBlock('latest');
+    const newBlockNumber = newBlock.number;
+    await generateMerkleTreeForCampaign(network, deployment, newBlockNumber, 'finish', hre);
 
     const newResult = findLastStartFinishPair(readdirSync(folderPath).map(filename => {
       const [timestampStr, blockNumberStr, typeWithExtension] = filename.split('-');

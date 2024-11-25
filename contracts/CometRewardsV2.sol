@@ -701,8 +701,12 @@ contract CometRewardsV2 {
         bytes32[] memory finishRoots,
         address[][] memory assets,
         uint256[] memory finishTimestamps
-        
     ) {
+        if(campaigns[comet].length == 0) return (startRoots, finishRoots, assets, finishTimestamps);
+        startRoots = new bytes32[](campaigns[comet].length);
+        finishRoots = new bytes32[](campaigns[comet].length);
+        assets = new address[][](campaigns[comet].length);
+        finishTimestamps = new uint256[](campaigns[comet].length);
         for (uint256 i; i < campaigns[comet].length; i++) {
             Campaign storage $ = campaigns[comet][i];
             startRoots[i] = $.startRoot;

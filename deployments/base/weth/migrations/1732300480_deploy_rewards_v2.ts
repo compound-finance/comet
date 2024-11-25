@@ -2,12 +2,12 @@ import { expect } from 'chai';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 
-const MULTISIG_ADDRESS = '0x3cb4653F3B45F448D9100b118B75a1503281d2ee';
+const MULTISIG_ADDRESS = '';
 
 export default migration('1732300480_deploy_rewards_v2', {
   async prepare(deploymentManager: DeploymentManager) {
     const cometRewardsV2 = await deploymentManager.deploy(
-      'CometRewardsV2',
+      'rewardsV2',
       'CometRewardsV2.sol',
       [
         MULTISIG_ADDRESS,   // The governor who will control the contract
@@ -25,7 +25,7 @@ export default migration('1732300480_deploy_rewards_v2', {
   },
 
   async verify(deploymentManager: DeploymentManager) {
-    const cometRewardsV2 = await deploymentManager.fromDep('CometRewardsV2', 'mainnet', 'usds');
+    const cometRewardsV2 = await deploymentManager.fromDep('rewardsV2', 'base', 'weth');
     expect(MULTISIG_ADDRESS.toLowerCase()).to.be.equal((await cometRewardsV2.governor()).toLowerCase());
   },
 });

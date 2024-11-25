@@ -1,7 +1,7 @@
 import { CometContext, CometProperties, scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { ethers, exp, Numeric } from '../test/helpers';
-import { isRewardSupported, matchesDeployment } from './utils';
+import { isRewardsV2Supported, matchesDeployment } from './utils';
 import { Contract, ContractReceipt, Signer } from 'ethers';
 import { ERC20__factory } from '../build/types';
 import { World } from '../plugins/scenario';
@@ -124,7 +124,7 @@ async function createNewCampaign(
 
 function getProof(address : string, tree: StandardMerkleTree<string[]>) {
   for (const [i, v] of tree.entries()) {
-    if (v[0] === address) {
+    if (v[0].toLowerCase() === address.toLowerCase()) {
       const proof = tree.getProof(i);
       return { proof, v };
     }
@@ -142,7 +142,7 @@ function getProofsForNewUser(address: string, tree: StandardMerkleTree<string[]>
   let previousAddressBigInt = addressToBigInt(previousAddress);
 
   for (const [i, v] of tree.entries()) {
-    const currentAddress = v[0];
+    const currentAddress = v[0].toLowerCase();
     const currentAddressBigInt = addressToBigInt(currentAddress);
     // trow error if currentAddress is equal to targetAddress
     if (currentAddressBigInt === targetAddressBigInt) {
@@ -184,10 +184,10 @@ function findNewUserWithFinishTree(
   finishTree: StandardMerkleTree<string[]>
 ) {
   for (const [i, v] of finishTree.entries()) {
-    const address = v[0];
+    const address = v[0].toLowerCase();
     let found = false;
     for (const [, u] of startTree.entries()) {
-      if (u[0] === address) {
+      if (u[0].toLowerCase() === address.toLowerCase()) {
         found = true;
         break;
       }
@@ -199,24 +199,44 @@ function findNewUserWithFinishTree(
   throw new Error('No user found');
 }
 
+async function getRewardsAdminSigner(
+  ctx: CometContext
+) : Promise<Signer> {
+  const rewards = await ctx.world.deploymentManager.contract('rewardsV2');
+  const adminAddress = await rewards.governor();
+  // impersonate admin
+  await ctx.world.deploymentManager.hre.network.provider.request({
+    method: 'hardhat_impersonateAccount',
+    params: [adminAddress],
+  });
+  // set balance
+  await ctx.world.deploymentManager.hre.ethers.provider.send('hardhat_setBalance', [
+    adminAddress,
+    ctx.world.deploymentManager.hre.ethers.utils.hexStripZeros(ctx.world.deploymentManager.hre.ethers.utils.parseUnits('100', 'ether').toHexString()),
+  ]);
+  return ctx.world.deploymentManager.getSigner(adminAddress);
+}
+
 scenario(
   'Comet#rewardsV2 > can claim supply rewards for self as existing user in new campaign with no finish tree',
   {
-    filter: async (ctx) => await isRewardSupported(ctx),
+    filter: async (ctx) => await isRewardsV2Supported(ctx),
     tokenBalances: async (ctx: CometContext) => (
       {
         albert: { $base: ` == ${+getConfigForScenario(ctx).rewardsBase}`}, // in units of asset, not wei
+        betty: { $base: ` == ${+getConfigForScenario(ctx).rewardsBase}`}, // in units of asset, not wei
       }
     ),
   },
   async ({ comet, rewardsV2, actors},  context, world) => {
-    const { albert } = actors;
+    const { albert, betty } = actors;
     const deploymentManager = world.deploymentManager;
     const { startTree : startMerkleTree } = await getLatestStartAndFinishMerkleTreeForCampaign(
       deploymentManager.network,
       deploymentManager.deployment,
       deploymentManager.hre
     );
+    const admin = await getRewardsAdminSigner(context);
 
     // impersonate someone from the tree with accrue > 1000
     let addressToImpersonate: string;
@@ -247,18 +267,18 @@ scenario(
     const FaucetTokenFactory = (await deploymentManager.hre.ethers.getContractFactory('FaucetToken')) as FaucetToken__factory;
   
     const rewardTokens = {
-      rewardToken0: await FaucetTokenFactory.deploy(exp(10_000_000, 18), 'RewardToken0', 18, 'RewardToken0'),
-      rewardToken1: await FaucetTokenFactory.deploy(exp(10_000_000, 6), 'RewardToken1', 6, 'RewardToken1')
+      rewardToken0: await FaucetTokenFactory.connect(admin).deploy(exp(10_000_000, 18), 'RewardToken0', 18, 'RewardToken0'),
+      rewardToken1: await FaucetTokenFactory.connect(admin).deploy(exp(10_000_000, 6), 'RewardToken1', 6, 'RewardToken1')
     };
     const root = startMerkleTree.root;
 
-    await rewardTokens.rewardToken0.transfer(rewardsV2.address, exp(10_000_000, 18));
-    await rewardTokens.rewardToken1.transfer(rewardsV2.address, exp(10_000_000, 6));
-
+    await rewardTokens.rewardToken0.connect(admin).transfer(rewardsV2.address, exp(10_000_000, 18));
+    await rewardTokens.rewardToken1.connect(admin).transfer(rewardsV2.address, exp(10_000_000, 6));
+  
     const newCampaignId = await createNewCampaign(
       comet,
       rewardsV2,
-      actors.admin.signer,
+      admin,
       root,
       [rewardTokens.rewardToken0.address, rewardTokens.rewardToken1.address],
       90000 // 1 day + 1 hour
@@ -269,15 +289,15 @@ scenario(
     const baseScale = (await comet.baseScale()).toBigInt();
     
     if((await comet.borrowBalanceOf(jay.address)).toBigInt() > 0n) {
-      await albert.transferErc20(
+      await betty.transferErc20(
         baseAssetAddress,
         jay.address,
-        (await comet.borrowBalanceOf(jay.address)).toBigInt()
+        (await comet.borrowBalanceOf(jay.address)).toBigInt() + 50n
       );
       await baseAsset.approve(jay, comet.address);
       await comet.connect(jay.signer).supply(baseAssetAddress, (await comet.borrowBalanceOf(jay.address)).toBigInt());
     }
-    
+
     await albert.transferErc20(
       baseAssetAddress,
       jay.address,
@@ -369,7 +389,7 @@ scenario(
 scenario(
   'Comet#rewardsV2 > can claim supply rewards for self as a new user in new campaign with no finish tree',
   {
-    filter: async (ctx) => await isRewardSupported(ctx),
+    filter: async (ctx) => await isRewardsV2Supported(ctx),
     tokenBalances: async (ctx: CometContext) => (
       {
         albert: { $base: ` == ${+getConfigForScenario(ctx).rewardsBase * 2}`}, // in units of asset, not wei
@@ -384,6 +404,7 @@ scenario(
       deploymentManager.deployment,
       deploymentManager.hre
     );
+    const admin = await getRewardsAdminSigner(context);
 
     const FaucetTokenFactory = (await deploymentManager.hre.ethers.getContractFactory('FaucetToken')) as FaucetToken__factory;
   
@@ -399,7 +420,7 @@ scenario(
     const newCampaignId = await createNewCampaign(
       comet,
       rewardsV2,
-      actors.admin.signer,
+      admin,
       root,
       [rewardTokens.rewardToken0.address, rewardTokens.rewardToken1.address],
       90000 // 1 day + 1 hour
@@ -524,16 +545,17 @@ scenario(
 scenario(
   'Comet#rewardsV2 > can claim supply rewards for self as existing user in new campaign with finish tree',
   {
-    filter: async (ctx) => await isRewardSupported(ctx),
+    filter: async (ctx) => await isRewardsV2Supported(ctx),
   },
-  async ({ comet, rewardsV2, actors},  context, world) => {
+  async ({ comet, rewardsV2 },  context, world) => {
     const deploymentManager = world.deploymentManager;
     const { startTree : startMerkleTree, finishTree : finishMerkleTree } = await getLatestStartAndFinishMerkleTreeForCampaign(
       deploymentManager.network,
       deploymentManager.deployment,
       deploymentManager.hre
     );
-  
+    const admin = await getRewardsAdminSigner(context);
+
     // impersonate someone from the tree with accrue > 100000
     let addressToImpersonate: string;
     let userIndexStart = 0;
@@ -544,13 +566,16 @@ scenario(
     for(let i = 0; i < startMerkleTree.length; i++) {
       const [_addressStart, _indexStart, _accrueStart] = startMerkleTree.at(i);
 
-      if(+_accrueStart >= 100000) {
+      if(+_accrueStart >= 10000) {
         addressToImpersonate = _addressStart;
         accruedStart = BigInt(+_accrueStart);
         userIndexStart = +_indexStart;
 
         for (const [, v] of finishMerkleTree.entries()) {
-          if(v[0] === _addressStart && BigInt(v[2]) > accruedStart * 11n / 10n) {
+          if(
+            v[0].toLowerCase() === _addressStart.toLowerCase()
+            && BigInt(v[2]) > accruedStart * 11n / 10n
+          ) {
             accruedFinish = BigInt(v[2]);
             userIndexFinish = +v[1];
             break;
@@ -576,18 +601,18 @@ scenario(
     const FaucetTokenFactory = (await deploymentManager.hre.ethers.getContractFactory('FaucetToken')) as FaucetToken__factory;
     
     const rewardTokens = {
-      rewardToken0: await FaucetTokenFactory.deploy(exp(10_000_000, 18), 'RewardToken0', 18, 'RewardToken0'),
-      rewardToken1: await FaucetTokenFactory.deploy(exp(10_000_000, 6), 'RewardToken1', 6, 'RewardToken1')
+      rewardToken0: await FaucetTokenFactory.connect(admin).deploy(exp(10_000_000, 18), 'RewardToken0', 18, 'RewardToken0'),
+      rewardToken1: await FaucetTokenFactory.connect(admin).deploy(exp(10_000_000, 6), 'RewardToken1', 6, 'RewardToken1')
     };
     const root = startMerkleTree.root;
-  
-    await rewardTokens.rewardToken0.transfer(rewardsV2.address, exp(10_000_000, 18));
-    await rewardTokens.rewardToken1.transfer(rewardsV2.address, exp(10_000_000, 6));
+
+    await rewardTokens.rewardToken0.connect(admin).transfer(rewardsV2.address, exp(10_000_000, 18));
+    await rewardTokens.rewardToken1.connect(admin).transfer(rewardsV2.address, exp(10_000_000, 6));
 
     const newCampaignId = await createNewCampaign(
       comet,
       rewardsV2,
-      actors.admin.signer,
+      admin,
       root,
       [rewardTokens.rewardToken0.address, rewardTokens.rewardToken1.address],
       90000 // 1 day + 1 hour
@@ -600,7 +625,7 @@ scenario(
 
     const supplyTimestamp = await world.timestamp();
     await world.increaseTime(3600);
-    await rewardsV2.connect(actors.admin.signer).setCampaignFinishRoot(comet.address, newCampaignId, finishMerkleTree.root);
+    await rewardsV2.connect(admin).setCampaignFinishRoot(comet.address, newCampaignId, finishMerkleTree.root);
 
     const preTxnTimestamp = await world.timestamp();
 
@@ -672,15 +697,16 @@ scenario(
 scenario(
   'Comet#rewardsV2 > can claim supply rewards for self as a new user in new campaign with finish tree',
   {
-    filter: async (ctx) => await isRewardSupported(ctx),
+    filter: async (ctx) => await isRewardsV2Supported(ctx),
   }, 
-  async ({ comet, rewardsV2, actors},  context, world) => {
+  async ({ comet, rewardsV2 },  context, world) => {
     const deploymentManager = world.deploymentManager;
     const { startTree : startMerkleTree, finishTree : finishMerkleTree } = await getLatestStartAndFinishMerkleTreeForCampaign(
       deploymentManager.network,
       deploymentManager.deployment,
       deploymentManager.hre
     );
+    const admin = await getRewardsAdminSigner(context);
 
     const FaucetTokenFactory = (await deploymentManager.hre.ethers.getContractFactory('FaucetToken')) as FaucetToken__factory;
     let addressToImpersonate: string, userIndex: number, accruedFinish: bigint, newStartMerkleTree: StandardMerkleTree<string[]>;
@@ -707,7 +733,7 @@ scenario(
 
         for (const [, v] of startMerkleTree.entries()) {
           if(v[0].toLowerCase() !== addressToImpersonate.toLowerCase()) {
-            accountsPrepared.push([v[0], v[2]]);
+            accountsPrepared.push([v[0].toLowerCase(), v[2]]);
           }
         }
         newStartMerkleTree = generateTree(accountsPrepared);
@@ -740,7 +766,7 @@ scenario(
     const newCampaignId = await createNewCampaign(
       comet,
       rewardsV2,
-      actors.admin.signer,
+      admin,
       root,
       [rewardTokens.rewardToken0.address, rewardTokens.rewardToken1.address],
       90000 // 1 day + 1 hour
@@ -756,7 +782,7 @@ scenario(
     const jayBalance = await jay.getCometBaseBalance();
     const totalSupplyBalance = (await comet.totalSupply()).toBigInt();
     await world.increaseTime(3600); 
-    await rewardsV2.connect(actors.admin.signer).setCampaignFinishRoot(comet.address, newCampaignId, finishMerkleTree.root);
+    await rewardsV2.connect(admin).setCampaignFinishRoot(comet.address, newCampaignId, finishMerkleTree.root);
 
     const preTxnTimestamp = await world.timestamp();
 
@@ -882,10 +908,12 @@ scenario(
 scenario(
   'Comet#rewardsV2 > manager can claimTo for an existing user supply rewards from a managed account',
   {
-    filter: async (ctx) => await isRewardSupported(ctx) && !matchesDeployment(ctx, [{network: 'mainnet', deployment: 'weth'}]),
-    tokenBalances: {
-      albert: { $base: ' == 100' }, // in units of asset, not wei
-    },
+    filter: async (ctx) => await isRewardsV2Supported(ctx) && !matchesDeployment(ctx, [{network: 'mainnet', deployment: 'weth'}]),
+    tokenBalances: async (ctx: CometContext) => (
+      {
+        albert: { $base: ` == ${+getConfigForScenario(ctx).rewardsBase}` }, // in units of asset, not wei
+      }
+    ),
   },
   async ({ comet, rewardsV2, actors }, context, world) => {
     const { betty } = actors;
@@ -896,6 +924,7 @@ scenario(
       deploymentManager.deployment,
       deploymentManager.hre
     );
+    const admin = await getRewardsAdminSigner(context);
 
     // impersonate someone from the tree with accrue > 1000
     let addressToImpersonate: string;
@@ -940,7 +969,7 @@ scenario(
     const newCampaignId = await createNewCampaign(
       comet,
       rewardsV2,
-      actors.admin.signer,
+      admin,
       root,
       [rewardTokens.rewardToken0.address, rewardTokens.rewardToken1.address],
       90000 // 1 day + 1 hour
@@ -972,7 +1001,7 @@ scenario(
     rewardsBalanceBefore.push(await rewardTokens.rewardToken0.balanceOf(jay.address));
     rewardsBalanceBefore.push(await rewardTokens.rewardToken1.balanceOf(jay.address));
 
-    const txn = await (await rewardsV2.connect(actors.betty.signer).claimTo(
+    const txn = await (await rewardsV2.connect(betty.signer).claimTo(
       comet.address,
       newCampaignId,
       jay.address,
@@ -1034,11 +1063,13 @@ scenario(
 scenario(
   'Comet#rewardsV2 > can claim borrow rewards for self as a new user in new campaign with no finish tree',
   {
-    filter: async (ctx) => await isRewardSupported(ctx),
-    tokenBalances: {
-      albert: { $asset0: ' == 100000' }, // in units of asset, not wei
-      $comet: { $base: ' >= 1000 ' }
-    },
+    filter: async (ctx) => await isRewardsV2Supported(ctx),
+    tokenBalances: async (ctx: CometContext) => (
+      {
+        albert: { $asset0: ` == ${+getConfigForScenario(ctx).rewardsBase}` }, // in units of asset, not wei
+        $comet: { $base: ' >= 1000 ' }
+      }
+    ),
   },
   async ({ comet, rewardsV2, actors }, context, world) => {
     const { albert } = actors;
@@ -1048,22 +1079,23 @@ scenario(
       deploymentManager.deployment,
       deploymentManager.hre
     );
+    const admin = await getRewardsAdminSigner(context);
 
     const FaucetTokenFactory = (await deploymentManager.hre.ethers.getContractFactory('FaucetToken')) as FaucetToken__factory;
   
     const rewardTokens = {
-      rewardToken0: await FaucetTokenFactory.connect(actors.admin.signer).deploy(exp(10_000_000, 18), 'RewardToken0', 18, 'RewardToken0'),
-      rewardToken1: await FaucetTokenFactory.connect(actors.admin.signer).deploy(exp(10_000_000, 6), 'RewardToken1', 6, 'RewardToken1')
+      rewardToken0: await FaucetTokenFactory.connect(admin).deploy(exp(10_000_000, 18), 'RewardToken0', 18, 'RewardToken0'),
+      rewardToken1: await FaucetTokenFactory.connect(admin).deploy(exp(10_000_000, 6), 'RewardToken1', 6, 'RewardToken1')
     };
     const root = startMerkleTree.root;
 
-    await rewardTokens.rewardToken0.transfer(rewardsV2.address, exp(10_000_000, 18));
-    await rewardTokens.rewardToken1.transfer(rewardsV2.address, exp(10_000_000, 6));
+    await rewardTokens.rewardToken0.connect(admin).transfer(rewardsV2.address, exp(10_000_000, 18));
+    await rewardTokens.rewardToken1.connect(admin).transfer(rewardsV2.address, exp(10_000_000, 6));
 
     const newCampaignId = await createNewCampaign(
       comet,
       rewardsV2,
-      actors.admin.signer,
+      admin,
       root,
       [rewardTokens.rewardToken0.address, rewardTokens.rewardToken1.address],
       90000 // 1 day + 1 hour
@@ -1194,18 +1226,19 @@ scenario(
     return txn; // return txn to measure gas
   });
 
-scenario.only(
+scenario(
   'Comet#rewardsV2 > cannot claim rewards with invalid merkle proof',
   {
-    filter: async (ctx) => await isRewardSupported(ctx),
+    filter: async (ctx) => await isRewardsV2Supported(ctx),
   },
-  async ({ comet, rewardsV2, actors }, context, world) => {
+  async ({ comet, rewardsV2 }, context, world) => {
     const deploymentManager = world.deploymentManager;
     const { startTree : startMerkleTree } = await getLatestStartAndFinishMerkleTreeForCampaign(
       deploymentManager.network,
       deploymentManager.deployment,
       deploymentManager.hre
     );
+    const admin = await getRewardsAdminSigner(context);
 
     // impersonate someone from the tree with accrue > 1000
     let addressToImpersonate: string;
@@ -1233,22 +1266,24 @@ scenario.only(
     const FaucetTokenFactory = (await deploymentManager.hre.ethers.getContractFactory('FaucetToken')) as FaucetToken__factory;
   
     const rewardTokens = {
-      rewardToken0: await FaucetTokenFactory.connect(actors.admin.signer).deploy(exp(10_000_000, 18), 'RewardToken0', 18, 'RewardToken0'),
-      rewardToken1: await FaucetTokenFactory.connect(actors.admin.signer).deploy(exp(10_000_000, 6), 'RewardToken1', 6, 'RewardToken1')
+      rewardToken0: await FaucetTokenFactory.connect(admin).deploy(exp(10_000_000, 18), 'RewardToken0', 18, 'RewardToken0'),
+      rewardToken1: await FaucetTokenFactory.connect(admin).deploy(exp(10_000_000, 6), 'RewardToken1', 6, 'RewardToken1')
     };
     const root = startMerkleTree.root;
+    console.log(root);
+    console.log(jay.address);
 
     await(
-      await rewardTokens.rewardToken0.connect(actors.admin.signer).transfer(rewardsV2.address, exp(10_000_000, 18))
+      await rewardTokens.rewardToken0.connect(admin).transfer(rewardsV2.address, exp(10_000_000, 18))
     ).wait();
     await(
-      await rewardTokens.rewardToken1.connect(actors.admin.signer).transfer(rewardsV2.address, exp(10_000_000, 6))
+      await rewardTokens.rewardToken1.connect(admin).transfer(rewardsV2.address, exp(10_000_000, 6))
     ).wait();
   
     const newCampaignId = await createNewCampaign(
       comet,
       rewardsV2,
-      actors.admin.signer,
+      admin,
       root,
       [rewardTokens.rewardToken0.address, rewardTokens.rewardToken1.address],
       90000 // 1 day + 1 hour
@@ -1290,10 +1325,13 @@ for (let i = 0; i < MULTIPLIERS.length; i++) {
   scenario(
     `Comet#rewardsV2 > can claim supply rewards as existing user on scaling rewards contract with multiplier of ${MULTIPLIERS[i]}`,
     {
-      filter: async (ctx) => await isRewardSupported(ctx),
-      tokenBalances: {
-        albert: { $base: ' == 100' }, // in units of asset, not wei
-      },
+      filter: async (ctx) => await isRewardsV2Supported(ctx),
+      tokenBalances: async (ctx: CometContext) => (
+        {
+          albert: { $base: ` == ${+getConfigForScenario(ctx).rewardsBase}` }, // in units of asset, not wei
+          betty: { $base: ` == ${+getConfigForScenario(ctx).rewardsBase}` }, // in units of asset, not wei
+        }
+      ),
     },
     async (properties, context, world) => {
       const rewardsV2 = properties.rewardsV2;
@@ -1304,13 +1342,14 @@ for (let i = 0; i < MULTIPLIERS.length; i++) {
 
 async function testScalingRewardV2ForExistingUser(properties: CometProperties, rewardsV2: CometRewardsV2, context: CometContext, world: World, multiplier: bigint): Promise<void | ContractReceipt> {
   const { comet, actors } = properties;
-  const { albert } = actors;
+  const { albert, betty } = actors;
   const deploymentManager = world.deploymentManager;
   const { startTree : startMerkleTree } = await getLatestStartAndFinishMerkleTreeForCampaign(
     deploymentManager.network,
     deploymentManager.deployment,
     deploymentManager.hre
   );
+  const admin = await getRewardsAdminSigner(context);
 
   // impersonate someone from the tree with accrue > 1000
   let addressToImpersonate: string;
@@ -1340,8 +1379,8 @@ async function testScalingRewardV2ForExistingUser(properties: CometProperties, r
 
   const FaucetTokenFactory = (await deploymentManager.hre.ethers.getContractFactory('FaucetToken')) as FaucetToken__factory;
   const rewardTokens = {
-    rewardToken0: await FaucetTokenFactory.connect(actors.admin.signer).deploy(exp(10_000_000, 18), 'RewardToken0', 18, 'RewardToken0'),
-    rewardToken1: await FaucetTokenFactory.connect(actors.admin.signer).deploy(exp(10_000_000, 6), 'RewardToken1', 6, 'RewardToken1')
+    rewardToken0: await FaucetTokenFactory.connect(admin).deploy(exp(10_000_000, 18), 'RewardToken0', 18, 'RewardToken0'),
+    rewardToken1: await FaucetTokenFactory.connect(admin).deploy(exp(10_000_000, 6), 'RewardToken1', 6, 'RewardToken1')
   };
   const root = startMerkleTree.root;
   await rewardTokens.rewardToken0.deployed();
@@ -1350,15 +1389,15 @@ async function testScalingRewardV2ForExistingUser(properties: CometProperties, r
   // mine 1 block
   await world.increaseTime(1);
   await(
-    await rewardTokens.rewardToken0.connect(actors.admin.signer).transfer(rewardsV2.address, exp(10_000_000, 18))
+    await rewardTokens.rewardToken0.connect(admin).transfer(rewardsV2.address, exp(10_000_000, 18))
   ).wait();
   await(
-    await rewardTokens.rewardToken1.connect(actors.admin.signer).transfer(rewardsV2.address, exp(10_000_000, 6))
+    await rewardTokens.rewardToken1.connect(admin).transfer(rewardsV2.address, exp(10_000_000, 6))
   ).wait();
   const newCampaignId = await createNewCampaign(
     comet,
     rewardsV2,
-    actors.admin.signer,
+    admin,
     root,
     [rewardTokens.rewardToken0.address, rewardTokens.rewardToken1.address],
     90000, // 1 day + 1 hour
@@ -1370,13 +1409,13 @@ async function testScalingRewardV2ForExistingUser(properties: CometProperties, r
   const baseScale = (await comet.baseScale()).toBigInt();
  
   if((await comet.borrowBalanceOf(jay.address)).toBigInt() > 0n) {
-    await albert.transferErc20(
+    await betty.transferErc20(
       baseAssetAddress,
       jay.address,
-      (await comet.borrowBalanceOf(jay.address)).toBigInt()
+      (await comet.borrowBalanceOf(jay.address)).toBigInt() + 50n
     );
     await baseAsset.approve(jay, comet.address);
-    await jay.safeSupplyAsset({ asset: baseAssetAddress, amount: (await comet.borrowBalanceOf(jay.address)).toBigInt() });
+    await comet.connect(jay.signer).supply(baseAssetAddress, (await comet.borrowBalanceOf(jay.address)).toBigInt());
   }
 
   await albert.transferErc20(

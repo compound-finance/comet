@@ -55,5 +55,9 @@ export function getConfigForScenario(ctx: CometContext) {
     config.interestSeconds = 110;
   }
 
+  if (ctx.world.base.network === 'sepolia' && ctx.world.base.deployment === 'usdc') {
+    config.rewardsBase = 100000;
+  }
+
   return config;
 }

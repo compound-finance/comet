@@ -121,13 +121,6 @@ export class CometContext {
   }
 
   async getRewardsV2(): Promise<CometRewardsV2> {
-    if(!await  this.world.deploymentManager.contract('rewardsV2')){
-      return this.world.deploymentManager.deploy(
-        'rewardsV2',
-        'CometRewardsV2.sol',
-        [this.actors.admin.address],
-      );
-    }
     return this.world.deploymentManager.contract('rewardsV2');
   }
 
@@ -339,6 +332,10 @@ export class CometContext {
 }
 
 async function buildActor(name: string, signer: SignerWithAddress, context: CometContext): Promise<CometActor> {
+  await context.world.deploymentManager.hre.ethers.provider.send('hardhat_setBalance', [
+    signer.address,
+    context.world.deploymentManager.hre.ethers.utils.hexStripZeros(context.world.deploymentManager.hre.ethers.utils.parseUnits('1000000', 'ether').toHexString()),
+  ]);
   return new CometActor(name, signer, await signer.getAddress(), context);
 }
 
