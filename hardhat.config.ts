@@ -117,7 +117,11 @@ const networkConfigs: NetworkConfig[] = [
   { network: 'ropsten', chainId: 3 },
   { network: 'rinkeby', chainId: 4 },
   { network: 'goerli', chainId: 5 },
-  { network: 'sepolia', chainId: 11155111 },
+  {
+    network: 'sepolia',
+    chainId: 11155111,
+    url: `https://rpc.ankr.com/eth_sepolia/${ANKR_KEY}`,
+  },
   {
     network: 'polygon',
     chainId: 137,

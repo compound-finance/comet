@@ -24,7 +24,7 @@ const tokenArgsCOMP: [bigint, string, number, string] = [config.adminCOMP + conf
 export default migration('1732300624_deploy_rewards_v2', {
   async prepare(deploymentManager: DeploymentManager) {
     const cometRewardsV2 = await deploymentManager.deploy(
-      'CometRewardsV2',
+      'rewardsV2',
       'CometRewardsV2.sol',
       [
         MULTISIG_ADDRESS,   // The governor who will control the contract
@@ -95,8 +95,8 @@ export default migration('1732300624_deploy_rewards_v2', {
     await tx.wait();
   },
 
-  async enacted(): Promise<boolean> {
-    return false;
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {

@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 
-const MULTISIG_ADDRESS = '';
+const MULTISIG_ADDRESS = '0x0747a435b8a60070A7a111D015046d765098e4cc';
 
 export default migration('1732300573_deploy_rewards_v2', {
   async prepare(deploymentManager: DeploymentManager) {

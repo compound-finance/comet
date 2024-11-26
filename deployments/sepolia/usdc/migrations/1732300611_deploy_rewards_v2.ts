@@ -96,7 +96,7 @@ export default migration('1732300611_deploy_rewards_v2', {
   },
 
   async enacted(): Promise<boolean> {
-    return false;
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {
