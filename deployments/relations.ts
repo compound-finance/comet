@@ -1,4 +1,8 @@
-import { RelationConfigMap } from '../plugins/deployment_manager/RelationConfig';
+import {RelationConfigMap} from '../plugins/deployment_manager/RelationConfig';
+
+const tokenAddressesToSymbols = {
+  '0x57F5E098CaD7A3D1Eed53991D4d66C45C9AF7812': 'wUSDM'
+};
 
 const relationConfigMap: RelationConfigMap = {
   comptrollerV2: {
@@ -19,7 +23,7 @@ const relationConfigMap: RelationConfigMap = {
       },
       baseTokenPriceFeed: {
         field: async (comet) => comet.baseTokenPriceFeed(),
-        alias: async (_, { baseToken }) => `${await baseToken[0].symbol()}:priceFeed`,
+        alias: async (_, {baseToken}) => `${await baseToken[0].symbol()}:priceFeed`,
       },
       assets: {
         field: async (comet) => {
@@ -31,7 +35,10 @@ const relationConfigMap: RelationConfigMap = {
             })
           );
         },
-        alias: async (token) => token.symbol(),
+        alias: async (token) => {
+          console.log(token.address);
+          return token.symbol?.() || tokenAddressesToSymbols[token.address] || token.address;
+        },
       },
       assetPriceFeeds: {
         field: async (comet) => {
@@ -43,7 +50,13 @@ const relationConfigMap: RelationConfigMap = {
             })
           );
         },
-        alias: async (_, { assets }, i) => `${await assets[i].symbol()}:priceFeed`,
+        alias: async (_, {assets}, i) => {
+          const asset = assets[i];
+          if(tokenAddressesToSymbols[asset.address]){
+            return `${tokenAddressesToSymbols[asset.address]}:priceFeed`;
+          }
+          return `${await asset.symbol()}:priceFeed`;
+        },
       },
       cometAdmin: {
         field: {
@@ -71,7 +84,7 @@ const relationConfigMap: RelationConfigMap = {
         }
       },
       cometFactory: {
-        field: async (configurator, { comet }) => configurator.factory(comet[0].address),
+        field: async (configurator, {comet}) => configurator.factory(comet[0].address),
       }
     }
   },
@@ -129,7 +142,7 @@ const relationConfigMap: RelationConfigMap = {
   rewards: {
     relations: {
       rewardToken: {
-        field: async (rewards, { comet }) => {
+        field: async (rewards, {comet}) => {
           const rewardToken = (await rewards.rewardConfig(comet[0].address)).token;
           return rewardToken !== '0x0000000000000000000000000000000000000000' ? rewardToken : null;
         },
