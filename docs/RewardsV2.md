@@ -46,6 +46,29 @@ New members are users who began accruing rewards after the campaign started. The
   - Eliminates the need for a separate mechanism or tree for new users.
   - Maintains a lightweight and scalable rewards distribution system.
 
+### 3. **Finish Root and Snapshot Tree**
+
+#### **What is the Finish Root?**
+The `finishRoot` is a secondary Merkle tree root used to capture a **snapshot** of user reward accruals at the moment the campaign ends. This snapshot ensures accurate reward distribution, particularly for ongoing or newly joined users, by establishing a definitive final state for the campaign.
+
+#### **Why is the Finish Root Needed?**
+1. **Accurate Final Balances**:
+   - Rewards continue to accrue dynamically for all users during the campaign. The `finishRoot` captures the final accrued balances at the campaign’s conclusion, creating an immutable reference point for distribution.
+   
+2. **Support for New and Existing Users**:
+   - For **existing users**: The `finishRoot` ensures their accrued rewards are finalized and verifiable.
+   - For **new users**: The same as for existing users.
+
+3. **Cost Efficiency**:
+   - Instead of storing final balances on-chain, the `finishRoot` compresses the data into a single root, reducing gas costs for reward claims.
+
+---
+
+#### **How the Finish Root is Used**
+1. At the end of the campaign:
+   - The contract generates the `finishRoot` based on the final accrued values for all users, using the same sorted structure as the initial tree.
+2. During claims:
+   - Users (both existing and new) provide Merkle proofs from the `finishRoot` to validate their reward balances.
 
 ---
 

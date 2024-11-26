@@ -22,3 +22,16 @@ To verify that the user was included into the Comet with the proper accrue value
 To get user's proof or to get user neighbors' proofs use [verify-address-in-campaign.ts](./verify-address-in-campaign.ts) script. `ADDRESS=0xUserAddress CAMPAIGN='1732326736947-21247270-start.json' DEPLOYMENT=usdt BLOCK_NUMBER=21074594 NETWORK=mainnet yarn run rewards-v2-verify-address --network mainnet`
 ## 
 To validate the list of interacted addresses with Comet please use [Dune Query](https://dune.com/queries/4320237)
+
+# Rewards V2: Multiplayer Calculation Script
+
+The purpose of this script is to calculate the multiplayer for the Rewards V2. Detailed information about the Rewards V2 implementation can be found in the [RewardsV2.md](../../docs/RewardsV2.md).
+
+## Why do we need the multiplayer?
+
+Rewards are distributed based on the borrow and supply speed of the Comet. If we need to distribute a specific amount of rewards during some time period we need to adjust the speed with the multiplier.
+
+## How to calculate the multiplayer?
+
+1. You can run the script locally by the command `yarn hardhat calculateMultiplier --network mainnet --deployment usdc --duration 2592000 --amount 1000`
+2. Run `calculate-multiplier-for-rewards-v2-campaign` Github Workflow
