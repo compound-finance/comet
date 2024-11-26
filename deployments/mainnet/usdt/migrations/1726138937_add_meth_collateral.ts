@@ -16,7 +16,8 @@ export default migration('1726138937_add_meth_collateral', {
         METH_EXCHANGE_RATE_PROVIDER_ADDRESS, // mETH / ETH price feed
         8,                                   // decimals
         'mETH/ETH exchange rate',            // description
-      ]
+      ],
+      true
     );
     const ethToUSDPriceFeed = await deploymentManager.fromDep('WETH:priceFeed', 'mainnet', 'usdt');
 
@@ -27,8 +28,9 @@ export default migration('1726138937_add_meth_collateral', {
         _mETHToETHPriceFeed.address,  // mETH / ETH price feed
         ethToUSDPriceFeed.address,    // ETH / USD price feed
         8,                            // decimals
-        'wstETH / ETH price feed'     // description
-      ]
+        'mETH / USD price feed'     // description
+      ],
+      true
     );
     return { mETHPriceFeedAddress: _mETHPriceFeed.address };
   },
