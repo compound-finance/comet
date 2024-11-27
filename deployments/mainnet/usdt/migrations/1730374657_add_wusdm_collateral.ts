@@ -87,7 +87,7 @@ export default migration('1730374657_add_wusdm_collateral', {
   },
 
   async enacted(): Promise<boolean> {
-    return false;
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {

@@ -107,7 +107,7 @@ export default migration('1724837643_add_wrseth_as_collateral', {
   },
 
   async enacted(): Promise<boolean> {
-    return false;
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {

@@ -86,7 +86,7 @@ export default migration('1728054806_add_tbtc_collateral', {
   },
 
   async enacted(): Promise<boolean> {
-    return false;
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {
