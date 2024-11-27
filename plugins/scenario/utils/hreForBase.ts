@@ -55,8 +55,8 @@ export function nonForkedHreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
       }
     },
     ctx.tasksDSL.getTaskDefinitions(),
-    ctx.tasksDSL.getScopesDefinitions(),
-    ctx.environmentExtenders,
+    ctx.extendersManager.getExtenders(),
+    ctx.experimentalHardhatNetworkMessageTraceHooks,
     userConfig
   );
 }
@@ -76,9 +76,6 @@ export function forkedHreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
   if (!baseNetwork) {
     throw new Error(`cannot find network config for network: ${base.network}`);
   }
-  console.log('baseNetwork', baseNetwork);
-  console.log('localhost', localhost);
-  console.log('defaultNetwork', defaultNetwork);
 
   const forkedNetwork = {
     ...defaultNetwork,
@@ -108,8 +105,8 @@ export function forkedHreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
     forkedConfig,
     hardhatArguments,
     ctx.tasksDSL.getTaskDefinitions(),
-    ctx.tasksDSL.getScopesDefinitions(),
-    ctx.environmentExtenders,
+    ctx.extendersManager.getExtenders(),
+    ctx.experimentalHardhatNetworkMessageTraceHooks,
     userConfig
   );
 }

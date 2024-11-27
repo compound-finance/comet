@@ -6,7 +6,7 @@ import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-etherscan';
 import '@typechain/hardhat';
 import 'hardhat-chai-matchers';
-import 'hardhat-change-network';
+// import 'hardhat-change-network';
 import 'hardhat-contract-sizer';
 import 'hardhat-cover';
 import 'hardhat-gas-reporter';
@@ -322,7 +322,9 @@ const config: HardhatUserConfig = {
       'base-goerli': BASESCAN_KEY,
       // Linea
       'linea-goerli': LINEASCAN_KEY,
-      // optimism: OPTIMISMSCAN_KEY,
+      // Optimism
+      optimism: OPTIMISMSCAN_KEY,
+      'optimism-sepolia': OPTIMISMSCAN_KEY,
       optimisticEthereum: OPTIMISMSCAN_KEY,
       // Mantle
       mantle: MANTLESCAN_KEY,
