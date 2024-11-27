@@ -414,3 +414,10 @@ claimForNewMember(
    - Neighbor proofs in the start tree to confirm the new user’s logical position.
    - The finish proof to finalize the accrued value.
 2. If successful, rewards are allocated to the new user.
+
+---
+
+### **Note**:
+RewardsV2 contract on sepolia: 0x8D88c1EB48e8549bEac11B696944599DB7B60520
+There is a test campaign for WETH market on sepolia with campaignId: 0
+``
