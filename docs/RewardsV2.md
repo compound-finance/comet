@@ -93,37 +93,9 @@ The `finishRoot` is a secondary Merkle tree root used to capture a **snapshot** 
    - New users can easily be integrated into the rewards system using the same Merkle tree.
    - Sorting by address and including boundary addresses ensures no gaps or ambiguities in user inclusion.
 
+
+
 ---
-
-This approach combines the advantages of historical reward integration, cost-efficiency, and scalability, ensuring the protocol can handle rewards distribution effectively for both existing and new members.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -205,4 +177,240 @@ The claim mechanism involves the following:
 The new user does not generate a new proof.
 Instead, they rely on existing neighbor proofs for validation.
 
-This approach avoids the need to recompute or extend the Merkle tree. It ensures scalability and reduces gas costs for integrating new users.
+
+
+
+---
+
+
+
+
+# **Step-by-Step Guide: Claim Process for an Existing User**
+
+## 1. **Understand Required Data**
+
+To claim rewards as an existing user, you need to gather the following information from both the **start tree** and the **finish tree** (if the campaign is finished):  
+- **Index**: Your position in the respective Merkle tree.  
+- **Accrue**: Your accrued rewards in the tree.  
+- **Proof**: The Merkle proof for verifying your data against the tree root.  
+
+This data can be generated using the `verify-address-in-campaign` [script](../scripts/rewards_v2/README.md#get-proofs).
+
+---
+
+## 2. **Prepare Data**
+
+### **Start Tree Proofs**:
+- Gather proof data for the **start tree**, which represents the state of rewards at the campaign's beginning:
+  - `startIndex`: Your index in the start tree.
+  - `startAccrued`: Your accrued rewards in the start tree.
+  - `startMerkleProof`: Your proof path in the start tree.
+
+### **Finish Tree Proofs** (if applicable):
+- If the campaign has ended, gather proof data for the **finish tree**, representing the final state of rewards:
+  - `finishIndex`: Your index in the finish tree.
+  - `finishAccrued`: Your accrued rewards in the finish tree.
+  - `finishMerkleProof`: Your proof path in the finish tree.
+
+---
+
+## 3. **Call the `claim` Function**
+
+Invoke the following function on the rewards contract:
+
+```solidity
+claim(
+    address comet,
+    uint256 campaignId,
+    address src,
+    bool shouldAccrue,
+    Proofs proofs
+)
+```
+
+**Parameters**:
+- `comet`: Address of the Comet instance for the campaign.
+- `campaignId`: ID of the ongoing campaign.
+- `src`: Address of the user (existing member).
+- `shouldAccrue`: Set to `true` to accrue rewards before claiming.
+- `proofs`: Proof data for the user, structured as:
+  - `startIndex`: Your index in the start tree.
+  - `finishIndex`: Your index in the finish tree (if applicable).
+  - `startAccrued`: Your accrued rewards in the start tree.
+  - `finishAccrued`: Your accrued rewards in the finish tree (if applicable).
+  - `startMerkleProof`: Proof path in the start tree.
+  - `finishMerkleProof`: Proof path in the finish tree (if applicable).
+
+---
+
+## 4. **Example Input for an Existing User**
+
+Assume the existing user `src` has the following details:
+
+- **Start Tree Proof**:
+  - `startIndex`: `3`
+  - `startAccrued`: `300`
+  - `startMerkleProof`: `[<hash1>, <hash2>, ...]`
+
+- **Finish Tree Proof** (if the campaign is finished):
+  - `finishIndex`: `3`
+  - `finishAccrued`: `500`
+  - `finishMerkleProof`: `[<hash3>, <hash4>, ...]`
+
+**Function Call Example**:
+```solidity
+claim(
+    comet,
+    campaignId,
+    src,
+    true, // shouldAccrue
+    Proofs({
+        startIndex: 3,
+        finishIndex: 3,
+        startAccrued: 300,
+        finishAccrued: 500,
+        startMerkleProof: [<hash1>, <hash2>],
+        finishMerkleProof: [<hash3>, <hash4>]
+    })
+)
+```
+
+---
+
+## 5. **Verification in the Contract**
+
+The contract performs the following checks:  
+1. **Start Tree Verification**:
+   - Confirms that the user’s data (index, accrued value) matches the `startRoot` using the provided `startMerkleProof`.
+2. **Finish Tree Verification** (if applicable):
+   - Confirms the final accrued rewards against the `finishRoot` using the `finishMerkleProof`.
+3. **Reward Accrual**:
+   - Rewards are computed based on the difference between `startAccrued` and `finishAccrued` (if the campaign has ended).
+
+
+
+
+---
+
+
+
+
+# **Step-by-Step Guide: Claim Process for a New User**
+
+## 1. **Understand Required Data**
+To claim rewards as a new user, you need to gather the following information:
+- **Neighbors**:
+  - Addresses of your logical **left** and **right** neighbors in the Merkle tree. These neighbors verify your position relative to the snapshot.
+- **Proofs for Neighbors**:
+  - **Accrue**, **Index**, and **Proof** for both neighbors in the **start tree**.
+- **Finish Proof**:
+  - Data specific to the **finish tree** (if the campaign is finished), including your accrued rewards and proof for verification.
+
+---
+
+## 2. **Prepare Data**
+
+### **Neighbors**:
+- Locate your logical neighbors (based on address sorting) using the **start tree**. 
+- These will be stored in the `neighbors` array as:
+  - `neighbors[0]`: Address of the left neighbor.
+  - `neighbors[1]`: Address of the right neighbor.
+
+### **Proofs for Neighbors**:
+- Gather proof data for both neighbors from the **start tree**:
+  - `Proofs[0]`: Proof data for the left neighbor.
+  - `Proofs[1]`: Proof data for the right neighbor.
+- Each proof consists of:
+  - `startIndex`: Index of the neighbor in the start tree.
+  - `startAccrued`: Accrued rewards of the neighbor in the start tree.
+  - `startMerkleProof`: Merkle proof for the neighbor's position in the start tree.
+
+### **Finish Proof**:
+- For the **finish tree**, prepare:
+  - `finishIndex`: Your logical position based on sorting.
+  - `finishAccrued`: Your accrued rewards at the end of the campaign (typically zero for new users).
+  - `finishMerkleProof`: Proof validating your logical position in the finish tree.
+
+---
+
+## 3. **Call the `claimForNewMember` Function**
+
+Invoke the following function on the rewards contract:
+
+```solidity
+claimForNewMember(
+    address comet,
+    uint256 campaignId,
+    address src,
+    bool shouldAccrue,
+    address[2] calldata neighbors,
+    Proofs[2] calldata proofs,
+    FinishProof calldata finishProof
+)
+```
+
+**Parameters**:
+- `comet`: Address of the Comet instance for the campaign.
+- `campaignId`: ID of the ongoing campaign.
+- `src`: Address of the user (new member).
+- `shouldAccrue`: Set to `true` to accrue rewards before claiming.
+- `neighbors`: Array containing the left and right neighbor addresses:
+  - `neighbors[0]`: Left neighbor.
+  - `neighbors[1]`: Right neighbor.
+- `proofs`: Array containing proof data for both neighbors:
+  - `Proofs[0]`: Proof for the left neighbor.
+  - `Proofs[1]`: Proof for the right neighbor.
+- `finishProof`: Proof for the finish tree:
+  - `finishIndex`: Your index in the finish tree.
+  - `finishAccrued`: Your accrued value in the finish tree.
+  - `finishMerkleProof`: Your proof path in the finish tree.
+
+---
+
+## 4. **Example Input for a New User**
+Assume the new user `src` has the following details:
+
+- **Neighbors**:
+  - Left: `0x000...004` (Index 3, Accrued 300).
+  - Right: `0x000...007` (Index 4, Accrued 400).
+
+- **Proofs for Neighbors**:
+  - `Proofs[0]`: Data for `0x000...004`.
+    - `startIndex`: `3`
+    - `startAccrued`: `300`
+    - `startMerkleProof`: `[<hash1>, <hash2>, ...]`
+  - `Proofs[1]`: Data for `0x000...007`.
+    - `startIndex`: `4`
+    - `startAccrued`: `400`
+    - `startMerkleProof`: `[<hash3>, <hash4>, ...]`
+
+- **Finish Proof**:
+  - `finishIndex`: `5` (logical position for new user).
+  - `finishAccrued`: `0` (no initial rewards for new user).
+  - `finishMerkleProof`: `[<hash5>, <hash6>, ...]`
+
+**Function Call Example**:
+```solidity
+claimForNewMember(
+    comet,
+    campaignId,
+    src,
+    true, // shouldAccrue
+    [0x000...004, 0x000...007], // neighbors
+    [
+        Proofs({startIndex: 3, startAccrued: 300, startMerkleProof: [<hash1>, <hash2>]}),
+        Proofs({startIndex: 4, startAccrued: 400, startMerkleProof: [<hash3>, <hash4>]})
+    ],
+    FinishProof({
+        finishIndex: 5,
+        finishAccrued: 0,
+        finishMerkleProof: [<hash5>, <hash6>]
+    })
+)
+```
+
+## 5. **Verification in the Contract**
+1. The contract validates:
+   - Neighbor proofs in the start tree to confirm the new user’s logical position.
+   - The finish proof to finalize the accrued value.
+2. If successful, rewards are allocated to the new user.
