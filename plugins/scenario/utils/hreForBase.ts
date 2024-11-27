@@ -76,6 +76,9 @@ export function forkedHreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
   if (!baseNetwork) {
     throw new Error(`cannot find network config for network: ${base.network}`);
   }
+  console.log('baseNetwork', baseNetwork);
+  console.log('localhost', localhost);
+  console.log('defaultNetwork', defaultNetwork);
 
   const forkedNetwork = {
     ...defaultNetwork,
