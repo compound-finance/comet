@@ -33,7 +33,7 @@ function findLastStartFinishPair(files: FileData[]) {
     return { start: null, finish: null };
   }
   // sort files by timestamp
-  files.sort((a, b) => a.timestamp - b.timestamp);
+  files.sort((a, b) => a.blockNumber - b.blockNumber);
 
   // find latest finish file
   let finish: FileData | null = null;
@@ -71,8 +71,7 @@ function findLastStartFinishPair(files: FileData[]) {
 
 export const getLatestStartAndFinishMerkleTreeForCampaign = async (
   network: string,
-  deployment: string,
-  hre: HardhatRuntimeEnvironment,
+  deployment: string
 ): Promise<{ startTree: StandardMerkleTree<string[]>, finishTree: StandardMerkleTree<string[]> }> => {
   const folderPath = `./campaigns/${network}-${deployment}/`;
   console.log(folderPath);
@@ -101,21 +100,7 @@ export const getLatestStartAndFinishMerkleTreeForCampaign = async (
   let startTimestamp = 0;
   let startBlockNumber = 0;
   if (!startFile) {
-    console.log('Start file not found. Generating new start file');
-    const currentBlock = await hre.ethers.provider.getBlock('latest');
-
-    await generateMerkleTreeForCampaign(network, deployment, currentBlock.number, 'start', hre);
-    const newResult = findLastStartFinishPair(readdirSync(folderPath).map(filename => {
-      const [timestampStr, blockNumberStr, typeWithExtension] = filename.split('-');
-      const type = typeWithExtension.replace('.json', '') as 'start' | 'finish'; // remove .json from type
-      return {
-        timestamp: Number(timestampStr),
-        blockNumber: Number(blockNumberStr),
-        type
-      };
-    }));
-    startTimestamp = newResult.start.timestamp;
-    startBlockNumber = newResult.start.blockNumber;
+    throw new Error('Start file not found');
   } else {
     startTimestamp = startFile.timestamp;
     startBlockNumber = startFile.blockNumber;
@@ -124,31 +109,7 @@ export const getLatestStartAndFinishMerkleTreeForCampaign = async (
   let finishTimestamp = 0;
   let finishBlockNumber = 0;
   if (!finishFile) {
-    console.log('Finish file not found. Generating new finish file');
-    // wait 1000 seconds
-    await hre.network.provider.request({
-      method: 'evm_increaseTime',
-      params: [60 * 60 * 24 * 30], // month
-    });
-    await hre.network.provider.request({
-      method: 'evm_mine',
-      params: [],
-    });
-    const newBlock = await hre.ethers.provider.getBlock('latest');
-    const newBlockNumber = newBlock.number;
-    await generateMerkleTreeForCampaign(network, deployment, newBlockNumber, 'finish', hre);
-
-    const newResult = findLastStartFinishPair(readdirSync(folderPath).map(filename => {
-      const [timestampStr, blockNumberStr, typeWithExtension] = filename.split('-');
-      const type = typeWithExtension.replace('.json', '') as 'start' | 'finish'; // remove .json from type
-      return {
-        timestamp: Number(timestampStr),
-        blockNumber: Number(blockNumberStr),
-        type
-      };
-    }));
-    finishTimestamp = newResult.finish.timestamp;
-    finishBlockNumber = newResult.finish.blockNumber;
+    throw new Error('Finish file not found');
   }
   else {
     finishTimestamp = finishFile.timestamp;
@@ -385,8 +346,13 @@ export const multicall = async (multicallAddress: string, cometAddress: string, 
       calls.push(...createMulticallCallsToGetBaseTrackingAccruedPerAddress(cometAddress, address, dm.hre));
     });
 
-    const [, returnData] = await multicallContract.callStatic.aggregate(calls, {
-      blockTag: blockNumberToBlockTag(blockNumber)
+    // wait 3 seconds before making the next call
+    await delay(3000);
+
+    const [, returnData] = await dm.retry(() => {
+      return multicallContract.callStatic.aggregate(calls, {
+        blockTag: blockNumberToBlockTag(blockNumber)
+      });
     });
 
     if (!returnData || returnData.length !== chunk.length * 2) {

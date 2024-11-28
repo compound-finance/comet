@@ -6,11 +6,9 @@ import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-etherscan';
 import '@typechain/hardhat';
 import 'hardhat-chai-matchers';
-import 'hardhat-change-network';
 import 'hardhat-contract-sizer';
 import 'hardhat-cover';
 import 'hardhat-gas-reporter';
-import 'solidity-coverage';
 
 // Hardhat tasks
 import './tasks/deployment_manager/task.ts';
@@ -112,11 +110,12 @@ interface NetworkConfig {
   gasPrice?: number | 'auto';
 }
 
-const networkConfigs: NetworkConfig[] = [
-  { network: 'mainnet', chainId: 1 },
-  { network: 'ropsten', chainId: 3 },
-  { network: 'rinkeby', chainId: 4 },
-  { network: 'goerli', chainId: 5 },
+export const networkConfigs: NetworkConfig[] = [
+  {
+    network: 'mainnet',
+    chainId: 1,
+    url: `https://rpc.ankr.com/eth/${ANKR_KEY}`
+  },
   {
     network: 'sepolia',
     chainId: 11155111,

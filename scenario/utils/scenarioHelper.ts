@@ -16,6 +16,7 @@ const config = {
   transferAsset: 5000,
   interestSeconds: 110,
   rewardsBase: 100,
+  minAccrue: 1000,
 };
 
 export function getConfigForScenario(ctx: CometContext) {

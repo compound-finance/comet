@@ -1,6 +1,6 @@
 # Documentation for `CometRewardsV2` Contract Core Use Cases
 
-The `CometRewardsV2` contract is designed to efficiently manage the distribution and claiming of rewards in the Compound ecosystem. It uses a Merkle tree structure to handle both уxisting users and new users.
+The `CometRewardsV2` contract is designed to efficiently manage the distribution and claiming of rewards in the Compound ecosystem. It uses a Merkle tree structure to handle both existing users and new users.
 Existing members are users who had already accrued rewards before the campaign began. Their accrued rewards up to a specific block (the start block) are represented in the Merkle tree.
 New members are users who began accruing rewards after the campaign started. The same Merkle tree is reused for them, to ensure a unified rewards mechanism.
  This design ensures scalability and cost-effectiveness.

@@ -26,6 +26,6 @@ export default migration('1732300573_deploy_rewards_v2', {
 
   async verify(deploymentManager: DeploymentManager) {
     const cometRewardsV2 = await deploymentManager.fromDep('rewardsV2', 'scroll', 'usdc');
-    expect(MULTISIG_ADDRESS).to.be.equal(await cometRewardsV2.governor());
+    expect(MULTISIG_ADDRESS.toLowerCase()).to.be.equal((await cometRewardsV2.governor()).toLowerCase());
   },
 });

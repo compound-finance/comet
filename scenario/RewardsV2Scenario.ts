@@ -233,8 +233,7 @@ scenario(
     const deploymentManager = world.deploymentManager;
     const { startTree : startMerkleTree } = await getLatestStartAndFinishMerkleTreeForCampaign(
       deploymentManager.network,
-      deploymentManager.deployment,
-      deploymentManager.hre
+      deploymentManager.deployment
     );
     const admin = await getRewardsAdminSigner(context);
 
@@ -244,7 +243,7 @@ scenario(
     let accrued = 0n;
     for(let i = 0; i < startMerkleTree.length; i++) {
       const [address, index, accrue] = startMerkleTree.at(i);
-      if(+accrue >= 100000) {
+      if(+accrue >= getConfigForScenario(context).minAccrue) {
         addressToImpersonate = address;
         accrued = BigInt(+accrue);
         userIndex = +index;
@@ -401,8 +400,7 @@ scenario(
     const deploymentManager = world.deploymentManager;
     const { startTree : startMerkleTree } = await getLatestStartAndFinishMerkleTreeForCampaign(
       deploymentManager.network,
-      deploymentManager.deployment,
-      deploymentManager.hre
+      deploymentManager.deployment
     );
     const admin = await getRewardsAdminSigner(context);
 
@@ -542,7 +540,7 @@ scenario(
     return txn; // return txn to measure gas
   });
 
-scenario(
+scenario.only(
   'Comet#rewardsV2 > can claim supply rewards for self as existing user in new campaign with finish tree',
   {
     filter: async (ctx) => await isRewardsV2Supported(ctx),
@@ -551,12 +549,10 @@ scenario(
     const deploymentManager = world.deploymentManager;
     const { startTree : startMerkleTree, finishTree : finishMerkleTree } = await getLatestStartAndFinishMerkleTreeForCampaign(
       deploymentManager.network,
-      deploymentManager.deployment,
-      deploymentManager.hre
+      deploymentManager.deployment
     );
     const admin = await getRewardsAdminSigner(context);
 
-    // impersonate someone from the tree with accrue > 100000
     let addressToImpersonate: string;
     let userIndexStart = 0;
     let accruedStart = 0n;
@@ -566,23 +562,23 @@ scenario(
     for(let i = 0; i < startMerkleTree.length; i++) {
       const [_addressStart, _indexStart, _accrueStart] = startMerkleTree.at(i);
 
-      if(+_accrueStart >= 10000) {
-        addressToImpersonate = _addressStart;
-        accruedStart = BigInt(+_accrueStart);
-        userIndexStart = +_indexStart;
+      addressToImpersonate = _addressStart;
+      accruedStart = BigInt(+_accrueStart);
+      userIndexStart = +_indexStart;
 
-        for (const [, v] of finishMerkleTree.entries()) {
-          if(
-            v[0].toLowerCase() === _addressStart.toLowerCase()
-            && BigInt(v[2]) > accruedStart * 11n / 10n
-          ) {
-            accruedFinish = BigInt(v[2]);
-            userIndexFinish = +v[1];
-            break;
-          }
+      for (const [, v] of finishMerkleTree.entries()) {
+        if(
+          v[0].toLowerCase() === _addressStart.toLowerCase()
+          && BigInt(v[2]) > accruedStart
+          && BigInt(v[2]) > BigInt(getConfigForScenario(context).minAccrue)
+        ) {
+          accruedFinish = BigInt(v[2]);
+          userIndexFinish = +v[1];
+          break;
         }
         if(accruedFinish > 0n) break;
       }
+      if(i == startMerkleTree.length - 1) throw new Error('No user found');
     }
 
     await deploymentManager.hre.network.provider.request({
@@ -703,8 +699,7 @@ scenario(
     const deploymentManager = world.deploymentManager;
     const { startTree : startMerkleTree, finishTree : finishMerkleTree } = await getLatestStartAndFinishMerkleTreeForCampaign(
       deploymentManager.network,
-      deploymentManager.deployment,
-      deploymentManager.hre
+      deploymentManager.deployment
     );
     const admin = await getRewardsAdminSigner(context);
 
@@ -721,7 +716,7 @@ scenario(
         // create new tree without the user
         for(let i = 0; i < startMerkleTree.length; i++) {
           const [address, index, accrue] = finishMerkleTree.at(i);
-          if(+accrue >= 100000) {
+          if(+accrue >= getConfigForScenario(context).minAccrue) {
             addressToImpersonate = address;
             accruedFinish = BigInt(+accrue);
             userIndex = +index;
@@ -921,8 +916,7 @@ scenario(
     const deploymentManager = world.deploymentManager;
     const { startTree : startMerkleTree } = await getLatestStartAndFinishMerkleTreeForCampaign(
       deploymentManager.network,
-      deploymentManager.deployment,
-      deploymentManager.hre
+      deploymentManager.deployment
     );
     const admin = await getRewardsAdminSigner(context);
 
@@ -932,7 +926,7 @@ scenario(
     let accrued = 0n;
     for(let i = 0; i < startMerkleTree.length; i++) {
       const [address, index, accrue] = startMerkleTree.at(i);
-      if(+accrue >= 100000) {
+      if(+accrue >= getConfigForScenario(context).minAccrue) {
         const supplyBalance = await comet.balanceOf(address);
         const borrowBalanceOf = await comet.borrowBalanceOf(address);
         if(borrowBalanceOf.eq(0) && supplyBalance.gt(0)) {
@@ -1066,7 +1060,7 @@ scenario(
     tokenBalances: async (ctx: CometContext) => (
       {
         albert: { $asset0: ` == ${+getConfigForScenario(ctx).rewardsBase}` }, // in units of asset, not wei
-        $comet: { $base: ' >= 1000 ' }
+        $comet: { $base: ` >= ${+getConfigForScenario(ctx).rewardsBase * 100}` }
       }
     ),
   },
@@ -1075,8 +1069,7 @@ scenario(
     const deploymentManager = world.deploymentManager;
     const { startTree : startMerkleTree } = await getLatestStartAndFinishMerkleTreeForCampaign(
       deploymentManager.network,
-      deploymentManager.deployment,
-      deploymentManager.hre
+      deploymentManager.deployment
     );
     const admin = await getRewardsAdminSigner(context);
 
@@ -1234,8 +1227,7 @@ scenario(
     const deploymentManager = world.deploymentManager;
     const { startTree : startMerkleTree } = await getLatestStartAndFinishMerkleTreeForCampaign(
       deploymentManager.network,
-      deploymentManager.deployment,
-      deploymentManager.hre
+      deploymentManager.deployment
     );
     const admin = await getRewardsAdminSigner(context);
 
@@ -1244,7 +1236,7 @@ scenario(
     let accrued = 0n;
     for(let i = 0; i < startMerkleTree.length; i++) {
       const [address, , accrue] = startMerkleTree.at(i);
-      if(+accrue >= 100000) {
+      if(+accrue >= getConfigForScenario(context).minAccrue) {
         addressToImpersonate = address;
         accrued = BigInt(+accrue);
         break;
@@ -1345,8 +1337,7 @@ async function testScalingRewardV2ForExistingUser(properties: CometProperties, r
   const deploymentManager = world.deploymentManager;
   const { startTree : startMerkleTree } = await getLatestStartAndFinishMerkleTreeForCampaign(
     deploymentManager.network,
-    deploymentManager.deployment,
-    deploymentManager.hre
+    deploymentManager.deployment
   );
   const admin = await getRewardsAdminSigner(context);
 
@@ -1356,7 +1347,7 @@ async function testScalingRewardV2ForExistingUser(properties: CometProperties, r
   let accrued = 0n;
   for(let i = 0; i < startMerkleTree.length; i++) {
     const [address, index, accrue] = startMerkleTree.at(i);
-    if(+accrue >= 100000) {
+    if(+accrue >= getConfigForScenario(context).minAccrue) {
       addressToImpersonate = address;
       accrued = BigInt(+accrue);
       userIndex = +index;

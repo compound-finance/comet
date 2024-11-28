@@ -309,11 +309,7 @@ export async function isRewardSupported(ctx: CometContext): Promise<boolean> {
 
 export async function isRewardsV2Supported(ctx: CometContext): Promise<boolean> {
   const cometRewardsV2 = await ctx.getRewardsV2();
-  const comet = await ctx.getComet();
   if (cometRewardsV2 == null) return false;
-
-  const campaignData = await cometRewardsV2.getCometCampaignsInfo(comet.address);
-  if(campaignData[0].length === 0) return false;
 
   return cometRewardsV2 !== null;
 }
