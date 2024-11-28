@@ -254,7 +254,7 @@ export class CometContext {
     throw new Error(`Unable to find asset by address ${address}`);
   }
 
-  async sourceTokens(amount: number | bigint, asset: CometAsset | string, recipient: AddressLike) {
+  async sourceTokens(amount: number | bigint, asset: CometAsset | string, recipient: AddressLike, blockNumber?: number) {
     const { world } = this;
     const recipientAddress = resolveAddress(recipient);
     const cometAsset = typeof asset === 'string' ? this.getAssetByAddress(asset) : asset;
@@ -287,6 +287,7 @@ export class CometContext {
         asset: cometAsset.address,
         address: recipientAddress,
         blacklist: [comet.address],
+        blockNumber,
       });
     }
   }

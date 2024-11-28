@@ -1,0 +1,6 @@
+@forge-std/=forge/lib/forge-std/
+@comet-contracts/=contracts/
+@openzeppelin/=node_modules/@openzeppelin/
+eth-gas-reporter/=node_modules/eth-gas-reporter/
+forge-std/=forge/lib/forge-std/src/
+hardhat/=node_modules/hardhat/

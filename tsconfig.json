@@ -11,5 +11,6 @@
   "files": [
     "./index.ts",
     "./hardhat.config.ts",
-  ]
+  ],
+  "exclude": ["node_modules"]
 }

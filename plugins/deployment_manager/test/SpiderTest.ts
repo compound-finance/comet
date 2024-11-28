@@ -28,9 +28,10 @@ async function setupContracts(
   cache: Cache,
   hre: HardhatRuntimeEnvironment
 ): Promise<TestContracts> {
+  const signers = await hre.ethers.getSigners();
   let proxyAdmin: ProxyAdmin = await deploy(
     'vendor/proxy/transparent/ProxyAdmin.sol',
-    [],
+    [signers[0].address],
     hre,
     { cache, network: 'test-network' }
   );
