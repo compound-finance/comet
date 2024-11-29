@@ -112,11 +112,16 @@ interface NetworkConfig {
 }
 
 const networkConfigs: NetworkConfig[] = [
-  { network: 'mainnet', chainId: 1 },
-  { network: 'ropsten', chainId: 3 },
-  { network: 'rinkeby', chainId: 4 },
-  { network: 'goerli', chainId: 5 },
-  { network: 'sepolia', chainId: 11155111 },
+  {
+    network: 'mainnet',
+    chainId: 1,
+    url: `https://rpc.ankr.com/eth/${ANKR_KEY}`
+  },
+  {
+    network: 'sepolia',
+    chainId: 11155111,
+    url: `https://rpc.ankr.com/eth_sepolia/${ANKR_KEY}`,
+  },
   {
     network: 'polygon',
     chainId: 137,
