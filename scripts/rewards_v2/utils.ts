@@ -407,7 +407,7 @@ export const getAllTransferEvents = async (comet: CometInterface, startBlock: nu
     try {
       const events = await dm.retry(() => {
         return comet.queryFilter(comet.filters.Transfer(), fromBlock, toBlock);
-      });
+      }, 30);
       allEvents = allEvents.concat(events);
       console.log(`Fetched events from block ${fromBlock} to ${toBlock}`);
       await delay(delaySeconds * 1000);
