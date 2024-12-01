@@ -540,7 +540,7 @@ scenario(
     return txn; // return txn to measure gas
   });
 
-scenario.only(
+scenario(
   'Comet#rewardsV2 > can claim supply rewards for self as existing user in new campaign with finish tree',
   {
     filter: async (ctx) => await isRewardsV2Supported(ctx),
@@ -576,8 +576,8 @@ scenario.only(
           userIndexFinish = +v[1];
           break;
         }
-        if(accruedFinish > 0n) break;
       }
+      if(accruedFinish > 0n) break;
       if(i == startMerkleTree.length - 1) throw new Error('No user found');
     }
 

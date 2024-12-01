@@ -45,24 +45,12 @@ function findLastStartFinishPair(files: FileData[]) {
       break;
     }
   }
-  if (finish) {
-    // find latest start file before finish file
-    for (let i = files.indexOf(finish) - 1; i >= 0; i--) {
-      const file = files[i];
-      if (file.type === 'start') {
-        start = file;
-        break;
-      }
-    }
-  }
-  else {
-    // find latest start file
-    for (let i = files.length - 1; i >= 0; i--) {
-      const file = files[i];
-      if (file.type === 'start') {
-        start = file;
-        break;
-      }
+  // find latest start file before finish file
+  for (let i = files.indexOf(finish) - 1; i >= 0; i--) {
+    const file = files[i];
+    if (file.type === 'start') {
+      start = file;
+      break;
     }
   }
   return { start, finish };
