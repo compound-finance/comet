@@ -187,7 +187,7 @@ export const networkConfigs: NetworkConfig[] = [
   {
     network: 'scroll',
     chainId: 534352,
-    url: 'https://rpc.scroll.io',
+    url: `https://rpc.ankr.com/scroll/${ANKR_KEY}`,
   }
 ];
 
