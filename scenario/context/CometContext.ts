@@ -29,6 +29,7 @@ import {
   BaseBulker,
   BaseBridgeReceiver,
   ERC20,
+  CometRewardsV2,
 } from '../../build/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
@@ -57,6 +58,7 @@ export interface CometProperties {
   timelock: SimpleTimelock;
   governor: IGovernorBravo;
   rewards: CometRewards;
+  rewardsV2: CometRewardsV2;
   bulker: BaseBulker;
   bridgeReceiver: BaseBridgeReceiver;
 }
@@ -116,6 +118,10 @@ export class CometContext {
 
   async getRewards(): Promise<CometRewards> {
     return this.world.deploymentManager.contract('rewards');
+  }
+
+  async getRewardsV2(): Promise<CometRewardsV2> {
+    return this.world.deploymentManager.contract('rewardsV2');
   }
 
   async getRewardToken(): Promise<ERC20> {
@@ -396,6 +402,7 @@ async function getContextProperties(context: CometContext): Promise<CometPropert
     timelock: await context.getTimelock(),
     governor: await context.getGovernor(),
     rewards: await context.getRewards(),
+    rewardsV2: await context.getRewardsV2(),
     bulker: await context.getBulker(),
     bridgeReceiver: await context.getBridgeReceiver()
   };
