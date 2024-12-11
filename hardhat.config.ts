@@ -75,7 +75,8 @@ const {
   NETWORK_PROVIDER = '',
   GOV_NETWORK_PROVIDER = '',
   GOV_NETWORK = '',
-  REMOTE_ACCOUNTS = ''
+  REMOTE_ACCOUNTS = '',
+  SCROLLSCAN_KEY = ''
 } = process.env;
 
 function* deriveAccounts(pk: string, n: number = 10) {
@@ -102,6 +103,7 @@ export function requireEnv(varName, msg?: string): string {
   'LINEASCAN_KEY',
   'OPTIMISMSCAN_KEY',
   'MANTLESCAN_KEY',
+  'SCROLLSCAN_KEY'
 ].map((v) => requireEnv(v));
 
 // Networks
@@ -289,7 +291,7 @@ const config: HardhatUserConfig = {
       // Scroll Testnet
       'scroll-goerli': ETHERSCAN_KEY,
       // Scroll
-      'scroll': ETHERSCAN_KEY,
+      'scroll': SCROLLSCAN_KEY,
     },
     customChains: [
       {
