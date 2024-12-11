@@ -119,7 +119,7 @@ export const networkConfigs: NetworkConfig[] = [
   {
     network: 'mainnet',
     chainId: 1,
-    url: `https://rpc.ankr.com/eth/${ANKR_KEY}`
+    url: `http://normally-up-yeti.n0des.xyz`
   },
   {
     network: 'sepolia',
