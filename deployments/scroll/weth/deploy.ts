@@ -57,7 +57,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     'weETH:priceFeed',
     'pricefeeds/ScalingPriceFeed.sol',
     [
-      '0x57bd9E614f542fB3d6FeF2B744f3B813f0cc1258', // weETH / ETH price feed
+      '0x57bd9E614f542fB3d6FeF2B744f3B813f0cc1258', // weETH / ETH price feed, we treat eETH as 1:1 with ETH
       8                                             // decimals
     ]
   );
@@ -66,7 +66,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     'wrsETH:priceFeed',
     'pricefeeds/ScalingPriceFeed.sol',
     [
-      '0x3a44916dc37Bb7D73419Fc6492d6d9Dfd8e6ddf7', // wrsETH / ETH price feed
+      '0x3a44916dc37Bb7D73419Fc6492d6d9Dfd8e6ddf7', // wrsETH (same as rsETH) / ETH price feed
       8                                             // decimals
     ]
   );
@@ -75,7 +75,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     'wstETH:priceFeed',
     'pricefeeds/ScalingPriceFeed.sol',
     [
-      '0xE61Da4C909F7d86797a0D06Db63c34f76c9bCBDC', // wstETH / ETH price feed
+      '0xE61Da4C909F7d86797a0D06Db63c34f76c9bCBDC', // wstETH / ETH price feed, we treat stETH as 1:1 with ETH
       8                                             // decimals
     ]
   );
@@ -88,11 +88,9 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
       8                                             // decimals
     ]
   );
-  // Import shared contracts from cUSDCv3 and cUSDTv3 deployments
+
+  // Import shared contracts from cUSDCv3 deployment
   const cometAdmin = await deploymentManager.fromDep('cometAdmin', 'scroll', 'usdc', true);
-  // we use cometFactory from usdc deployment, because usdt deployment use the same one. 
-  // the factory is not the latest version of comet (update for USDT on Mainnet)
-  // for this market it works perfectly
   const cometFactory = await deploymentManager.fromDep('cometFactory', 'scroll', 'usdc', true);
   const $configuratorImpl = await deploymentManager.fromDep('configurator:implementation', 'scroll', 'usdc', true);
   const configurator = await deploymentManager.fromDep('configurator', 'scroll', 'usdc', true);

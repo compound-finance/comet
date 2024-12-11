@@ -123,7 +123,7 @@ export default migration('1733443598_configurate_and_ens', {
     );
 
     const actions = [
-      // 1. Bridge ETH from Ethereum to OP timelock using L1StandardBridge
+      // 1. Bridge ETH from Ethereum to Scroll timelock using the L1ETHGateway
       {
         contract: scrollL1ETHGateway,
         // function depositETH(address _to,uint256 _amount,uint256 _gasLimit)
@@ -135,7 +135,7 @@ export default migration('1733443598_configurate_and_ens', {
         ],
         value: wethAmountToBridge + exp(0.05, 18),
       },
-      // 2. Set Comet configuration + deployAndUpgradeTo new Comet, set Reward Config and wrap eth on Scroll
+      // 2. Set Comet configuration + deployAndUpgradeTo new Comet and wrap eth on Scroll
       {
         contract: scrollMessenger,
         signature: 'sendMessage(address,uint256,bytes,uint256)',

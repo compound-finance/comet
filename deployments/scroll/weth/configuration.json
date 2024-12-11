@@ -30,7 +30,7 @@
       "borrowCF": 0.9,
       "liquidateCF": 0.93,
       "liquidationFactor": 0.96,
-      "supplyCap": "20000e18"
+      "supplyCap": "0e18"
     },
     "wrsETH": {
       "address": "0xa25b25548B4C98B0c7d3d27dcA5D5ca743d68b7F",
@@ -38,7 +38,7 @@
       "borrowCF": 0.88,
       "liquidateCF": 0.91,
       "liquidationFactor": 0.96,
-      "supplyCap": "4000e18"
+      "supplyCap": "0e18"
     },
     "wstETH": {
       "address": "0xf610A9dfB7C89644979b4A0f27063E9e7d7Cda32",
@@ -46,7 +46,7 @@
       "borrowCF": 0.9,
       "liquidateCF": 0.93,
       "liquidationFactor": 0.97,
-      "supplyCap": "3000e18"
+      "supplyCap": "0e18"
     },
     "PufETH": {
       "address": "0xc4d46E8402F476F269c379677C99F18E22Ea030e",
@@ -54,7 +54,7 @@
       "borrowCF": 0.88,
       "liquidateCF": 0.91,
       "liquidationFactor": 0.95,
-      "supplyCap": "1000e18"
+      "supplyCap": "0e18"
     }
   }
 }
