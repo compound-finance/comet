@@ -6,6 +6,7 @@ import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-etherscan';
 import '@typechain/hardhat';
 import 'hardhat-chai-matchers';
+import 'hardhat-change-network';
 import 'hardhat-contract-sizer';
 import 'hardhat-cover';
 import 'hardhat-gas-reporter';
