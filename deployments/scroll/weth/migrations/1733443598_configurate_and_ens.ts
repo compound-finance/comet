@@ -153,7 +153,7 @@ export default migration('1733443598_configurate_and_ens', {
       },
     ];
 
-    const description = '# Initialize cWETHv3 on Scroll network\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Scroll network. This proposal takes the governance steps recommended and necessary to initialize a Compound III WETH market on Scroll; upon execution, cWETHv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/add-market-eth-on-scroll/5884).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/950), [deploy market GitHub action run](<>) and [forum discussion](https://www.comp.xyz/t/add-market-eth-on-scroll/).\n\n\n## Proposal Actions\n\nThe first proposal action sends ether to the Scroll Timelock so it can be wrapped and used to seed the reserves.\n\nThe second proposal action sets the Comet configuration and deploys a new Comet implementation on Scroll. This sends the encoded `setFactory`, `setConfiguration`, `deployAndUpgradeTo` calls across the bridge to the governance receiver on Scroll. Also it wraps and transfers ether to the Comet to seed the reserves.\n\nThe third action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Scroll cWETHv3 market.';
+    const description = '# Initialize cWETHv3 on Scroll network\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Scroll network. This proposal takes the governance steps recommended and necessary to initialize a Compound III WETH market on Scroll; upon execution, cWETHv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/add-market-eth-on-scroll/5884).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/950), [deploy market GitHub action run](https://github.com/woof-software/comet/actions/runs/12286114079/job/34285577514) and [forum discussion](https://www.comp.xyz/t/add-market-eth-on-scroll/).\n\n\n## Proposal Actions\n\nThe first proposal action sends ether to the Scroll Timelock so it can be wrapped and used to seed the reserves.\n\nThe second proposal action sets the Comet configuration and deploys a new Comet implementation on Scroll. This sends the encoded `setFactory`, `setConfiguration`, `deployAndUpgradeTo` calls across the bridge to the governance receiver on Scroll. Also it wraps and transfers ether to the Comet to seed the reserves.\n\nThe third action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Scroll cWETHv3 market.';
     const txn = await govDeploymentManager.retry(async () => {
       return trace(await governor.propose(...(await proposal(actions, description))));
     }
@@ -182,22 +182,22 @@ export default migration('1733443598_configurate_and_ens', {
     // 2.
     // uncomment on on-chain proposal PR
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
-    // expect(stateChanges).to.deep.equal({
-    //   weETH: {
-    //     supplyCap: exp(20_000, 18)
-    //   },
-    //   wrsETH: {
-    //     supplyCap: exp(4_000, 18)
-    //   },
-    //   wstETH: {
-    //     supplyCap: exp(3_000, 18)
-    //   },
-    //   PufETH: {
-    //     supplyCap: exp(1_000, 18)
-    //   },
-    //   baseTrackingSupplySpeed: 0,
-    //   baseTrackingBorrowSpeed: 0,
-    // });
+    expect(stateChanges).to.deep.equal({
+      weETH: {
+        supplyCap: exp(20_000, 18)
+      },
+      wrsETH: {
+        supplyCap: exp(4_000, 18)
+      },
+      wstETH: {
+        supplyCap: exp(3_000, 18)
+      },
+      PufETH: {
+        supplyCap: exp(1_000, 18)
+      },
+      baseTrackingSupplySpeed: 0,
+      baseTrackingBorrowSpeed: 0,
+    });
 
     // 3.
     const ENSResolver = await govDeploymentManager.existing(
