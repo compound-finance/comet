@@ -50,33 +50,6 @@ function maybeStore(alias: Alias, address: Address, into: Aliases): boolean {
     return true;
   }
 }
-async function retry(fn: () => Promise<any>, retries: number = 10, timeLimit?: number, wait: number = 500) {
-  try {
-    return await asyncCallWithTimeout(fn(), timeLimit);
-  } catch (e) {
-    if (retries === 0) throw e;
-
-    console.warn(`Retrying in ${wait}ms...`);
-
-    await new Promise(ok => setTimeout(ok, wait));
-    return retry(fn, retries - 1, timeLimit, wait >= 10000 ? 10000 : wait * 2);
-  }
-}
-async function asyncCallWithTimeout(asyncPromise: Promise<any>, timeLimit: number = 120_000) {
-  let timeoutHandle: string | number | NodeJS.Timeout;
-
-  const timeoutPromise = new Promise((_resolve, reject) => {
-    timeoutHandle = setTimeout(
-      () => reject(new Error('Async call timeout limit reached')),
-      timeLimit
-    );
-  });
-
-  return Promise.race([asyncPromise, timeoutPromise]).then(result => {
-    clearTimeout(timeoutHandle);
-    return result;
-  });
-}
   
 async function discoverNodes(
   path: Contract[],
@@ -85,9 +58,7 @@ async function discoverNodes(
   config: RelationInnerConfig,
   defaultKeyAndTemplate: string
 ): Promise<DiscoverNode[]> {
-  const addresses = await retry(() => {
-    return readField(contract, getFieldKey(config, defaultKeyAndTemplate), context);
-  });
+  const addresses = await readField(contract, getFieldKey(config, defaultKeyAndTemplate), context);
   const templates = config.alias ? asArray(config.alias) : [defaultKeyAndTemplate];
   return addresses.map((address, i) => ({
     address,

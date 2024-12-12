@@ -194,9 +194,7 @@ export default migration('1733443598_configurate_and_ens', {
       },
       PufETH: {
         supplyCap: exp(1_000, 18)
-      },
-      baseTrackingSupplySpeed: 0,
-      baseTrackingBorrowSpeed: 0,
+      }
     });
 
     // 3.

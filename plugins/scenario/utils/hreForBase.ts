@@ -1,4 +1,4 @@
-import type { ethers } from 'ethers';
+import { ethers } from 'ethers';
 import type { HardhatEthersHelpers } from '@nomiclabs/hardhat-ethers/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { HardhatContext } from 'hardhat/internal/context';
@@ -36,7 +36,7 @@ declare module 'hardhat/internal/core/runtime-environment' {
   }
 }
 
-export function nonForkedHreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
+export async function nonForkedHreForBase(base: ForkSpec): Promise<HardhatRuntimeEnvironment> {
   const ctx: HardhatContext = HardhatContext.getHardhatContext();
 
   const hardhatArguments = getEnvHardhatArguments(
@@ -61,7 +61,7 @@ export function nonForkedHreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
   );
 }
 
-export function forkedHreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
+export async function forkedHreForBase(base: ForkSpec): Promise<HardhatRuntimeEnvironment> {
   const ctx: HardhatContext = HardhatContext.getHardhatContext();
 
   const hardhatArguments = getEnvHardhatArguments(HARDHAT_PARAM_DEFINITIONS, process.env);
@@ -72,6 +72,13 @@ export function forkedHreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
   const { hardhat: defaultNetwork, localhost } = networks;
 
   const baseNetwork = networks[base.network] as HttpNetworkUserConfig;
+
+  const provider = new ethers.providers.JsonRpcProvider(baseNetwork.url);
+
+  // noNetwork otherwise
+  if(!base.blockNumber)
+    // base.blockNumber = 17480000;
+    base.blockNumber = await provider.getBlockNumber() - 210;
 
   if (!baseNetwork) {
     throw new Error(`cannot find network config for network: ${base.network}`);
@@ -96,7 +103,7 @@ export function forkedHreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
       defaultNetwork: 'hardhat',
       networks: {
         hardhat: forkedNetwork,
-        localhost
+        localhost: localhost
       },
     },
   };
@@ -111,7 +118,7 @@ export function forkedHreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
   );
 }
 
-export default function hreForBase(base: ForkSpec, fork = true): HardhatRuntimeEnvironment {
+export default async function hreForBase(base: ForkSpec, fork = true): Promise<HardhatRuntimeEnvironment> {
   if (fork) {
     return forkedHreForBase(base);
   } else {
