@@ -50,7 +50,7 @@ function maybeStore(alias: Alias, address: Address, into: Aliases): boolean {
     return true;
   }
 }
-  
+
 async function discoverNodes(
   path: Contract[],
   contract: Contract,
