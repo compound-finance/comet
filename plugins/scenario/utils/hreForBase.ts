@@ -77,8 +77,7 @@ export async function forkedHreForBase(base: ForkSpec): Promise<HardhatRuntimeEn
 
   // noNetwork otherwise
   if(!base.blockNumber)
-    // base.blockNumber = 17480000;
-    base.blockNumber = await provider.getBlockNumber() - 210;
+    base.blockNumber = await provider.getBlockNumber() - 210; // arbitrary number of blocks to go back, about 1 hour
 
   if (!baseNetwork) {
     throw new Error(`cannot find network config for network: ${base.network}`);
