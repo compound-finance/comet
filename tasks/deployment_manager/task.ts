@@ -7,12 +7,12 @@ import { impersonateAddress } from '../../plugins/scenario/utils';
 import hreForBase from '../../plugins/scenario/utils/hreForBase';
 
 // TODO: Don't depend on scenario's hreForBase
-function getForkEnv(env: HardhatRuntimeEnvironment, deployment: string): HardhatRuntimeEnvironment {
+async function getForkEnv(env: HardhatRuntimeEnvironment, deployment: string): Promise<HardhatRuntimeEnvironment> {
   const base = env.config.scenario.bases.find(b => b.network == env.network.name && b.deployment == deployment);
   if (!base) {
     throw new Error(`No fork spec for ${env.network.name}`);
   }
-  return hreForBase(base);
+  return await hreForBase(base);
 }
 
 function getDefaultDeployment(config: HardhatConfig, network: string): string {
@@ -65,7 +65,7 @@ task('deploy', 'Deploys market')
   .addFlag('overwrite', 'overwrites cache')
   .addParam('deployment', 'The deployment to deploy')
   .setAction(async ({ simulate, noDeploy, noVerify, noVerifyImpl, overwrite, deployment }, env) => {
-    const maybeForkEnv = simulate ? getForkEnv(env, deployment) : env;
+    const maybeForkEnv = simulate ? await getForkEnv(env, deployment) : env;
     const network = env.network.name;
     const tag = `${network}/${deployment}`;
     const dm = new DeploymentManager(
@@ -174,7 +174,7 @@ task('migrate', 'Runs migration')
   .addFlag('overwrite', 'overwrites artifact if exists, fails otherwise')
   .setAction(
     async ({ migration: migrationName, prepare, enact, noEnacted, simulate, overwrite, deployment, impersonate }, env) => {
-      const maybeForkEnv = simulate ? getForkEnv(env, deployment) : env;
+      const maybeForkEnv = simulate ? await getForkEnv(env, deployment) : env;
       const network = env.network.name;
       const dm = new DeploymentManager(
         network,
@@ -193,7 +193,7 @@ task('migrate', 'Runs migration')
       const governanceBase = isBridgedDeployment ? env.config.scenario.bases.find(b => b.name === base.auxiliaryBase) : undefined;
 
       if (governanceBase) {
-        const governanceEnv = hreForBase(governanceBase, simulate);
+        const governanceEnv = await hreForBase(governanceBase, simulate);
         governanceDm = new DeploymentManager(
           governanceBase.network,
           governanceBase.deployment,
@@ -246,7 +246,7 @@ task('deploy_and_migrate', 'Runs deploy and migration')
   .addParam('deployment', 'The deployment to deploy')
   .setAction(
     async ({ migration: migrationName, prepare, enact, noEnacted, simulate, overwrite, deployment, impersonate, noDeploy, noVerify, noVerifyImpl }, env) => {
-      const maybeForkEnv = simulate ? getForkEnv(env, deployment) : env;
+      const maybeForkEnv = simulate ? await getForkEnv(env, deployment) : env;
       const network = env.network.name;
       const tag = `${network}/${deployment}`;
       const dm = new DeploymentManager(
@@ -314,7 +314,7 @@ task('deploy_and_migrate', 'Runs deploy and migration')
       const governanceBase = isBridgedDeployment ? env.config.scenario.bases.find(b => b.name === base.auxiliaryBase) : undefined;
 
       if (governanceBase) {
-        const governanceEnv = hreForBase(governanceBase, simulate);
+        const governanceEnv = await hreForBase(governanceBase, simulate);
         governanceDm = new DeploymentManager(
           governanceBase.network,
           governanceBase.deployment,
