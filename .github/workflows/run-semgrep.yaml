@@ -21,6 +21,7 @@ jobs:
       POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
       OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
       MANTLESCAN_KEY: ${{ secrets.MANTLESCAN_KEY }}
+      SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
     container:
       # A Docker image with Semgrep installed. Do not change this.
       image: returntocorp/semgrep

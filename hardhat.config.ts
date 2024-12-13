@@ -49,6 +49,8 @@ import optimismWethRelationConfigMap from './deployments/optimism/weth/relations
 import mantleRelationConfigMap from './deployments/mantle/usde/relations';
 import scrollGoerliRelationConfigMap from './deployments/scroll-goerli/usdc/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
+import scrollWethRelationConfigMap from './deployments/scroll/weth/relations';
+
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -73,7 +75,8 @@ const {
   NETWORK_PROVIDER = '',
   GOV_NETWORK_PROVIDER = '',
   GOV_NETWORK = '',
-  REMOTE_ACCOUNTS = ''
+  REMOTE_ACCOUNTS = '',
+  SCROLLSCAN_KEY = ''
 } = process.env;
 
 function* deriveAccounts(pk: string, n: number = 10) {
@@ -100,6 +103,7 @@ export function requireEnv(varName, msg?: string): string {
   'LINEASCAN_KEY',
   'OPTIMISMSCAN_KEY',
   'MANTLESCAN_KEY',
+  'SCROLLSCAN_KEY'
 ].map((v) => requireEnv(v));
 
 // Networks
@@ -112,11 +116,16 @@ interface NetworkConfig {
 }
 
 const networkConfigs: NetworkConfig[] = [
-  { network: 'mainnet', chainId: 1 },
-  { network: 'ropsten', chainId: 3 },
-  { network: 'rinkeby', chainId: 4 },
-  { network: 'goerli', chainId: 5 },
-  { network: 'sepolia', chainId: 11155111 },
+  {
+    network: 'mainnet',
+    chainId: 1,
+    url: `https://rpc.ankr.com/eth/${ANKR_KEY}`,
+  },
+  {
+    network: 'sepolia',
+    chainId: 11155111,
+    url: `https://rpc.ankr.com/eth_sepolia/${ANKR_KEY}`,
+  },
   {
     network: 'polygon',
     chainId: 137,
@@ -183,7 +192,7 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'scroll',
     chainId: 534352,
-    url: 'https://rpc.scroll.io',
+    url: `https://rpc.ankr.com/scroll/${ANKR_KEY}`,
   }
 ];
 
@@ -282,7 +291,7 @@ const config: HardhatUserConfig = {
       // Scroll Testnet
       'scroll-goerli': ETHERSCAN_KEY,
       // Scroll
-      'scroll': ETHERSCAN_KEY,
+      'scroll': SCROLLSCAN_KEY,
     },
     customChains: [
       {
@@ -426,7 +435,8 @@ const config: HardhatUserConfig = {
         usdc: scrollGoerliRelationConfigMap
       },
       'scroll': {
-        usdc: scrollRelationConfigMap
+        usdc: scrollRelationConfigMap,
+        weth: scrollWethRelationConfigMap
       }
     },
   },
@@ -619,6 +629,12 @@ const config: HardhatUserConfig = {
         name: 'scroll-usdc',
         network: 'scroll',
         deployment: 'usdc',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'scroll-weth',
+        network: 'scroll',
+        deployment: 'weth',
         auxiliaryBase: 'mainnet'
       }
     ],

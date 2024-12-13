@@ -44,6 +44,7 @@ jobs:
       LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
       OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
       MANTLESCAN_KEY: ${{ secrets.MANTLESCAN_KEY }}
+      SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
     steps:
       - name: Seacrest
         uses: hayesgm/seacrest@5748b3a066f517973ca2ca03d0af39bbf2b82d10
