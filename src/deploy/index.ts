@@ -92,7 +92,9 @@ export const WHALES = {
     '0x426c4966fC76Bf782A663203c023578B744e4C5E', // wUSDM whale
     '0x88a1493366D48225fc3cEFbdae9eBb23E323Ade3', // USDe whale
     '0x43594da5d6A03b2137a04DF5685805C676dEf7cB', // rsETH whale
-    '0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b'
+    '0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b',
+    '0x83F8E5Bdc5953276DfDDc0FcC6A7C11Bf9242764', // FBTC whale
+    '0x4ADF44961a7CBe8EE46B2bf04E7198e879677825', // FBTC whale
   ],
   polygon: [
     '0x2093b4281990a568c9d588b8bce3bfd7a1557ebd', // WETH whale
@@ -115,7 +117,8 @@ export const WHALES = {
     '0xee3273f6d29ddfff08ffd9d513cff314734f01a2', // COMP whale
     '0x9e786a8fc88ee74b758b125071d45853356024c3', // COMP whale
     '0xd93f76944e870900779c09ddf1c46275f9d8bf9b', // COMP whale
-    '0xe68ee8a12c611fd043fb05d65e1548dc1383f2b9'  // native USDC whale
+    '0xe68ee8a12c611fd043fb05d65e1548dc1383f2b9', // native USDC whale
+    '0x1c6b5795be43ddff8812b3e577ac752764635bc5', // native COMP whale
   ],
   base: [
     '0x6D3c5a4a7aC4B1428368310E4EC3bB1350d01455', // USDbC whale
