@@ -202,7 +202,7 @@ export default migration('1733443598_configurate_and_ens', {
       'ENSResolver',
       ENSResolverAddress
     );
-    const ENSRegistry = await govDeploymentManager.existing('ENSRegistry', ENSRegistryAddress, 'goerli');
+    const ENSRegistry = await govDeploymentManager.existing('ENSRegistry', ENSRegistryAddress);
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
     const officialMarketsJSON = await ENSResolver.text(
       subdomainHash,
