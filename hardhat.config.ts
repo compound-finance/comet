@@ -110,11 +110,11 @@ interface NetworkConfig {
   gasPrice?: number | 'auto';
 }
 
-export const networkConfigs: NetworkConfig[] = [
+const networkConfigs: NetworkConfig[] = [
   {
     network: 'mainnet',
     chainId: 1,
-    url: `https://rpc.ankr.com/eth/${ANKR_KEY}`
+    url: `https://rpc.ankr.com/eth/${ANKR_KEY}`,
   },
   {
     network: 'sepolia',
