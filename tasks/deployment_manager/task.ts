@@ -5,14 +5,15 @@ import { HardhatRuntimeEnvironment, HardhatConfig } from 'hardhat/types';
 import { DeploymentManager, VerifyArgs } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import hreForBase from '../../plugins/scenario/utils/hreForBase';
+import { generateMerkleTreeForCampaign, calculateMultiplier } from '../../scripts/rewards_v2/utils';
 
 // TODO: Don't depend on scenario's hreForBase
-function getForkEnv(env: HardhatRuntimeEnvironment, deployment: string): HardhatRuntimeEnvironment {
+async function getForkEnv(env: HardhatRuntimeEnvironment, deployment: string): Promise<HardhatRuntimeEnvironment> {
   const base = env.config.scenario.bases.find(b => b.network == env.network.name && b.deployment == deployment);
   if (!base) {
     throw new Error(`No fork spec for ${env.network.name}`);
   }
-  return hreForBase(base);
+  return await hreForBase(base);
 }
 
 function getDefaultDeployment(config: HardhatConfig, network: string): string {
@@ -65,7 +66,7 @@ task('deploy', 'Deploys market')
   .addFlag('overwrite', 'overwrites cache')
   .addParam('deployment', 'The deployment to deploy')
   .setAction(async ({ simulate, noDeploy, noVerify, noVerifyImpl, overwrite, deployment }, env) => {
-    const maybeForkEnv = simulate ? getForkEnv(env, deployment) : env;
+    const maybeForkEnv = simulate ? await getForkEnv(env, deployment) : env;
     const network = env.network.name;
     const tag = `${network}/${deployment}`;
     const dm = new DeploymentManager(
@@ -174,7 +175,7 @@ task('migrate', 'Runs migration')
   .addFlag('overwrite', 'overwrites artifact if exists, fails otherwise')
   .setAction(
     async ({ migration: migrationName, prepare, enact, noEnacted, simulate, overwrite, deployment, impersonate }, env) => {
-      const maybeForkEnv = simulate ? getForkEnv(env, deployment) : env;
+      const maybeForkEnv = simulate ? await getForkEnv(env, deployment) : env;
       const network = env.network.name;
       const dm = new DeploymentManager(
         network,
@@ -193,7 +194,7 @@ task('migrate', 'Runs migration')
       const governanceBase = isBridgedDeployment ? env.config.scenario.bases.find(b => b.name === base.auxiliaryBase) : undefined;
 
       if (governanceBase) {
-        const governanceEnv = hreForBase(governanceBase, simulate);
+        const governanceEnv = await hreForBase(governanceBase, simulate);
         governanceDm = new DeploymentManager(
           governanceBase.network,
           governanceBase.deployment,
@@ -246,7 +247,7 @@ task('deploy_and_migrate', 'Runs deploy and migration')
   .addParam('deployment', 'The deployment to deploy')
   .setAction(
     async ({ migration: migrationName, prepare, enact, noEnacted, simulate, overwrite, deployment, impersonate, noDeploy, noVerify, noVerifyImpl }, env) => {
-      const maybeForkEnv = simulate ? getForkEnv(env, deployment) : env;
+      const maybeForkEnv = simulate ? await getForkEnv(env, deployment) : env;
       const network = env.network.name;
       const tag = `${network}/${deployment}`;
       const dm = new DeploymentManager(
@@ -314,7 +315,7 @@ task('deploy_and_migrate', 'Runs deploy and migration')
       const governanceBase = isBridgedDeployment ? env.config.scenario.bases.find(b => b.name === base.auxiliaryBase) : undefined;
 
       if (governanceBase) {
-        const governanceEnv = hreForBase(governanceBase, simulate);
+        const governanceEnv = await hreForBase(governanceBase, simulate);
         governanceDm = new DeploymentManager(
           governanceBase.network,
           governanceBase.deployment,
@@ -352,3 +353,52 @@ task('deploy_and_migrate', 'Runs deploy and migration')
       }
 
     });
+
+// Can be validated using DUNE - https://dune.com/queries/4320237
+task('generateMerkleTree', 'Generates a Merkle Tree for a given campaign')
+  .addParam('deployment', 'The deployment to use (e.g., usdc, weth)')
+  .addParam('type', 'The campaign type, either start or finish')
+  .addOptionalParam('blocknumber', 'The block number to use; if 0, latest block will be used', '0')
+  .setAction(async ({ deployment, type, blocknumber }, env) => {
+    const network = env.network.name;
+    try {
+      await generateMerkleTreeForCampaign(
+        network,
+        deployment,
+        +blocknumber,
+        type,
+        env
+      );
+    } catch (error) {
+      console.error('Error during Merkle tree generation:', error);
+    }
+  });
+
+task('calculateMultiplier', 'Calculates the multiplier for a rewardsV2 campaign')
+  .addParam('deployment', 'The deployment to use (e.g., usdc, weth)')
+  .addParam('duration', 'The duration of the campaign in seconds')
+  .addParam('amount', 'The amount of rewards to distribute in tokens, not wei, e.g., 10, 50, 100')
+  .setAction(async ({ deployment, duration, amount }, env) => {
+    const network = env.network.name;
+    const dm = new DeploymentManager(
+      network,
+      deployment,
+      await getForkEnv(env, deployment)
+    );
+
+    const comet = await dm.contract('comet');
+    if (!comet) {
+      throw new Error('Comet contract not found');
+    }  
+    const supplySpeed = await comet.baseTrackingSupplySpeed();
+    const borrowSpeed = await comet.baseTrackingBorrowSpeed();
+  
+    calculateMultiplier(
+      supplySpeed.toBigInt(),
+      borrowSpeed.toBigInt(),
+      +duration,
+      BigInt(amount)
+    );
+
+    console.log('Finished!');
+  });
