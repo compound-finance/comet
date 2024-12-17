@@ -383,7 +383,7 @@ task('calculateMultiplier', 'Calculates the multiplier for a rewardsV2 campaign'
     const dm = new DeploymentManager(
       network,
       deployment,
-      getForkEnv(env, deployment)
+      await getForkEnv(env, deployment)
     );
 
     const comet = await dm.contract('comet');
