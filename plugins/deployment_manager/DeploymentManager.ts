@@ -222,10 +222,11 @@ export class DeploymentManager {
     alias: Alias,
     network: string,
     deployment: string,
+    force?: boolean,
     otherAlias = alias
   ): Promise<C> {
     const maybeExisting = await this.contract<C>(alias);
-    if (!maybeExisting) {
+    if (!maybeExisting || force) {
       const trace = this.tracer();
       const spider = await this.spiderOther(network, deployment);
       const contract = spider.contracts.get(otherAlias) as C;

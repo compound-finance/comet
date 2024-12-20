@@ -6,7 +6,7 @@ import "../IPriceFeed.sol";
 
 /**
  * @title Scaling price feed
- * @notice A custom price feed that scales up or down the price received from an underlying Chainlink price feed and returns the result
+ * @notice A custom price feed that scales up or down the price received from an underlying price feed and returns the result
  * @author Compound
  */
 contract ScalingPriceFeed is IPriceFeed {
@@ -22,7 +22,7 @@ contract ScalingPriceFeed is IPriceFeed {
     /// @notice Number of decimals for returned prices
     uint8 public immutable override decimals;
 
-    /// @notice Underlying Chainlink price feed where prices are fetched from
+    /// @notice Underlying price feed where prices are fetched from
     address public immutable underlyingPriceFeed;
 
     /// @notice Whether or not the price should be upscaled
@@ -41,12 +41,12 @@ contract ScalingPriceFeed is IPriceFeed {
         decimals = decimals_;
         description = AggregatorV3Interface(underlyingPriceFeed_).description();
 
-        uint8 chainlinkPriceFeedDecimals = AggregatorV3Interface(underlyingPriceFeed_).decimals();
+        uint8 underlyingPriceFeedDecimals = AggregatorV3Interface(underlyingPriceFeed_).decimals();
         // Note: Solidity does not allow setting immutables in if/else statements
-        shouldUpscale = chainlinkPriceFeedDecimals < decimals_ ? true : false;
+        shouldUpscale = underlyingPriceFeedDecimals < decimals_ ? true : false;
         rescaleFactor = (shouldUpscale
-            ? signed256(10 ** (decimals_ - chainlinkPriceFeedDecimals))
-            : signed256(10 ** (chainlinkPriceFeedDecimals - decimals_))
+            ? signed256(10 ** (decimals_ - underlyingPriceFeedDecimals))
+            : signed256(10 ** (underlyingPriceFeedDecimals - decimals_))
         );
     }
 

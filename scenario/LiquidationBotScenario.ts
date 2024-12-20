@@ -5,6 +5,7 @@ import { ethers, event, exp, wait } from '../test/helpers';
 import CometActor from './context/CometActor';
 import { CometInterface, OnChainLiquidator } from '../build/types';
 import { getPoolConfig, flashLoanPools } from '../scripts/liquidation_bot/liquidateUnderwaterBorrowers';
+import { getConfigForScenario } from './utils/scenarioHelper';
 
 interface LiquidationAddresses {
   balancerVault: string;
@@ -538,15 +539,19 @@ scenario(
   `LiquidationBot > absorbs, but does not attempt to purchase collateral when value is beneath liquidationThreshold`,
   {
     filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }, { network: 'polygon' }, { network: 'arbitrum' }]),
-    tokenBalances: {
-      $comet: { $base: 100000 },
-    },
-    cometBalances: {
-      albert: {
-        $asset0: ' == 200',
-      },
-      betty: { $base: 1000 },
-    },
+    tokenBalances: async (ctx) =>  (
+      {
+        $comet: { $base: getConfigForScenario(ctx).liquidationBase },
+      }
+    ),
+    cometBalances: async (ctx) =>  (
+      {
+        albert: {
+          $asset0: ` == ${getConfigForScenario(ctx).liquidationAsset}`,
+        },
+        betty: { $base: getConfigForScenario(ctx).liquidationBase1 },
+      }
+    )
   },
   async ({ comet, actors }, _context, world) => {
     const { albert, betty } = actors;
@@ -583,7 +588,7 @@ scenario(
     const [initialNumAbsorbs, initialNumAbsorbed] = await comet.liquidatorPoints(betty.address);
 
     const borrowCapacity = await borrowCapacityForAsset(comet, albert, 0);
-    const borrowAmount = (borrowCapacity.mul(90n)).div(100n);
+    const borrowAmount = (borrowCapacity.mul(getConfigForScenario(_context).liquidationDenominator)).div(100n);
 
     await albert.withdrawAsset({
       asset: baseToken,
@@ -649,15 +654,19 @@ scenario(
   `LiquidationBot > absorbs, but does not attempt to purchase collateral when maxAmountToPurchase=0`,
   {
     filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }, { network: 'polygon' }, { network: 'arbitrum' }]),
-    tokenBalances: {
-      $comet: { $base: 100000 },
-    },
-    cometBalances: {
-      albert: {
-        $asset0: ' == 200',
-      },
-      betty: { $base: 1000 },
-    },
+    tokenBalances: async (ctx) => (
+      {
+        $comet: { $base: getConfigForScenario(ctx).liquidationBase },
+      }
+    ),
+    cometBalances: async (ctx) => (
+      {
+        albert: {
+          $asset0: ` == ${getConfigForScenario(ctx).liquidationAsset}}`,
+        },
+        betty: { $base: getConfigForScenario(ctx).liquidationBase1 },
+      }
+    )
   },
   async ({ comet, actors }, _context, world) => {
     const { albert, betty } = actors;
@@ -694,7 +703,7 @@ scenario(
     const [initialNumAbsorbs, initialNumAbsorbed] = await comet.liquidatorPoints(betty.address);
 
     const borrowCapacity = await borrowCapacityForAsset(comet, albert, 0);
-    const borrowAmount = (borrowCapacity.mul(90n)).div(100n);
+    const borrowAmount = (borrowCapacity.mul(getConfigForScenario(_context).liquidationDenominator)).div(100n);
 
     await albert.withdrawAsset({
       asset: baseToken,
@@ -761,7 +770,8 @@ scenario(
     mainnet: {
       usdc: 2250000,
       weth: 20,
-      usdt: 2250000
+      usdt: 2250000,
+      usds: 225000,
     },
   };
   const assetAmounts = {
@@ -769,6 +779,7 @@ scenario(
       usdc: ' == 5000', // COMP
       weth: ' == 3400', // CB_ETH
       usdt: ' == 5000', // COMP
+      usds: ' == 850',   // WETH
     },
   };
 
@@ -778,7 +789,7 @@ scenario(
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }]),
+      filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }]) && !matchesDeployment(ctx, [{deployment: 'wsteth'}, {deployment: 'usds'}]),
       tokenBalances: async (ctx) => (
         {
           $comet: {
@@ -829,7 +840,7 @@ scenario(
       const [initialNumAbsorbs, initialNumAbsorbed] = await comet.liquidatorPoints(betty.address);
 
       const borrowCapacity = await borrowCapacityForAsset(comet, albert, 0);
-      const borrowAmount = (borrowCapacity.mul(90n)).div(100n);
+      const borrowAmount = (borrowCapacity.mul(getConfigForScenario(_context).liquidationNumerator)).div(100n);
 
       await albert.withdrawAsset({
         asset: baseToken,

@@ -328,7 +328,7 @@ export async function fetchLogs(
 }
 
 async function redeployRenzoOracle(dm: DeploymentManager){
-  if(dm.network === 'mainnet' && dm.deployment === 'weth') {
+  if(dm.network === 'mainnet') {
     // renzo admin 	0xD1e6626310fD54Eceb5b9a51dA2eC329D6D4B68A
     const renzoOracle = new Contract(
       '0x5a12796f7e7EBbbc8a402667d266d2e65A814042',
@@ -346,8 +346,8 @@ async function redeployRenzoOracle(dm: DeploymentManager){
     ]);
 
     const newOracle = await dm.deploy(
-      'stETH:Oracle',
-      'test/MockOracle.sol',
+      'renzo:Oracle',
+      'test/MockRenzoOracle.sol',
       [
         '0x86392dC19c0b719886221c78AB11eb8Cf5c52812',    // stETH / ETH oracle address
       ]
@@ -356,6 +356,72 @@ async function redeployRenzoOracle(dm: DeploymentManager){
     await renzoOracle.connect(admin).setOracleAddress('0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84', newOracle.address);
   }
 }
+
+const REDSTONE_FEEDS = {
+  mantle: [
+    '0x3DFA26B9A15D37190bB8e50aE093730DcA88973E', // USDe / USD
+    '0x9b2C948dbA5952A1f5Ab6fA16101c1392b8da1ab', // mETH / ETH
+    '0xFc34806fbD673c21c1AEC26d69AA247F1e69a2C6', // ETH / USD
+  ],
+};
+
+async function getProxyAdmin(dm: DeploymentManager, proxyAddress: string): Promise<string> {
+  // Retrieve the proxy admin address
+  const admin = await dm.hre.ethers.provider.getStorageAt(proxyAddress, '0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103');
+  // Convert the admin address to a checksum address
+  const adminAddress = dm.hre.ethers.utils.getAddress('0x' + admin.substring(26));
+  return adminAddress;
+}
+
+async function mockAllRedstoneOracles(dm: DeploymentManager){
+  const feeds = REDSTONE_FEEDS[dm.network];
+  if (!Array.isArray(feeds)) {
+    debug(`No redstone feeds found for network: ${dm.network}`);
+    return;
+  }
+  for (const feed of feeds) {
+    try{
+      await dm.fromDep(`MockRedstoneOracle:${feed}`, dm.network, dm.deployment);
+    }
+    catch (_) {
+      await mockRedstoneOracle(dm, feed);
+    }
+  }
+}
+
+async function mockRedstoneOracle(dm: DeploymentManager, feed: string){
+  const feedContract = new Contract(
+    feed,
+    [
+      'function latestRoundData() external view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)',
+    ],
+    dm.hre.ethers.provider
+  );
+  const proxyAdminAddress = await getProxyAdmin(dm, feed);
+  const proxyAdmin = new Contract(
+    proxyAdminAddress,
+    [
+      'function upgrade(address proxy, address newImplementation) external',
+      'function owner() external view returns (address)',
+    ],
+    dm.hre.ethers.provider
+  );
+  const ownerAddress = await proxyAdmin.owner();
+  const owner = await impersonateAddress(dm, ownerAddress);
+  // set balance
+  await dm.hre.ethers.provider.send('hardhat_setBalance', [
+    owner.address,
+    dm.hre.ethers.utils.hexStripZeros(dm.hre.ethers.utils.parseUnits('100', 'ether').toHexString()),
+  ]);
+  const price = (await feedContract.latestRoundData()).answer;
+  const newImplementation = await dm.deploy(
+    `MockRedstoneOracle:${feed}`,
+    'test/MockRedstoneOracle.sol',
+    [feed, price]
+  );
+  await proxyAdmin.connect(owner).upgrade(feed, newImplementation.address);
+}
+
 
 export async function executeOpenProposal(
   dm: DeploymentManager,
@@ -401,6 +467,7 @@ export async function executeOpenProposal(
     await governor.execute(id, { gasPrice: 0, gasLimit: 12000000 });
   }
   await redeployRenzoOracle(dm);
+  await mockAllRedstoneOracles(dm);
 }
 
 // Instantly executes some actions through the governance proposal process
@@ -550,6 +617,20 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageCalldata);
       break;
     }
+    case 'mantle': {
+      const sendMessageCalldata = utils.defaultAbiCoder.encode(
+        ['address', 'bytes', 'uint256'],
+        [bridgeReceiver.address, l2ProposalData, 2_500_000]
+      );
+      const mantleL1CrossDomainMessenger = await govDeploymentManager.getContractOrThrow(
+        'mantleL1CrossDomainMessenger'
+      );
+      targets.push(mantleL1CrossDomainMessenger.address);
+      values.push(0);
+      signatures.push('sendMessage(address,bytes,uint32)');
+      calldata.push(sendMessageCalldata);
+      break;
+    }
     case 'scroll': 
     case 'scroll-goerli': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
@@ -589,6 +670,7 @@ export async function executeOpenProposalAndRelay(
 ) {
   const startingBlockNumber = await governanceDeploymentManager.hre.ethers.provider.getBlockNumber();
   await executeOpenProposal(governanceDeploymentManager, openProposal);
+  await mockAllRedstoneOracles(bridgeDeploymentManager);
 
   if (await isBridgeProposal(governanceDeploymentManager, bridgeDeploymentManager, openProposal)) {
     await relayMessage(governanceDeploymentManager, bridgeDeploymentManager, startingBlockNumber);

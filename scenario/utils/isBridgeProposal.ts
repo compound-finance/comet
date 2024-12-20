@@ -64,6 +64,21 @@ export async function isBridgeProposal(
       const bridgeContracts = [opL1CrossDomainMessenger.address, opL1StandardBridge.address];
       return targets.some(t => bridgeContracts.includes(t));
     }
+    case 'mantle': {
+      const governor = await governanceDeploymentManager.getContractOrThrow('governor');
+      const mantleL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow(
+        'mantleL1CrossDomainMessenger'
+      );
+      const mantleL1StandardBridge = await governanceDeploymentManager.getContractOrThrow(
+        'mantleL1StandardBridge'
+      );
+      const { targets } = await governor.getActions(openProposal.id);
+      const bridgeContracts = [
+        mantleL1CrossDomainMessenger.address,
+        mantleL1StandardBridge.address
+      ];
+      return targets.some(t => bridgeContracts.includes(t));
+    }
     case 'scroll':
     case 'scroll-goerli': {
       const governor = await governanceDeploymentManager.getContractOrThrow('governor');
