@@ -1239,7 +1239,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
     /**
      * @notice Fallback to calling the extension delegate for everything else
      */
-    fallback() external {
+    fallback() external payable {
         address delegate = extensionDelegate;
         assembly {
             calldatacopy(0, 0, calldatasize())
