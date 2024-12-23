@@ -13,7 +13,7 @@ import "./IAssetList.sol";
  * @notice An efficient monolithic money market protocol
  * @author Compound
  */
-contract CometExtendedAssetList is CometMainInterface {
+contract CometWithExtendedAssetList is CometMainInterface {
     /** General configuration constants **/
 
     /// @notice The admin of the protocol
@@ -1239,7 +1239,7 @@ contract CometExtendedAssetList is CometMainInterface {
     /**
      * @notice Fallback to calling the extension delegate for everything else
      */
-    fallback() external payable {
+    fallback() external {
         address delegate = extensionDelegate;
         assembly {
             calldatacopy(0, 0, calldatasize())

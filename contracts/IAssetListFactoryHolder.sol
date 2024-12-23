@@ -6,5 +6,9 @@ pragma solidity 0.8.15;
  * @author Compound
  */
 interface IAssetListFactoryHolder {
+    /**
+     * @notice Get the asset list factory
+     * @return assetListFactory The asset list factory
+     */
     function assetListFactory() external view returns (address);
 }

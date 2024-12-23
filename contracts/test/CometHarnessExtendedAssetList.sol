@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
-import "../CometExtendedAssetList.sol";
+import "../CometWithExtendedAssetList.sol";
 
-contract CometHarnessExtendedAssetList is CometExtendedAssetList {
+contract CometHarnessExtendedAssetList is CometWithExtendedAssetList {
     uint public nowOverride;
 
-    constructor(Configuration memory config) CometExtendedAssetList(config) {}
+    constructor(Configuration memory config) CometWithExtendedAssetList(config) {}
 
     function getNowInternal() override internal view returns (uint40) {
         return nowOverride > 0 ? uint40(nowOverride) : super.getNowInternal();

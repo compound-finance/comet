@@ -9,4 +9,5 @@ import "./CometCore.sol";
  */
 interface IAssetList {
     function getAssetInfo(uint8 i) external view returns (CometCore.AssetInfo memory);
+    function numAssets() external view returns (uint8);
 }
