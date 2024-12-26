@@ -533,8 +533,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
 
   // Create the chain-specific wrapper around the L2 proposal data
   switch (bridgeNetwork) {
-    case 'arbitrum':
-    case 'arbitrum-goerli': {
+    case 'arbitrum': {
       const inbox = await govDeploymentManager.getContractOrThrow('arbitrumInbox');
       const refundAddress = constants.AddressZero;
       const createRetryableTicketCalldata = utils.defaultAbiCoder.encode(
@@ -558,8 +557,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(createRetryableTicketCalldata);
       break;
     }
-    case 'base':
-    case 'base-goerli': {
+    case 'base': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'bytes', 'uint32'],
         [bridgeReceiver.address, l2ProposalData, 1_000_000] // XXX find a reliable way to estimate the gasLimit
@@ -574,7 +572,6 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageCalldata);
       break;
     }
-    case 'mumbai':
     case 'polygon': {
       const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(
         ['address', 'bytes'],
@@ -588,20 +585,20 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageToChildCalldata);
       break;
     }
-    case 'linea-goerli': {
-      const sendMessageCalldata = utils.defaultAbiCoder.encode(
-        ['address', 'uint256', 'bytes'],
-        [bridgeReceiver.address, 0, l2ProposalData]
-      );
-      const lineaMessageService = await govDeploymentManager.getContractOrThrow(
-        'lineaMessageService'
-      );
-      targets.push(lineaMessageService.address);
-      values.push(0);
-      signatures.push('sendMessage(address,uint256,bytes)');
-      calldata.push(sendMessageCalldata);
-      break;
-    }
+    // case 'linea-goerli': {
+    //   const sendMessageCalldata = utils.defaultAbiCoder.encode(
+    //     ['address', 'uint256', 'bytes'],
+    //     [bridgeReceiver.address, 0, l2ProposalData]
+    //   );
+    //   const lineaMessageService = await govDeploymentManager.getContractOrThrow(
+    //     'lineaMessageService'
+    //   );
+    //   targets.push(lineaMessageService.address);
+    //   values.push(0);
+    //   signatures.push('sendMessage(address,uint256,bytes)');
+    //   calldata.push(sendMessageCalldata);
+    //   break;
+    // }
     case 'optimism': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'bytes', 'uint32'],
@@ -631,8 +628,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageCalldata);
       break;
     }
-    case 'scroll': 
-    case 'scroll-goerli': {
+    case 'scroll': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'uint256', 'bytes', 'uint256'],
         [bridgeReceiver.address, 0, l2ProposalData, 1_000_000] // XXX find a reliable way to estimate the gasLimit

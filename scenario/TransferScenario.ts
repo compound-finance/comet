@@ -273,10 +273,15 @@ scenario(
   'Comet#transfer collateral reverts if undercollateralized',
   {
     // XXX we should probably have a price constraint?
-    cometBalances: {
-      albert: { $base: -1000, $asset0: '== 3000' }, // in units of asset, not wei
-      betty: { $asset0: 0 },
-    },
+    cometBalances: async (ctx) =>  (
+      {
+        albert: {
+          $base: -getConfigForScenario(ctx).transferBase,
+          $asset0: `== ${getConfigForScenario(ctx).transferAsset}`
+        }, // in units of asset, not wei
+        betty: { $asset0: 0 },
+      }
+    ),
   },
   async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
@@ -289,7 +294,7 @@ scenario(
       albert.transferAsset({
         dst: betty.address,
         asset: collateralAsset.address,
-        amount: 3000n * scale,
+        amount: BigInt(getConfigForScenario(context).transferAsset) * scale,
       }),
       'NotCollateralized()'
     );
@@ -300,10 +305,15 @@ scenario(
   'Comet#transferFrom collateral reverts if undercollateralized',
   {
     // XXX we should probably have a price constraint?
-    cometBalances: {
-      albert: { $base: -1000, $asset0: '== 3000' }, // in units of asset, not wei
-      betty: { $asset0: 0 },
-    },
+    cometBalances: async (ctx) =>  (
+      {
+        albert: {
+          $base: -getConfigForScenario(ctx).transferBase,
+          $asset0: `== ${getConfigForScenario(ctx).transferAsset}`
+        }, // in units of asset, not wei
+        betty: { $asset0: 0 },
+      }
+    ),
   },
   async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
@@ -319,7 +329,7 @@ scenario(
         src: albert.address,
         dst: betty.address,
         asset: collateralAsset.address,
-        amount: 3000n * scale,
+        amount: BigInt(getConfigForScenario(context).transferAsset) * scale,
       }),
       'NotCollateralized()'
     );

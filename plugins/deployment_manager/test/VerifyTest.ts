@@ -16,12 +16,12 @@ export function mockVerifySuccess(hre: HardhatRuntimeEnvironment) {
 
   let solcList = JSON.parse(fs.readFileSync(path.join(__dirname, './SolcList.json'), 'utf8'));
 
-  // Note: we need to convince the prober task that this is goerli, which it's not.
+  // Note: we need to convince the prober task that this is sepolia, which it's not.
   // So we'll fake the network name and the chain ID
   hre.config.etherscan.apiKey = {
-    goerli: 'GOERLI_KEY',
+    sepolia: 'SEPOLIA_KEY',
   };
-  hre.network.name = 'goerli';
+  hre.network.name = 'sepolia';
   let sendOld = hre.network.provider.send.bind(hre.network.provider);
   hre.network.provider.send = function (...args) {
     if (args.length === 1 && args[0] === 'eth_chainId') {
@@ -32,7 +32,7 @@ export function mockVerifySuccess(hre: HardhatRuntimeEnvironment) {
   };
 
   const solcMockPool = mockAgent.get('https://solc-bin.ethereum.org');
-  const etherscanMockPool = mockAgent.get('https://api-goerli.etherscan.io');
+  const etherscanMockPool = mockAgent.get('https://api-sepolia.etherscan.io');
 
   solcMockPool.intercept({
     path: '/bin/list.json',
@@ -53,7 +53,7 @@ export function mockVerifySuccess(hre: HardhatRuntimeEnvironment) {
     path: '/api',
     method: 'GET',
     query: {
-      apikey: 'GOERLI_KEY',
+      apikey: 'SEPOLIA_KEY',
       module: 'contract',
       action: 'checkverifystatus',
       guid: 'MYGUID',

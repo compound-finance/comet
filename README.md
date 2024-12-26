@@ -258,7 +258,7 @@ This can also be used together with `--overwrite`, to produce the verification a
 #### Other considerations
 
 Make sure that the deploying address has a sufficient amount of the chain's
-native asset (i.e. 2 ETH for Goerli, 2 AVAX for Fuji)
+native asset (i.e. 2 ETH for Sepolia, 2 AVAX for Fuji)
 
 ### Clone Multisig
 
@@ -277,7 +277,7 @@ Uniswap for a profit.
 To run the bot, you'll need the address of a deployed version of the Liquidator
 contract (or you can deploy a new instance of it yourself):
 
-`LIQUIDATOR_ADDRESS="0xABC..." DEPLOYMENT="usdc" yarn liquidation-bot --network goerli`
+`LIQUIDATOR_ADDRESS="0xABC..." DEPLOYMENT="usdc" yarn liquidation-bot --network sepolia`
 
 Initiating transactions this way via the public mempool will
 [almost certainly get frontrun](https://youtu.be/UZ-NNd6yjFM), but you might be

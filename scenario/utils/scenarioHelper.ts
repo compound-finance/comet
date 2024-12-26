@@ -16,6 +16,8 @@ const config = {
   transferBase: 1000,
   transferAsset: 5000,
   interestSeconds: 110,
+  withdrawBase: 1000,
+  withdrawAsset: 3000,
 };
 
 export function getConfigForScenario(ctx: CometContext) {
@@ -53,6 +55,21 @@ export function getConfigForScenario(ctx: CometContext) {
   
   if (ctx.world.base.network === 'base' && ctx.world.base.deployment === 'aero') {
     config.interestSeconds = 110;
+  }
+
+  if (ctx.world.base.network === 'arbitrum' && ctx.world.base.deployment === 'usdc.e') {
+    config.liquidationDenominator = 84;
+    config.liquidationBase = 100000;
+    config.liquidationBase1 = 50000;
+    config.liquidationAsset = 10000;
+  }
+
+  if (ctx.world.base.network === 'polygon' && ctx.world.base.deployment === 'usdc') {
+    config.bulkerAsset = 200;
+  }
+
+  if (ctx.world.base.network === 'polygon' && ctx.world.base.deployment === 'usdt') {
+    config.withdrawAsset = 10000;
   }
 
   return config;

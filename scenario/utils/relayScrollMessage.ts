@@ -48,19 +48,10 @@ export default async function relayScrollMessage(
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
 
-    let aliasAccount;
-    if (bridgeDeploymentManager.network == 'scroll-goerli'){
-      aliasAccount = await impersonateAddress(
-        bridgeDeploymentManager,
-        '0xD69c917c7F1C0a724A51c189B4A8F4F8C8E8cA0a'
-      );
-    } else {
-      aliasAccount = await impersonateAddress(
-        bridgeDeploymentManager,
-        applyL1ToL2Alias(scrollMessenger.address)
-      );
-    }    
-
+    let aliasAccount = await impersonateAddress(
+      bridgeDeploymentManager,
+      applyL1ToL2Alias(scrollMessenger.address)
+    );
     const relayMessageTxn = await (
       await l2Messenger.connect(aliasAccount).relayMessage(
         sender,
