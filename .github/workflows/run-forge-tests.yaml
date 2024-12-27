@@ -31,6 +31,7 @@ jobs:
           LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
           OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
           MANTLESCAN_KEY: ${{ secrets.MANTLESCAN_KEY }}
+          SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
 
       - name: Build Comet with older solc versions
         run: |

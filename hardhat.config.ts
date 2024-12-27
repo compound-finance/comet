@@ -90,6 +90,7 @@ export function requireEnv(varName, msg?: string): string {
   'LINEASCAN_KEY',
   'OPTIMISMSCAN_KEY',
   'MANTLESCAN_KEY',
+  'SCROLLSCAN_KEY'
 ].map((v) => requireEnv(v));
 
 // Networks
@@ -242,7 +243,7 @@ const config: HardhatUserConfig = {
       // Mantle
       mantle: MANTLESCAN_KEY,
       // Scroll
-      scroll: SCROLLSCAN_KEY,
+      'scroll': SCROLLSCAN_KEY,
     },
     customChains: [
       {
