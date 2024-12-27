@@ -299,10 +299,15 @@ export function matchesDeployment(ctx: CometContext, deploymentCriteria: Deploym
 export async function isRewardSupported(ctx: CometContext): Promise<boolean> {
   const rewards = await ctx.getRewards();
   const comet = await ctx.getComet();
+  const COMP = await ctx.getComp();
+
   if (rewards == null) return false;
 
   const [rewardTokenAddress] = await rewards.rewardConfig(comet.address);
   if (rewardTokenAddress === constants.AddressZero) return false;
+
+  const totalSupply = await COMP.totalSupply();
+  if (totalSupply.toBigInt() < exp(1, 18)) return false;
 
   return true;
 }

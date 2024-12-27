@@ -1,13 +1,14 @@
 import { expect } from 'chai';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
-import { proposal } from '../../../../src/deploy';
+import { calldata, proposal, exp } from '../../../../src/deploy';
 import { ethers } from 'ethers';
 import { Contract } from 'ethers';
+import { utils } from 'ethers';
 
 let newCometExtAddress: string;
 
-export default migration('1723198576_update_comet_to_support_more_collaterals', {
+export default migration('1735299855_update_comet_to_support_more_collaterals', {
   async prepare(deploymentManager: DeploymentManager) {
     const _assetListFactory = await deploymentManager.deploy(
       'assetListFactory',
@@ -52,39 +53,55 @@ export default migration('1723198576_update_comet_to_support_more_collaterals', 
     };
   },
 
-  async enact(deploymentManager: DeploymentManager, _, {
+  async enact(deploymentManager: DeploymentManager, govDeploymentManager, {
     cometFactoryExtendedAssetList,
     newCometExt,
   }) {
 
     const trace = deploymentManager.tracer();
     const {
-      governor,
       comet,
       cometAdmin,
       configurator,
+      bridgeReceiver,
     } = await deploymentManager.getContracts();
-    
+    const { governor, scrollMessenger } = await govDeploymentManager.getContracts();
+
     newCometExtAddress = newCometExt;
 
+    const setFactoryCalldata = await calldata(
+      configurator.populateTransaction.setFactory(comet.address, cometFactoryExtendedAssetList)
+    );
+
+    const setExtensionDelegateCalldata = await calldata(
+      configurator.populateTransaction.setExtensionDelegate(comet.address, newCometExt)
+    );
+
+    const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(
+      ['address', 'address'],
+      [configurator.address, comet.address]
+    );
+
+    const l2ProposalData = utils.defaultAbiCoder.encode(
+      ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
+      [
+        [configurator.address, configurator.address, cometAdmin.address],
+        [0, 0, 0],
+        [
+          'setFactory(address,address)',
+          'setExtensionDelegate(address,address)',
+          'deployAndUpgradeTo(address,address)',
+        ],
+        [setFactoryCalldata, setExtensionDelegateCalldata, deployAndUpgradeToCalldata],
+      ]
+    );
+
     const mainnetActions = [
-      // 1. Set the factory in the Configurator
       {
-        contract: configurator,
-        signature: 'setFactory(address,address)',
-        args: [comet.address, cometFactoryExtendedAssetList],
-      },
-      // 2. Set new CometExt as the extension delegate
-      {
-        contract: configurator,
-        signature: 'setExtensionDelegate(address,address)',
-        args: [comet.address, newCometExt], 
-      },
-      // 3. Deploy and upgrade to a new version of Comet
-      {
-        contract: cometAdmin,
-        signature: 'deployAndUpgradeTo(address,address)',
-        args: [configurator.address, comet.address],
+        contract: scrollMessenger,
+        signature: 'sendMessage(address,uint256,bytes,uint256)',
+        args: [bridgeReceiver.address, 0, l2ProposalData, 1_000_000],
+        value: exp(0.2, 18)
       },
     ];
 

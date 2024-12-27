@@ -56,7 +56,6 @@ const {
   BASESCAN_KEY,
   OPTIMISMSCAN_KEY,
   MANTLESCAN_KEY,
-  INFURA_KEY,
   ANKR_KEY,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
@@ -158,7 +157,7 @@ const networkConfigs: NetworkConfig[] = [
 ];
 
 function getDefaultProviderURL(network: string) {
-  return `https://${network}.infura.io/v3/${INFURA_KEY}`;
+  return `https://rpc.ankr.com/${network}/${ANKR_KEY}`;
 }
 
 function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
@@ -225,8 +224,6 @@ const config: HardhatUserConfig = {
     apiKey: {
       // Ethereum
       mainnet: ETHERSCAN_KEY,
-      ropsten: ETHERSCAN_KEY,
-      rinkeby: ETHERSCAN_KEY,
       sepolia: ETHERSCAN_KEY,
       // Avalanche
       avalanche: SNOWTRACE_KEY,

@@ -76,7 +76,7 @@ export async function forkedHreForBase(base: ForkSpec): Promise<HardhatRuntimeEn
   const provider = new ethers.providers.JsonRpcProvider(baseNetwork.url);
 
   // noNetwork otherwise
-  if(!base.blockNumber)
+  if(!base.blockNumber && baseNetwork.url)
     base.blockNumber = await provider.getBlockNumber() - 250; // arbitrary number of blocks to go back, about 1 hour
 
   if (!baseNetwork) {

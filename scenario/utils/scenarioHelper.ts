@@ -3,6 +3,7 @@ import { CometContext } from '../context/CometContext';
 const config = {
   bulkerBase: 1000000,
   bulkerAsset: 5000,
+  bulkerAsset1: 5000,
   bulkerComet: 5000,
   bulkerBorrowBase: 1000,
   bulkerBorrowAsset: 500,
@@ -24,6 +25,7 @@ export function getConfigForScenario(ctx: CometContext) {
   if (ctx.world.base.network === 'mainnet' && ctx.world.base.deployment === 'wbtc') {
     config.bulkerBase = 5000;
     config.bulkerAsset = 200;
+    config.bulkerAsset1 = 200;
     config.bulkerComet = 200;
     config.bulkerBorrowBase = 100;
     config.bulkerBorrowAsset = 50;
@@ -66,10 +68,20 @@ export function getConfigForScenario(ctx: CometContext) {
 
   if (ctx.world.base.network === 'polygon' && ctx.world.base.deployment === 'usdc') {
     config.bulkerAsset = 200;
+    config.bulkerAsset1 = 200;
   }
 
   if (ctx.world.base.network === 'polygon' && ctx.world.base.deployment === 'usdt') {
     config.withdrawAsset = 10000;
+  }
+
+  if (ctx.world.base.network === 'scroll' && ctx.world.base.deployment === 'usdc') {
+    config.bulkerAsset = 500;
+    config.bulkerAsset1 = 500;
+  }
+
+  if (ctx.world.base.network === 'sepolia' && ctx.world.base.deployment === 'usdc') {
+    config.bulkerAsset1 = 10;
   }
 
   return config;

@@ -128,7 +128,8 @@ export const WHALES = {
     '0xb125E6687d4313864e53df431d5425969c15Eb2F', // cbETH whale
   ],
   scroll: [
-    '0xaaaaAAAACB71BF2C8CaE522EA5fa455571A74106'  // USDC whale
+    '0xaaaaAAAACB71BF2C8CaE522EA5fa455571A74106', // USDC whale
+    '0x5B1322eeb46240b02e20062b8F0F9908d525B09c', // wstETH whale
   ],
   optimism: [
     '0x2A82Ae142b2e62Cb7D10b55E323ACB1Cab663a26', // OP whale
