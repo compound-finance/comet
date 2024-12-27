@@ -8,7 +8,7 @@ import { utils } from 'ethers';
 
 let newCometExtAddress: string;
 
-export default migration('1735054364_update_comet_to_support_more_collaterals', {
+export default migration('1735299811_update_comet_to_support_more_collaterals', {
   async prepare(deploymentManager: DeploymentManager) {
     const _assetListFactory = await deploymentManager.deploy(
       'assetListFactory',

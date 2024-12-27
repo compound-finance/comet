@@ -56,6 +56,7 @@ const {
   BASESCAN_KEY,
   OPTIMISMSCAN_KEY,
   MANTLESCAN_KEY,
+  SCROLLSCAN_KEY,
   ANKR_KEY,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
@@ -241,7 +242,7 @@ const config: HardhatUserConfig = {
       // Mantle
       mantle: MANTLESCAN_KEY,
       // Scroll
-      'scroll': ETHERSCAN_KEY,
+      scroll: SCROLLSCAN_KEY,
     },
     customChains: [
       {
