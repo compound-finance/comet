@@ -154,7 +154,7 @@ export class Runner<T, U, R> {
 }
 
 
-async function retry(fn: () => Promise<any>, retries: number = 10, timeLimit?: number, wait: number = 100) {
+async function retry(fn: () => Promise<any>, retries: number = 10, timeLimit?: number, wait: number = 250) {
   try {
     return await asyncCallWithTimeout(fn(), timeLimit);
   } catch (e) {
