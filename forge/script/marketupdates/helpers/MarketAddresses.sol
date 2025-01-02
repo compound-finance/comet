@@ -34,6 +34,8 @@ library MarketAddresses {
     address constant public OPTIMISM_USDT_MARKET = 0x995E394b8B2437aC8Ce61Ee0bC610D617962B214; // See - https://optimistic.etherscan.io/address/0x995E394b8B2437aC8Ce61Ee0bC610D617962B214
     address constant public OPTIMISM_ETH_MARKET = 0xE36A30D249f7761327fd973001A32010b521b6Fd; // See - https://optimistic.etherscan.io/address/0xE36A30D249f7761327fd973001A32010b521b6Fd
 
+    address constant public MANTLE_USDe_MARKET = 0x606174f62cd968d8e684c645080fa694c1D7786E; // See - https://mantlescan.xyz/address/0x606174f62cd968d8e684c645080fa694c1D7786E
+
     function getMarketsForChain(ChainAddresses.Chain chain) internal pure returns (MarketInfo[] memory) {
         if (chain == ChainAddresses.Chain.ETHEREUM) {
             MarketInfo[] memory markets = new MarketInfo[](4);
@@ -104,6 +106,13 @@ library MarketAddresses {
             markets[0] = MarketInfo({
                 baseTokenSymbol: "USDC",
                 cometProxyAddress: SCROLL_USDC_MARKET
+            });
+            return markets;
+        } else if (chain == ChainAddresses.Chain.MANTLE) {
+            MarketInfo[] memory markets = new MarketInfo[](1);
+            markets[0] = MarketInfo({
+                baseTokenSymbol: "USDe",
+                cometProxyAddress: MANTLE_USDe_MARKET
             });
             return markets;
         } else if (chain == ChainAddresses.Chain.OPTIMISM) {

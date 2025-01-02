@@ -43,7 +43,7 @@ library BridgeHelper {
             uint256 proposalId = arbitrumBridgeReceiver.proposalCount();
             arbitrumBridgeReceiver.executeProposal(proposalId);
 
-        } else if (chain == ChainAddresses.Chain.OPTIMISM || chain == ChainAddresses.Chain.BASE) {
+        } else if (chain == ChainAddresses.Chain.OPTIMISM || chain == ChainAddresses.Chain.BASE || chain == ChainAddresses.Chain.MANTLE) {
             // Common setup for Optimism and Base
             address crossDomainMessenger = 0x4200000000000000000000000000000000000007;
             vm.prank(crossDomainMessenger);
@@ -66,6 +66,15 @@ library BridgeHelper {
                 uint256 proposalId = optimismBridgeReceiver.proposalCount();
                 optimismBridgeReceiver.executeProposal(proposalId);
 
+            } if (chain == ChainAddresses.Chain.MANTLE) {
+                OptimismBridgeReceiver optimismBridgeReceiver = OptimismBridgeReceiver(payable(ChainAddresses.MANTLE_BRIDGE_RECEIVER));
+
+                address(optimismBridgeReceiver).call(l2Payload);
+
+                uint256 delay = ITimelock(ChainAddresses.MANTLE_LOCAL_TIMELOCK).delay();
+                vm.warp(block.timestamp + delay + 10);
+                uint256 proposalId = optimismBridgeReceiver.proposalCount();
+                optimismBridgeReceiver.executeProposal(proposalId);
             } else {
                 // For Base chain
                 BaseBridgeReceiver baseBridgeReceiver = BaseBridgeReceiver(payable(ChainAddresses.BASE_BRIDGE_RECEIVER));
