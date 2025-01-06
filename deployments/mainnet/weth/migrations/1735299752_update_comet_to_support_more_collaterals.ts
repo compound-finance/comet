@@ -6,6 +6,7 @@ import { ethers } from 'ethers';
 import { Contract } from 'ethers';
 
 let newCometExtAddress: string;
+const WSTETH_COMET = '0x3D0bb1ccaB520A66e607822fC55BC921738fAFE3';
 
 export default migration('1735299752_update_comet_to_support_more_collaterals', {
   async prepare(deploymentManager: DeploymentManager) {
@@ -74,17 +75,35 @@ export default migration('1735299752_update_comet_to_support_more_collaterals', 
         signature: 'setFactory(address,address)',
         args: [comet.address, cometFactoryExtendedAssetList],
       },
-      // 2. Set new CometExt as the extension delegate
+      // 2. Set the factory in the Configurator
+      {
+        contract: configurator,
+        signature: 'setFactory(address,address)',
+        args: [WSTETH_COMET, cometFactoryExtendedAssetList],
+      },
+      // 3. Set new CometExt as the extension delegate
       {
         contract: configurator,
         signature: 'setExtensionDelegate(address,address)',
         args: [comet.address, newCometExt], 
       },
-      // 3. Deploy and upgrade to a new version of Comet
+      // 4. Set new CometExt as the extension delegate
+      {
+        contract: configurator,
+        signature: 'setExtensionDelegate(address,address)',
+        args: [WSTETH_COMET, newCometExt], 
+      },
+      // 5. Deploy and upgrade to a new version of Comet
       {
         contract: cometAdmin,
         signature: 'deployAndUpgradeTo(address,address)',
         args: [configurator.address, comet.address],
+      },
+      // 6. Deploy and upgrade to a new version of Comet
+      {
+        contract: cometAdmin,
+        signature: 'deployAndUpgradeTo(address,address)',
+        args: [configurator.address, WSTETH_COMET],
       },
     ];
 
@@ -120,7 +139,19 @@ export default migration('1735299752_update_comet_to_support_more_collaterals', 
     const assetListAddress = await cometNew.assetList();
 
     expect(assetListAddress).to.not.be.equal(ethers.constants.AddressZero);
+    expect(await comet.extensionDelegate()).to.be.equal(newCometExtAddress);
+    
+    const cometNewWSTETH = new Contract(
+      WSTETH_COMET,
+      [
+        'function assetList() external view returns (address)',
+      ],
+      deploymentManager.hre.ethers.provider
+    );
 
+    const assetListAddressWSTETH = await cometNewWSTETH.assetList();
+
+    expect(assetListAddressWSTETH).to.not.be.equal(ethers.constants.AddressZero);
     expect(await comet.extensionDelegate()).to.be.equal(newCometExtAddress);
   },
 });

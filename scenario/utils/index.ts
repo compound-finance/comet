@@ -469,7 +469,7 @@ export async function executeOpenProposal(
     const proposal = await governor.proposals(id);
     await setNextBlockTimestamp(dm, Math.max(block.timestamp, proposal.eta.toNumber()) + 1);
     await setNextBaseFeeToZero(dm);
-    await governor.execute(id, { gasPrice: 0, gasLimit: 12000000 });
+    await governor.execute(id, { gasPrice: 0, gasLimit: 24000000 });
   }
   await redeployRenzoOracle(dm);
   await mockAllRedstoneOracles(dm);

@@ -8,6 +8,8 @@ import { utils } from 'ethers';
 
 let newCometExtAddress: string;
 
+const USDT_COMET = '0xaeB318360f27748Acb200CE616E389A6C9409a07';
+
 export default migration('1735299827_update_comet_to_support_more_collaterals', {
   async prepare(deploymentManager: DeploymentManager) {
     const _assetListFactory = await deploymentManager.deploy(
@@ -72,27 +74,49 @@ export default migration('1735299827_update_comet_to_support_more_collaterals', 
     const setFactoryCalldata = await calldata(
       configurator.populateTransaction.setFactory(comet.address, cometFactoryExtendedAssetList)
     );
-
     const setExtensionDelegateCalldata = await calldata(
       configurator.populateTransaction.setExtensionDelegate(comet.address, newCometExt)
     );
-
     const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(
       ['address', 'address'],
       [configurator.address, comet.address]
     );
 
+    
+    const setFactoryCalldataUSDT = await calldata(
+      configurator.populateTransaction.setFactory(USDT_COMET, cometFactoryExtendedAssetList)
+    );
+    const setExtensionDelegateCalldataUSDT = await calldata(
+      configurator.populateTransaction.setExtensionDelegate(USDT_COMET, newCometExt)
+    );
+    const deployAndUpgradeToCalldataUSDT = utils.defaultAbiCoder.encode(
+      ['address', 'address'],
+      [configurator.address, USDT_COMET]
+    );
+
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
-        [configurator.address, configurator.address, cometAdmin.address],
-        [0, 0, 0],
+        [
+          configurator.address, configurator.address, cometAdmin.address,
+          configurator.address, configurator.address, cometAdmin.address
+        ],
+        [
+          0, 0, 0,
+          0, 0, 0
+        ],
         [
           'setFactory(address,address)',
           'setExtensionDelegate(address,address)',
           'deployAndUpgradeTo(address,address)',
+          'setFactory(address,address)',
+          'setExtensionDelegate(address,address)',
+          'deployAndUpgradeTo(address,address)',
         ],
-        [setFactoryCalldata, setExtensionDelegateCalldata, deployAndUpgradeToCalldata],
+        [
+          setFactoryCalldata, setExtensionDelegateCalldata, deployAndUpgradeToCalldata,
+          setFactoryCalldataUSDT, setExtensionDelegateCalldataUSDT, deployAndUpgradeToCalldataUSDT
+        ],
       ]
     );
 
@@ -105,7 +129,7 @@ export default migration('1735299827_update_comet_to_support_more_collaterals', 
       },
     ];
 
-    const description = 'DESCRIPTION';
+    const description = '# Update USDC and USDT Comets on Polygon to support more collaterals\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to update 2 Comets to a new version, which supports up to 24 collaterals. This proposal takes the governance steps recommended and necessary to update Compound III USDT and USDC markets on Polygon. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario).\n\nDetailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/904), [deploy market GitHub action run](<>) and [forum discussion](https://www.comp.xyz/t/increase-amount-of-collaterals-in-comet/5465).\n\n\n## Proposal Actions\n\nThe first action sets the factory to the newly deployed factory, extension delegate to the newly deployed contract and deploys and upgrades Comet to a new version for all 4 comets: cUSDTv3 and cUSDCv3.';
     const txn = await deploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
