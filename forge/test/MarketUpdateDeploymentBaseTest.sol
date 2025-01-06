@@ -69,6 +69,17 @@ abstract contract MarketUpdateDeploymentBaseTest is Test {
         address localTimelock = ChainAddresses.getLocalTimelockAddress(chain);
         ChainAddresses.ChainAddressesStruct memory chainAddresses = ChainAddresses.getChainAddresses(chain);
 
+        // Since the contacts are already deployed on Optimism, we will return the addresses
+        if(chain == ChainAddresses.Chain.OPTIMISM) {
+            console.log("Contacts are already deployed on Optimism so returning those addresses");
+            return MarketUpdateContractsDeployer.DeployedContracts({
+                marketUpdateTimelock: 0x81Bc6016Fa365bfE929a51Eec9217B441B598eC6,
+                marketUpdateProposer: 0xB6Ef3AC71E9baCF1F4b9426C149d855Bfc4415F9,
+                newConfiguratorImplementation: 0x371DB45c7ee248dAFf4Dc1FFB67A20faa0ecFE02,
+                newCometProxyAdmin: 0x24D86Da09C4Dd64e50dB7501b0f695d030f397aF,
+                marketAdminPermissionChecker: 0x62DD0452411113404cf9a7fE88A5E6E86f9B71a6
+            });
+        }
 
         MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts = MarketUpdateContractsDeployer.deployContracts(
             vm,

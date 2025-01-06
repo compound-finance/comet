@@ -66,7 +66,7 @@ library BridgeHelper {
                 uint256 proposalId = optimismBridgeReceiver.proposalCount();
                 optimismBridgeReceiver.executeProposal(proposalId);
 
-            } if (chain == ChainAddresses.Chain.MANTLE) {
+            } else if (chain == ChainAddresses.Chain.MANTLE) {
                 OptimismBridgeReceiver optimismBridgeReceiver = OptimismBridgeReceiver(payable(ChainAddresses.MANTLE_BRIDGE_RECEIVER));
 
                 address(optimismBridgeReceiver).call(l2Payload);
