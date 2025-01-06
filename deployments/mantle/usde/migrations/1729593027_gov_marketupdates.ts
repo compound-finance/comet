@@ -95,7 +95,7 @@ export default migration('1729593027_gov_marketupdates', {
     );
 
     const actions = [
-      // 1. Set Comet configuration + deployAndUpgradeTo new Comet and set reward config on Optimism.
+      // 1. Set Comet configuration + deployAndUpgradeTo new Comet and set reward config on Mantle.
       {
         contract: opL1CrossDomainMessenger,
         signature: 'sendMessage(address,bytes,uint32)',
