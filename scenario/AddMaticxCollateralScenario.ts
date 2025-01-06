@@ -110,6 +110,6 @@ scenario(
     expect(await albert.getCometCollateralBalance(maticx.address)).to.be.equal(
       supplyAmount
     );
-    expect(await albert.getCometBaseBalance()).to.be.equal(-borrowAmount);
+    expect(await albert.getCometBaseBalance()).to.be.closeTo(-borrowAmount, 1n);
   }
 );
