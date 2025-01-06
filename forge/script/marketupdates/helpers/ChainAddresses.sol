@@ -85,16 +85,14 @@ library ChainAddresses {
     address constant public OPTIMISM_MARKET_UPDATE_PAUSE_GUARDIAN = 0x3fFd6c073a4ba24a113B18C8F373569640916A45; // See - https://optimistic.etherscan.io/address/0xE36A30D249f7761327fd973001A32010b521b6Fd#readProxyContract
     address constant public OPTIMISM_MARKET_UPDATE_PROPOSAL_GUARDIAN = 0x3fFd6c073a4ba24a113B18C8F373569640916A45; // See - https://optimistic.etherscan.io/address/0xE36A30D249f7761327fd973001A32010b521b6Fd#readProxyContract
 
-    address constant public MANTLE_MARKET_ADMIN = 0x7e14050080306cd36b47DE61ce604b3a1EC70c4e;
-    address constant public MANTLE_MARKET_UPDATE_PAUSE_GUARDIAN = 0x2127338F0ff71Ecc779dce407D95C7D32f7C5F45;
-    address constant public MANTLE_MARKET_UPDATE_PROPOSAL_GUARDIAN = 0x2127338F0ff71Ecc779dce407D95C7D32f7C5F45;
+    address constant public MANTLE_MARKET_ADMIN = 0x7e14050080306cd36b47DE61ce604b3a1EC70c4e; // See - https://explorer.mantle.xyz/address/0x7e14050080306cd36b47DE61ce604b3a1EC70c4e
+    address constant public MANTLE_MARKET_UPDATE_PAUSE_GUARDIAN = 0x2127338F0ff71Ecc779dce407D95C7D32f7C5F45; // See - https://explorer.mantle.xyz/address/0x2127338F0ff71Ecc779dce407D95C7D32f7C5F45
+    address constant public MANTLE_MARKET_UPDATE_PROPOSAL_GUARDIAN = 0x2127338F0ff71Ecc779dce407D95C7D32f7C5F45; // See - https://explorer.mantle.xyz/address/0x2127338F0ff71Ecc779dce407D95C7D32f7C5F45
 
-    address constant public MANTLE_LOCAL_TIMELOCK = 0x16C7B5C1b10489F4B111af11de2Bd607c9728107; // See - https://mantlescan.xyz/address/0x6d903f6003cca6255D85CcA4D3B5E5146dC33925
-    address constant public MANTLE_CONFIGURATOR_PROXY = 0xb77Cd4cD000957283D8BAf53cD782ECf029cF7DB; // See - https://mantlescan.xyz/address/0xb77Cd4cD000957283D8BAf53cD782ECf029cF7DB
-    address constant public MANTLE_COMET_PROXY_ADMIN = 0xe268B436E75648aa0639e2088fa803feA517a0c7; // See - https://mantlescan.xyz/address/0xe268B436E75648aa0639e2088fa803feA517a0c7
-    address constant public MANTLE_BRIDGE_RECEIVER = 0xc91EcA15747E73d6dd7f616C49dAFF37b9F1B604; // See - https://mantlescan.xyz/address/0xc91EcA15747E73d6dd7f616C49dAFF37b9F1B604
-
-
+    address constant public MANTLE_LOCAL_TIMELOCK = 0x16C7B5C1b10489F4B111af11de2Bd607c9728107; // See - https://explorer.mantle.xyz/address/0x16C7B5C1b10489F4B111af11de2Bd607c9728107
+    address constant public MANTLE_CONFIGURATOR_PROXY = 0xb77Cd4cD000957283D8BAf53cD782ECf029cF7DB; // See - https://explorer.mantle.xyz/address/0xb77Cd4cD000957283D8BAf53cD782ECf029cF7DB
+    address constant public MANTLE_COMET_PROXY_ADMIN = 0xe268B436E75648aa0639e2088fa803feA517a0c7; // See - https://explorer.mantle.xyz/address/0xe268B436E75648aa0639e2088fa803feA517a0c7
+    address constant public MANTLE_BRIDGE_RECEIVER = 0xc91EcA15747E73d6dd7f616C49dAFF37b9F1B604; // See - https://explorer.mantle.xyz/address/0xc91EcA15747E73d6dd7f616C49dAFF37b9F1B604
 
     function getChainAddresses(Chain chain) internal pure returns (ChainAddressesStruct memory) {
         if (chain == Chain.ETHEREUM) {
@@ -165,9 +163,9 @@ library ChainAddresses {
                 governorTimelockAddress: MANTLE_LOCAL_TIMELOCK,
                 configuratorProxyAddress: MANTLE_CONFIGURATOR_PROXY,
                 cometProxyAdminAddress: MANTLE_COMET_PROXY_ADMIN,
-                marketUpdatePauseGuardian: address(0),
-                marketUpdateProposalGuardian: address(0),
-                marketAdmin: address(0)
+                marketUpdatePauseGuardian: MANTLE_MARKET_UPDATE_PAUSE_GUARDIAN,
+                marketUpdateProposalGuardian: MANTLE_MARKET_UPDATE_PROPOSAL_GUARDIAN,
+                marketAdmin: MANTLE_MARKET_ADMIN
             });
         } else {
             revert("MarketUpdateAddresses: Chain not supported");
