@@ -11,6 +11,10 @@ async function getMigrations<T>(world: World): Promise<Migration<T>[]> {
   const network = world.deploymentManager.network;
   const deployment = world.deploymentManager.deployment;
   const pattern = new RegExp(`deployments/${network}/${deployment}/migrations/.*.ts`);
+  console.log('pattern', pattern);
+  console.log('await modifiedPaths(pattern)', await modifiedPaths(pattern));
+  console.log('(await modifiedPaths(pattern)).map(p => ', (await modifiedPaths(pattern)).map(p => '../../' + p));
+  console.log('loadMigrations((await modifiedPaths(pattern)).map(p =>', await loadMigrations((await modifiedPaths(pattern)).map(p => '../../' + p)));
   return await loadMigrations((await modifiedPaths(pattern)).map(p => '../../' + p));
 }
 
@@ -23,6 +27,7 @@ export class MigrationConstraint<T extends CometContext> implements StaticConstr
     const label = `[${world.base.name}] {MigrationConstraint}`;
     const solutions: Solution<T>[] = [];
     const migrationPaths = [...subsets(await getMigrations(world))];
+    console.log('await getMigrations(world)', await getMigrations(world));
 
     for (const migrationList of migrationPaths) {
       if (migrationList.length == 0 && migrationPaths.length > 1) {
