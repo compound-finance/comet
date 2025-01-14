@@ -157,16 +157,17 @@ export default migration('1736257010_configurate_and_ens', {
     // 1.
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
     // expect(stateChanges).to.deep.equal({
-    //   GMX: {
-    //     supplyCap: exp(50_000, 18)
-    //   },
     //   WETH: {
-    //     supplyCap: exp(5_000, 18)
+    //     supplyCap: exp(530, 18)
+    //   },
+    //   wstETH: {
+    //     supplyCap: exp(340, 18)
     //   },
     //   WBTC: {
-    //     supplyCap: exp(300, 8)
+    //     supplyCap: exp(18, 8)
     //   },
-    //   baseTrackingSupplySpeed: exp(34.74 / 86400, 15, 18)
+    //   baseTrackingSupplySpeed: exp(4 / 86400, 15, 18),
+    //   baseTrackingBorrowSpeed: exp(3 / 86400, 15, 18)
     // });
 
     const config = await rewards.rewardConfig(comet.address);
@@ -276,7 +277,7 @@ export default migration('1736257010_configurate_and_ens', {
     });
 
     // 7.
-    // expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(34.74 / 86400, 15, 18) );
-    // expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(0);
+    // expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(4 / 86400, 15, 18)); // 46296296296
+    // expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(3 / 86400, 15, 18)); // 34722222222
   }
 });

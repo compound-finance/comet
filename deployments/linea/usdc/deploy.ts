@@ -40,6 +40,12 @@ async function deployContracts(
     'linea'
   );
 
+  const wstETH = await deploymentManager.existing(
+    'wstETH',
+    '0xB5beDd42000b71FddE22D3eE8a79Bd49A568fC8F',
+    'linea'
+  );
+
   const l2MessageService = await deploymentManager.existing(
     'l2MessageService',
     [

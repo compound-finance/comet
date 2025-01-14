@@ -7,15 +7,15 @@
   "pauseGuardian": "0x3fFd6c073a4ba24a113B18C8F373569640916A45",
   "borrowMin": "1e5",
   "storeFrontPriceFactor": 0.6,
-  "targetReserves": "20000000e6",
+  "targetReserves": "20_000_000e6",
   "rates": {
     "supplyKink": 0.9,
-    "supplySlopeLow": 0.059,
-    "supplySlopeHigh": 2.9,
+    "supplySlopeLow": 0.054,
+    "supplySlopeHigh": 3.034,
     "supplyBase": 0,
     "borrowKink": 0.9,
-    "borrowSlopeLow": 0.061,
-    "borrowSlopeHigh": 3.2,
+    "borrowSlopeLow": 0.05,
+    "borrowSlopeHigh": 3.4,
     "borrowBase": 0.015
   },
   "tracking": {
@@ -32,7 +32,16 @@
       "borrowCF": 0.83,
       "liquidateCF": 0.9,
       "liquidationFactor": 0.95,
-      "supplyCap": "1600e18"
+      "supplyCap": "0e18"
+    },
+    "wstETH": {
+      "address": "0xB5beDd42000b71FddE22D3eE8a79Bd49A568fC8F",
+      "priceFeed": "0x8eCE1AbA32716FdDe8D6482bfd88E9a0ee01f565",
+      "decimals": "18",
+      "borrowCF": 0.82,
+      "liquidateCF": 0.87,
+      "liquidationFactor": 0.95,
+      "supplyCap": "0e18"
     },
     "WBTC": {
       "address": "0x3aAB2285ddcDdaD8edf438C1bAB47e1a9D05a9b4",
@@ -40,8 +49,8 @@
       "decimals": "8",
       "borrowCF": 0.8,
       "liquidateCF": 0.85,
-      "liquidationFactor": 0.95,
-      "supplyCap": "60e8"
+      "liquidationFactor": 0.9,
+      "supplyCap": "0e8"
     }
   }
 }

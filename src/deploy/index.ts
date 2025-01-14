@@ -147,6 +147,11 @@ export const WHALES = {
   ],
   linea: [
     '0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f', // ETH whale
+    '0x9be5e24F05bBAfC28Da814bD59284878b388a40f', // WBTC whale
+    '0xCeEd853798ff1c95cEB4dC48f68394eb7A86A782', // wstETH whale
+    '0x03dDD23943b3C698442C5f2841eae70058DbAb8B', // wstETH whale
+    '0x0180912F869065c7a44617Cd4c288bE6Bce5d192', // wstETH whale
+    '0x7160570BB153Edd0Ea1775EC2b2Ac9b65F1aB61B', // wstETH whale
   ],
 };
 
