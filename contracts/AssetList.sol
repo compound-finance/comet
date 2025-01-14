@@ -103,7 +103,14 @@ contract AssetList {
     }
 
     /**
-     * @dev Checks and gets the packed asset info for storage
+     * @dev Checks and gets the packed asset info for storage in 2 variables
+     * - in first variable, the asset address is stored in the lower 160 bits (address can be interpreted as uint160),
+     *      the borrow collateral factor in the next 16 bits,
+     *      the liquidate collateral factor in the next 16 bits,
+     *      and the liquidation factor in the next 16 bits
+     * - in the second variable, the price feed address is stored in the lower 160 bits,
+     *      the asset decimals in the next 8 bits,
+     *      and the supply cap in the next 64 bits
      * @param assetConfigs The asset configurations
      * @param i The index of the asset info to get
      * @return The packed asset info
