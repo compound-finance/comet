@@ -16,6 +16,7 @@ const config = {
   rewardsBase: 1000,
   transferBase: 1000,
   transferAsset: 5000,
+  transferAsset1: 5000,
   interestSeconds: 110,
   withdrawBase: 1000,
   withdrawAsset: 3000,
@@ -73,6 +74,8 @@ export function getConfigForScenario(ctx: CometContext) {
 
   if (ctx.world.base.network === 'polygon' && ctx.world.base.deployment === 'usdt') {
     config.withdrawAsset = 10000;
+    config.transferAsset = 500000;
+    config.transferBase = 100;
   }
 
   if (ctx.world.base.network === 'scroll' && ctx.world.base.deployment === 'usdc') {
