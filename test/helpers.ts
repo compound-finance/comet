@@ -351,13 +351,13 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   config.extensionDelegate = extensionDelegateAssetList.address;
   const CometFactoryExtendedAssetList = (await ethers.getContractFactory('CometHarnessExtendedAssetList')) as CometHarnessExtendedAssetList__factory;
 
-  const cometExtendedAssetList = await CometFactoryExtendedAssetList.deploy(config);
-  await cometExtendedAssetList.deployed();
+  const cometWithExtendedAssetList = await CometFactoryExtendedAssetList.deploy(config);
+  await cometWithExtendedAssetList.deployed();
 
   if (opts.start) await ethers.provider.send('evm_setNextBlockTimestamp', [opts.start]);
   await comet.initializeStorage();
 
-  await cometExtendedAssetList.initializeStorage();
+  await cometWithExtendedAssetList.initializeStorage();
 
   const baseTokenBalance = opts.baseTokenBalance;
   if (baseTokenBalance) {
@@ -374,7 +374,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     base,
     reward,
     comet: await ethers.getContractAt('CometHarnessInterface', comet.address) as Comet,
-    cometWithExtendedAssetList: await ethers.getContractAt('CometHarnessInterfaceExtendedAssetList', cometExtendedAssetList.address) as CometWithExtendedAssetList,
+    cometWithExtendedAssetList: await ethers.getContractAt('CometHarnessInterfaceExtendedAssetList', cometWithExtendedAssetList.address) as CometWithExtendedAssetList,
     assetListFactory: assetListFactory,
     tokens,
     unsupportedToken,
