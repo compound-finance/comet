@@ -41,14 +41,14 @@ export async function isBridgeProposal(
       const bridgeContracts = [baseL1CrossDomainMessenger.address, baseL1StandardBridge.address];
       return targets.some(t => bridgeContracts.includes(t));
     }
-    // case 'linea': {
-    //   const governor = await governanceDeploymentManager.getContractOrThrow('governor');
-    //   const lineaMessageService = await governanceDeploymentManager.getContractOrThrow(
-    //     'lineaMessageService'
-    //   );
-    //   const { targets } = await governor.getActions(openProposal.id);
-    //   return targets.includes(lineaMessageService.address);
-    // }
+    case 'linea': {
+      const governor = await governanceDeploymentManager.getContractOrThrow('governor');
+      const lineaMessageService = await governanceDeploymentManager.getContractOrThrow(
+        'lineaMessageService'
+      );
+      const { targets } = await governor.getActions(openProposal.id);
+      return targets.includes(lineaMessageService.address);
+    }
     case 'optimism': {
       const governor = await governanceDeploymentManager.getContractOrThrow('governor');
       const opL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow(

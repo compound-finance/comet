@@ -61,6 +61,14 @@ export async function nonForkedHreForBase(base: ForkSpec): Promise<HardhatRuntim
   );
 }
 
+function getBlockRollback(base: ForkSpec){
+  if(base.blockNumber)
+    return base.blockNumber;
+  else if(base.network === 'linea')
+    return 1700;
+  else
+    return 280;
+}
 export async function forkedHreForBase(base: ForkSpec): Promise<HardhatRuntimeEnvironment> {
   const ctx: HardhatContext = HardhatContext.getHardhatContext();
 
@@ -77,7 +85,7 @@ export async function forkedHreForBase(base: ForkSpec): Promise<HardhatRuntimeEn
 
   // noNetwork otherwise
   if(!base.blockNumber && baseNetwork.url)
-    base.blockNumber = await provider.getBlockNumber() - 280; // arbitrary number of blocks to go back, about 1 hour
+    base.blockNumber = await provider.getBlockNumber() - getBlockRollback(base); // arbitrary number of blocks to go back, about 1 hour
 
   if (!baseNetwork) {
     throw new Error(`cannot find network config for network: ${base.network}`);

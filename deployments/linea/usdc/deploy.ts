@@ -58,6 +58,15 @@ async function deployContracts(
     'linea'
   );
 
+  const l2USDCBridge = await deploymentManager.existing(
+    'l2USDCBridge',
+    [
+      '0x6D967F862d8c5D9E230a976AB2063eD1d4D7A43c',
+      '0xA2Ee6Fce4ACB62D95448729cDb781e3BEb62504A',
+    ],
+    'linea'
+  );
+
   // Deploy LineaBridgeReceiver
   const bridgeReceiver = await deploymentManager.deploy(
     'bridgeReceiver',
@@ -110,6 +119,7 @@ async function deployContracts(
     bridgeReceiver,
     l2MessageService,
     l2StandardBridge,
+    l2USDCBridge,
     bulker,
   };
 }
