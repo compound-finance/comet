@@ -107,7 +107,7 @@ export default migration('1733936182_add_fbtc_collateral', {
       supplyCap: exp(90, 8),
     };
 
-    // 1. Compare FBTC asset config with Comet and Configurator asset info
+    // 1. Compare FBTC asset config with Comet and Configurator asset info 
     const cometFBTCAssetInfo = await comet.getAssetInfoByAddress(FBTC_ADDRESS);
     expect(FBTCAssetIndex).to.be.equal(cometFBTCAssetInfo.offset);
     expect(FBTCAssetConfig.asset).to.be.equal(cometFBTCAssetInfo.asset);
