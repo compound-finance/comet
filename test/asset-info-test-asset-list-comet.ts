@@ -2,7 +2,7 @@ import { expect, exp, makeConfigurator, ONE, makeProtocol } from './helpers';
 
 describe('asset info', function () {
   it('initializes protocol', async () => {
-    const { cometExtendedAssetList: comet, tokens } = await makeConfigurator({
+    const { cometWithExtendedAssetList: comet, tokens } = await makeConfigurator({
       assets: {
         USDC: {},
         ASSET1: {},
@@ -68,8 +68,8 @@ describe('asset info', function () {
   });
 
   it('reverts if index is greater than numAssets', async () => {
-    const { cometExtendedAssetList } = await makeConfigurator();
-    await expect(cometExtendedAssetList.getAssetInfo(3)).to.be.revertedWith("custom error 'BadAsset()'");
+    const { cometWithExtendedAssetList } = await makeConfigurator();
+    await expect(cometWithExtendedAssetList.getAssetInfo(3)).to.be.revertedWith("custom error 'BadAsset()'");
   });
 
   it('reverts if collateral factors are out of range', async () => {
