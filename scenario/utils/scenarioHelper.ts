@@ -89,5 +89,10 @@ export function getConfigForScenario(ctx: CometContext) {
     config.bulkerAsset1 = 500;
   }
 
+  if (ctx.world.base.network === 'linea' && ctx.world.base.deployment === 'usdt') {
+    config.bulkerAsset = 500;
+    config.bulkerAsset1 = 500;
+  }
+
   return config;
 }

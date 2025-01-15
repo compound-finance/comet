@@ -12,11 +12,13 @@ const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
 
 const lineaCOMPAddress = '0x0ECE76334Fb560f2b1a49A60e38Cf726B02203f0';
+const mainnetUsdtAddress = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
+const cUSDTAddress = '0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9';
 
-const USDCAmountToBridge = exp(10_000, 6);
+const USDTAmountToBridge = exp(10_000, 6);
 const COMPAmountToBridge = exp(2_500, 18);
 
-export default migration('1736257010_configurate_and_ens', {
+export default migration('1736946439_configurate_and_ens', {
   prepare: async (_deploymentManager: DeploymentManager) => {
     return {};
   },
@@ -28,7 +30,6 @@ export default migration('1736257010_configurate_and_ens', {
 
     const {
       bridgeReceiver,
-      timelock: l2Timelock,
       comet,
       cometAdmin,
       configurator,
@@ -38,13 +39,26 @@ export default migration('1736257010_configurate_and_ens', {
     const {
       lineaMessageService,
       lineaL1TokenBridge,
-      lineaL1USDCBridge,
       governor,
-      USDC,
       COMP,
     } = await govDeploymentManager.getContracts();
 
     const configuration = await getConfigurationStruct(deploymentManager);
+
+    const _reduceReservesCalldata = utils.defaultAbiCoder.encode(
+      ['uint256'],
+      [USDTAmountToBridge]
+    );
+  
+    const zeroApproveCalldata = utils.defaultAbiCoder.encode(
+      ['address', 'uint256'],
+      [lineaL1TokenBridge.address, 0]
+    );
+
+    const approveCalldata = utils.defaultAbiCoder.encode(
+      ['address', 'uint256'],
+      [lineaL1TokenBridge.address, USDTAmountToBridge]
+    );
 
     const setConfigurationCalldata = await calldata(
       configurator.populateTransaction.setConfiguration(comet.address, configuration)
@@ -81,7 +95,7 @@ export default migration('1736257010_configurate_and_ens', {
       ...officialMarkets,
       42161: [
         {
-          baseSymbol: 'USDC',
+          baseSymbol: 'USDT',
           cometAddress: comet.address,
         }
       ],
@@ -94,17 +108,29 @@ export default migration('1736257010_configurate_and_ens', {
         signature: 'sendMessage(address,uint256,bytes)',
         args: [bridgeReceiver.address, 0, l2ProposalData],
       },
-      // 2. Approve the USDC gateway to take Timelock's USDC for bridging
+      // 2. Get USDT reserves from cUSDT contract
       {
-        contract: USDC,
-        signature: 'approve(address,uint256)',
-        args: [lineaL1USDCBridge.address, USDCAmountToBridge]
+        target: cUSDTAddress,
+        signature: '_reduceReserves(uint256)',
+        calldata: _reduceReservesCalldata
       },
-      // 3. Bridge USDC from mainnet to Linea Comet
+      // 3. Reset approve of USDT from Timelock's to Gateway
       {
-        contract: lineaL1USDCBridge,
-        signature: 'depositTo(uint256,address)',
-        args: [USDCAmountToBridge, comet.address],
+        target: mainnetUsdtAddress,
+        signature: 'approve(address,uint256)',
+        calldata: zeroApproveCalldata
+      },
+      // 4. Approve the USDT gateway to take Timelock's USDT for bridging
+      {
+        target: mainnetUsdtAddress,
+        signature: 'approve(address,uint256)',
+        calldata: approveCalldata
+      },
+      // 3. Bridge USDT from mainnet to Linea Comet
+      {
+        contract: lineaL1TokenBridge,
+        signature: 'bridgeToken(address,uint256,address)',
+        args: [mainnetUsdtAddress, USDTAmountToBridge, comet.address]
       },
       // 4. Approve the COMP gateway to take Timelock's COMP for bridging
       {
@@ -157,13 +183,13 @@ export default migration('1736257010_configurate_and_ens', {
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
     // expect(stateChanges).to.deep.equal({
     //   WETH: {
-    //     supplyCap: exp(530, 18)
+    //     supplyCap: exp(520, 18)
     //   },
     //   wstETH: {
     //     supplyCap: exp(340, 18)
     //   },
     //   WBTC: {
-    //     supplyCap: exp(18, 8)
+    //     supplyCap: exp(15, 8)
     //   },
     //   baseTrackingSupplySpeed: exp(4 / 86400, 15, 18),
     //   baseTrackingBorrowSpeed: exp(3 / 86400, 15, 18)
@@ -183,7 +209,7 @@ export default migration('1736257010_configurate_and_ens', {
       ['function balanceOf(address account) external view returns (uint256)'],
       deploymentManager.hre.ethers.provider
     );
-    expect(await lineaCOMP.balanceOf(rewards.address)).to.be.equal(USDCAmountToBridge);
+    expect(await lineaCOMP.balanceOf(rewards.address)).to.be.equal(USDTAmountToBridge);
 
     // 6.
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);
@@ -269,7 +295,7 @@ export default migration('1736257010_configurate_and_ens', {
       ],
       42161: [
         {
-          baseSymbol: 'USDC',
+          baseSymbol: 'USDT',
           cometAddress: comet.address,
         }
       ],

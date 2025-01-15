@@ -24,9 +24,9 @@ async function deployContracts(
   const trace = deploymentManager.tracer();
 
   // Pull in existing assets
-  const USDC = await deploymentManager.existing(
-    'USDC',
-    '0x176211869cA2b568f2A7D4EE941E073a821EE1ff',
+  const USDT = await deploymentManager.existing(
+    'USDT',
+    '0xA219439258ca9da29E9Cc4cE5596924745e12B93',
     'linea'
   );
   const WETH = await deploymentManager.existing(

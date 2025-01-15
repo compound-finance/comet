@@ -8,7 +8,10 @@ const customConfig = {
   linea: {
     usdc: {
       2: 10,
-    }
+    },
+    usdt: {
+      2: 10,
+    },
   }
 };
 

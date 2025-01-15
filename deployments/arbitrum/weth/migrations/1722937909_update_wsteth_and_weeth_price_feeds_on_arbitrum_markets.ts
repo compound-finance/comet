@@ -103,10 +103,6 @@ export default migration('1722937909_update_wsteth_and_weeth_price_feeds_on_arbi
     newWeETHToETHPriceFeed = weETHToETHPriceFeed;
     newWstETHToUSDPriceFeed = wstETHToUSDPriceFeed;
 
-    console.log('wstETHToETHPriceFeed', wstETHToETHPriceFeed);
-    console.log('weETHToETHPriceFeed', weETHToETHPriceFeed);
-    console.log('wstETHToUSDPriceFeed', wstETHToUSDPriceFeed);
-
     const updateAssetPriceFeedCalldataWstETHToWETHComet = ethers.utils.defaultAbiCoder.encode(
       ['address', 'address', 'address'],
       [comet.address, wstETH.address, wstETHToETHPriceFeed]

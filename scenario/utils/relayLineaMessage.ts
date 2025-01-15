@@ -102,9 +102,6 @@ export default async function relayLineaMessage(
         )
       ).wait();
     else continue;
-    console.log(_to);
-    console.log(l2USDCBridge.address);
-    console.log(_to.toLowerCase(), l2USDCBridge.address.toLowerCase());
 
     // Try to decode the SentMessage data to determine what type of cross-chain activity this is. So far,
     // there are two types:
@@ -116,8 +113,8 @@ export default async function relayLineaMessage(
       const messageWithoutSigHash = '0x' + messageWithoutPrefix.slice(8);
 
       // Bridging ERC20 token
-      const { l1Token, _l2token, amount, to } = ethers.utils.defaultAbiCoder.decode(
-        ['address nativeToken', 'address bridgedToken', 'uint256 amount', 'address recipient'],
+      const [ l1Token, amount, to ] = ethers.utils.defaultAbiCoder.decode(
+        ['address nativeToken', 'uint256 amount', 'address recipient'],
         messageWithoutSigHash
       );
 
@@ -128,7 +125,7 @@ export default async function relayLineaMessage(
     else if (_to.toLowerCase() === l2USDCBridge.address.toLowerCase()){
       const messageWithoutPrefix = _calldata.slice(2); // strip out the 0x prefix
       const messageWithoutSigHash = '0x' + messageWithoutPrefix.slice(8);
-      const { to, amount } = ethers.utils.defaultAbiCoder.decode(
+      const [ to, amount ] = ethers.utils.defaultAbiCoder.decode(
         ['address _recipient', 'uint256 _amount'],
         messageWithoutSigHash
       );
