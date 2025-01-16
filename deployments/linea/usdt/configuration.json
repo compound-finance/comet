@@ -4,8 +4,7 @@
   "baseToken": "USDT",
   "baseTokenAddress": "0xA219439258ca9da29E9Cc4cE5596924745e12B93",
   "baseTokenPriceFeed": "0xefCA2bbe0EdD0E22b2e0d2F8248E99F4bEf4A7dB",
-  "pauseGuardian": "0x3fFd6c073a4ba24a113B18C8F373569640916A45",
-  "borrowMin": "1e5",
+  "borrowMin": "1e6",
   "storeFrontPriceFactor": 0.6,
   "targetReserves": "20_000_000e6",
   "rates": {

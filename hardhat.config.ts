@@ -42,6 +42,7 @@ import mantleRelationConfigMap from './deployments/mantle/usde/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
 import lineaRelationConfigMap from './deployments/linea/usdc/relations';
 import lineaUsdtRelationConfigMap from './deployments/linea/usdt/relations';
+import lineaWethRelationConfigMap from './deployments/linea/weth/relations';
 
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
@@ -355,7 +356,8 @@ const config: HardhatUserConfig = {
       },
       linea: {
         usdc: lineaRelationConfigMap,
-        usdt: lineaUsdtRelationConfigMap
+        usdt: lineaUsdtRelationConfigMap,
+        weth: lineaWethRelationConfigMap
       },
     },
   },
@@ -502,6 +504,12 @@ const config: HardhatUserConfig = {
         name: 'linea-usdt',
         network: 'linea',
         deployment: 'usdt',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'linea-weth',
+        network: 'linea',
+        deployment: 'weth',
         auxiliaryBase: 'mainnet'
       },
       {

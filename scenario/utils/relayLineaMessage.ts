@@ -85,7 +85,7 @@ export default async function relayLineaMessage(
       _from.toLowerCase() === timelock.address.toLowerCase()
       || _from.toLowerCase() === lineaL1TokenBridge.address.toLowerCase()
       || _from.toLowerCase() === lineaL1USDCBridge.address.toLowerCase()
-    )
+    ){
       relayMessageTxn = await (
         await l2MessageService.claimMessage(
           _from,
@@ -101,7 +101,7 @@ export default async function relayLineaMessage(
           }
         )
       ).wait();
-    else continue;
+    } else continue;
 
     // Try to decode the SentMessage data to determine what type of cross-chain activity this is. So far,
     // there are two types:

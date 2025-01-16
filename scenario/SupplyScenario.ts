@@ -13,12 +13,19 @@ const customConfig = {
     },
     usdt: {
       2: 10,
-    }
+    },
+    weth: {
+      2: 10,
+    },
   }
 };
 
-function getValueOrDefault<T>(obj: Record<string, T>, key: string, defaultValue: T): T {
-  return obj[key] !== undefined ? obj[key] : defaultValue;
+function getValueOrDefault<T>(network: string, deployment: string, id: number, defaultValue: T): T {
+  try {
+    return customConfig[network][deployment][id] === undefined ? defaultValue : customConfig[network][deployment][id];
+  } catch (e) {
+    return defaultValue;
+  }
 }
 
 // XXX introduce a SupplyCapConstraint to separately test the happy path and revert path instead
@@ -26,8 +33,9 @@ function getValueOrDefault<T>(obj: Record<string, T>, key: string, defaultValue:
 async function testSupplyCollateral(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
   const amount = BigInt(
     getValueOrDefault(
-      customConfig[context.world.deploymentManager.network][context.world.deploymentManager.deployment],
-      assetNum.toString(),
+      context.world.deploymentManager.network,
+      context.world.deploymentManager.deployment,
+      assetNum,
       100n
     )
   );
@@ -64,8 +72,9 @@ async function testSupplyCollateral(context: CometContext, assetNum: number): Pr
 async function testSupplyFromCollateral(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
   const amount = BigInt(
     getValueOrDefault(
-      customConfig[context.world.deploymentManager.network][context.world.deploymentManager.deployment],
-      assetNum.toString(),
+      context.world.deploymentManager.network,
+      context.world.deploymentManager.deployment,
+      assetNum,
       100n
     )
   );
@@ -114,7 +123,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       // yet
       filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToSupply),
       tokenBalances: async (ctx) => ({
-        albert: { [`$asset${i}`]: getValueOrDefault(customConfig[ctx.world.deploymentManager.network][ctx.world.deploymentManager.deployment], i.toString(), amountToSupply) },
+        albert: { [`$asset${i}`]: getValueOrDefault(ctx.world.deploymentManager.network, ctx.world.deploymentManager.deployment, i, amountToSupply) },
       }),
     },
     async (_properties, context) => {
@@ -130,7 +139,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     {
       filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToSupply),
       tokenBalances: async (ctx) => ({
-        albert: { [`$asset${i}`]: getValueOrDefault(customConfig[ctx.world.deploymentManager.network][ctx.world.deploymentManager.deployment], i.toString(), amountToSupply) },
+        albert: { [`$asset${i}`]: getValueOrDefault(ctx.world.deploymentManager.network, ctx.world.deploymentManager.deployment, i, amountToSupply) },
       }),
     },
     async (_properties, context) => {

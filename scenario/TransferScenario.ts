@@ -8,22 +8,30 @@ const customConfig = {
   linea: {
     usdc: {
       2: 10,
-    },    
+    },
     usdt: {
       2: 10,
-    }
+    },
+    weth: {
+      2: 10,
+    },
   }
 };
 
-function getValueOrDefault<T>(obj: Record<string, T>, key: string, defaultValue: T): T {
-  return obj[key] !== undefined ? obj[key] : defaultValue;
+function getValueOrDefault<T>(network: string, deployment: string, id: number, defaultValue: T): T {
+  try {
+    return customConfig[network][deployment][id] === undefined ? defaultValue : customConfig[network][deployment][id];
+  } catch (e) {
+    return defaultValue;
+  }
 }
 
 async function testTransferCollateral(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
   const amount = BigInt(
     getValueOrDefault(
-      customConfig[context.world.deploymentManager.network][context.world.deploymentManager.deployment],
-      assetNum.toString(),
+      context.world.deploymentManager.network,
+      context.world.deploymentManager.deployment,
+      assetNum,
       100n
     )
   ) / 2n;
@@ -45,8 +53,9 @@ async function testTransferCollateral(context: CometContext, assetNum: number): 
 async function testTransferFromCollateral(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
   const amount = BigInt(
     getValueOrDefault(
-      customConfig[context.world.deploymentManager.network][context.world.deploymentManager.deployment],
-      assetNum.toString(),
+      context.world.deploymentManager.network,
+      context.world.deploymentManager.deployment,
+      assetNum,
       100n
     )
   ) / 2n;
@@ -74,7 +83,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     {
       filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToTransfer),
       cometBalances: async (ctx) => ({
-        albert: { [`$asset${i}`]: getValueOrDefault(customConfig[ctx.world.deploymentManager.network][ctx.world.deploymentManager.deployment], i.toString(), amountToTransfer) },
+        albert: { [`$asset${i}`]: getValueOrDefault(ctx.world.deploymentManager.network, ctx.world.deploymentManager.deployment, i, amountToTransfer) },
       }),
     },
     async (_properties, context) => {
@@ -90,7 +99,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     {
       filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToTransfer),
       cometBalances: async (ctx) => ({
-        albert: { [`$asset${i}`]: getValueOrDefault(customConfig[ctx.world.deploymentManager.network][ctx.world.deploymentManager.deployment], i.toString(), amountToTransfer) },
+        albert: { [`$asset${i}`]: getValueOrDefault(ctx.world.deploymentManager.network, ctx.world.deploymentManager.deployment, i, amountToTransfer) },
       }),
     },
     async (_properties, context) => {
