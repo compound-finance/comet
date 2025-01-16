@@ -72,6 +72,16 @@ async function deployContracts(
     ],
     'linea'
   );
+  
+  // Import shared contracts from cUSDCv3
+  // const cometAdmin = await deploymentManager.fromDep('cometAdmin', 'linea', 'usdc');
+  // const cometFactory = await deploymentManager.fromDep('cometFactory', 'linea', 'usdc');
+  // const $configuratorImpl = await deploymentManager.fromDep('configurator:implementation', 'linea', 'usdc');
+  // const configurator = await deploymentManager.fromDep('configurator', 'linea', 'usdc');
+  // const rewards = await deploymentManager.fromDep('rewards', 'linea', 'usdc');
+  // const bulker = await deploymentManager.fromDep('bulker', 'linea', 'usdc');
+  // const localTimelock = await deploymentManager.fromDep('timelock', 'linea', 'usdc');
+  // const bridgeReceiver = await deploymentManager.fromDep('bridgeReceiver', 'linea', 'usdc');
 
   // Deploy LineaBridgeReceiver
   const bridgeReceiver = await deploymentManager.deploy(

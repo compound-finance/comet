@@ -91,6 +91,11 @@ export default migration('1736946439_configurate_and_ens', {
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
     const officialMarketsJSON = await ENSResolver.text(subdomainHash, ENSTextRecordKey);
     const officialMarkets = JSON.parse(officialMarketsJSON);
+
+    // if (!officialMarketsJSON[42161].find(market => market.baseSymbol === 'USDC')){
+    //   officialMarketsJSON[42161].push({ baseSymbol: 'USDC', cometAddress: '<>' });
+    // }
+
     const updatedMarkets = {
       ...officialMarkets,
       42161: [
@@ -126,25 +131,25 @@ export default migration('1736946439_configurate_and_ens', {
         signature: 'approve(address,uint256)',
         calldata: approveCalldata
       },
-      // 3. Bridge USDT from mainnet to Linea Comet
+      // 5. Bridge USDT from mainnet to Linea Comet
       {
         contract: lineaL1TokenBridge,
         signature: 'bridgeToken(address,uint256,address)',
         args: [mainnetUsdtAddress, USDTAmountToBridge, comet.address]
       },
-      // 4. Approve the COMP gateway to take Timelock's COMP for bridging
+      // 6. Approve the COMP gateway to take Timelock's COMP for bridging
       {
         contract: COMP,
         signature: 'approve(address,uint256)',
         args: [lineaL1TokenBridge.address, COMPAmountToBridge]
       },
-      // 5. Bridge COMP from mainnet to Linea rewards
+      // 7. Bridge COMP from mainnet to Linea rewards
       {
         contract: lineaL1TokenBridge,
         signature: 'bridgeToken(address,uint256,address)',
         args: [COMP.address, COMPAmountToBridge, rewards.address]
       },
-      // 6. Update the list of official markets
+      // 8. Update the list of official markets
       {
         target: ENSResolverAddress,
         signature: 'setText(bytes32,string,string)',
@@ -294,6 +299,10 @@ export default migration('1736946439_configurate_and_ens', {
         },
       ],
       42161: [
+        // {
+        //   baseSymbol: 'USDC',
+        //   cometAddress: '<>',
+        // },
         {
           baseSymbol: 'USDT',
           cometAddress: comet.address,

@@ -84,6 +84,15 @@ export default migration('1737020138_configurate_and_ens', {
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
     const officialMarketsJSON = await ENSResolver.text(subdomainHash, ENSTextRecordKey);
     const officialMarkets = JSON.parse(officialMarketsJSON);
+
+    // if (!officialMarketsJSON[42161].find(market => market.baseSymbol === 'USDC')){
+    //   officialMarketsJSON[42161].push({ baseSymbol: 'USDC', cometAddress: '<>' });
+    // }
+
+    // if (!officialMarketsJSON[42161].find(market => market.baseSymbol === 'USDT')){
+    //   officialMarketsJSON[42161].push({ baseSymbol: 'USDT', cometAddress: '<>' });
+    // }
+  
     const updatedMarkets = {
       ...officialMarkets,
       42161: [
@@ -93,7 +102,7 @@ export default migration('1737020138_configurate_and_ens', {
         }
       ],
     };
-    // 200 000000000000000000
+
     const mainnetActions = [
       // 1. Set Comet configuration and deployAndUpgradeTo new Comet on Linea.
       {
@@ -102,19 +111,19 @@ export default migration('1737020138_configurate_and_ens', {
         args: [bridgeReceiver.address, 0, l2ProposalData],
         value: WETHAmountToBridge
       },
-      // 4. Approve the COMP gateway to take Timelock's COMP for bridging
+      // 2. Approve the COMP gateway to take Timelock's COMP for bridging
       {
         contract: COMP,
         signature: 'approve(address,uint256)',
         args: [lineaL1TokenBridge.address, COMPAmountToBridge]
       },
-      // 5. Bridge COMP from mainnet to Linea rewards
+      // 3. Bridge COMP from mainnet to Linea rewards
       {
         contract: lineaL1TokenBridge,
         signature: 'bridgeToken(address,uint256,address)',
         args: [COMP.address, COMPAmountToBridge, rewards.address]
       },
-      // 6. Update the list of official markets
+      // 4. Update the list of official markets
       {
         target: ENSResolverAddress,
         signature: 'setText(bytes32,string,string)',
@@ -270,6 +279,14 @@ export default migration('1737020138_configurate_and_ens', {
         },
       ],
       42161: [
+        // {
+        //   baseSymbol: 'USDC',
+        //   cometAddress: '<>',
+        // },
+        // {
+        //   baseSymbol: 'USDT',
+        //   cometAddress: '<>',
+        // },
         {
           baseSymbol: 'WETH',
           cometAddress: comet.address,
