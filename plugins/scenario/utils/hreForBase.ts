@@ -66,9 +66,13 @@ function getBlockRollback(base: ForkSpec){
     return base.blockNumber;
   else if(base.network === 'linea')
     return 1700;
+  else if(base.network === 'arbitrum'){
+    return undefined;
+  }
   else
     return 280;
 }
+
 export async function forkedHreForBase(base: ForkSpec): Promise<HardhatRuntimeEnvironment> {
   const ctx: HardhatContext = HardhatContext.getHardhatContext();
 
