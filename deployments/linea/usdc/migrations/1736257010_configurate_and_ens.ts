@@ -13,8 +13,8 @@ const ENSTextRecordKey = 'v3-official-markets';
 
 const lineaCOMPAddress = '0x0ECE76334Fb560f2b1a49A60e38Cf726B02203f0';
 
-const USDCAmountToBridge = exp(10_000, 6);
-const COMPAmountToBridge = exp(2_500, 18);
+const USDCAmountToBridge = exp(100_000, 6);
+const COMPAmountToBridge = exp(5_110, 18);
 
 export default migration('1736257010_configurate_and_ens', {
   prepare: async (_deploymentManager: DeploymentManager) => {
@@ -129,7 +129,7 @@ export default migration('1736257010_configurate_and_ens', {
       }
     ];
 
-    const description = 'DESCRIPTION';
+    const description = '# Initialize cUSDCv3 on Linea network\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Linea network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Linea; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-linea/4460/19).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/953), [deploy market GitHub action run](<>) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-linea/4460).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Linea. This sends the encoded `setFactory`, `setConfiguration`, `deployAndUpgradeTo` calls across the bridge to the governance receiver on Linea.\n\nThe second action approves USDC tokens to the bridge.\n\nThe third action sends USDC tokens to the Linea chain via a special native USDC bridge.\n\nThe fourth action approves  COMP tokens to the bridge.\n\nThe fifth action sends COMP tokens to the Linea chain via bridge.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Linea cUSDCv3 market.';
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(mainnetActions, description))))
     );

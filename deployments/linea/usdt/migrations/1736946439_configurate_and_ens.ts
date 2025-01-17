@@ -15,7 +15,7 @@ const lineaCOMPAddress = '0x0ECE76334Fb560f2b1a49A60e38Cf726B02203f0';
 const mainnetUsdtAddress = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
 const cUSDTAddress = '0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9';
 
-const USDTAmountToBridge = exp(10_000, 6);
+const USDTAmountToBridge = exp(100_000, 6);
 const COMPAmountToBridge = exp(2_500, 18);
 
 export default migration('1736946439_configurate_and_ens', {

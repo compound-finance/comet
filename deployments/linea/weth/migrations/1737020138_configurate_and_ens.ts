@@ -13,7 +13,7 @@ const ENSTextRecordKey = 'v3-official-markets';
 
 const lineaCOMPAddress = '0x0ECE76334Fb560f2b1a49A60e38Cf726B02203f0';
 
-const WETHAmountToBridge = exp(200, 18);
+const WETHAmountToBridge = exp(25, 18);
 const COMPAmountToBridge = exp(2_500, 18);
 
 export default migration('1737020138_configurate_and_ens', {
