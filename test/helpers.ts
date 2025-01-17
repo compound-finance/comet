@@ -349,9 +349,9 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     await extensionDelegateAssetList.deployed();
   }
   config.extensionDelegate = extensionDelegateAssetList.address;
-  const CometFactoryExtendedAssetList = (await ethers.getContractFactory('CometHarnessExtendedAssetList')) as CometHarnessExtendedAssetList__factory;
+  const CometFactoryWithExtendedAssetList = (await ethers.getContractFactory('CometHarnessExtendedAssetList')) as CometHarnessExtendedAssetList__factory;
 
-  const cometWithExtendedAssetList = await CometFactoryExtendedAssetList.deploy(config);
+  const cometWithExtendedAssetList = await CometFactoryWithExtendedAssetList.deploy(config);
   await cometWithExtendedAssetList.deployed();
 
   if (opts.start) await ethers.provider.send('evm_setNextBlockTimestamp', [opts.start]);

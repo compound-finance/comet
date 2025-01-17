@@ -175,7 +175,7 @@ export default migration('1736257010_configurate_and_ens', {
     expect(config.shouldUpscale).to.be.equal(true);
 
     // 2. & 3.
-    expect(await comet.getReserves()).to.be.equal(COMPAmountToBridge);
+    expect(await comet.getReserves()).to.be.equal(USDCAmountToBridge);
 
     // 4. & 5.
     const lineaCOMP = new Contract(
@@ -183,7 +183,7 @@ export default migration('1736257010_configurate_and_ens', {
       ['function balanceOf(address account) external view returns (uint256)'],
       deploymentManager.hre.ethers.provider
     );
-    expect(await lineaCOMP.balanceOf(rewards.address)).to.be.equal(USDCAmountToBridge);
+    expect(await lineaCOMP.balanceOf(rewards.address)).to.be.equal(COMPAmountToBridge);
 
     // 6.
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);

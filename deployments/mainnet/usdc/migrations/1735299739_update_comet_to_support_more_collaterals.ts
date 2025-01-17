@@ -18,9 +18,9 @@ export default migration('1735299739_update_comet_to_support_more_collaterals', 
       []
     );
 
-    const cometFactoryExtendedAssetList = await deploymentManager.deploy(
-      'cometFactoryExtendedAssetList',
-      'CometFactoryExtendedAssetList.sol',
+    const cometFactoryWithExtendedAssetList = await deploymentManager.deploy(
+      'cometFactoryWithExtendedAssetList',
+      'CometFactoryWithExtendedAssetList.sol',
       []
     );
     const {
@@ -50,13 +50,13 @@ export default migration('1735299739_update_comet_to_support_more_collaterals', 
       ]
     );
     return {
-      cometFactoryExtendedAssetList: cometFactoryExtendedAssetList.address,
+      cometFactoryWithExtendedAssetList: cometFactoryWithExtendedAssetList.address,
       newCometExt: _newCometExt.address
     };
   },
 
   async enact(deploymentManager: DeploymentManager, _, {
-    cometFactoryExtendedAssetList,
+    cometFactoryWithExtendedAssetList,
     newCometExt,
   }) {
 
@@ -75,19 +75,19 @@ export default migration('1735299739_update_comet_to_support_more_collaterals', 
       {
         contract: configurator,
         signature: 'setFactory(address,address)',
-        args: [comet.address, cometFactoryExtendedAssetList],
+        args: [comet.address, cometFactoryWithExtendedAssetList],
       },
       // 2. Set the factory in the Configurator for the USDS comet
       {
         contract: configurator,
         signature: 'setFactory(address,address)',
-        args: [USDS_COMET, cometFactoryExtendedAssetList],
+        args: [USDS_COMET, cometFactoryWithExtendedAssetList],
       },
       // 3. Set the factory in the Configurator for the USDT comet
       {
         contract: configurator,
         signature: 'setFactory(address,address)',
-        args: [USDT_COMET, cometFactoryExtendedAssetList],
+        args: [USDT_COMET, cometFactoryWithExtendedAssetList],
       },
       // 4. Set new CometExt as the extension delegate for the USDC comet
       {
