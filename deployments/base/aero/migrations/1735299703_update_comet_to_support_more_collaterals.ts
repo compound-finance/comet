@@ -20,9 +20,9 @@ export default migration('1735299703_update_comet_to_support_more_collaterals', 
       []
     );
 
-    const cometFactoryExtendedAssetList = await deploymentManager.deploy(
-      'cometFactoryExtendedAssetList',
-      'CometFactoryExtendedAssetList.sol',
+    const cometFactoryWithExtendedAssetList = await deploymentManager.deploy(
+      'cometFactoryWithExtendedAssetList',
+      'CometFactoryWithExtendedAssetList.sol',
       []
     );
     const {
@@ -52,13 +52,13 @@ export default migration('1735299703_update_comet_to_support_more_collaterals', 
       ]
     );
     return {
-      cometFactoryExtendedAssetList: cometFactoryExtendedAssetList.address,
+      cometFactoryWithExtendedAssetList: cometFactoryWithExtendedAssetList.address,
       newCometExt: _newCometExt.address
     };
   },
 
   async enact(deploymentManager: DeploymentManager, govDeploymentManager, {
-    cometFactoryExtendedAssetList,
+    cometFactoryWithExtendedAssetList,
     newCometExt,
   }) {
 
@@ -78,7 +78,7 @@ export default migration('1735299703_update_comet_to_support_more_collaterals', 
     newCometExtAddress = newCometExt;
 
     const setFactoryCalldata = await calldata(
-      configurator.populateTransaction.setFactory(comet.address, cometFactoryExtendedAssetList)
+      configurator.populateTransaction.setFactory(comet.address, cometFactoryWithExtendedAssetList)
     );
     const setExtensionDelegateCalldata = await calldata(
       configurator.populateTransaction.setExtensionDelegate(comet.address, newCometExt)
@@ -89,7 +89,7 @@ export default migration('1735299703_update_comet_to_support_more_collaterals', 
     );
 
     const setFactoryCalldataUSDC = await calldata(
-      configurator.populateTransaction.setFactory(USDC_COMET, cometFactoryExtendedAssetList)
+      configurator.populateTransaction.setFactory(USDC_COMET, cometFactoryWithExtendedAssetList)
     );
     const setExtensionDelegateCalldataUSDC = await calldata(
       configurator.populateTransaction.setExtensionDelegate(USDC_COMET, newCometExt)
@@ -100,7 +100,7 @@ export default migration('1735299703_update_comet_to_support_more_collaterals', 
     );
 
     const setFactoryCalldataWETH = await calldata(
-      configurator.populateTransaction.setFactory(WETH_COMET, cometFactoryExtendedAssetList)
+      configurator.populateTransaction.setFactory(WETH_COMET, cometFactoryWithExtendedAssetList)
     );
     const setExtensionDelegateCalldataWETH = await calldata(
       configurator.populateTransaction.setExtensionDelegate(WETH_COMET, newCometExt)
@@ -111,7 +111,7 @@ export default migration('1735299703_update_comet_to_support_more_collaterals', 
     );
 
     const setFactoryCalldataUSDBC = await calldata(
-      configurator.populateTransaction.setFactory(USDBC_COMET, cometFactoryExtendedAssetList)
+      configurator.populateTransaction.setFactory(USDBC_COMET, cometFactoryWithExtendedAssetList)
     );
     const setExtensionDelegateCalldataUSDBC = await calldata(
       configurator.populateTransaction.setExtensionDelegate(USDBC_COMET, newCometExt)

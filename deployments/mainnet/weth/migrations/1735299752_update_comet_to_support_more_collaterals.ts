@@ -16,9 +16,9 @@ export default migration('1735299752_update_comet_to_support_more_collaterals', 
       []
     );
 
-    const cometFactoryExtendedAssetList = await deploymentManager.deploy(
-      'cometFactoryExtendedAssetList',
-      'CometFactoryExtendedAssetList.sol',
+    const cometFactoryWithExtendedAssetList = await deploymentManager.deploy(
+      'cometFactoryWithExtendedAssetList',
+      'CometFactoryWithExtendedAssetList.sol',
       []
     );
     const {
@@ -48,13 +48,13 @@ export default migration('1735299752_update_comet_to_support_more_collaterals', 
       ]
     );
     return {
-      cometFactoryExtendedAssetList: cometFactoryExtendedAssetList.address,
+      cometFactoryWithExtendedAssetList: cometFactoryWithExtendedAssetList.address,
       newCometExt: _newCometExt.address
     };
   },
 
   async enact(deploymentManager: DeploymentManager, _, {
-    cometFactoryExtendedAssetList,
+    cometFactoryWithExtendedAssetList,
     newCometExt,
   }) {
 
@@ -73,13 +73,13 @@ export default migration('1735299752_update_comet_to_support_more_collaterals', 
       {
         contract: configurator,
         signature: 'setFactory(address,address)',
-        args: [comet.address, cometFactoryExtendedAssetList],
+        args: [comet.address, cometFactoryWithExtendedAssetList],
       },
       // 2. Set the factory in the Configurator
       {
         contract: configurator,
         signature: 'setFactory(address,address)',
-        args: [WSTETH_COMET, cometFactoryExtendedAssetList],
+        args: [WSTETH_COMET, cometFactoryWithExtendedAssetList],
       },
       // 3. Set new CometExt as the extension delegate
       {
