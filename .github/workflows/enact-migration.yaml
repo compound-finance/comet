@@ -13,6 +13,7 @@ on:
           - arbitrum
           - base
           - optimism
+          - linea
           - mantle
           - scroll
       deployment:
@@ -60,7 +61,7 @@ jobs:
       - name: Get governance network
         run: |
           case ${{ github.event.inputs.network }} in
-            polygon | arbitrum | base | optimism | mantle | scroll)
+            polygon | arbitrum | base | optimism | mantle | linea | scroll)
                 echo "GOV_NETWORK=mainnet" >> $GITHUB_ENV ;;
             sepolia)
                 echo "GOV_NETWORK=sepolia" >> $GITHUB_ENV ;;
@@ -73,18 +74,20 @@ jobs:
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ inputs.network }}"
-          ethereum_url: "${{ fromJSON('{\"mantle\":\"https://mantle-mainnet.infura.io/v3/$INFURA_KEY\",\"optimism\":\"https://rpc.ankr.com/optimism/$ANKR_KEY\",\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"sepolia\":\"https://sepolia.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\",\"base\":\"https://rpc.ankr.com/base/$ANKR_KEY\",\"scroll\":\"https://rpc.scroll.io\"}')[inputs.network] }}"
+          ethereum_url: "${{ fromJSON('{\"linea\":\"https://rpc.ankr.com/linea/${ANKR_KEY}\",\"mantle\":\"https://rpc.ankr.com/mantle/${ANKR_KEY}\",\"optimism\":\"https://rpc.ankr.com/optimism/$ANKR_KEY\",\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://rpc.ankr.com/eth/${ANKR_KEY}\",\"sepolia\":\"https://rpc.ankr.com/eth_sepolia/${ANKR_KEY}\",\"polygon\":\"https://rpc.ankr.com/polygon/${ANKR_KEY}\",\"arbitrum\":\"https://rpc.ankr.com/arbitrum/${ANKR_KEY}\",\"base\":\"https://rpc.ankr.com/base/$ANKR_KEY\",\"scroll\":\"https://rpc.scroll.io\"}')[inputs.network] }}"
           port: 8585
         if: github.event.inputs.eth_pk == ''
 
       - name: Seacrest (governance network)
         uses: hayesgm/seacrest@5d8e5e3023669e93d197963273ae159ecda9d2b2
+        env:
+          GOV_NETWORK: ${{ env.GOV_NETWORK }}
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ env.GOV_NETWORK }}"
-          ethereum_url: "${{ fromJSON('{\"mantle\":\"https://mantle-mainnet.infura.io/v3/$INFURA_KEY\",\"optimism\":\"https://rpc.ankr.com/optimism/$ANKR_KEY\",\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"sepolia\":\"https://sepolia.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\"}')[env.GOV_NETWORK] }}"
+          ethereum_url: "${{ fromJSON('{\"linea\":\"https://rpc.ankr.com/linea/${ANKR_KEY}\",\"mantle\":\"https://rpc.ankr.com/mantle/${ANKR_KEY}\",\"optimism\":\"https://rpc.ankr.com/optimism/$ANKR_KEY\",\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://rpc.ankr.com/eth/${ANKR_KEY}\",\"sepolia\":\"https://rpc.ankr.com/eth_sepolia/${ANKR_KEY}\",\"polygon\":\"https://rpc.ankr.com/polygon/${ANKR_KEY}\",\"arbitrum\":\"https://rpc.ankr.com/arbitrum/${ANKR_KEY}\",\"base\":\"https://rpc.ankr.com/base/$ANKR_KEY\",\"scroll\":\"https://rpc.scroll.io\"}')[env.GOV_NETWORK] }}"
           port: 8685
-        if: github.event.inputs.eth_pk == '' && env.GOV_NETWORK != '' && github.event.inputs.impersonateAccount == ''
+        if: github.event.inputs.eth_pk == '' && github.event.inputs.impersonateAccount == ''
 
       - name: Checkout repository
         uses: actions/checkout@v4
