@@ -29,6 +29,8 @@ export function getConfigForScenario(ctx: CometContext) {
     config.bulkerAsset1 = 200;
     config.bulkerComet = 200;
     config.bulkerBorrowBase = 100;
+    config.withdrawBase = 100;
+    config.withdrawAsset = 200;
     config.bulkerBorrowAsset = 50;
     config.liquidationBase = 1000;
     config.liquidationBase1 = 500;
@@ -37,6 +39,7 @@ export function getConfigForScenario(ctx: CometContext) {
     config.rewardsBase = 100;
     config.transferBase = 100;
     config.transferAsset = 500;
+    config.transferAsset1 = 500;
     config.interestSeconds = 70;
   }
   

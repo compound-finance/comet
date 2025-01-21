@@ -94,6 +94,9 @@ export const WHALES = {
     '0x43594da5d6A03b2137a04DF5685805C676dEf7cB', // rsETH whale
     '0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b',
     '0x0B925eD163218f6662a35e0f0371Ac234f9E9371', // wstETH whale
+    '0x3b3501f6778Bfc56526cF2aC33b78b2fDBE4bc73', // solvBTC.BBN whale
+    '0x8bc93498b861fd98277c3b51d240e7E56E48F23c', // solvBTC.BBN whale
+    '0xD5cf704dC17403343965b4F9cd4D7B5e9b20CC52', // solvBTC.BBN whale
   ],
   polygon: [
     '0x2093b4281990a568c9d588b8bce3bfd7a1557ebd', // WETH whale

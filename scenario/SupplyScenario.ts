@@ -508,6 +508,7 @@ scenario(
         /Dai\/insufficient-allowance/,
         symbol === 'WETH' ? /Transaction reverted without a reason string/ : /.^/,
         symbol === 'wstETH' ? /0xc2139725/ : /.^/,
+        symbol === 'SolvBTC.BBN' ? /0xfb8f41b2/ : /.^/,        
         symbol === 'WMATIC' ? /Transaction reverted without a reason string/ : /.^/,
         symbol === 'WPOL' ? /Transaction reverted without a reason string/ : /.^/,
       ]
@@ -595,6 +596,7 @@ scenario(
         /Dai\/insufficient-balance/,
         symbol === 'WETH' ? /Transaction reverted without a reason string/ : /.^/,
         symbol === 'wstETH' ? /0x00b284f2/ : /.^/,
+        symbol === 'SolvBTC.BBN' ? /0xe450d38c/ : /.^/,
         symbol === 'WMATIC' ? /Transaction reverted without a reason string/ : /.^/,
         symbol === 'WPOL' ? /Transaction reverted without a reason string/ : /.^/,
       ]
