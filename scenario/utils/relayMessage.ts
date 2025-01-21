@@ -6,6 +6,7 @@ import relayLineaMessage from './relayLineaMessage';
 import relayOptimismMessage from './relayOptimismMessage';
 import relayMantleMessage from './relayMantleMessage';
 import relayScrollMessage from './relayScrollMessage';
+import relaySonicMessage from './relaySonicMessage';
 
 export default async function relayMessage(
   governanceDeploymentManager: DeploymentManager,
@@ -67,6 +68,13 @@ export default async function relayMessage(
     case 'scroll':
     case 'scroll-goerli':
       await relayScrollMessage(
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
+        startingBlockNumber
+      );
+      break;
+    case 'sonic':
+      await relaySonicMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber

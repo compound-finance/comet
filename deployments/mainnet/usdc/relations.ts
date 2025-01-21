@@ -79,6 +79,19 @@ export default {
       }
     }
   },
+  sonicL1LayerZeroMessenger: {
+    delegates: {
+      field: async () => '0x1a44076050125825900e736c501f859c50fE728c'
+    }
+  },
+  sonicL1GatewayBridge: {
+    delegates: {
+      field: {
+        slot:
+          '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+      }
+    }
+  },
   scrollMessenger: {
     delegates: {
       field: {
