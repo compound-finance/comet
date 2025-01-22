@@ -43,7 +43,7 @@ export default migration('1729593027_gov_marketupdates', {
 
     const { bridgeReceiver } = await deploymentManager.getContracts();
 
-    const { opL1CrossDomainMessenger, governor } =
+    const { mantleL1CrossDomainMessenger, governor } =
       await govDeploymentManager.getContracts();
 
     const changeProxyAdminForCometProxyUSDeCalldata = utils.defaultAbiCoder.encode(
@@ -97,7 +97,7 @@ export default migration('1729593027_gov_marketupdates', {
     const actions = [
       // 1. Set Comet configuration + deployAndUpgradeTo new Comet and set reward config on Mantle.
       {
-        contract: opL1CrossDomainMessenger,
+        contract: mantleL1CrossDomainMessenger,
         signature: 'sendMessage(address,bytes,uint32)',
         args: [bridgeReceiver.address, l2ProposalData, 2_500_000],
       }
