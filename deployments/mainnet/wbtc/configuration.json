@@ -42,7 +42,7 @@
       "borrowCF": 0.73,
       "liquidateCF": 0.75,
       "liquidationFactor": 0.95,
-      "supplyCap": "0e18"
+      "supplyCap": "0e8"
     },
     "pumpBTC": {
       "address": "0xF469fBD2abcd6B9de8E169d128226C0Fc90a012e",
