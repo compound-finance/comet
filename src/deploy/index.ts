@@ -94,6 +94,7 @@ export const WHALES = {
     '0x43594da5d6A03b2137a04DF5685805C676dEf7cB', // rsETH whale
     '0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b',
     '0x0B925eD163218f6662a35e0f0371Ac234f9E9371', // wstETH whale
+    '0xf0bb20865277aBd641a307eCe5Ee04E79073416C', // tETH whale
   ],
   polygon: [
     '0x2093b4281990a568c9d588b8bce3bfd7a1557ebd', // WETH whale

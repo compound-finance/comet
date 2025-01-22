@@ -427,11 +427,7 @@ async function mockRedstoneOracle(dm: DeploymentManager, feed: string){
   await proxyAdmin.connect(owner).upgrade(feed, newImplementation.address);
 }
 
-
-export async function executeOpenProposal(
-  dm: DeploymentManager,
-  { id, startBlock, endBlock }: OpenProposal
-) {
+export async function voteForOpenProposal(dm: DeploymentManager, { id, startBlock, endBlock }: OpenProposal) {
   const governor = await dm.getContractOrThrow('governor');
   const blockNow = await dm.hre.ethers.provider.getBlockNumber();
   const blocksUntilStart = startBlock.toNumber() - blockNow;
@@ -454,6 +450,19 @@ export async function executeOpenProposal(
         debug(`Error while voting for ${whale}`, err.message);
       }
     }
+  }
+}
+
+
+export async function executeOpenProposal(
+  dm: DeploymentManager,
+  { id, startBlock, endBlock }: OpenProposal
+) {
+  const governor = await dm.getContractOrThrow('governor');
+  const blockNow = await dm.hre.ethers.provider.getBlockNumber();
+  const blocksUntilEnd = endBlock.toNumber() - Math.max(startBlock.toNumber(), blockNow) + 1;
+
+  if (blocksUntilEnd > 0) {
     await mineBlocks(dm, blocksUntilEnd);
   }
 
@@ -501,6 +510,7 @@ export async function fastGovernanceExecute(
   const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
   const [id, , , , , , startBlock, endBlock] = proposeEvent.args;
 
+  await voteForOpenProposal(dm, { id, startBlock, endBlock });
   await executeOpenProposal(dm, { id, startBlock, endBlock });
 }
 
