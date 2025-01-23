@@ -8,7 +8,7 @@
   "governor": "0x6d903f6003cca6255d85cca4d3b5e5146dc33925",
   "pauseGuardian": "0xbbf3f1421d886e9b2c5d716b5192ac998af2012c",
   "storeFrontPriceFactor": 0.7,
-  "targetReserves": "250e18",
+  "targetReserves": "250e8",
   "rates": {
     "borrowBase": 0.01,
     "borrowSlopeLow": 0.014,
@@ -23,7 +23,7 @@
     "indexScale": "1e15",
     "baseSupplySpeed": "0e0",
     "baseBorrowSpeed": "0e0",
-    "baseMinForRewards": "0.1e18"
+    "baseMinForRewards": "1e8"
   },
   "rewardTokenAddress": "0xc00e94Cb662C3520282E6f5717214004A7f26888",
   "assets": {
