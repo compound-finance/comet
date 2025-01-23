@@ -98,7 +98,7 @@ export default migration('1736946439_configurate_and_ens', {
 
     const updatedMarkets = {
       ...officialMarkets,
-      42161: [
+      59144: [
         {
           baseSymbol: 'USDT',
           cometAddress: comet.address,
@@ -160,7 +160,7 @@ export default migration('1736946439_configurate_and_ens', {
       }
     ];
 
-    const description = 'DESCRIPTION';
+    const description = '# Initialize cUSDTv3 on Linea network\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Linea network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDT market on Linea; upon execution, cUSDTv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-linea/4460/19).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/953), [deploy market GitHub action run](<>) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-linea/4460).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Linea. This sends the encoded `setFactory`, `setConfiguration`, `deployAndUpgradeTo` calls across the bridge to the governance receiver on Linea.\n\nThe second action reduces Compound’s [cUSDT](https://etherscan.io/address/0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9) reserves and transfers it to Timelock, in order to seed the market reserves for the Linea cUSDTv3 Comet.\n\nThe third action approves 0 USDT from Timelock to [LineaL1TokenBridge](https://etherscan.io/address/0x051F1D88f0aF5763fB888eC4378b4D8B29ea3319) to reset potential previous approves.\n\nThe fourth action approves 100K USDT to [LineaL1TokenBridge](https://etherscan.io/address/0x051F1D88f0aF5763fB888eC4378b4D8B29ea3319) to take Timelock\'s USDT on Mainnet, in order to seed the market reserves through the bridge.\n\nThe fifth action bridges USDT from mainnet via Linea`s bridge contract and sends it to Comet on Linea.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Linea cUSDTv3 market.';
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(mainnetActions, description))))
     );
@@ -268,6 +268,24 @@ export default migration('1736946439_configurate_and_ens', {
           cometAddress: '0xaeB318360f27748Acb200CE616E389A6C9409a07'
         }
       ],
+      42161: [
+        {
+          baseSymbol: 'USDC.e',
+          cometAddress: '0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA',
+        },
+        {
+          baseSymbol: 'USDC',
+          cometAddress: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf',
+        },
+        {
+          baseSymbol: 'WETH',
+          cometAddress: '0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486',
+        },
+        {
+          baseSymbol: 'USDT',
+          cometAddress: '0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07',
+        },
+      ],
       5000: [
         {
           baseSymbol: 'USDe',
@@ -298,7 +316,7 @@ export default migration('1736946439_configurate_and_ens', {
           cometAddress: '0xB2f97c1Bd3bf02f5e74d13f02E3e26F93D77CE44'
         },
       ],
-      42161: [
+      59144: [
         // {
         //   baseSymbol: 'USDC',
         //   cometAddress: '<>',

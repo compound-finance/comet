@@ -79,7 +79,7 @@ export default migration('1736257010_configurate_and_ens', {
     const officialMarkets = JSON.parse(officialMarketsJSON);
     const updatedMarkets = {
       ...officialMarkets,
-      42161: [
+      59144: [
         {
           baseSymbol: 'USDC',
           cometAddress: comet.address,
@@ -237,6 +237,24 @@ export default migration('1736257010_configurate_and_ens', {
           cometAddress: '0xaeB318360f27748Acb200CE616E389A6C9409a07'
         }
       ],
+      42161: [
+        {
+          baseSymbol: 'USDC.e',
+          cometAddress: '0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA',
+        },
+        {
+          baseSymbol: 'USDC',
+          cometAddress: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf',
+        },
+        {
+          baseSymbol: 'WETH',
+          cometAddress: '0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486',
+        },
+        {
+          baseSymbol: 'USDT',
+          cometAddress: '0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07',
+        },
+      ],
       5000: [
         {
           baseSymbol: 'USDe',
@@ -267,7 +285,7 @@ export default migration('1736257010_configurate_and_ens', {
           cometAddress: '0xB2f97c1Bd3bf02f5e74d13f02E3e26F93D77CE44'
         },
       ],
-      42161: [
+      59144: [
         {
           baseSymbol: 'USDC',
           cometAddress: comet.address,

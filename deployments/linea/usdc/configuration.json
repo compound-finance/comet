@@ -4,6 +4,7 @@
   "baseToken": "USDC",
   "baseTokenAddress": "0x176211869cA2b568f2A7D4EE941E073a821EE1ff",
   "baseTokenPriceFeed": "0xAADAa473C1bDF7317ec07c915680Af29DeBfdCb5",
+  "pauseGuardian": "0x5A1e5d7E09cA94506084a26304d53A138145bF52",
   "borrowMin": "1e6",
   "storeFrontPriceFactor": 0.6,
   "targetReserves": "20_000_000e6",
@@ -35,7 +36,6 @@
     },
     "wstETH": {
       "address": "0xB5beDd42000b71FddE22D3eE8a79Bd49A568fC8F",
-      "priceFeed": "0x8eCE1AbA32716FdDe8D6482bfd88E9a0ee01f565",
       "decimals": "18",
       "borrowCF": 0.82,
       "liquidateCF": 0.87,

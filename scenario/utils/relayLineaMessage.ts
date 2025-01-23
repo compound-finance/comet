@@ -35,14 +35,14 @@ export default async function relayLineaMessage(
   const filterRollingHash = lineaMessageService.filters.RollingHashUpdated();
 
   const messageSentEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
-    fromBlock: (startingBlockNumber - 15000),
+    fromBlock: (startingBlockNumber - 50000),
     toBlock: 'latest',
     address: lineaMessageService.address,
     topics: filter.topics!
   });
 
   const rollingHashUpdatedEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
-    fromBlock: (startingBlockNumber - 15000),
+    fromBlock: (startingBlockNumber - 50000),
     toBlock: 'latest',
     address: lineaMessageService.address,
     topics: filterRollingHash.topics!

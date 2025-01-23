@@ -95,7 +95,7 @@ export default migration('1737020138_configurate_and_ens', {
   
     const updatedMarkets = {
       ...officialMarkets,
-      42161: [
+      59144: [
         {
           baseSymbol: 'WETH',
           cometAddress: comet.address,
@@ -134,7 +134,7 @@ export default migration('1737020138_configurate_and_ens', {
       }
     ];
 
-    const description = 'DESCRIPTION';
+    const description = '# Initialize cWETHv3 on Linea network\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Linea network. This proposal takes the governance steps recommended and necessary to initialize a Compound III WETH market on Linea; upon execution, cWETHv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-linea/4460/19).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/953), [deploy market GitHub action run](<>) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-linea/4460).\n\n\n## Proposal Actions\n\nThe first proposal action sends ether to the Linea Timelock so it can be wrapped and used to seed the reserves, sets the Comet configuration and deploys a new Comet implementation on Linea. This sends the encoded `setFactory`, `setConfiguration`, `deployAndUpgradeTo` calls across the bridge to the governance receiver on Linea.\n\nThe second action approves COMP token to the bridge.\n\nThe third action sends COMP tokens to the Linea chain via bridge.\n\nThe fourth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Linea cWETHv3 market.';
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(mainnetActions, description))))
     );
@@ -248,6 +248,24 @@ export default migration('1737020138_configurate_and_ens', {
           cometAddress: '0xaeB318360f27748Acb200CE616E389A6C9409a07'
         }
       ],
+      42161: [
+        {
+          baseSymbol: 'USDC.e',
+          cometAddress: '0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA',
+        },
+        {
+          baseSymbol: 'USDC',
+          cometAddress: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf',
+        },
+        {
+          baseSymbol: 'WETH',
+          cometAddress: '0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486',
+        },
+        {
+          baseSymbol: 'USDT',
+          cometAddress: '0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07',
+        },
+      ],
       5000: [
         {
           baseSymbol: 'USDe',
@@ -278,7 +296,7 @@ export default migration('1737020138_configurate_and_ens', {
           cometAddress: '0xB2f97c1Bd3bf02f5e74d13f02E3e26F93D77CE44'
         },
       ],
-      42161: [
+      59144: [
         // {
         //   baseSymbol: 'USDC',
         //   cometAddress: '<>',

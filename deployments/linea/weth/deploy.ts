@@ -9,6 +9,10 @@ const DAY = 24 * HOUR;
 
 const MAINNET_TIMELOCK = '0x6d903f6003cca6255d85cca4d3b5e5146dc33925';
 
+const  L2MESSAGE_SERVICE_ADDRESS = '0x508Ca82Df566dCD1B0DE8296e70a96332cD644ec';
+const  L2STANDARD_BRIDGE_ADDRESS = '0x353012dc4a9A6cF55c941bADC267f82004A8ceB9';
+const  L2USDC_BRIDGE_ADDRESS = '0xA2Ee6Fce4ACB62D95448729cDb781e3BEb62504A';
+
 export default async function deploy(
   deploymentManager: DeploymentManager,
   deploySpec: DeploySpec
@@ -64,7 +68,7 @@ async function deployContracts(
     'wstETH:priceFeed',
     'pricefeeds/ScalingPriceFeed.sol',
     [
-      '0x3C8A95F2264bB3b52156c766b738357008d87cB7', // wstETH / ETH price feed
+      '0x3C8A95F2264bB3b52156c766b738357008d87cB7', // wstETH / stETH (we consider stETH / ETH as 1:1) price feed
       8                                             // decimals
     ]
   );
@@ -96,7 +100,7 @@ async function deployContracts(
     'weETH:priceFeed',
     'pricefeeds/ScalingPriceFeed.sol',
     [
-      '0x1FBc7d24654b10c71fd74d3730d9Df17836181EF', // weETH / ETH price feed
+      '0x1FBc7d24654b10c71fd74d3730d9Df17836181EF', // weETH / eETH (we consider eETH / ETH as 1:1) price feed
       8                                             // decimals
     ]
   );
@@ -117,31 +121,22 @@ async function deployContracts(
       'wrsETH / ETH price feed'                     // description
     ]
   );
-
+  
   const l2MessageService = await deploymentManager.existing(
     'l2MessageService',
-    [
-      '0x05d43713B7E333d2D54be65cE3b5F3698aB960Fd',
-      '0x508Ca82Df566dCD1B0DE8296e70a96332cD644ec',
-    ],
+    L2MESSAGE_SERVICE_ADDRESS,
     'linea'
   );
 
   const l2StandardBridge = await deploymentManager.existing(
     'l2StandardBridge',
-    [
-      '0xD90ed3D4f9d11262d3D346a4369058d5B3777137',
-      '0x353012dc4a9A6cF55c941bADC267f82004A8ceB9',
-    ],
+    L2STANDARD_BRIDGE_ADDRESS,
     'linea'
   );
 
   const l2USDCBridge = await deploymentManager.existing(
     'l2USDCBridge',
-    [
-      '0x6D967F862d8c5D9E230a976AB2063eD1d4D7A43c',
-      '0xA2Ee6Fce4ACB62D95448729cDb781e3BEb62504A',
-    ],
+    L2USDC_BRIDGE_ADDRESS,
     'linea'
   );
   

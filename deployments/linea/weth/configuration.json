@@ -3,7 +3,8 @@
   "symbol": "cWETHv3",
   "baseToken": "WETH",
   "baseTokenAddress": "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f",
-  "borrowMin": "0.1e18",
+  "pauseGuardian": "0x5A1e5d7E09cA94506084a26304d53A138145bF52",
+  "borrowMin": "0.01e18",
   "storeFrontPriceFactor": 0.7,
   "targetReserves": "5_000e18",
   "rates": {
@@ -20,7 +21,7 @@
     "indexScale": "1e15",
     "baseSupplySpeed": "0e0",
     "baseBorrowSpeed": "0e0",
-    "baseMinForRewards": "100e18"
+    "baseMinForRewards": "10e18"
   },
   "assets": {
     "ezETH": {

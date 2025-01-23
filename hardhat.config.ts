@@ -164,7 +164,7 @@ const networkConfigs: NetworkConfig[] = [
   },
   {
     network: 'linea',
-    chainId: 43114,
+    chainId: 59144,
     url: `https://rpc.ankr.com/linea/${ANKR_KEY}`,
   },
 ];
@@ -299,7 +299,7 @@ const config: HardhatUserConfig = {
       },
       {
         network: 'linea',
-        chainId: 43114,
+        chainId: 59144,
         urls: {
           apiURL: 'https://api.lineascan.build/api',
           browserURL: 'https://lineascan.build/'
