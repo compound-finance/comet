@@ -30,7 +30,7 @@ export default migration('1735299760_update_comet_to_support_more_collaterals', 
         'function name() external view returns (string)',
         'function symbol() external view returns (string)',
       ],
-      deploymentManager.hre.ethers.provider
+      await deploymentManager.getSigner()
     );
     const name = await extensionDelegate.name();
     const symbol = await extensionDelegate.symbol();
@@ -114,7 +114,7 @@ export default migration('1735299760_update_comet_to_support_more_collaterals', 
       [
         'function assetList() external view returns (address)',
       ],
-      deploymentManager.hre.ethers.provider
+      await deploymentManager.getSigner()
     );
 
     const assetListAddress = await cometNew.assetList();

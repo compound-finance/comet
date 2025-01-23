@@ -6,10 +6,14 @@ import { ethers } from 'ethers';
 import { Contract } from 'ethers';
 import { utils } from 'ethers';
 
-let newCometExtAddress: string;
+let newCometExtAddressUSDC: string;
+let newCometExtAddressUSDT: string;
+let newCometExtAddressWETH: string;
 
 const USDT_COMET = '0x995E394b8B2437aC8Ce61Ee0bC610D617962B214';
+const USDT_EXT = '0xC49399814452B41dA8a7cd76a159f5515cb3e493';
 const WETH_COMET = '0xE36A30D249f7761327fd973001A32010b521b6Fd';
+const WETH_EXT = '0x82B8d9A06ccABC1e9B0c0A00f38B858E6925CF2f';
 
 export default migration('1735299799_update_comet_to_support_more_collaterals', {
   async prepare(deploymentManager: DeploymentManager) {
@@ -28,38 +32,94 @@ export default migration('1735299799_update_comet_to_support_more_collaterals', 
       comet
     } = await deploymentManager.getContracts();
 
-    const extensionDelegate = new Contract(
+    const extensionDelegateUSDC = new Contract(
       await comet.extensionDelegate(),
       [
         'function name() external view returns (string)',
         'function symbol() external view returns (string)',
       ],
-      deploymentManager.hre.ethers.provider
+      await deploymentManager.getSigner()
     );
-    const name = await extensionDelegate.name();
-    const symbol = await extensionDelegate.symbol();
+    const nameUSDC = await extensionDelegateUSDC.name();
+    const symbolUSDC = await extensionDelegateUSDC.symbol();
 
-    const _newCometExt = await deploymentManager.deploy(
+    const _newCometExtUSDC = await deploymentManager.deploy(
       'CometExtAssetList',
       'CometExtAssetList.sol',
       [
         {
-          name32: ethers.utils.formatBytes32String(name),
-          symbol32: ethers.utils.formatBytes32String(symbol)
+          name32: ethers.utils.formatBytes32String(nameUSDC),
+          symbol32: ethers.utils.formatBytes32String(symbolUSDC)
+        },
+        _assetListFactory.address
+      ]
+    );
+
+    const extensionDelegateUSDT = new Contract(
+      USDT_EXT,
+      [
+        'function name() external view returns (string)',
+        'function symbol() external view returns (string)',
+      ],
+      await deploymentManager.getSigner()
+    );
+
+    const nameUSDT = await extensionDelegateUSDT.name();
+    const symbolUSDT = await extensionDelegateUSDT.symbol();
+
+    const _newCometExtUSDT = await deploymentManager.deploy(
+      'CometExtAssetList',
+      'CometExtAssetList.sol',
+      [
+        {
+          name32: ethers.utils.formatBytes32String(nameUSDT),
+          symbol32: ethers.utils.formatBytes32String(symbolUSDT)
+        },
+        _assetListFactory.address
+      ]
+    );
+
+    const extensionDelegateWETH = new Contract(
+      WETH_EXT,
+      [
+        'function name() external view returns (string)',
+        'function symbol() external view returns (string)',
+      ],
+      await deploymentManager.getSigner()
+    );
+
+    const nameWETH = await extensionDelegateWETH.name();
+    const symbolWETH = await extensionDelegateWETH.symbol();
+
+    const _newCometExtWETH = await deploymentManager.deploy(
+      'CometExtAssetList',
+      'CometExtAssetList.sol',
+      [
+        {
+          name32: ethers.utils.formatBytes32String(nameWETH),
+          symbol32: ethers.utils.formatBytes32String(symbolWETH)
         },
         _assetListFactory.address
       ]
     );
     return {
       cometFactoryWithExtendedAssetList: cometFactoryWithExtendedAssetList.address,
-      newCometExt: _newCometExt.address
+      newCometExtUSDC: _newCometExtUSDC.address,
+      newCometExtUSDT: _newCometExtUSDT.address,
+      newCometExtWETH: _newCometExtWETH.address,
     };
   },
 
   async enact(deploymentManager: DeploymentManager, govDeploymentManager, {
     cometFactoryWithExtendedAssetList,
-    newCometExt,
+    newCometExtUSDC,
+    newCometExtUSDT,
+    newCometExtWETH,
   }) {
+
+    newCometExtAddressUSDC = newCometExtUSDC;
+    newCometExtAddressUSDT = newCometExtUSDT;
+    newCometExtAddressWETH = newCometExtWETH;
 
     const trace = deploymentManager.tracer();
     const {
@@ -70,13 +130,11 @@ export default migration('1735299799_update_comet_to_support_more_collaterals', 
     } = await deploymentManager.getContracts();
     const { governor, opL1CrossDomainMessenger } = await govDeploymentManager.getContracts();
 
-    newCometExtAddress = newCometExt;
-
     const setFactoryCalldata = await calldata(
       configurator.populateTransaction.setFactory(comet.address, cometFactoryWithExtendedAssetList)
     );
-    const setExtensionDelegateCalldata = await calldata(
-      configurator.populateTransaction.setExtensionDelegate(comet.address, newCometExt)
+    const setExtensionDelegateCalldataUSDC = await calldata(
+      configurator.populateTransaction.setExtensionDelegate(comet.address, newCometExtUSDC)
     );
     const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(
       ['address', 'address'],
@@ -87,7 +145,7 @@ export default migration('1735299799_update_comet_to_support_more_collaterals', 
       configurator.populateTransaction.setFactory(USDT_COMET, cometFactoryWithExtendedAssetList)
     );
     const setExtensionDelegateCalldataUSDT = await calldata(
-      configurator.populateTransaction.setExtensionDelegate(USDT_COMET, newCometExt)
+      configurator.populateTransaction.setExtensionDelegate(USDT_COMET, newCometExtUSDT)
     );
     const deployAndUpgradeToCalldataUSDT = utils.defaultAbiCoder.encode(
       ['address', 'address'],
@@ -98,7 +156,7 @@ export default migration('1735299799_update_comet_to_support_more_collaterals', 
       configurator.populateTransaction.setFactory(WETH_COMET, cometFactoryWithExtendedAssetList)
     );
     const setExtensionDelegateCalldataWETH = await calldata(
-      configurator.populateTransaction.setExtensionDelegate(WETH_COMET, newCometExt)
+      configurator.populateTransaction.setExtensionDelegate(WETH_COMET, newCometExtWETH)
     );
     const deployAndUpgradeToCalldataWETH = utils.defaultAbiCoder.encode(
       ['address', 'address'],
@@ -130,7 +188,7 @@ export default migration('1735299799_update_comet_to_support_more_collaterals', 
           'deployAndUpgradeTo(address,address)',
         ],
         [
-          setFactoryCalldata, setExtensionDelegateCalldata, deployAndUpgradeToCalldata,
+          setFactoryCalldata, setExtensionDelegateCalldataUSDC, deployAndUpgradeToCalldata,
           setFactoryCalldataUSDT, setExtensionDelegateCalldataUSDT, deployAndUpgradeToCalldataUSDT,
           setFactoryCalldataWETH, setExtensionDelegateCalldataWETH, deployAndUpgradeToCalldataWETH,
         ],
@@ -146,7 +204,7 @@ export default migration('1735299799_update_comet_to_support_more_collaterals', 
       },
     ];
 
-    const description = '# Update USDC, USDT and WETH Comets on Optimism to support more collaterals\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to update 4 Comets to a new version, which supports up to 24 collaterals. This proposal takes the governance steps recommended and necessary to update Compound III USDT, USDC and WETH markets on Optimism. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario).\n\nDetailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/904) and [forum discussion](https://www.comp.xyz/t/increase-amount-of-collaterals-in-comet/5465).\n\n\n## Proposal Actions\n\nThe first action sets the factory to the newly deployed factory, extension delegate to the newly deployed contract and deploys and upgrades Comet to a new version for all 4 comets: cUSDTv3, cUSDCv3 and cWETHv3.';
+    const description = '# Update USDC, USDT and WETH Comets on Optimism to support more collaterals\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to update 4 Comets to a new version, which supports up to 24 collaterals. This proposal takes the governance steps recommended and necessary to update Compound III USDT, USDC and WETH markets on Optimism. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario).\n\nDetailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/904) and [forum discussion](https://www.comp.xyz/t/increase-amount-of-collaterals-in-comet/5465).\n\n\n## Proposal Actions\n\nThe first action sets the factory to the newly deployed factory, extension delegate to the newly deployed contract and deploys and upgrades Comet to a new version for all 3 comets: cUSDTv3, cUSDCv3 and cWETHv3.';
     const txn = await deploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
@@ -172,38 +230,40 @@ export default migration('1735299799_update_comet_to_support_more_collaterals', 
       [
         'function assetList() external view returns (address)',
       ],
-      deploymentManager.hre.ethers.provider
+      await deploymentManager.getSigner()
     );
 
     const assetListAddress = await cometNew.assetList();
 
     expect(assetListAddress).to.not.be.equal(ethers.constants.AddressZero);
-    expect(await comet.extensionDelegate()).to.be.equal(newCometExtAddress);
+    expect(await comet.extensionDelegate()).to.be.equal(newCometExtAddressUSDC);
 
-    const cometNewUSDC = new Contract(
+    const cometNewUSDT = new Contract(
       USDT_COMET,
       [
         'function assetList() external view returns (address)',
+        'function extensionDelegate() external view returns (address)',
       ],
-      deploymentManager.hre.ethers.provider
+      await deploymentManager.getSigner()
     );
 
-    const assetListAddressUSDC = await cometNewUSDC.assetList();
+    const assetListAddressUSDC = await cometNewUSDT.assetList();
 
     expect(assetListAddressUSDC).to.not.be.equal(ethers.constants.AddressZero);
-    expect(await comet.extensionDelegate()).to.be.equal(newCometExtAddress);
+    expect(await cometNewUSDT.extensionDelegate()).to.be.equal(newCometExtAddressUSDT);
 
     const cometNewWETH = new Contract(
       WETH_COMET,
       [
         'function assetList() external view returns (address)',
+        'function extensionDelegate() external view returns (address)',
       ],
-      deploymentManager.hre.ethers.provider
+      await deploymentManager.getSigner()
     );
 
     const assetListAddressWETH = await cometNewWETH.assetList();
 
     expect(assetListAddressWETH).to.not.be.equal(ethers.constants.AddressZero);
-    expect(await comet.extensionDelegate()).to.be.equal(newCometExtAddress);
+    expect(await cometNewWETH.extensionDelegate()).to.be.equal(newCometExtAddressWETH);
   },
 });
