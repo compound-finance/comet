@@ -49,6 +49,7 @@ import optimismWethRelationConfigMap from './deployments/optimism/weth/relations
 import mantleRelationConfigMap from './deployments/mantle/usde/relations';
 import scrollGoerliRelationConfigMap from './deployments/scroll-goerli/usdc/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
+import roninSaigonRelationConfigMap from './deployments/ronin-saigon/usdc/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -117,6 +118,11 @@ const networkConfigs: NetworkConfig[] = [
   { network: 'rinkeby', chainId: 4 },
   { network: 'goerli', chainId: 5 },
   { network: 'sepolia', chainId: 11155111 },
+  {
+    network: 'ronin-saigon',
+    chainId: 2021,
+    url: 'https://saigon-testnet.roninchain.com/rpc',
+  },
   {
     network: 'polygon',
     chainId: 137,
@@ -427,6 +433,9 @@ const config: HardhatUserConfig = {
       },
       'scroll': {
         usdc: scrollRelationConfigMap
+      },
+      'ronin-saigon': {
+        usdc: roninSaigonRelationConfigMap
       }
     },
   },
@@ -620,6 +629,12 @@ const config: HardhatUserConfig = {
         network: 'scroll',
         deployment: 'usdc',
         auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'ronin-saigon',
+        network: 'ronin-saigon',
+        deployment: 'usdc',
+        auxiliaryBase: 'sepolia'
       }
     ],
   },

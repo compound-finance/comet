@@ -88,6 +88,21 @@ export async function isBridgeProposal(
       const { targets } = await governor.getActions(openProposal.id);
       return targets.includes(scrollMessenger.address);
     }
+    case 'ronin-saigon': {
+      const governor = await governanceDeploymentManager.getContractOrThrow('governor');
+      const roninSaigonL1CCIPMessenger = await governanceDeploymentManager.getContractOrThrow(
+        'roninSaigonL1CCIPMessenger'
+      );
+      const roninSaigonL1CCIPBridge = await governanceDeploymentManager.getContractOrThrow(
+        'roninSaigonL1CCIPBridge'
+      );
+      const { targets } = await governor.getActions(openProposal.id);
+      const bridgeContracts = [
+        roninSaigonL1CCIPMessenger.address,
+        roninSaigonL1CCIPBridge.address
+      ];
+      return targets.some(t => bridgeContracts.includes(t));
+    }
     default: {
       const tag = `[${bridgeNetwork} -> ${governanceDeploymentManager.network}]`;
       throw new Error(`${tag} Unable to determine whether to relay Proposal ${openProposal.id}`);

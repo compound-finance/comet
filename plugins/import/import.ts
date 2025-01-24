@@ -1,4 +1,5 @@
-import { get, getEtherscanApiKey, getEtherscanApiUrl, getEtherscanUrl } from './etherscan';
+import { get, post, getEtherscanApiKey, getEtherscanApiUrl, getEtherscanUrl } from './etherscan';
+import { ethers } from 'ethers';
 
 export function debug(...args: any[]) {
   if (process.env['DEBUG']) {
@@ -24,6 +25,8 @@ export async function loadContract(source: string, network: string, address: str
   switch (source) {
     case 'etherscan':
       return await loadEtherscanContract(network, address);
+    case 'ronin-saigon':
+      return await loadRoninContract(network, address);
     default:
       throw new Error(`Unknown source \`${source}\`, expected one of [etherscan]`);
   }
@@ -50,6 +53,26 @@ interface EtherscanData {
   optimized: boolean;
   optimizationRuns: number;
   constructorArgs: string;
+}
+
+async function getRoninApiData(network: string, address: string) {
+  let apiUrl = await getEtherscanUrl(network);
+  let contract = (await get(`${apiUrl}/contract/${address}`, {})).result.contract_name;
+  let abi = (await get(`${apiUrl}/contract/${address}/abi`, {})).result.output.abi;
+  let src = (await get(`${apiUrl}/contract/${address}/src`, {})).result[0].content;
+  let metadata = (await get(`${apiUrl}/contract/${address}/metadata`, {})).result;
+  let compiler = metadata.compiler.version;
+  let optimized = metadata.settings.optimizer.enabled;
+  let optimizationRuns = metadata.settings.optimizer.runs;
+  return {
+    source: src,
+    abi: abi,
+    contract,
+    compiler,
+    optimized: optimized,
+    optimizationRuns: optimizationRuns,
+    constructorArgs: '',
+  }
 }
 
 async function getEtherscanApiData(network: string, address: string, apiKey: string): Promise<EtherscanData> {
@@ -154,6 +177,15 @@ async function pullFirstTransactionForContract(network: string, address: string)
 }
 
 async function getContractCreationCode(network: string, address: string) {
+  if (network === 'ronin-saigon') {
+    const res = await post(`https://saigon-testnet.roninchain.com/rpc`, {
+      jsonrpc: '2.0',
+      method: 'eth_getCode',
+      params: [address, 'latest'],
+      id: 1
+    });
+    return res.result;
+  }
   const strategies = [
     scrapeContractCreationCodeFromEtherscan,
     scrapeContractCreationCodeFromEtherscanApi,
@@ -206,6 +238,71 @@ function parseSources({ source, contract, optimized, optimizationRuns }: Ethersc
     };
   }
 }
+
+export async function loadRoninContract(network: string, address: string) {
+  const networkName = network;
+  const roninData = await getRoninApiData(networkName, address);
+  const { language, settings, sources } = parseSources(roninData);
+  let input = await getContractCreationCode(networkName, address);
+  const constructorAbi = roninData.abi.find((entry) => entry.type === "constructor");
+  if (!constructorAbi) {
+    return {
+      creationBytecode: input,
+      constructorArgs: [],
+    };
+  }
+
+  const {
+    abi,
+    contract,
+    compiler,
+    constructorArgs
+  } = roninData;
+  const inputTypes = constructorAbi.inputs.map((input) => input.type);
+  const contractCreationCode = extractCreationBytecode(input, inputTypes);
+
+  const encodedABI = JSON.stringify(abi);
+  const contractPath = Object.keys(sources)[0];
+  const contractFQN = `${contractPath}:${contract}`;
+
+  const contractBuild = {
+    contract,
+    contracts: {
+      [contractFQN]: {
+        network,
+        address,
+        name: contract,
+        abi: encodedABI,
+        bin: contractCreationCode.slice(0, 1),
+        constructorArgs,
+        metadata: JSON.stringify({
+          compiler: {
+            version: compiler,
+          },
+          language,
+          output: {
+            abi: encodedABI,
+          },
+          devdoc: {},
+          sources,
+          settings,
+          version: 1,
+        }),
+      },
+    },
+    version: compiler,
+  };
+
+  return contractBuild;
+}
+
+function extractCreationBytecode(fullInput: string, inputTypes: string[]): string {
+  const encodedArgsLength = ethers.utils.defaultAbiCoder.encode(inputTypes, []).length;
+  const contractCreationCode = fullInput.slice(0, fullInput.length - encodedArgsLength);
+
+  return contractCreationCode;
+}
+
 
 export async function loadEtherscanContract(network: string, address: string) {
   const apiKey = getEtherscanApiKey(network);

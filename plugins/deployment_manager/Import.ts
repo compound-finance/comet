@@ -32,6 +32,9 @@ export async function importContract(
 ): Promise<BuildFile> {
   try {
     console.log(`Importing ${address} from ${network} etherscan`);
+    if(network === 'ronin-saigon') {
+      return (await loadContract('ronin-saigon', network, address)) as BuildFile;
+    }
     return (await loadContract('etherscan', network, address)) as BuildFile;
   } catch (e) {
     if (retries === 0 || (e.message && e.message.includes('Contract source code not verified'))) {
