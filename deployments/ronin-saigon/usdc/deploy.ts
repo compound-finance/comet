@@ -30,10 +30,6 @@ async function deployContracts(
     'ronin-saigon'
   );
 
-  console.log(WRON);
-
-  console.log(await WRON.decimals());
-
   // pre-deployed OptimismMintableERC20
   const COMP = await deploymentManager.existing(
     'COMP',
@@ -41,15 +37,15 @@ async function deployContracts(
     'ronin-saigon'
   );
 
-  const l2CCIPMessenger = await deploymentManager.existing(
-    'roninSaigonL2CCIPMessenger',
+  const l2CCIPRouter = await deploymentManager.existing(
+    'l2CCIPRouter',
     '0x0aCAe4e51D3DA12Dd3F45A66e8b660f740e6b820',
     'ronin-saigon'
   );
 
-  const l2CCIPBridge = await deploymentManager.existing(
-    'roninSaigonL2CCIPBridge',
-    '0x0aCAe4e51D3DA12Dd3F45A66e8b660f740e6b820',
+  const l2CCIPOffRamp = await deploymentManager.existing(
+    'l2CCIPOffRamp',
+    '0x77008Fbd8Ae8f395beF9c6a55905896f3Ead75e9',
     'ronin-saigon'
   );
 
@@ -57,7 +53,7 @@ async function deployContracts(
   const bridgeReceiver = await deploymentManager.deploy(
     'bridgeReceiver',
     'bridges/optimism/OptimismBridgeReceiver.sol',
-    [l2CCIPMessenger.address]
+    [l2CCIPRouter.address]
   );
 
   // Deploy Local Timelock
@@ -104,8 +100,8 @@ async function deployContracts(
   return {
     ...deployed,
     bridgeReceiver,
-    l2CCIPMessenger,
-    l2CCIPBridge,
+    l2CCIPRouter,
+    l2CCIPOffRamp,
     bulker,
     COMP,
   };

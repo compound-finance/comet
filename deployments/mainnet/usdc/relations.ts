@@ -79,6 +79,16 @@ export default {
       }
     }
   },
+  l1CCIPRouter: {
+    delegates: {
+      field: async () => '0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59'
+    }
+  },
+  roninSaigonl1CCIPOnRamp: {
+    delegates: {
+      field: async () => '0xc15308F6567644508EF8dcfa6D2C974e215979f6'
+    }
+  },
   scrollMessenger: {
     delegates: {
       field: {

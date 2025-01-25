@@ -5,69 +5,70 @@ import { BigNumber, ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { OpenBridgedProposal } from '../context/Gov';
 
-interface IEVM2EVMOnRamp extends ethers.Contract {
-  filters: {
-    CCIPSendRequested(): ethers.EventFilter;
-  };
-  interface: ethers.utils.Interface;
-}
+// interface IEVM2EVMOnRamp extends ethers.Contract {
+//   filters: {
+//     CCIPSendRequested(): ethers.EventFilter;
+//   };
+//   interface: ethers.utils.Interface;
+// }
 
-interface IRouter extends ethers.Contract {
-  filters: {
-    MessageExecuted(): ethers.EventFilter;
-  };
-  interface: ethers.utils.Interface;
-  routeMessage(
-    message: {
-      messageId: string;
-      sourceChainSelector: number;
-      sender: string;
-      data: string;
-      destTokenAmounts: {
-        token: string;
-        amount: BigNumber;
-      }[];
-    },
-    gasForCallExactCheck: number,
-    gasLimit: number,
-    receiver: string
-  ): Promise<ethers.ContractTransaction>;
-}
+// interface IRouter extends ethers.Contract {
+//   filters: {
+//     MessageExecuted(): ethers.EventFilter;
+//   };
+//   interface: ethers.utils.Interface;
+//   routeMessage(
+//     message: {
+//       messageId: string;
+//       sourceChainSelector: number;
+//       sender: string;
+//       data: string;
+//       destTokenAmounts: {
+//         token: string;
+//         amount: BigNumber;
+//       }[];
+//     },
+//     gasForCallExactCheck: number,
+//     gasLimit: number,
+//     receiver: string
+//   ): Promise<ethers.ContractTransaction>;
+// }
 
-interface IBridgeReceiver extends ethers.Contract {
-  interface: ethers.utils.Interface;
-  executeProposal: (id: BigNumber, overrides?: any) => Promise<ethers.ContractTransaction>;
-}
+// interface IBridgeReceiver extends ethers.Contract {
+//   interface: ethers.utils.Interface;
+//   executeProposal: (id: BigNumber, overrides?: any) => Promise<ethers.ContractTransaction>;
+// }
 
 
-const offRampAddress = '0x77008Fbd8Ae8f395beF9c6a55905896f3Ead75e9';
+// const offRampAddress = '0x77008Fbd8Ae8f395beF9c6a55905896f3Ead75e9';
 
 export default async function relayRoninSaigonMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
   startingBlockNumber: number
 ) {
-  const l1OnRamp = (await governanceDeploymentManager.getContractOrThrow('onRamp')) as IEVM2EVMOnRamp;
-  const l2Router = (await bridgeDeploymentManager.getContractOrThrow('router')) as IRouter;
-  const bridgeReceiver = (await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver')) as IBridgeReceiver;
+  const roninSaigonl1CCIPOnRamp = await governanceDeploymentManager.getContractOrThrow('roninSaigonl1CCIPOnRamp');
+  const l2Router = (await bridgeDeploymentManager.getContractOrThrow('l2CCIPRouter'))
+  const l2CCIPOffRamp = (await bridgeDeploymentManager.getContractOrThrow('l2CCIPOffRamp'))
+  const bridgeReceiver = (await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver'))// as IBridgeReceiver;
 
   const openBridgedProposals: OpenBridgedProposal[] = [];
 
-  const filter = l1OnRamp.filters.CCIPSendRequested();
+  const filter = roninSaigonl1CCIPOnRamp.filters.CCIPSendRequested();
   const logs: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: startingBlockNumber,
     toBlock: 'latest',
-    address: l1OnRamp.address,
+    address: roninSaigonl1CCIPOnRamp.address,
     topics: filter.topics || []
   });
 
   for (const log of logs) {
-    const parsedLog = l1OnRamp.interface.parseLog(log);
+    const parsedLog = roninSaigonl1CCIPOnRamp.interface.parseLog(log);
     const internalMsg = parsedLog.args.message;
 
     console.log(`[CCIP L1->L2] Found CCIPSendRequested with messageId=${internalMsg.messageId}`);
 
-    const offRampSigner = await impersonateAddress(bridgeDeploymentManager, offRampAddress);
+    const offRampSigner = await impersonateAddress(bridgeDeploymentManager, l2CCIPOffRamp.address);
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
 
@@ -82,7 +83,6 @@ export default async function relayRoninSaigonMessage(
       })),
     };
 
- 
     const routeTx = await l2Router
       .connect(offRampSigner)
       .routeMessage(

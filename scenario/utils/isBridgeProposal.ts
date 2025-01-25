@@ -90,16 +90,16 @@ export async function isBridgeProposal(
     }
     case 'ronin-saigon': {
       const governor = await governanceDeploymentManager.getContractOrThrow('governor');
-      const roninSaigonL1CCIPMessenger = await governanceDeploymentManager.getContractOrThrow(
-        'roninSaigonL1CCIPMessenger'
+      const l1CCIPRouter = await governanceDeploymentManager.getContractOrThrow(
+        'l1CCIPRouter'
       );
-      const roninSaigonL1CCIPBridge = await governanceDeploymentManager.getContractOrThrow(
-        'roninSaigonL1CCIPBridge'
+      const roninSaigonL1OnRamp = await governanceDeploymentManager.getContractOrThrow(
+        'roninSaigonl1CCIPOnRamp'
       );
       const { targets } = await governor.getActions(openProposal.id);
       const bridgeContracts = [
-        roninSaigonL1CCIPMessenger.address,
-        roninSaigonL1CCIPBridge.address
+        l1CCIPRouter.address,
+        roninSaigonL1OnRamp.address
       ];
       return targets.some(t => bridgeContracts.includes(t));
     }
