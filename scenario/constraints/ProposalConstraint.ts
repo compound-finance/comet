@@ -3,7 +3,7 @@ import { IGovernorBravo, ProposalState, OpenProposal } from '../context/Gov';
 import { CometContext } from '../context/CometContext';
 import { fetchLogs } from '../utils';
 import { DeploymentManager } from '../../plugins/deployment_manager';
-import { isBridgedDeployment, executeOpenProposal, executeOpenProposalAndRelay } from '../utils';
+import { isBridgedDeployment, executeOpenProposal, voteForOpenProposal, executeOpenProposalAndRelay } from '../utils';
 import { getOpenBridgedProposals, executeBridgedProposal } from '../utils/bridgeProposal';
 
 async function getOpenProposals(deploymentManager: DeploymentManager, governor: IGovernorBravo): Promise<OpenProposal[]> {
@@ -53,6 +53,11 @@ export class ProposalConstraint<T extends CometContext> implements StaticConstra
       const governanceDeploymentManager = ctx.world.auxiliaryDeploymentManager || deploymentManager;
       const governor = await governanceDeploymentManager.contract('governor') as IGovernorBravo;
       const proposals = await getOpenProposals(governanceDeploymentManager, governor);
+
+      for (const proposal of proposals) {
+        await voteForOpenProposal(governanceDeploymentManager, proposal);
+      }
+
       for (const proposal of proposals) {
         const preExecutionBlockNumber = await ctx.world.deploymentManager.hre.ethers.provider.getBlockNumber();
         let migrationData;
