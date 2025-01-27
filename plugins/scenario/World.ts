@@ -28,15 +28,17 @@ export class World {
   snapshotAuxiliaryDeploymentManager?: DeploymentManager;
 
   constructor(base: ForkSpec) {
-    // Q: should we really need to fork/snapshot the deployment manager?
-    const hre = hreForBase(base);
     this.base = base;
-    this.deploymentManager = new DeploymentManager(base.network, base.deployment, hre);
-    this.snapshotDeploymentManager = this.deploymentManager;
+  }
 
+  async initialize(base: ForkSpec) {
+    const hre = await hreForBase(base);
+    this.deploymentManager = new DeploymentManager(base.network, base.deployment, hre);
+    // Q: should we really need to fork/snapshot the deployment manager?
+    this.snapshotDeploymentManager = this.deploymentManager;
     if (this.base.auxiliaryBase) {
       const auxiliaryBase = hre.config.scenario.bases.find(b => b.name === this.base.auxiliaryBase);
-      this.auxiliaryDeploymentManager = new DeploymentManager(auxiliaryBase.network, auxiliaryBase.deployment, hreForBase(auxiliaryBase));
+      this.auxiliaryDeploymentManager = new DeploymentManager(auxiliaryBase.network, auxiliaryBase.deployment, await hreForBase(auxiliaryBase));
       this.snapshotAuxiliaryDeploymentManager = this.auxiliaryDeploymentManager;
     }
   }
