@@ -153,6 +153,9 @@ export const WHALES = {
     '0xC455fE28a76da80022d4C35A37eB08FF405Eb78f', // FBTC whale
     '0x524db930F0886CdE7B5FFFc920Aae85e98C2abfb', // FBTC whale
   ],
+  'ronin-saigon': [
+    '0x9d726a549824eb289c5495e65dd421e0a681842a', // RON whale
+  ],
 };
 
 export async function calldata(req: Promise<PopulatedTransaction>): Promise<string> {

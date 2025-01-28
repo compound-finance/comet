@@ -29,7 +29,12 @@ async function deployContracts(
     '0xA959726154953bAe111746E265E6d754F48570E6',
     'ronin-saigon'
   );
-
+  
+  const USDC = await deploymentManager.existing(
+    'USDC',
+    '0x7a7ab4ac45a5329198e818e1fa56c27b443f8e3d',
+    'ronin-saigon'
+  );
   // pre-deployed OptimismMintableERC20
   // const COMP = await deploymentManager.existing(
   //   'COMP',
@@ -140,6 +145,7 @@ async function deployContracts(
     l2CCIPRouter,
     l2CCIPOffRamp,
     bulker,
+    USDC
     // COMP,
   };
 }

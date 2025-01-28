@@ -68,19 +68,6 @@ export default {
       }
     }
   },
-  roninSaigonL1CCIPMessenger: {
-    delegates: {
-      field: async () => '0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59'
-    }
-  },
-  roninSaigonL1CCIPBridge: {
-    delegates: {
-      field: {
-        slot:
-          '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
-      }
-    }
-  },
   lineaL1usdcBridge: {
     delegates: {
       field: {

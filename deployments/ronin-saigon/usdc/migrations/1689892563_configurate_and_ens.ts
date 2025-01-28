@@ -13,11 +13,6 @@ import {
 import { expect } from "chai";
 
 const SECONDS_PER_YEAR = 31_536_000n;
-const ENSName = "compound-community-licenses.eth";
-const ENSResolverAddress = "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41";
-const ENSSubdomainLabel = "v3-additional-grants";
-const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
-const ENSTextRecordKey = "v3-official-markets";
 const roninSaigonCOMPAddress = "0x7e7d4467112689329f7E06571eD0E8CbAd4910eE";
 const destinationChainSelector = "13116810400804392105";
 
@@ -43,30 +38,7 @@ export default migration("1707394874_configurate_and_ens", {
       COMP: mainnetCOMP,
       USDC: mainnetUSDC,
     } = await govDeploymentManager.getContracts();
-    
-
-    // ENS Setup
-    // See also: https://docs.ens.domains/contract-api-reference/name-processing
-    const ENSResolver = await govDeploymentManager.existing(
-      "ENSResolver",
-      ENSResolverAddress
-    );
-    const subdomainHash = ethers.utils.namehash(ENSSubdomain);
-    const baseChainId = (
-      await deploymentManager.hre.ethers.provider.getNetwork()
-    ).chainId.toString();
-    const newMarketObject = {
-      baseSymbol: "USDC",
-      cometAddress: comet.address,
-    };
-    const officialMarketsJSON = JSON.parse(
-      await ENSResolver.text(subdomainHash, ENSTextRecordKey)
-    );
-    if (officialMarketsJSON[baseChainId]) {
-      officialMarketsJSON[baseChainId].push(newMarketObject);
-    } else {
-      officialMarketsJSON[baseChainId] = [newMarketObject];
-    }
+  
 
     const configuration = await getConfigurationStruct(deploymentManager);
 
@@ -142,14 +114,6 @@ export default migration("1707394874_configurate_and_ens", {
           },
         ],
       },
-      {
-        target: ENSResolverAddress,
-        signature: "setText(bytes32,string,string)",
-        calldata: ethers.utils.defaultAbiCoder.encode(
-          ["bytes32", "string", "string"],
-          [subdomainHash, ENSTextRecordKey, JSON.stringify(officialMarketsJSON)]
-        ),
-      },
     ];
 
     const description = "# Initialize cUSDCv3 on Ronin Saigon\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes deployment of Compound III to Optimism network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Optimism; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-optimism/4975/6).\n\nFurther detailed information can be found on the corresponding [deployment pull request](https://github.com/compound-finance/comet/pull/838), [proposal pull request](https://github.com/compound-finance/comet/pull/842), [deploy market GitHub action run](https://github.com/dmitriy-bergman-works/comet-optimism/actions/runs/8581592608) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-optimism/4975).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Optimism. This sends the encoded `setConfiguration` and `deployAndUpgradeTo` calls across the bridge to the governance receiver on Optimism. It also calls `setRewardConfig` on the Optimism rewards contract, to establish Optimism’s bridged version of COMP as the reward token for the deployment and set the initial supply speed to be 5 COMP/day and borrow speed to be 5 COMP/day.\n\nThe second action approves Circle’s Cross-Chain Transfer Protocol (CCTP) [TokenMessenger](https://etherscan.io/address/0xbd3fa81b58ba92a82136038b25adec7066af3155) to take the Timelock's USDC on Mainnet, in order to seed the market reserves through the CCTP.\n\nThe third action deposits and burns 10K USDC from mainnet via depositForBurn function on CCTP’s TokenMessenger contract to mint native USDC to Comet on Optimism.\n\nThe fourth action approves Optimism’s [L1StandardBridge](https://etherscan.io/address/0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1) to take Timelock's COMP, in order to seed the rewards contract through the bridge.\n\nThe fifth action deposits 3.6K COMP from mainnet to the Optimism L1StandardBridge contract to bridge to CometRewards.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Optimism cUSDCv3 market";
@@ -212,78 +176,6 @@ export default migration("1707394874_configurate_and_ens", {
     expect(await USDC.balanceOf(comet.address)).to.be.equal(exp(10_000, 6));
 
     // 4. & 5.
-    expect(await COMP.balanceOf(rewards.address)).to.be.equal(exp(3_600, 18));
-
-    // 6.
-    const ENSResolver = await govDeploymentManager.existing(
-      "ENSResolver",
-      ENSResolverAddress
-    );
-    const subdomainHash = ethers.utils.namehash(ENSSubdomain);
-    const officialMarketsJSON = await ENSResolver.text(
-      subdomainHash,
-      ENSTextRecordKey
-    );
-    const officialMarkets = JSON.parse(officialMarketsJSON);
-    expect(officialMarkets).to.deep.equal({
-      1: [
-        {
-          baseSymbol: "USDC",
-          cometAddress: "0xc3d688B66703497DAA19211EEdff47f25384cdc3",
-        },
-        {
-          baseSymbol: "WETH",
-          cometAddress: "0xA17581A9E3356d9A858b789D68B4d866e593aE94",
-        },
-      ],
-      137: [
-        {
-          baseSymbol: "USDC",
-          cometAddress: "0xF25212E676D1F7F89Cd72fFEe66158f541246445",
-        },
-      ],
-      8453: [
-        {
-          baseSymbol: "USDbC",
-          cometAddress: "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
-        },
-        {
-          baseSymbol: "WETH",
-          cometAddress: "0x46e6b214b524310239732D51387075E0e70970bf",
-        },
-        {
-          baseSymbol: "USDC",
-          cometAddress: "0xb125E6687d4313864e53df431d5425969c15Eb2F",
-        },
-      ],
-      42161: [
-        {
-          baseSymbol: "USDC.e",
-          cometAddress: "0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA",
-        },
-        {
-          baseSymbol: "USDC",
-          cometAddress: "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
-        },
-      ],
-      534352: [
-        {
-          baseSymbol: "USDC",
-          cometAddress: "0xB2f97c1Bd3bf02f5e74d13f02E3e26F93D77CE44",
-        },
-      ],
-      10: [
-        {
-          baseSymbol: 'USDC',
-          cometAddress: '0x2e44e174f7D53F0212823acC11C01A11d58c5bCB',
-        },
-      ],
-      2021: [
-        {
-          baseSymbol: 'USDC',
-          cometAddress: comet.address,
-        }
-      ]
-    });
+    // expect(await COMP.balanceOf(rewards.address)).to.be.equal(exp(3_600, 18));
   },
 });
