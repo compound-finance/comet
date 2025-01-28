@@ -56,7 +56,8 @@ export default migration('1735299626_update_comet_to_support_more_collaterals', 
           symbol32: ethers.utils.formatBytes32String(symbolUSDC)
         },
         _assetListFactory.address
-      ]
+      ],
+      true
     );
 
     const extensionDelegateUSDT = new Contract(
@@ -79,7 +80,8 @@ export default migration('1735299626_update_comet_to_support_more_collaterals', 
           symbol32: ethers.utils.formatBytes32String(symbolUSDT)
         },
         _assetListFactory.address
-      ]
+      ],
+      true
     );
 
     const extensionDelegateWETH = new Contract(
@@ -102,7 +104,8 @@ export default migration('1735299626_update_comet_to_support_more_collaterals', 
           symbol32: ethers.utils.formatBytes32String(symbolWETH)
         },
         _assetListFactory.address
-      ]
+      ],
+      true
     );
 
     const extensionDelegateUSDCE = new Contract(
@@ -125,7 +128,8 @@ export default migration('1735299626_update_comet_to_support_more_collaterals', 
           symbol32: ethers.utils.formatBytes32String(symbolUSDCE)
         },
         _assetListFactory.address
-      ]
+      ],
+      true
     );
 
     return {

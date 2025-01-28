@@ -47,7 +47,8 @@ export default migration('1735299752_update_comet_to_support_more_collaterals', 
           symbol32: ethers.utils.formatBytes32String(symbolWETH)
         },
         _assetListFactory.address
-      ]
+      ],
+      true
     );
 
     const extensionDelegateWstETH = new Contract(
@@ -71,7 +72,8 @@ export default migration('1735299752_update_comet_to_support_more_collaterals', 
           symbol32: ethers.utils.formatBytes32String(symbolWstETH)
         },
         _assetListFactory.address
-      ]
+      ],
+      true
     );
     return {
       cometFactoryWithExtendedAssetList: cometFactoryWithExtendedAssetList.address,
@@ -93,7 +95,7 @@ export default migration('1735299752_update_comet_to_support_more_collaterals', 
       cometAdmin,
       configurator,
     } = await deploymentManager.getContracts();
-    
+
     newCometExtAddressWETH = newCometExtWETH;
     newCometExtAddressWSTETH = newCometExtWstETH;
 
@@ -114,13 +116,13 @@ export default migration('1735299752_update_comet_to_support_more_collaterals', 
       {
         contract: configurator,
         signature: 'setExtensionDelegate(address,address)',
-        args: [comet.address, newCometExtWETH], 
+        args: [comet.address, newCometExtWETH],
       },
       // 4. Set new CometExt as the extension delegate
       {
         contract: configurator,
         signature: 'setExtensionDelegate(address,address)',
-        args: [WSTETH_COMET, newCometExtWstETH], 
+        args: [WSTETH_COMET, newCometExtWstETH],
       },
       // 5. Deploy and upgrade to a new version of Comet
       {

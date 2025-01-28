@@ -45,7 +45,8 @@ export default migration('1735299778_update_comet_to_support_more_collaterals', 
           symbol32: ethers.utils.formatBytes32String(symbol)
         },
         _assetListFactory.address
-      ]
+      ],
+      true
     );
     return {
       cometFactoryWithExtendedAssetList: cometFactoryWithExtendedAssetList.address,
