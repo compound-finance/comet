@@ -188,13 +188,6 @@ export default migration('1735299739_update_comet_to_support_more_collaterals', 
       },
     ];
 
-    const { timelock } = await deploymentManager.getContracts();
-    // impersonate the timelock
-    await deploymentManager.hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [timelock.address],
-    });
-
     const description = '# Update USDC, USDT and USDS Comets on Mainnet to support more collaterals\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to update 3 Comet to a new version, which supports up to 24 collaterals. This proposal takes the governance steps recommended and necessary to update a Compound III USDC, USDT and USDS markets on Ethereum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario).\n\nDetailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/904), [deploy market GitHub action run](<>) and [forum discussion](https://www.comp.xyz/t/increase-amount-of-collaterals-in-comet/5465).\n\n\n## Proposal Actions\n\nThe first action sets the factory for cUSDCv3 to the newly deployed factory.\n\nThe second action sets the factory for cUSDSv3 to the newly deployed factory.\n\nThe third action sets the factory for cUSDTv3 to the newly deployed factory.\n\nThe fourth action sets the extension delegate for cUSDCv3  to the newly deployed contract.\n\nThe fifth action sets the extension delegate for cUSDSv3  to the newly deployed contract.\n\nThe sixth action sets the extension delegate for cUSDTv3  to the newly deployed contract.\n\nThe seventh action deploys and upgrades cUSDCv3  to a new version.\n\nThe eighth action deploys and upgrades cUSDSv3  to a new version.\n\nThe ninth action deploys and upgrades cUSDTv3  to a new version.';
     const txn = await deploymentManager.retry(async () =>
       trace(
