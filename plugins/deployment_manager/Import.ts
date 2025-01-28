@@ -18,6 +18,14 @@ export async function fetchAndCacheContract(
   importRetryDelay = DEFAULT_RETRY_DELAY,
   force = false
 ): Promise<BuildFile> {
+  console.log(`Fetching and caching ${network}@${address}`);
+  console.log(`cache: ${cache}`);
+  console.log(`network: ${network}`);
+  console.log(`address: ${address}`);
+  console.log(`importRetries: ${importRetries}`);
+  console.log(`importRetryDelay: ${importRetryDelay}`);
+  console.log(`force: ${force}`);
+
   const buildFile = await fetchContract(cache, network, address, importRetries, importRetryDelay, force);
   await storeBuildFile(cache, network, address, buildFile);
   return buildFile;

@@ -363,6 +363,14 @@ const config: HardhatUserConfig = {
           // apiURL: 'https://api.mantlescan.xyz/api',
           // browserURL: 'https://mantlescan.xyz/'
         }
+      },
+      {
+        network: 'ronin-saigon',
+        chainId: 2021,
+        urls: {
+          apiURL: 'https://explorer-kintsugi.roninchain.com/v2/2021',
+          browserURL: 'https://explorer-kintsugi.roninchain.com/v2/2021'
+        }
       }
     ]
   },
@@ -634,7 +642,7 @@ const config: HardhatUserConfig = {
         name: 'ronin-saigon',
         network: 'ronin-saigon',
         deployment: 'usdc',
-        auxiliaryBase: 'sepolia'
+        auxiliaryBase: 'sepolia-usdc'
       }
     ],
   },

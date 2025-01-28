@@ -61,6 +61,7 @@ async function getRoninApiData(network: string, address: string) {
   let abi = (await get(`${apiUrl}/contract/${address}/abi`, {})).result.output.abi;
   let src = (await get(`${apiUrl}/contract/${address}/src`, {})).result[0].content;
   let metadata = (await get(`${apiUrl}/contract/${address}/metadata`, {})).result;
+  let deploymentBytecode = (await get(`${apiUrl}/contract/${address}`, {})).result.at_tx;
   let compiler = metadata.compiler.version;
   let optimized = metadata.settings.optimizer.enabled;
   let optimizationRuns = metadata.settings.optimizer.runs;
@@ -71,7 +72,7 @@ async function getRoninApiData(network: string, address: string) {
     compiler,
     optimized: optimized,
     optimizationRuns: optimizationRuns,
-    constructorArgs: '',
+    constructorArgs: deploymentBytecode,
   }
 }
 
@@ -176,6 +177,17 @@ async function pullFirstTransactionForContract(network: string, address: string)
   return contractCreationCode.slice(2);
 }
 
+async function getRoninContractDeploymentData(tx: string) {
+  const res = await post(`https://saigon-testnet.roninchain.com/rpc`, {
+    jsonrpc: '2.0',
+    method: 'eth_getTransactionByHash',
+    params: [tx],
+    id: 1
+  });
+
+  return res.result.input;
+}
+
 async function getContractCreationCode(network: string, address: string) {
   if (network === 'ronin-saigon') {
     const res = await post(`https://saigon-testnet.roninchain.com/rpc`, {
@@ -243,24 +255,16 @@ export async function loadRoninContract(network: string, address: string) {
   const networkName = network;
   const roninData = await getRoninApiData(networkName, address);
   const { language, settings, sources } = parseSources(roninData);
-  let input = await getContractCreationCode(networkName, address);
-  const constructorAbi = roninData.abi.find((entry) => entry.type === "constructor");
-  if (!constructorAbi) {
-    return {
-      creationBytecode: input,
-      constructorArgs: [],
-    };
-  }
-
-  const {
+  let contractCreationCode = await getContractCreationCode(networkName, address);
+  
+  let {
     abi,
     contract,
     compiler,
     constructorArgs
   } = roninData;
-  const inputTypes = constructorAbi.inputs.map((input) => input.type);
-  const contractCreationCode = extractCreationBytecode(input, inputTypes);
-
+  let bytecodeWithTxArgs = await getRoninContractDeploymentData(constructorArgs);
+  constructorArgs = bytecodeWithTxArgs.slice(contractCreationCode.length);
   const encodedABI = JSON.stringify(abi);
   const contractPath = Object.keys(sources)[0];
   const contractFQN = `${contractPath}:${contract}`;
@@ -296,12 +300,6 @@ export async function loadRoninContract(network: string, address: string) {
   return contractBuild;
 }
 
-function extractCreationBytecode(fullInput: string, inputTypes: string[]): string {
-  const encodedArgsLength = ethers.utils.defaultAbiCoder.encode(inputTypes, []).length;
-  const contractCreationCode = fullInput.slice(0, fullInput.length - encodedArgsLength);
-
-  return contractCreationCode;
-}
 
 
 export async function loadEtherscanContract(network: string, address: string) {

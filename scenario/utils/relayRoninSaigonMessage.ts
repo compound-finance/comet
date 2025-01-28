@@ -5,43 +5,6 @@ import { BigNumber, ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { OpenBridgedProposal } from '../context/Gov';
 
-// interface IEVM2EVMOnRamp extends ethers.Contract {
-//   filters: {
-//     CCIPSendRequested(): ethers.EventFilter;
-//   };
-//   interface: ethers.utils.Interface;
-// }
-
-// interface IRouter extends ethers.Contract {
-//   filters: {
-//     MessageExecuted(): ethers.EventFilter;
-//   };
-//   interface: ethers.utils.Interface;
-//   routeMessage(
-//     message: {
-//       messageId: string;
-//       sourceChainSelector: number;
-//       sender: string;
-//       data: string;
-//       destTokenAmounts: {
-//         token: string;
-//         amount: BigNumber;
-//       }[];
-//     },
-//     gasForCallExactCheck: number,
-//     gasLimit: number,
-//     receiver: string
-//   ): Promise<ethers.ContractTransaction>;
-// }
-
-// interface IBridgeReceiver extends ethers.Contract {
-//   interface: ethers.utils.Interface;
-//   executeProposal: (id: BigNumber, overrides?: any) => Promise<ethers.ContractTransaction>;
-// }
-
-
-// const offRampAddress = '0x77008Fbd8Ae8f395beF9c6a55905896f3Ead75e9';
-
 export default async function relayRoninSaigonMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,

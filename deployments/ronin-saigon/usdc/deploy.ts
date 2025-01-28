@@ -2,7 +2,7 @@ import {
   Deployed,
   DeploymentManager,
 } from '../../../plugins/deployment_manager';
-import { DeploySpec, deployComet } from '../../../src/deploy';
+import { DeploySpec, deployComet, exp } from '../../../src/deploy';
 
 const HOUR = 60 * 60;
 const DAY = 24 * HOUR;
@@ -31,11 +31,11 @@ async function deployContracts(
   );
 
   // pre-deployed OptimismMintableERC20
-  const COMP = await deploymentManager.existing(
-    'COMP',
-    '0x52b7D8851d6CcBC6342ba0855Be65f7B82A3F17f',
-    'ronin-saigon'
-  );
+  // const COMP = await deploymentManager.existing(
+  //   'COMP',
+  //   '0x52b7D8851d6CcBC6342ba0855Be65f7B82A3F17f',
+  //   'ronin-saigon'
+  // );
 
   const l2CCIPRouter = await deploymentManager.existing(
     'l2CCIPRouter',
@@ -82,8 +82,43 @@ async function deployContracts(
     }
   );
 
+  const USDCPriceFeed = await deploymentManager.deploy(
+    'USDC:simplePriceFeed',
+    'test/SimplePriceFeed.sol',
+    [
+      exp(0.98882408, 18), // Latest answer on mainnet at block 16170924
+      8
+    ]
+  );
+
+  // Deploy cbETH / ETH SimplePriceFeed
+  const WRONPriceFeed = await deploymentManager.deploy(
+    'WRON:simplePriceFeed',
+    'test/SimplePriceFeed.sol',
+    [
+      exp(0.97, 18),
+      8
+    ]
+  );
+
+
+  const assetConfig = {
+    asset: WRON.address,
+    priceFeed: WRONPriceFeed.address,
+    decimals: (18).toString(),
+    borrowCollateralFactor: (0.9e18).toString(),
+    liquidateCollateralFactor: (0.91e18).toString(),
+    liquidationFactor: (0.95e18).toString(),
+    supplyCap: (1000000e8).toString(),
+  };
+
+
+  // Deploy all Comet-related contracts
+  const deployed = await deployComet(deploymentManager, deploySpec, {
+    baseTokenPriceFeed: USDCPriceFeed.address,
+    assetConfigs: [assetConfig],
+  });
   // Deploy Comet
-  const deployed = await deployComet(deploymentManager, deploySpec);
   const { comet } = deployed;
 
   // Deploy Bulker
@@ -96,6 +131,8 @@ async function deployContracts(
       WRON.address,        // wrapped native token
     ]
   );
+  // Deploy stETH / ETH SimplePriceFeed
+  
 
   return {
     ...deployed,
@@ -103,6 +140,6 @@ async function deployContracts(
     l2CCIPRouter,
     l2CCIPOffRamp,
     bulker,
-    COMP,
+    // COMP,
   };
 }
