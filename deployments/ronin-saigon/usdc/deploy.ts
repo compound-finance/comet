@@ -32,7 +32,7 @@ async function deployContracts(
   
   const USDC = await deploymentManager.existing(
     'USDC',
-    '0x7a7ab4ac45a5329198e818e1fa56c27b443f8e3d',
+    '0x7a7ab4aC45A5329198e818e1fA56C27B443f8e3d',
     'ronin-saigon'
   );
   // pre-deployed OptimismMintableERC20

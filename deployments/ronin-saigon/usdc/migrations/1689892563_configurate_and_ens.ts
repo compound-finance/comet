@@ -35,7 +35,7 @@ export default migration("1707394874_configurate_and_ens", {
     const {
       l1CCIPRouter,
       governor,
-      COMP: mainnetCOMP,
+      //COMP: mainnetCOMP,
       USDC: mainnetUSDC,
     } = await govDeploymentManager.getContracts();
   
@@ -78,39 +78,38 @@ export default migration("1707394874_configurate_and_ens", {
 
     const COMPAmountToBridge = exp(3_600, 18);
     const USDCAmountToBridge = exp(10_000, 6);
-
+      console.log(l1CCIPRouter);
     const actions = [
       {
         contract: mainnetUSDC,
         signature: "approve(address,uint256)",
         args: [l1CCIPRouter.address, USDCAmountToBridge],
       },
-      {
-        contract: mainnetCOMP,
-        signature: "approve(address,uint256)",
-        args: [l1CCIPRouter.address, COMPAmountToBridge],
-      },
+      // {
+      //   contract: mainnetCOMP,
+      //   signature: "approve(address,uint256)",
+      //   args: [l1CCIPRouter.address, COMPAmountToBridge],
+      // },
       {
         contract: l1CCIPRouter,
-        signature: "ccipSend(uint64,(bytes,bytes,address,bytes,uint256,address[]))",
+        signature: "ccipSend(uint64,(bytes,bytes,(address,uint256)[],address,bytes))",
         args: [
           destinationChainSelector,
           {
-            messageId: "0x",
-            payload: l2ProposalData,
-            receiver: bridgeReceiver.address,
-            feeToken: ethers.constants.AddressZero,
-            fee: 2_500_000,
+            receiver: utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
+            data: l2ProposalData,
             tokenAmounts: [
               {
                 token: mainnetUSDC.address,
                 amount: USDCAmountToBridge,
               },
-              {
-                token: mainnetCOMP.address,
-                amount: COMPAmountToBridge,
-              },
+              // {
+              //   token: mainnetCOMP.address,
+              //   amount: COMPAmountToBridge,
+              // },
             ],
+            feeToken: ethers.constants.AddressZero,
+            extraArgs: "0x",
           },
         ],
       },
@@ -128,7 +127,7 @@ export default migration("1707394874_configurate_and_ens", {
   },
 
   async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return true;
+    return false;
   },
 
   async verify(
