@@ -83,6 +83,7 @@ export async function deployNetworkComet(
   deploymentManager: DeploymentManager,
   deploySpec: DeploySpec = { all: true },
   configOverrides: ProtocolConfiguration = {},
+  withAssetList = false,
   adminSigner?: SignerWithAddress,
 ): Promise<Deployed> {
   function maybeForce(flag?: boolean): boolean {
@@ -132,19 +133,47 @@ export async function deployNetworkComet(
     name32: ethers.utils.formatBytes32String(name),
     symbol32: ethers.utils.formatBytes32String(symbol)
   };
-  const cometExt = await deploymentManager.deploy(
-    'comet:implementation:implementation',
-    'CometExt.sol',
-    [extConfiguration],
-    maybeForce(deploySpec.cometExt)
-  );
+  let cometExt;
 
-  const cometFactory = await deploymentManager.deploy(
-    'cometFactory',
-    'CometFactory.sol',
-    [],
-    maybeForce(deploySpec.cometMain)
-  );
+  if(withAssetList) {
+    const assetListFactory = await deploymentManager.deploy(
+      'assetListFactory',
+      'AssetListFactory.sol',
+      [],
+      maybeForce(deploySpec.cometExt)
+    );
+    cometExt = await deploymentManager.deploy(
+      'comet:implementation:implementation',
+      'CometExtAssetList.sol',
+      [extConfiguration, assetListFactory.address],
+      maybeForce(deploySpec.cometExt)
+    );
+  } else {
+    cometExt = await deploymentManager.deploy(
+      'comet:implementation:implementation',
+      'CometExt.sol',
+      [extConfiguration],
+      maybeForce(deploySpec.cometExt)
+    );
+  }
+
+  let cometFactory;
+  if(withAssetList) {
+    cometFactory = await deploymentManager.deploy(
+      'cometFactory',
+      'CometFactoryWithExtendedAssetList.sol',
+      [],
+      maybeForce(deploySpec.cometMain)
+    );
+  }
+  else {
+    cometFactory = await deploymentManager.deploy(
+      'cometFactory',
+      'CometFactory.sol',
+      [],
+      maybeForce(deploySpec.cometMain)
+    );
+  }
 
   const configuration = {
     governor,
@@ -170,12 +199,22 @@ export async function deployNetworkComet(
     assetConfigs,
   };
 
-  const tmpCometImpl = await deploymentManager.deploy(
-    'comet:implementation',
-    'Comet.sol',
-    [configuration],
-    maybeForce(),
-  );
+  let tmpCometImpl;
+  if(withAssetList) {
+    tmpCometImpl = await deploymentManager.deploy(
+      'comet:implementation',
+      'CometWithExtendedAssetList.sol',
+      [configuration],
+      maybeForce()
+    );
+  } else{
+    tmpCometImpl = await deploymentManager.deploy(
+      'comet:implementation',
+      'Comet.sol',
+      [configuration],
+      maybeForce(),
+    );
+  }
   const cometProxy = await deploymentManager.deploy(
     'comet',
     'vendor/proxy/transparent/TransparentUpgradeableProxy.sol',
