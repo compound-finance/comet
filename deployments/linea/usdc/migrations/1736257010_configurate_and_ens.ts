@@ -68,7 +68,7 @@ export default migration('1736257010_configurate_and_ens', {
           'setRewardConfig(address,address)'
         ],
         [
-          setConfigurationCalldata, deployAndUpgradeToCalldata,  setRewardConfigCalldata
+          setConfigurationCalldata, deployAndUpgradeToCalldata, setRewardConfigCalldata
         ]
       ]
     );
@@ -129,7 +129,7 @@ export default migration('1736257010_configurate_and_ens', {
       }
     ];
 
-    const description = '# Initialize cUSDCv3 on Linea network\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Linea network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Linea; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-linea/4460/19).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/953), [deploy market GitHub action run](<>) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-linea/4460).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Linea. This sends the encoded `setFactory`, `setConfiguration`, `deployAndUpgradeTo` calls across the bridge to the governance receiver on Linea.\n\nThe second action approves USDC tokens to the bridge.\n\nThe third action sends USDC tokens to the Linea chain via a special native USDC bridge.\n\nThe fourth action approves  COMP tokens to the bridge.\n\nThe fifth action sends COMP tokens to the Linea chain via bridge.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Linea cUSDCv3 market.';
+    const description = '# Initialize cUSDCv3 on Linea network\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Linea network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Linea; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-linea/4460/19).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/953), [deploy market GitHub action run](https://github.com/woof-software/comet/actions/runs/13041520838/job/36384262627) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-linea/4460).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Linea. This sends the encoded `setFactory`, `setConfiguration`, `deployAndUpgradeTo` calls across the bridge to the governance receiver on Linea.\n\nThe second action approves USDC tokens to the bridge.\n\nThe third action sends USDC tokens to the Linea chain via a special native USDC bridge.\n\nThe fourth action approves  COMP tokens to the bridge.\n\nThe fifth action sends COMP tokens to the Linea chain via bridge.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Linea cUSDCv3 market.';
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(mainnetActions, description))))
     );
@@ -155,19 +155,19 @@ export default migration('1736257010_configurate_and_ens', {
 
     // 1.
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
-    // expect(stateChanges).to.deep.equal({
-    //   WETH: {
-    //     supplyCap: exp(530, 18)
-    //   },
-    //   wstETH: {
-    //     supplyCap: exp(340, 18)
-    //   },
-    //   WBTC: {
-    //     supplyCap: exp(18, 8)
-    //   },
-    //   baseTrackingSupplySpeed: exp(4 / 86400, 15, 18),
-    //   baseTrackingBorrowSpeed: exp(3 / 86400, 15, 18)
-    // });
+    expect(stateChanges).to.deep.equal({
+      WETH: {
+        supplyCap: exp(530, 18)
+      },
+      wstETH: {
+        supplyCap: exp(340, 18)
+      },
+      WBTC: {
+        supplyCap: exp(18, 8)
+      },
+      baseTrackingSupplySpeed: exp(4 / 86400, 15, 18),
+      baseTrackingBorrowSpeed: exp(3 / 86400, 15, 18)
+    });
 
     const config = await rewards.rewardConfig(comet.address);
     expect(config.token).to.be.equal(lineaCOMPAddress);
@@ -294,7 +294,7 @@ export default migration('1736257010_configurate_and_ens', {
     });
 
     // 7.
-    // expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(4 / 86400, 15, 18)); // 46296296296
-    // expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(3 / 86400, 15, 18)); // 34722222222
+    expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(4 / 86400, 15, 18)); // 46296296296
+    expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(3 / 86400, 15, 18)); // 34722222222
   }
 });
