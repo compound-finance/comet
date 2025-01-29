@@ -8,8 +8,7 @@ export async function isBridgeProposal(
 ) {
   const bridgeNetwork = bridgeDeploymentManager.network;
   switch (bridgeNetwork) {
-    case 'arbitrum':
-    case 'arbitrum-goerli': {
+    case 'arbitrum': {
       const governor = await governanceDeploymentManager.getContractOrThrow('governor');
       const inbox = await governanceDeploymentManager.getContractOrThrow('arbitrumInbox');
       const l1GatewayRouter = await governanceDeploymentManager.getContractOrThrow(
@@ -18,7 +17,6 @@ export async function isBridgeProposal(
       const { targets } = await governor.getActions(openProposal.id);
       return targets.includes(inbox.address) || targets.includes(l1GatewayRouter.address);
     }
-    case 'mumbai':
     case 'polygon': {
       const {
         governor,
@@ -31,8 +29,7 @@ export async function isBridgeProposal(
       const { targets } = await governor.getActions(openProposal.id);
       return targets.some(t => bridgeAddresses.includes(t.toLowerCase()));
     }
-    case 'base':
-    case 'base-goerli': {
+    case 'base': {
       const governor = await governanceDeploymentManager.getContractOrThrow('governor');
       const baseL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow(
         'baseL1CrossDomainMessenger'
@@ -44,14 +41,14 @@ export async function isBridgeProposal(
       const bridgeContracts = [baseL1CrossDomainMessenger.address, baseL1StandardBridge.address];
       return targets.some(t => bridgeContracts.includes(t));
     }
-    case 'linea-goerli': {
-      const governor = await governanceDeploymentManager.getContractOrThrow('governor');
-      const lineaMessageService = await governanceDeploymentManager.getContractOrThrow(
-        'lineaMessageService'
-      );
-      const { targets } = await governor.getActions(openProposal.id);
-      return targets.includes(lineaMessageService.address);
-    }
+    // case 'linea': {
+    //   const governor = await governanceDeploymentManager.getContractOrThrow('governor');
+    //   const lineaMessageService = await governanceDeploymentManager.getContractOrThrow(
+    //     'lineaMessageService'
+    //   );
+    //   const { targets } = await governor.getActions(openProposal.id);
+    //   return targets.includes(lineaMessageService.address);
+    // }
     case 'optimism': {
       const governor = await governanceDeploymentManager.getContractOrThrow('governor');
       const opL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow(
@@ -79,8 +76,7 @@ export async function isBridgeProposal(
       ];
       return targets.some(t => bridgeContracts.includes(t));
     }
-    case 'scroll':
-    case 'scroll-goerli': {
+    case 'scroll': {
       const governor = await governanceDeploymentManager.getContractOrThrow('governor');
       const scrollMessenger = await governanceDeploymentManager.getContractOrThrow(
         'scrollMessenger'

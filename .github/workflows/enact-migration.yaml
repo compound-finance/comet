@@ -8,18 +8,12 @@ on:
         options:
           - fuji
           - mainnet
-          - goerli
           - sepolia
-          - mumbai
           - polygon
           - arbitrum
-          - arbitrum-goerli
           - base
-          - base-goerli
-          - linea-goerli
           - optimism
           - mantle
-          - scroll-goerli
           - scroll
       deployment:
         description: Deployment Name (e.g. "usdc")
@@ -61,14 +55,15 @@ jobs:
       LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
       OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
       MANTLESCAN_KEY: ${{ secrets.MANTLESCAN_KEY }}
+      SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
     steps:
       - name: Get governance network
         run: |
           case ${{ github.event.inputs.network }} in
-            polygon | arbitrum | base | optimism | mantle)
+            polygon | arbitrum | base | optimism | mantle | scroll)
                 echo "GOV_NETWORK=mainnet" >> $GITHUB_ENV ;;
-            mumbai | arbitrum-goerli | base-goerli | linea-goerli | scroll-goerli | scroll)
-                echo "GOV_NETWORK=goerli" >> $GITHUB_ENV ;;
+            sepolia)
+                echo "GOV_NETWORK=sepolia" >> $GITHUB_ENV ;;
             *)
                 echo "No governance network for selected network" ;;
           esac
@@ -78,7 +73,7 @@ jobs:
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ inputs.network }}"
-          ethereum_url: "${{ fromJSON('{\"mantle\":\"https://mantle-mainnet.infura.io/v3/$INFURA_KEY\",\"optimism\":\"https://rpc.ankr.com/optimism/$ANKR_KEY\",\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"goerli\":\"https://goerli.infura.io/v3/$INFURA_KEY\",\"sepolia\":\"https://sepolia.infura.io/v3/$INFURA_KEY\",\"mumbai\":\"https://polygon-mumbai.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum-goerli\":\"https://arbitrum-goerli.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\",\"base\":\"https://rpc.ankr.com/base/$ANKR_KEY\",\"base-goerli\":\"https://base-goerli.infura.io/v3/$INFURA_KEY\",\"linea-goerli\":\"https://linea-goerli.infura.io/v3/$INFURA_KEY\",\"scroll-goerli\":\"https://alpha-rpc.scroll.io/l2\",\"scroll\":\"https://rpc.scroll.io\"}')[inputs.network] }}"
+          ethereum_url: "${{ fromJSON('{\"mantle\":\"https://mantle-mainnet.infura.io/v3/$INFURA_KEY\",\"optimism\":\"https://rpc.ankr.com/optimism/$ANKR_KEY\",\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"sepolia\":\"https://sepolia.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\",\"base\":\"https://rpc.ankr.com/base/$ANKR_KEY\",\"scroll\":\"https://rpc.scroll.io\"}')[inputs.network] }}"
           port: 8585
         if: github.event.inputs.eth_pk == ''
 
@@ -87,7 +82,7 @@ jobs:
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ env.GOV_NETWORK }}"
-          ethereum_url: "${{ fromJSON('{\"mantle\":\"https://mantle-mainnet.infura.io/v3/$INFURA_KEY\",\"optimism\":\"https://rpc.ankr.com/optimism/$ANKR_KEY\",\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"goerli\":\"https://goerli.infura.io/v3/$INFURA_KEY\",\"sepolia\":\"https://sepolia.infura.io/v3/$INFURA_KEY\",\"mumbai\":\"https://polygon-mumbai.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum-goerli\":\"https://arbitrum-goerli.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\"}')[env.GOV_NETWORK] }}"
+          ethereum_url: "${{ fromJSON('{\"mantle\":\"https://mantle-mainnet.infura.io/v3/$INFURA_KEY\",\"optimism\":\"https://rpc.ankr.com/optimism/$ANKR_KEY\",\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"sepolia\":\"https://sepolia.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\"}')[env.GOV_NETWORK] }}"
           port: 8685
         if: github.event.inputs.eth_pk == '' && env.GOV_NETWORK != '' && github.event.inputs.impersonateAccount == ''
 
@@ -113,7 +108,7 @@ jobs:
           run_id: ${{ github.event.inputs.run_id }}
           name: ${{ github.event.inputs.network }}-${{ github.event.inputs.deployment }}-${{ github.event.inputs.migration }}
           path: deployments/${{ github.event.inputs.network }}/${{ github.event.inputs.deployment }}/artifacts/
-        if: github.event.inputs.run_id != ''
+        if: github.event.inputs.run_id != '' && github.event.inputs.run_id != 0
 
       - name: Run Deploy Market and Enact Migration (impersonate)
         run: |
@@ -140,6 +135,17 @@ jobs:
       - name: Run Enact Migration (impersonate)
         run: |
           yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true'] }} ${{ github.event.inputs.migration }} --impersonate ${{ github.event.inputs.impersonateAccount }}
+        env:
+          DEBUG: true
+          ETH_PK: "${{ inputs.eth_pk }}"
+          NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
+          GOV_NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8685"]')[github.event.inputs.eth_pk == '' && env.GOV_NETWORK != ''] }}
+          GOV_NETWORK: ${{ env.GOV_NETWORK }}
+          REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
+        if: github.event.inputs.impersonateAccount != '' && github.event.inputs.run_id != 0
+      - name: Run Prepare and Enact Migration (impersonate)
+        run: |
+          yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --prepare --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true'] }} ${{ github.event.inputs.migration }} --impersonate ${{ github.event.inputs.impersonateAccount }}
         env:
           DEBUG: true
           ETH_PK: "${{ inputs.eth_pk }}"
