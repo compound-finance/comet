@@ -122,16 +122,13 @@ export default migration('1737396251_configurate_and_ens', {
       timelock,
       COMP,
       pumpBTC,
-      'SolvBTC.BBN': solvBTC_BBN,
       LBTC
     } = await deploymentManager.getContracts();
 
     // 1. & 2. & 3.
-    const solvBTC_BBNInfo = await comet.getAssetInfoByAddress(solvBTC_BBN.address);
     const lbtcInfo = await comet.getAssetInfoByAddress(LBTC.address);
     const pumpBTCInfo = await comet.getAssetInfoByAddress(pumpBTC.address);
 
-    // expect(solvBTC_BBNInfo.supplyCap).to.be.eq(exp(18, 18));
     // expect(lbtcInfo.supplyCap).to.be.eq(exp(200, 8));
     // expect(pumpBTCInfo.supplyCap).to.be.eq(exp(15, 8));
 

@@ -3,22 +3,9 @@ import { DeploySpec, deployComet } from '../../../src/deploy';
 
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
   const _WBTC = await deploymentManager.existing('WBTC', '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599');
-  const _solvBTC_BBN = await deploymentManager.existing('SolvBTC.BBN', '0xd9D920AA40f578ab794426F5C90F6C731D159DEf');
   const _LBTC = await deploymentManager.existing('LBTC', '0x8236a87084f8B84306f72007F36F2618A5634494');
   const _pumpBTC = await deploymentManager.existing('pumpBTC', '0xF469fBD2abcd6B9de8E169d128226C0Fc90a012e');
   const COMP = await deploymentManager.existing('COMP', '0xc00e94Cb662C3520282E6f5717214004A7f26888');
-
-  const _solvBTC_BBNPriceFeed = await deploymentManager.deploy(
-    'SolvBTC.BBN:priceFeed',
-    'pricefeeds/MultiplicativePriceFeed.sol',
-    [
-      '0x1f34794A16D644b9810477EbF3f0b3870141E2e3', // SolvBTC.BBN / SolvBTC price feed
-      '0x936B31C428C29713343E05D631e69304f5cF5f49', // SolvBTC / BTC price feed
-      8,                                            // decimals
-      'solvBTC.BBN / BTC price feed'                // description
-    ],
-    true
-  );
 
   // Deploy scaling price feed for pumpBTC
   const _pumpBTCScalingPriceFeed = await deploymentManager.deploy(

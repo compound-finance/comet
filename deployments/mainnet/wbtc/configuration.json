@@ -27,14 +27,6 @@
   },
   "rewardTokenAddress": "0xc00e94Cb662C3520282E6f5717214004A7f26888",
   "assets": {
-    "SolvBTC.BBN": {
-      "address": "0xd9D920AA40f578ab794426F5C90F6C731D159DEf",
-      "decimals": "18",
-      "borrowCF": 0.81,
-      "liquidateCF": 0.84,
-      "liquidationFactor": 0.9,
-      "supplyCap": "0e18"
-    },
     "LBTC": {
       "address": "0x8236a87084f8B84306f72007F36F2618A5634494",
       "priceFeed": "0x5c29868C58b6e15e2b962943278969Ab6a7D3212",
