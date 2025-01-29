@@ -18,8 +18,9 @@ export default async function relayRoninSaigonMessage(
   const openBridgedProposals: OpenBridgedProposal[] = [];
 
   const filter = roninSaigonl1CCIPOnRamp.filters.CCIPSendRequested();
+  const latestBlock = (await governanceDeploymentManager.hre.ethers.provider.getBlock('latest')).number;
   const logs: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
-    fromBlock: startingBlockNumber,
+    fromBlock: latestBlock - 500,
     toBlock: 'latest',
     address: roninSaigonl1CCIPOnRamp.address,
     topics: filter.topics || []
@@ -33,11 +34,16 @@ export default async function relayRoninSaigonMessage(
 
     const offRampSigner = await impersonateAddress(bridgeDeploymentManager, l2CCIPOffRamp.address);
 
+    await bridgeDeploymentManager.hre.network.provider.request({
+      method: 'hardhat_setBalance',
+      params: [l2CCIPOffRamp.address, '0x1000000000000000000000']
+    });
+
     await setNextBaseFeeToZero(bridgeDeploymentManager);
 
     const any2EVMMessage = {
       messageId: internalMsg.messageId,
-      sourceChainSelector: internalMsg.sourceChainSelector.toNumber(),
+      sourceChainSelector: internalMsg.sourceChainSelector,
       sender: ethers.utils.defaultAbiCoder.encode(["address"], [internalMsg.sender]),
       data: internalMsg.data,
       destTokenAmounts: internalMsg.tokenAmounts.map((t: any) => ({

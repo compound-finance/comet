@@ -68,6 +68,8 @@ function getBlockRollback(base: ForkSpec) {
     return undefined;
   else if (base.network === 'arbitrum') {
     return undefined;
+  }else if (base.network === 'sepolia') {
+    return undefined;
   }
   else
     return 280;

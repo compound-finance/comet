@@ -79,6 +79,7 @@ export default async function relayMessage(
         bridgeDeploymentManager,
         startingBlockNumber
       );
+      break;
     default:
       throw new Error(
         `No message relay implementation from ${bridgeNetwork} -> ${governanceDeploymentManager.network}`
