@@ -31,7 +31,14 @@ const relationConfigMap: RelationConfigMap = {
             })
           );
         },
-        alias: async (token) => token.symbol(),
+        alias: async (token) => {
+          try {
+            return token.symbol();
+          }
+          catch (e) {
+            throw new Error(`Failed to get symbol for token ${token.address}`);
+          }
+        },
       },
       assetPriceFeeds: {
         field: async (comet) => {
