@@ -7,7 +7,7 @@ import { DeploySpec, deployComet, exp } from '../../../src/deploy';
 const HOUR = 60 * 60;
 const DAY = 24 * HOUR;
 
-const MAINNET_TIMELOCK = '0x6d903f6003cca6255d85cca4d3b5e5146dc33925';
+const SEPOLIA_TIMELOCK = '0x54a06047087927D9B0fb21c1cf0ebd792764dDB8';
 
 export default async function deploy(
   deploymentManager: DeploymentManager,
@@ -57,7 +57,7 @@ async function deployContracts(
   // Deploy OptimismBridgeReceiver
   const bridgeReceiver = await deploymentManager.deploy(
     'bridgeReceiver',
-    'bridges/optimism/OptimismBridgeReceiver.sol',
+    'bridges/ronin/RoninBridgeReceiver.sol',
     [l2CCIPRouter.address]
   );
 
@@ -80,28 +80,27 @@ async function deployContracts(
     async () => {
       trace(`Initializing BridgeReceiver`);
       await bridgeReceiver.initialize(
-        MAINNET_TIMELOCK,     // govTimelock
+        SEPOLIA_TIMELOCK,     // govTimelock
         localTimelock.address // localTimelock
       );
       trace(`BridgeReceiver initialized`);
     }
   );
 
-  const USDCPriceFeed = await deploymentManager.deploy(
-    'USDC:simplePriceFeed',
+  const WETHPriceFeed = await deploymentManager.deploy(
+    'WETH:simplePriceFeed',
     'test/SimplePriceFeed.sol',
     [
-      exp(0.98882408, 18), // Latest answer on mainnet at block 16170924
+      exp(1, 18),
       8
     ]
   );
 
-  // Deploy cbETH / ETH SimplePriceFeed
   const WRONPriceFeed = await deploymentManager.deploy(
     'WRON:simplePriceFeed',
     'test/SimplePriceFeed.sol',
     [
-      exp(0.97, 18),
+      exp(0.047, 18),
       8
     ]
   );
@@ -110,7 +109,7 @@ async function deployContracts(
     'COMP:simplePriceFeed',
     'test/SimplePriceFeed.sol',
     [
-      exp(0.97, 18),
+      exp(0.022, 18),
       8
     ]
   );
@@ -140,7 +139,7 @@ async function deployContracts(
 
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec, {
-    baseTokenPriceFeed: USDCPriceFeed.address,
+    baseTokenPriceFeed: WETHPriceFeed.address,
     assetConfigs: [assetConfig0, assetConfig1],
   });
   // Deploy Comet

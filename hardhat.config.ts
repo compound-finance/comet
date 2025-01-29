@@ -40,7 +40,7 @@ import optimismUsdtRelationConfigMap from './deployments/optimism/usdt/relations
 import optimismWethRelationConfigMap from './deployments/optimism/weth/relations';
 import mantleRelationConfigMap from './deployments/mantle/usde/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
-import roninSaigonRelationConfigMap from './deployments/ronin-saigon/usdc/relations';
+import roninSaigonRelationConfigMap from './deployments/ronin-saigon/weth/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -349,7 +349,7 @@ const config: HardhatUserConfig = {
         usdc: scrollRelationConfigMap
       },
       'ronin-saigon': {
-        usdc: roninSaigonRelationConfigMap
+        weth: roninSaigonRelationConfigMap
       }
     },
   },
@@ -495,7 +495,7 @@ const config: HardhatUserConfig = {
       {
         name: 'ronin-saigon',
         network: 'ronin-saigon',
-        deployment: 'usdc',
+        deployment: 'weth',
         auxiliaryBase: 'sepolia-usdc'
       }
     ],

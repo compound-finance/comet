@@ -13,7 +13,7 @@ export default async function relayRoninSaigonMessage(
   const roninSaigonl1CCIPOnRamp = await governanceDeploymentManager.getContractOrThrow('roninSaigonl1CCIPOnRamp');
   const l2Router = (await bridgeDeploymentManager.getContractOrThrow('l2CCIPRouter'))
   const l2CCIPOffRamp = (await bridgeDeploymentManager.getContractOrThrow('l2CCIPOffRamp'))
-  const bridgeReceiver = (await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver'))// as IBridgeReceiver;
+  const bridgeReceiver = (await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver'))
 
   const openBridgedProposals: OpenBridgedProposal[] = [];
 
@@ -58,7 +58,7 @@ export default async function relayRoninSaigonMessage(
         any2EVMMessage,
         25_000,
         2_000_000,
-        bridgeReceiver.address
+        internalMsg.receiver,
       );
 
     const routeReceipt = await routeTx.wait();

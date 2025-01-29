@@ -43,11 +43,7 @@ export function getEtherscanUrl(network: string): string {
     base: 'basescan.org',
     optimism: 'optimistic.etherscan.io',
     mantle: 'mantlescan.xyz',
-<<<<<<< HEAD
     'ronin-saigon': 'explorer-kintsugi.roninchain.com/v2/2021',
-    'scroll-goerli': 'alpha-blockscout.scroll.io',
-=======
->>>>>>> 4351754488084e32d366b0fbe91ebbb19b28cfa3
     scroll: 'scrollscan.com'
   }[network];
 

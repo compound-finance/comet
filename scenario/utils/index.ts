@@ -342,7 +342,7 @@ async function redeployRenzoOracle(dm: DeploymentManager){
       ],
       dm.hre.ethers.provider
     );
-    
+
     const admin = await impersonateAddress(dm, '0xD1e6626310fD54Eceb5b9a51dA2eC329D6D4B68A');
     // set balance
     await dm.hre.ethers.provider.send('hardhat_setBalance', [
@@ -588,6 +588,52 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       values.push(0);
       signatures.push('sendMessageToChild(address,bytes)');
       calldata.push(sendMessageToChildCalldata);
+      break;
+    }
+    case 'ronin-saigon': {
+
+      const { timelock } = await govDeploymentManager.getContracts();
+
+      await govDeploymentManager.hre.network.provider.request({
+        method: 'hardhat_impersonateAccount',
+        params: [timelock.address],
+      });
+
+      await govDeploymentManager.hre.network.provider.request({
+        method: 'hardhat_setBalance',
+        params: [timelock.address, '0x56bc75e2d63100000'],
+      });
+
+      const l1CCIPRouter = await govDeploymentManager.getContractOrThrow(
+        'l1CCIPRouter'
+      );
+
+      const destinationChainSelector = "13116810400804392105";
+
+      const data =
+      {
+        target: l1CCIPRouter.address,
+        signature: "ccipSend(uint64,(bytes,bytes,(address,uint256)[],address,bytes))",
+        calldata: utils.defaultAbiCoder.encode(
+          ["uint64", "tuple(bytes,bytes,tuple(address,uint256)[],address,bytes)"],
+          [
+            destinationChainSelector,
+            [
+              utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
+              l2ProposalData,
+              [],
+              govDeploymentManager.hre.ethers.constants.AddressZero,
+              "0x"
+            ]
+          ]
+        ),
+        value: utils.parseEther("0.1")
+      }
+
+      targets.push(data.target);
+      values.push(data.value);
+      signatures.push(data.signature);
+      calldata.push(data.calldata);
       break;
     }
     // case 'linea-goerli': {
