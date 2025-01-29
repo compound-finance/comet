@@ -30,7 +30,7 @@ export default migration('1735299744_update_comet_to_support_more_collaterals', 
         'function name() external view returns (string)',
         'function symbol() external view returns (string)',
       ],
-      deploymentManager.hre.ethers.provider
+      await deploymentManager.getSigner()
     );
     const name = await extensionDelegate.name();
     const symbol = await extensionDelegate.symbol();
@@ -44,7 +44,8 @@ export default migration('1735299744_update_comet_to_support_more_collaterals', 
           symbol32: ethers.utils.formatBytes32String(symbol)
         },
         _assetListFactory.address
-      ]
+      ],
+      true
     );
     return {
       cometFactoryWithExtendedAssetList: cometFactoryWithExtendedAssetList.address,
@@ -64,7 +65,7 @@ export default migration('1735299744_update_comet_to_support_more_collaterals', 
       cometAdmin,
       configurator,
     } = await deploymentManager.getContracts();
-    
+
     newCometExtAddress = newCometExt;
 
     const mainnetActions = [
@@ -78,7 +79,7 @@ export default migration('1735299744_update_comet_to_support_more_collaterals', 
       {
         contract: configurator,
         signature: 'setExtensionDelegate(address,address)',
-        args: [comet.address, newCometExt], 
+        args: [comet.address, newCometExt],
       },
       // 3. Deploy and upgrade to a new version of Comet
       {
@@ -114,7 +115,7 @@ export default migration('1735299744_update_comet_to_support_more_collaterals', 
       [
         'function assetList() external view returns (address)',
       ],
-      deploymentManager.hre.ethers.provider
+      await deploymentManager.getSigner()
     );
 
     const assetListAddress = await cometNew.assetList();
