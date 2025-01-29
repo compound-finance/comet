@@ -89,7 +89,7 @@ export async function forkedHreForBase(base: ForkSpec): Promise<HardhatRuntimeEn
 
   // noNetwork otherwise
   if(!base.blockNumber && baseNetwork.url)
-    base.blockNumber = await provider.getBlockNumber() - getBlockRollback(base); // arbitrary number of blocks to go back, about 1 hour
+    base.blockNumber = await provider.getBlockNumber() - getBlockRollback(base); // arbitrary number of blocks to go back
 
   if (!baseNetwork) {
     throw new Error(`cannot find network config for network: ${base.network}`);
