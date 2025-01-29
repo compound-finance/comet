@@ -89,15 +89,20 @@ export const WHALES = {
     '0x2775b1c75658be0f640272ccb8c72ac986009e38',
     '0x1a9c8182c09f50c8318d769245bea52c32be35bc',
     '0x3c22ec75ea5D745c78fc84762F7F1E6D82a2c5BF',
-    '0x426c4966fC76Bf782A663203c023578B744e4C5E', // wUSDM whale
+    '0x3B95bC951EE0f553ba487327278cAc44f29715E5', // wUSDM whale
     '0x88a1493366D48225fc3cEFbdae9eBb23E323Ade3', // USDe whale
     '0x43594da5d6A03b2137a04DF5685805C676dEf7cB', // rsETH whale
-    '0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b'
+    '0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b',
+    '0x0B925eD163218f6662a35e0f0371Ac234f9E9371', // wstETH whale
   ],
   polygon: [
+    '0xF977814e90dA44bFA03b6295A0616a897441aceC', // USDT whale
     '0x2093b4281990a568c9d588b8bce3bfd7a1557ebd', // WETH whale
+    '0xe50fA9b3c56FfB159cB0FCA61F5c9D750e8128c8', // WETH whale
     '0xd814b26554204245a30f8a42c289af582421bf04', // WBTC whale
-    '0x167384319b41f7094e62f7506409eb38079abff8'  // WMATIC whale
+    '0x167384319b41f7094e62f7506409eb38079abff8', // WMATIC whale
+    '0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97', // WMATIC whale
+    '0x4D97DCd97eC945f40cF65F87097ACe5EA0476045', // USDC.e whale
   ],
   arbitrum: [
     '0x8eb270e296023e9d92081fdf967ddd7878724424', // rETH whale
@@ -115,7 +120,8 @@ export const WHALES = {
     '0xee3273f6d29ddfff08ffd9d513cff314734f01a2', // COMP whale
     '0x9e786a8fc88ee74b758b125071d45853356024c3', // COMP whale
     '0xd93f76944e870900779c09ddf1c46275f9d8bf9b', // COMP whale
-    '0xe68ee8a12c611fd043fb05d65e1548dc1383f2b9'  // native USDC whale
+    '0xe68ee8a12c611fd043fb05d65e1548dc1383f2b9', // native USDC whale
+    '0x56CC5A9c0788e674f17F7555dC8D3e2F1C0313C0', // wUSDM whale
   ],
   base: [
     '0x6D3c5a4a7aC4B1428368310E4EC3bB1350d01455', // USDbC whale
@@ -126,20 +132,8 @@ export const WHALES = {
     '0xb125E6687d4313864e53df431d5425969c15Eb2F', // cbETH whale
   ],
   scroll: [
-    '0xaaaaAAAACB71BF2C8CaE522EA5fa455571A74106'  // USDC whale
-  ],
-  'arbitrum-goerli': [
-    '0x4984cbfa5b199e5920995883d345bbe14b005db7', // USDC whale
-    '0xbbfe34e868343e6f4f5e8b5308de980d7bd88c46', // LINK whale
-    '0x8DA65F8E3Aa22A498211fc4204C498ae9050DAE4', // COMP whale
-    '0x6ed0c4addc308bb800096b8daa41de5ae219cd36'  // native USDC whale
-  ],
-  'base-goerli': [
-    '0x21856935e5689490c72865f34CC665D0FF25664b'  // USDC whale
-  ],
-  'linea-goerli': [
-    '0xC858966280Da3Fa0348E51D2c3B892EcC889fC98', // USDC whale
-    '0x44411c605eb7e009cad03f3847cfbbfcf8895130'  // COMP whale
+    '0xaaaaAAAACB71BF2C8CaE522EA5fa455571A74106', // USDC whale
+    '0x5B1322eeb46240b02e20062b8F0F9908d525B09c', // wstETH whale
   ],
   optimism: [
     '0x2A82Ae142b2e62Cb7D10b55E323ACB1Cab663a26', // OP whale
@@ -152,6 +146,7 @@ export const WHALES = {
     '0x651C9D1F9da787688225f49d63ad1623ba89A8D5', // FBTC whale
     '0xC455fE28a76da80022d4C35A37eB08FF405Eb78f', // FBTC whale
     '0x524db930F0886CdE7B5FFFc920Aae85e98C2abfb', // FBTC whale
+    '0xCd83CbBFCE149d141A5171C3D6a0F0fCCeE225Ab', // COMP whale
   ],
 };
 
