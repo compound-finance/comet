@@ -65,6 +65,7 @@ export function getConfigForScenario(ctx: CometContext) {
     config.liquidationBase = 100000;
     config.liquidationBase1 = 50000;
     config.liquidationAsset = 10000;
+    config.withdrawAsset = 10000;
   }
 
   if (ctx.world.base.network === 'polygon' && ctx.world.base.deployment === 'usdc') {
