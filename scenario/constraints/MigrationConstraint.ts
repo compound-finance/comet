@@ -1,7 +1,7 @@
 import { StaticConstraint, Solution, World, debug } from '../../plugins/scenario';
 import { CometContext, MigrationData } from '../context/CometContext';
 import { Migration, loadMigrations, Actions } from '../../plugins/deployment_manager/Migration';
-import { modifiedPaths, subsets } from '../utils';
+import { modifiedPaths } from '../utils';
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import { exp } from '../../test/helpers';
