@@ -42,9 +42,6 @@ const addresses = {
     RS_ETH: '0xA1290d69c65A6Fe4DF752f95823fae25cB99e5A7',
     USDT: '0xdAC17F958D2ee523a2206206994597C13D831ec7'
   },
-  goerli: {
-    WETH: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d'
-  },
   polygon: {
     WBTC: '0x1bfd67037b42cf73acf2047067bd4f2c47d9bfd6',
     WETH: '0x7ceb23fd6bc0add59e62ac25578270cff1b9f619',
@@ -69,9 +66,6 @@ const liquidationThresholds = {
   mainnet: {
     'usdc': 10e6,
     'weth': 1e18
-  },
-  goerli: {
-    'usdc': 10e6
   },
   polygon: {
     'usdc': 10e6
@@ -103,12 +97,6 @@ export const flashLoanPools = {
     usds: {
       tokenAddress: addresses.mainnet.DAI,
       poolFee: 3000,
-    }
-  },
-  goerli: {
-    usdc: {
-      tokenAddress: addresses.goerli.WETH,
-      poolFee: 3000
     }
   },
   polygon: {

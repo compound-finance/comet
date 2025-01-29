@@ -59,7 +59,7 @@ scenario(
 
     await context.setNextBaseFeeToZero();
     await expectRevertCustom(
-      admin.withdrawReserves(albert.address, 101n * scale, { gasPrice: 0 }),
+      admin.withdrawReserves(albert.address, 1001n * scale, { gasPrice: 0 }),
       'InsufficientReserves()'
     );
   }
