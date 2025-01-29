@@ -96,9 +96,12 @@ export const WHALES = {
     '0x0B925eD163218f6662a35e0f0371Ac234f9E9371', // wstETH whale
   ],
   polygon: [
+    '0xF977814e90dA44bFA03b6295A0616a897441aceC', // USDT whale
     '0x2093b4281990a568c9d588b8bce3bfd7a1557ebd', // WETH whale
+    '0xe50fA9b3c56FfB159cB0FCA61F5c9D750e8128c8', // WETH whale
     '0xd814b26554204245a30f8a42c289af582421bf04', // WBTC whale
-    '0x167384319b41f7094e62f7506409eb38079abff8',  // WMATIC whale
+    '0x167384319b41f7094e62f7506409eb38079abff8', // WMATIC whale
+    '0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97', // WMATIC whale
     '0x4D97DCd97eC945f40cF65F87097ACe5EA0476045', // USDC.e whale
   ],
   arbitrum: [
