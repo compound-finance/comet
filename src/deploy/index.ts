@@ -154,6 +154,7 @@ export const WHALES = {
     '0x524db930F0886CdE7B5FFFc920Aae85e98C2abfb', // FBTC whale
   ],
   'ronin-saigon': [
+    '0x8E029cEDC7Daf4d9cFFe56AC6771dE266F3CCAdc',// WETH whale
     '0x9d726a549824eb289c5495e65dd421e0a681842a', // RON whale
   ],
 };
