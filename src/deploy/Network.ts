@@ -220,7 +220,7 @@ export async function deployNetworkComet(
   // Call initializeStorage if storage not initialized
   // Note: we now rely on the fact that anyone may call, which helps separate the proposal
   await deploymentManager.idempotent(
-    async () => (await comet.totalsBasic()).lastAccrualTime == 0,
+    async () => (await comet.connect(admin).totalsBasic()).lastAccrualTime == 0,
     async () => {
       trace(`Initializing Comet at ${comet.address}`);
       trace(await wait(comet.connect(admin).initializeStorage()));

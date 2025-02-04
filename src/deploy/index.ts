@@ -148,6 +148,10 @@ export const WHALES = {
     '0x524db930F0886CdE7B5FFFc920Aae85e98C2abfb', // FBTC whale
     '0xCd83CbBFCE149d141A5171C3D6a0F0fCCeE225Ab', // COMP whale
   ],
+  'unichain-sepolia': [
+    '0xd3A19CfC8b926f631C62d6D1213b51c27719Aa49', // USDC whale
+    '0xc8Da76f5A01a6531926fFc06398FE0Af2bb277d3', // WETH whale
+  ],
 };
 
 export async function calldata(req: Promise<PopulatedTransaction>): Promise<string> {
