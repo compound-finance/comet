@@ -35,6 +35,7 @@ import baseUsdbcRelationConfigMap from './deployments/base/usdbc/relations';
 import baseWethRelationConfigMap from './deployments/base/weth/relations';
 import baseUsdcRelationConfigMap from './deployments/base/usdc/relations';
 import baseAeroRelationConfigMap from './deployments/base/aero/relations';
+import baseUSDSRelationConfigMap from './deployments/base/usds/relations';
 import optimismRelationConfigMap from './deployments/optimism/usdc/relations';
 import optimismUsdtRelationConfigMap from './deployments/optimism/usdt/relations';
 import optimismWethRelationConfigMap from './deployments/optimism/weth/relations';
@@ -217,7 +218,17 @@ const config: HardhatUserConfig = {
         : { mnemonic: MNEMONIC, accountsBalance: (10n ** 36n).toString() },
       // this should only be relied upon for test harnesses and coverage (which does not use viaIR flag)
       allowUnlimitedContractSize: true,
-      hardfork: 'shanghai'
+      hardfork: 'cancun',
+      chains: networkConfigs.reduce((acc, { chainId }) => {
+        if (chainId === 1) return acc;
+        acc[chainId] = {
+          hardforkHistory: {
+            berlin: 1,
+            london: 2,
+          },
+        };
+        return acc;
+      }, {}),
     },
   },
 
@@ -321,7 +332,8 @@ const config: HardhatUserConfig = {
         usdbc: baseUsdbcRelationConfigMap,
         weth: baseWethRelationConfigMap,
         usdc: baseUsdcRelationConfigMap,
-        aero: baseAeroRelationConfigMap
+        aero: baseAeroRelationConfigMap,
+        usds: baseUSDSRelationConfigMap
       },
       optimism: {
         usdc: optimismRelationConfigMap,
@@ -443,6 +455,12 @@ const config: HardhatUserConfig = {
         name: 'base-aero',
         network: 'base',
         deployment: 'aero',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'base-usds',
+        network: 'base',
+        deployment: 'usds',
         auxiliaryBase: 'mainnet'
       },
       {

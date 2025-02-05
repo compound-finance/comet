@@ -9,36 +9,36 @@ export async function isBridgeProposal(
   const bridgeNetwork = bridgeDeploymentManager.network;
   switch (bridgeNetwork) {
     case 'arbitrum': {
-      const governor = await governanceDeploymentManager.getContractOrThrow('governor');
       const inbox = await governanceDeploymentManager.getContractOrThrow('arbitrumInbox');
       const l1GatewayRouter = await governanceDeploymentManager.getContractOrThrow(
         'arbitrumL1GatewayRouter'
       );
-      const { targets } = await governor.getActions(openProposal.id);
+      const targets = openProposal.targets;
       return targets.includes(inbox.address) || targets.includes(l1GatewayRouter.address);
     }
     case 'polygon': {
       const {
-        governor,
         fxRoot,
         RootChainManager
       } = await governanceDeploymentManager.getContracts();
       const bridgeAddresses = [fxRoot, RootChainManager]
         .filter(x => x)
         .map(x => x.address.toLowerCase());
-      const { targets } = await governor.getActions(openProposal.id);
+      const targets = openProposal.targets;
       return targets.some(t => bridgeAddresses.includes(t.toLowerCase()));
     }
     case 'base': {
-      const governor = await governanceDeploymentManager.getContractOrThrow('governor');
       const baseL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow(
         'baseL1CrossDomainMessenger'
       );
       const baseL1StandardBridge = await governanceDeploymentManager.getContractOrThrow(
         'baseL1StandardBridge'
       );
-      const { targets } = await governor.getActions(openProposal.id);
-      const bridgeContracts = [baseL1CrossDomainMessenger.address, baseL1StandardBridge.address];
+      const baseL1USDSBridge = await governanceDeploymentManager.getContractOrThrow(
+        'baseL1USDSBridge'
+      );
+      const targets = openProposal.targets;
+      const bridgeContracts = [baseL1CrossDomainMessenger.address, baseL1StandardBridge.address, baseL1USDSBridge.address];
       return targets.some(t => bridgeContracts.includes(t));
     }
     // case 'linea': {
@@ -50,26 +50,24 @@ export async function isBridgeProposal(
     //   return targets.includes(lineaMessageService.address);
     // }
     case 'optimism': {
-      const governor = await governanceDeploymentManager.getContractOrThrow('governor');
       const opL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow(
         'opL1CrossDomainMessenger'
       );
       const opL1StandardBridge = await governanceDeploymentManager.getContractOrThrow(
         'opL1StandardBridge'
       );
-      const { targets } = await governor.getActions(openProposal.id);
+      const targets = openProposal.targets;
       const bridgeContracts = [opL1CrossDomainMessenger.address, opL1StandardBridge.address];
       return targets.some(t => bridgeContracts.includes(t));
     }
     case 'mantle': {
-      const governor = await governanceDeploymentManager.getContractOrThrow('governor');
       const mantleL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow(
         'mantleL1CrossDomainMessenger'
       );
       const mantleL1StandardBridge = await governanceDeploymentManager.getContractOrThrow(
         'mantleL1StandardBridge'
       );
-      const { targets } = await governor.getActions(openProposal.id);
+      const targets = openProposal.targets;
       const bridgeContracts = [
         mantleL1CrossDomainMessenger.address,
         mantleL1StandardBridge.address
@@ -77,11 +75,10 @@ export async function isBridgeProposal(
       return targets.some(t => bridgeContracts.includes(t));
     }
     case 'scroll': {
-      const governor = await governanceDeploymentManager.getContractOrThrow('governor');
       const scrollMessenger = await governanceDeploymentManager.getContractOrThrow(
         'scrollMessenger'
       );
-      const { targets } = await governor.getActions(openProposal.id);
+      const targets = openProposal.targets;
       return targets.includes(scrollMessenger.address);
     }
     default: {
