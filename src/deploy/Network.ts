@@ -338,5 +338,5 @@ export async function deployNetworkComet(
     }
   );
 
-  return { comet, configurator, rewards };
+  return { comet, configurator, rewards, cometFactory };
 }

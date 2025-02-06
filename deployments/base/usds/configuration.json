@@ -27,12 +27,20 @@
   "assets": {
     "sUSDS": {
       "address": "0x5875eEE11Cf8398102FdAd704C9E96607675467a",
-      "priceFeed": "0x2330aaE3bca5F05169d5f4597964D44522F62930",
       "decimals": "18",
       "borrowCF": 0.93,
       "liquidateCF": 0.95,
       "liquidationFactor": 0.96,
       "supplyCap": "0e18"
+    },
+    "cbBTC": {
+      "address": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
+      "priceFeed": "0x07DA0E54543a844a80ABE69c8A12F22B3aA59f9D",
+      "decimals": "8",
+      "borrowCF": 0.8,
+      "liquidateCF": 0.85,
+      "liquidationFactor": 0.95,
+      "supplyCap": "0e8"
     }
   }
 }

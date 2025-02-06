@@ -3,7 +3,7 @@ import { diffState, getCometConfig } from '../../../../plugins/deployment_manage
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, exp, getConfigurationStruct, proposal } from '../../../../src/deploy';
 import { expect } from 'chai';
-import { ethers, utils } from 'ethers';
+import { ethers, utils, Contract } from 'ethers';
 
 const ENSName = 'compound-community-licenses.eth';
 const ENSResolverAddress = '0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41';
@@ -27,15 +27,17 @@ export default migration('1689893694_configurate_and_ens', {
   enact: async (deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager) => {
     const trace = deploymentManager.tracer();
 
-    const cometFactory = await deploymentManager.fromDep('cometFactory', 'base', 'usdbc');
+    const cometFactory = await deploymentManager.contract('cometFactory');
     const {
       bridgeReceiver,
       comet,
       cometAdmin,
       configurator,
       rewards,
-      USDS
+      USDS,
+      // cometFactory
     } = await deploymentManager.getContracts();
+    console.log('cometFactory', cometFactory?.address);
 
     const {
       baseL1CrossDomainMessenger,
@@ -202,6 +204,19 @@ export default migration('1689893694_configurate_and_ens', {
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
     const officialMarketsJSON = await ENSResolver.text(subdomainHash, ENSTextRecordKey);
     const officialMarkets = JSON.parse(officialMarketsJSON);
+
+    const cometNew = new  Contract(
+      comet.address,
+      [
+        'function assetList() external view returns (address)',
+      ],
+      await deploymentManager.getSigner()
+    );
+
+    const assetListAddress = await cometNew.assetList();
+
+    expect(assetListAddress).to.not.be.equal(ethers.constants.AddressZero);
+    
 
     expect(officialMarkets).to.deep.equal({
       1: [

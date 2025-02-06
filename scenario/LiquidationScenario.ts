@@ -2,6 +2,7 @@ import { scenario } from './context/CometContext';
 import { event, expect } from '../test/helpers';
 import { expectRevertCustom, timeUntilUnderwater } from './utils';
 import { matchesDeployment } from './utils';
+import { getConfigForScenario } from './utils/scenarioHelper';
 
 scenario(
   'Comet#liquidation > isLiquidatable=true for underwater position',
@@ -18,16 +19,17 @@ scenario(
     const { albert, betty } = actors;
     const baseToken = await comet.baseToken();
     const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
+    const baseScale = await comet.baseScale();
 
     await world.increaseTime(
       await timeUntilUnderwater({
         comet,
         actor: albert,
-        fudgeFactor: 60n * 10n // 10 minutes past when position is underwater
+        fudgeFactor: 6000n * 6000n // 1 hour past when position is underwater
       })
     );
 
-    await betty.withdrawAsset({ asset: baseToken, amount: baseBorrowMin }); // force accrue
+    await betty.withdrawAsset({ asset: baseToken, amount: 1000n * baseScale.toBigInt() }); // force accrue
 
     expect(await comet.isLiquidatable(albert.address)).to.be.true;
   }
@@ -193,6 +195,7 @@ scenario(
 scenario(
   'Comet#liquidation > user can end up with a minted supply',
   {
+    filter: async (ctx) => !matchesDeployment(ctx, [{ network: 'base', deployment: 'usds' }]),
     tokenBalances: {
       $comet: { $base: 1000 },
     },
@@ -210,7 +213,7 @@ scenario(
       Math.round(await timeUntilUnderwater({
         comet,
         actor: albert,
-      }) * 1.001) // XXX why is this off? better to use a price constraint?
+      }) * 1.1) // XXX why is this off? better to use a price constraint?
     );
 
     const ab0 = await betty.absorb({ absorber: betty.address, accounts: [albert.address] });

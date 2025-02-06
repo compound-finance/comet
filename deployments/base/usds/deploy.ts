@@ -6,6 +6,9 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   return deployed;
 }
 
+const SUSDS_TO_USDS_PRICE_FEED = '0x026a5B6114431d8F3eF2fA0E1B2EDdDccA9c540E';
+const USDS_TO_USD_PRICE_FEED = '0x2330aaE3bca5F05169d5f4597964D44522F62930';
+
 async function deployContracts(
   deploymentManager: DeploymentManager,
   deploySpec: DeploySpec
@@ -22,6 +25,20 @@ async function deployContracts(
     'base'
   );
 
+  deploySpec.cometMain = true;
+  // deploySpec.cometExt = true;
+
+  const _sUSDSPriceFeed = await deploymentManager.deploy(
+    'sUSDS:priceFeed',
+    'pricefeeds/MultiplicativePriceFeed.sol',    
+    [
+      SUSDS_TO_USDS_PRICE_FEED, // wstETH / stETH price feed
+      USDS_TO_USD_PRICE_FEED,   // stETH / ETH price feed
+      8,                        // decimals
+      'sUSDS / USD price feed'  // description
+    ]
+  );
+
   const COMP = await deploymentManager.existing(
     'COMP',
     '0x9e1028F5F1D5eDE59748FFceE5532509976840E0',
@@ -36,10 +53,8 @@ async function deployContracts(
 
   // Import shared contracts from cUSDbCv3
   const _cometAdmin = await deploymentManager.fromDep('cometAdmin', 'base', 'usdbc');
-  const _cometFactory = await deploymentManager.fromDep('cometFactory', 'base', 'usdbc');
-  const _$configuratorImpl = await deploymentManager.fromDep('configurator:implementation', 'base', 'usdbc');
   const _configurator = await deploymentManager.fromDep('configurator', 'base', 'usdbc');
-  const _1rewards = await deploymentManager.fromDep('rewards', 'base', 'usdbc');
+  const _rewards = await deploymentManager.fromDep('rewards', 'base', 'usdbc');
   const bulker = await deploymentManager.fromDep('bulker', 'base', 'usdbc');
   const l2CrossDomainMessenger = await deploymentManager.fromDep('l2CrossDomainMessenger', 'base', 'usdbc');
   const l2StandardBridge = await deploymentManager.fromDep('l2StandardBridge', 'base', 'usdbc');
@@ -48,7 +63,7 @@ async function deployContracts(
 
   // Deploy Comet
   const deployed = await deployComet(deploymentManager, deploySpec, {}, true);
-
+  console.log('deploySpec \n\n\n\n', deploySpec);
   // XXX We will need to deploy a new bulker only if need to support wstETH
 
   return {
