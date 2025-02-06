@@ -2,7 +2,6 @@ import { scenario } from './context/CometContext';
 import { event, expect } from '../test/helpers';
 import { expectRevertCustom, timeUntilUnderwater } from './utils';
 import { matchesDeployment } from './utils';
-import { getConfigForScenario } from './utils/scenarioHelper';
 
 scenario(
   'Comet#liquidation > isLiquidatable=true for underwater position',
@@ -18,7 +17,6 @@ scenario(
   async ({ comet, actors }, context, world) => {
     const { albert, betty } = actors;
     const baseToken = await comet.baseToken();
-    const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
     const baseScale = await comet.baseScale();
 
     await world.increaseTime(
