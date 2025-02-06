@@ -1,5 +1,5 @@
 import { AssetConfigStruct } from '../../build/types/Comet';
-import { BigNumberish, Contract, PopulatedTransaction } from 'ethers';
+import { BigNumberish, Contract, PopulatedTransaction, utils } from 'ethers';
 
 export { cloneGov, deployNetworkComet as deployComet, sameAddress } from './Network';
 export { getConfiguration, getConfigurationStruct } from './NetworkConfiguration';
@@ -60,7 +60,6 @@ export type ProposalAction = ContractAction | TargetAction;
 export type Proposal = [
   string[], // targets
   BigNumberish[], // values
-  string[], // signatures
   string[], // calldatas
   string // description
 ];
@@ -158,22 +157,19 @@ export async function calldata(req: Promise<PopulatedTransaction>): Promise<stri
 export async function proposal(actions: ProposalAction[], description: string): Promise<Proposal> {
   const targets = [],
     values = [],
-    signatures = [],
     calldatas = [];
   for (const action of actions) {
     if (action['contract']) {
       const { contract, value, signature, args } = action as ContractAction;
       targets.push(contract.address);
       values.push(value ?? 0);
-      signatures.push(signature);
-      calldatas.push(await calldata(contract.populateTransaction[signature](...args)));
+      calldatas.push(utils.id(signature).slice(0, 10) + (await calldata(contract.populateTransaction[signature](...args))).slice(2));
     } else {
       const { target, value, signature, calldata } = action as TargetAction;
       targets.push(target);
       values.push(value ?? 0);
-      signatures.push(signature);
-      calldatas.push(calldata);
+      calldatas.push(utils.id(signature).slice(0, 10) + calldata.slice(2));
     }
   }
-  return [targets, values, signatures, calldatas, description];
+  return [targets, values, calldatas, description];
 }
