@@ -680,9 +680,8 @@ export async function fastGovernanceExecute(
   ).wait();
   const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
   const [id, , , , , , startBlock, endBlock] = proposeEvent.args;
-  console.log("Proposed with id", proposer.address);
+
   await voteForOpenProposal(dm, { id, proposer: proposer.address, targets, values, signatures, calldatas, startBlock, endBlock });
-  console.log("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEe")
   await executeOpenProposal(dm, { id, proposer: proposer.address, targets, values, signatures, calldatas, startBlock, endBlock });
 }
 

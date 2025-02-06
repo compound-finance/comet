@@ -1,8 +1,6 @@
 import { AssetConfigStruct } from '../../build/types/Comet';
 import { BigNumberish, Contract, PopulatedTransaction, utils } from 'ethers';
 
-
-
 export { cloneGov, deployNetworkComet as deployComet, sameAddress } from './Network';
 export { getConfiguration, getConfigurationStruct } from './NetworkConfiguration';
 export { exp, getBlock, wait } from '../../test/helpers';

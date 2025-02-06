@@ -35,11 +35,16 @@ export async function isBridgeProposal(
       const baseL1StandardBridge = await governanceDeploymentManager.getContractOrThrow(
         'baseL1StandardBridge'
       );
+<<<<<<< HEAD
       const baseL1USDSBridge = await governanceDeploymentManager.getContractOrThrow(
         'baseL1USDSBridge'
       );
       const targets = openProposal.targets;
       const bridgeContracts = [baseL1CrossDomainMessenger.address, baseL1StandardBridge.address, baseL1USDSBridge.address];
+=======
+      const bridgeContracts = [baseL1CrossDomainMessenger.address, baseL1StandardBridge.address];
+      const targets = openProposal.targets;
+>>>>>>> 6cd21918c4b89fd3435d90952527f81584bab0a6
       return targets.some(t => bridgeContracts.includes(t));
     }
     // case 'linea': {

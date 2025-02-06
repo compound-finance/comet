@@ -71,6 +71,9 @@ function getBlockRollback(base: ForkSpec) {
   }else if (base.network === 'sepolia') {
     return undefined;
   }
+  else if(base.network === 'base'){
+    return 200;
+  }
   else
     return 280;
 }
@@ -91,7 +94,8 @@ export async function forkedHreForBase(base: ForkSpec): Promise<HardhatRuntimeEn
 
   // noNetwork otherwise
   if(!base.blockNumber && baseNetwork.url && getBlockRollback(base) !== undefined)
-    base.blockNumber = await provider.getBlockNumber() - getBlockRollback(base); // arbitrary number of blocks to go back, about 1 hour
+    base.blockNumber = await provider.getBlockNumber() - getBlockRollback(base); // arbitrary number of blocks to go back
+
   if (!baseNetwork) {
     throw new Error(`cannot find network config for network: ${base.network}`);
   }

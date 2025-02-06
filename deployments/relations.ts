@@ -101,8 +101,8 @@ const relationConfigMap: RelationConfigMap = {
     artifact: 'contracts/IProxy.sol:IProxy',
     delegates: {
       field: {
-        slot: '0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103',
-      },
+        slot: '0x10d6a54a4754c8869d6886b5f5d7fbfa5b4522237ea5c60d11bc4e7a1ff9390b',
+      }
     },
     relations: {
       COMP: {
