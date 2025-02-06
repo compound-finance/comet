@@ -13,7 +13,7 @@ async function deployContracts(
   deploymentManager: DeploymentManager,
   deploySpec: DeploySpec
 ): Promise<Deployed> {
-  // Deploy constant price feed for WETH
+
   const _USDS = await deploymentManager.existing(
     'USDS',
     '0x820C137fa70C8691f0e44Dc420a5e53c168921Dc',
@@ -25,15 +25,15 @@ async function deployContracts(
     'base'
   );
 
+  // Make to deploy 24 collaterals Comet version, as this proposal is pushed before 24 collaterals updated on Base
   deploySpec.cometMain = true;
-  // deploySpec.cometExt = true;
 
   const _sUSDSPriceFeed = await deploymentManager.deploy(
     'sUSDS:priceFeed',
-    'pricefeeds/MultiplicativePriceFeed.sol',    
+    'pricefeeds/MultiplicativePriceFeed.sol',
     [
-      SUSDS_TO_USDS_PRICE_FEED, // wstETH / stETH price feed
-      USDS_TO_USD_PRICE_FEED,   // stETH / ETH price feed
+      SUSDS_TO_USDS_PRICE_FEED, // sUSDS / USDS price feed
+      USDS_TO_USD_PRICE_FEED,   // USDS / USD price feed
       8,                        // decimals
       'sUSDS / USD price feed'  // description
     ]
@@ -52,6 +52,7 @@ async function deployContracts(
   );
 
   // Import shared contracts from cUSDbCv3
+  // We do not import cometFactory, because we will deploy the new one with 24 collaterals
   const _cometAdmin = await deploymentManager.fromDep('cometAdmin', 'base', 'usdbc');
   const _configurator = await deploymentManager.fromDep('configurator', 'base', 'usdbc');
   const _rewards = await deploymentManager.fromDep('rewards', 'base', 'usdbc');
@@ -63,7 +64,7 @@ async function deployContracts(
 
   // Deploy Comet
   const deployed = await deployComet(deploymentManager, deploySpec, {}, true);
-  console.log('deploySpec \n\n\n\n', deploySpec);
+
   // XXX We will need to deploy a new bulker only if need to support wstETH
 
   return {
