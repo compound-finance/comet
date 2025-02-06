@@ -39,6 +39,7 @@ contract CometTest is Test {
                           0,
                           0,
                           assets);
+        vm.expectRevert();
         comet = new Comet(config);
     }
 }
