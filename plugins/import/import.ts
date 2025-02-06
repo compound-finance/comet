@@ -25,7 +25,7 @@ export async function loadContract(source: string, network: string, address: str
   switch (source) {
     case 'etherscan':
       return await loadEtherscanContract(network, address);
-    case 'ronin-saigon':
+    case 'ronin':
       return await loadRoninContract(network, address);
     default:
       throw new Error(`Unknown source \`${source}\`, expected one of [etherscan]`);
@@ -65,6 +65,7 @@ async function getRoninApiData(network: string, address: string) {
   let compiler = metadata.compiler.version;
   let optimized = metadata.settings.optimizer.enabled;
   let optimizationRuns = metadata.settings.optimizer.runs;
+
   return {
     source: src,
     abi: abi,
@@ -115,7 +116,7 @@ async function scrapeContractCreationCodeFromEtherscanApi(network: string, addre
     apikey: getEtherscanApiKey(network)
   };
   const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
-  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({ ...params, ...{ apikey: '[API_KEY]'}})}`;
+  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({ ...params, ...{ apikey: '[API_KEY]' } })}`;
 
   debug(`Attempting to pull Contract Creation code from API at ${debugUrl}`);
   const result = await get(url, {});
@@ -149,7 +150,7 @@ async function scrapeContractCreationCodeFromEtherscan(network: string, address:
 }
 
 function paramString(params: { [k: string]: string | number }) {
-  return Object.entries(params).map(([k,v]) => `${k}=${v}`).join('&');
+  return Object.entries(params).map(([k, v]) => `${k}=${v}`).join('&');
 }
 
 async function pullFirstTransactionForContract(network: string, address: string) {
@@ -165,7 +166,7 @@ async function pullFirstTransactionForContract(network: string, address: string)
     apikey: getEtherscanApiKey(network)
   };
   const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
-  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({ ...params, ...{ apikey: '[API_KEY]'}})}`;
+  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({ ...params, ...{ apikey: '[API_KEY]' } })}`;
 
   debug(`Attempting to pull Contract Creation code from first tx at ${debugUrl}`);
   const result = await get(url, {});
@@ -178,7 +179,7 @@ async function pullFirstTransactionForContract(network: string, address: string)
 }
 
 async function getRoninContractDeploymentData(tx: string) {
-  const res = await post(`https://saigon-testnet.roninchain.com/rpc`, {
+  const res = await post(`https://api.roninchain.com/rpc`, {
     jsonrpc: '2.0',
     method: 'eth_getTransactionByHash',
     params: [tx],
@@ -189,21 +190,25 @@ async function getRoninContractDeploymentData(tx: string) {
 }
 
 async function getContractCreationCode(network: string, address: string) {
-  if (network === 'ronin-saigon') {
-    const res = await post(`https://saigon-testnet.roninchain.com/rpc`, {
-      jsonrpc: '2.0',
-      method: 'eth_getCode',
-      params: [address, 'latest'],
-      id: 1
-    });
-    return res.result;
-  }
   const strategies = [
     scrapeContractCreationCodeFromEtherscan,
     scrapeContractCreationCodeFromEtherscanApi,
     pullFirstTransactionForContract,
   ];
   let errors = [];
+  if (network === 'ronin') {
+    try {
+      const res = await post(`https://api.roninchain.com/rpc`, {
+        jsonrpc: '2.0',
+        method: 'eth_getCode',
+        params: [address, 'latest'],
+        id: 1
+      });
+      return res.result;
+    } catch (error) {
+      errors.push(error);
+    }
+  }
   for (const strategy of strategies) {
     try {
       return await strategy(network, address);
@@ -256,7 +261,6 @@ export async function loadRoninContract(network: string, address: string) {
   const roninData = await getRoninApiData(networkName, address);
   const { language, settings, sources } = parseSources(roninData);
   let contractCreationCode = await getContractCreationCode(networkName, address);
-  
   let {
     abi,
     contract,
@@ -264,6 +268,7 @@ export async function loadRoninContract(network: string, address: string) {
     constructorArgs
   } = roninData;
   let bytecodeWithTxArgs = await getRoninContractDeploymentData(constructorArgs);
+
   constructorArgs = bytecodeWithTxArgs.slice(contractCreationCode.length);
   const encodedABI = JSON.stringify(abi);
   const contractPath = Object.keys(sources)[0];

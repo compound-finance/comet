@@ -211,7 +211,7 @@ scenario(
   {
     filter: async (ctx) => await isBulkerSupported(ctx) &&
     matchesDeployment(ctx, [{ deployment: 'weth' }]) &&
-    !matchesDeployment(ctx, [{ network: 'ronin-saigon', deployment: 'weth'}]),
+    !matchesDeployment(ctx, [{ network: 'ronin', deployment: 'weth'}]),
     supplyCaps: async (ctx) =>  (
       {
         $asset0: getConfigForScenario(ctx).bulkerAsset,
@@ -520,7 +520,7 @@ scenario(
     filter: async (ctx) => await isBulkerSupported(ctx) &&
     await isRewardSupported(ctx) &&
     matchesDeployment(ctx, [{ deployment: 'weth' }]) &&
-    !matchesDeployment(ctx, [{ network: 'ronin-saigon', deployment: 'weth'}]),
+    !matchesDeployment(ctx, [{ network: 'ronin', deployment: 'weth'}]),
     supplyCaps: {
       $asset0: 10,
     },

@@ -11,6 +11,7 @@ async function getMigrations<T>(world: World): Promise<Migration<T>[]> {
   const network = world.deploymentManager.network;
   const deployment = world.deploymentManager.deployment;
   const pattern = new RegExp(`deployments/${network}/${deployment}/migrations/.*.ts`);
+  console.log(`pattern: ${pattern}`);
   return await loadMigrations((await modifiedPaths(pattern)).map(p => '../../' + p));
 }
 

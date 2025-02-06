@@ -5,29 +5,29 @@ import { BigNumber, ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { OpenBridgedProposal } from '../context/Gov';
 
-export default async function relayRoninSaigonMessage(
+export default async function relayRoninMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
   startingBlockNumber: number
 ) {
-  const roninSaigonl1CCIPOnRamp = await governanceDeploymentManager.getContractOrThrow('roninSaigonl1CCIPOnRamp');
+  const roninl1CCIPOnRamp = await governanceDeploymentManager.getContractOrThrow('roninl1CCIPOnRamp');
   const l2Router = (await bridgeDeploymentManager.getContractOrThrow('l2CCIPRouter'))
   const l2CCIPOffRamp = (await bridgeDeploymentManager.getContractOrThrow('l2CCIPOffRamp'))
   const bridgeReceiver = (await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver'))
 
   const openBridgedProposals: OpenBridgedProposal[] = [];
 
-  const filter = roninSaigonl1CCIPOnRamp.filters.CCIPSendRequested();
+  const filter = roninl1CCIPOnRamp.filters.CCIPSendRequested();
   const latestBlock = (await governanceDeploymentManager.hre.ethers.provider.getBlock('latest')).number;
   const logs: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: latestBlock - 500,
     toBlock: 'latest',
-    address: roninSaigonl1CCIPOnRamp.address,
+    address: roninl1CCIPOnRamp.address,
     topics: filter.topics || []
   });
 
   for (const log of logs) {
-    const parsedLog = roninSaigonl1CCIPOnRamp.interface.parseLog(log);
+    const parsedLog = roninl1CCIPOnRamp.interface.parseLog(log);
     const internalMsg = parsedLog.args.message;
 
     console.log(`[CCIP L1->L2] Found CCIPSendRequested with messageId=${internalMsg.messageId}`);

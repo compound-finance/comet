@@ -23,43 +23,37 @@ async function deployContracts(
 ): Promise<Deployed | void> {
   const trace = deploymentManager.tracer();
 
-  // Pull in existing assets
-  const WRON = await deploymentManager.existing(
-    'WRON',
-    '0xA959726154953bAe111746E265E6d754F48570E6',
-    'ronin-saigon'
+  const l2CCIPRouter = await deploymentManager.existing(
+    'l2CCIPRouter',
+    '0x46527571D5D1B68eE7Eb60B18A32e6C60DcEAf99',
+    'ronin'
   );
-  
+
+  const bridgeReceiver = await deploymentManager.deploy(
+    'bridgeReceiver',
+    'bridges/ronin/RoninBridgeReceiver.sol',
+    [l2CCIPRouter.address], 
+    true
+  );
+
   const WETH = await deploymentManager.existing(
     'WETH',
-    '0x3eb007a52b5Ba013e65B787c04bF775b946115B1',
-    'ronin-saigon'
+    '0xc99a6a985ed2cac1ef41640596c5a5f9f4e19ef5',
+    'ronin'
   );
   // pre-deployed OptimismMintableERC20
   const COMP = await deploymentManager.existing(
     'COMP',
-    '0xfF5C5b4e3Cbc5513b3Ef462f00E4477Ee16a8C56',
-    'ronin-saigon'
-  );
-
-  const l2CCIPRouter = await deploymentManager.existing(
-    'l2CCIPRouter',
-    '0x0aCAe4e51D3DA12Dd3F45A66e8b660f740e6b820',
-    'ronin-saigon'
+    '0x3902228d6a3d2dc44731fd9d45fee6a61c722d0b',
+    'ronin'
   );
 
   const l2CCIPOffRamp = await deploymentManager.existing(
     'l2CCIPOffRamp',
-    '0x77008Fbd8Ae8f395beF9c6a55905896f3Ead75e9',
-    'ronin-saigon'
+    '0x320A10449556388503Fd71D74A16AB52e0BD1dEb',
+    'ronin'
   );
-
-  // Deploy OptimismBridgeReceiver
-  const bridgeReceiver = await deploymentManager.deploy(
-    'bridgeReceiver',
-    'bridges/ronin/RoninBridgeReceiver.sol',
-    [l2CCIPRouter.address]
-  );
+  
 
   // Deploy Local Timelock
   const localTimelock = await deploymentManager.deploy(
@@ -96,14 +90,14 @@ async function deployContracts(
     ]
   );
 
-  const WRONPriceFeed = await deploymentManager.deploy(
-    'WRON:simplePriceFeed',
-    'test/SimplePriceFeed.sol',
-    [
-      exp(0.047, 18),
-      8
-    ]
-  );
+  // const WRONPriceFeed = await deploymentManager.deploy(
+  //   'WRON:simplePriceFeed',
+  //   'test/SimplePriceFeed.sol',
+  //   [
+  //     exp(0.047, 18),
+  //     8
+  //   ]
+  // );
 
   const COMPPriceFeed = await deploymentManager.deploy(
     'COMP:simplePriceFeed',
@@ -115,15 +109,15 @@ async function deployContracts(
   );
 
 
-  const assetConfig0 = {
-    asset: WRON.address,
-    priceFeed: WRONPriceFeed.address,
-    decimals: (18).toString(),
-    borrowCollateralFactor: (0.9e18).toString(),
-    liquidateCollateralFactor: (0.91e18).toString(),
-    liquidationFactor: (0.95e18).toString(),
-    supplyCap: (1000000e8).toString(),
-  };
+  // const assetConfig0 = {
+  //   asset: WETH.address,
+  //   priceFeed: WRONPriceFeed.address,
+  //   decimals: (18).toString(),
+  //   borrowCollateralFactor: (0.9e18).toString(),
+  //   liquidateCollateralFactor: (0.91e18).toString(),
+  //   liquidationFactor: (0.95e18).toString(),
+  //   supplyCap: (1000000e8).toString(),
+  // };
 
   const assetConfig1 = {
     asset: COMP.address,
@@ -140,7 +134,8 @@ async function deployContracts(
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec, {
     baseTokenPriceFeed: WETHPriceFeed.address,
-    assetConfigs: [assetConfig0, assetConfig1],
+    //assetConfigs: [assetConfig0, assetConfig1],\
+    assetConfigs: [assetConfig1],
   });
   // Deploy Comet
   const { comet } = deployed;
@@ -152,7 +147,7 @@ async function deployContracts(
     'bulkers/BaseBulker.sol',
     [
       await comet.governor(), // admin
-      WRON.address,        // wrapped native token
+      WETH.address,        // wrapped native token
     ]
   );
   // Deploy stETH / ETH SimplePriceFeed
@@ -163,7 +158,8 @@ async function deployContracts(
     bridgeReceiver,
     l2CCIPRouter,
     l2CCIPOffRamp,
-    bulker
-    // COMP,
+    bulker,
+    COMP,
+    // WETH
   };
 }

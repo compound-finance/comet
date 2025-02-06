@@ -6,7 +6,7 @@ import relayLineaMessage from './relayLineaMessage';
 import relayOptimismMessage from './relayOptimismMessage';
 import relayMantleMessage from './relayMantleMessage';
 import relayScrollMessage from './relayScrollMessage';
-import relayRoninSaigonMessage from './relayRoninSaigonMessage';
+import relayRoninMessage from './relayRoninMessage';
 
 export default async function relayMessage(
   governanceDeploymentManager: DeploymentManager,
@@ -69,8 +69,8 @@ export default async function relayMessage(
         startingBlockNumber
       );
       break;
-    case 'ronin-saigon':
-      await relayRoninSaigonMessage(
+    case 'ronin':
+      await relayRoninMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber

@@ -332,8 +332,8 @@ export async function fetchLogs(
   }
 }
 
-async function redeployRenzoOracle(dm: DeploymentManager){
-  if(dm.network === 'mainnet') {
+async function redeployRenzoOracle(dm: DeploymentManager) {
+  if (dm.network === 'mainnet') {
     // renzo admin 	0xD1e6626310fD54Eceb5b9a51dA2eC329D6D4B68A
     const renzoOracle = new Contract(
       '0x5a12796f7e7EBbbc8a402667d266d2e65A814042',
@@ -362,6 +362,162 @@ async function redeployRenzoOracle(dm: DeploymentManager){
   }
 }
 
+const tokens = new Map<string, string>([
+  ['WETH', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'],
+  ['LINK', '0x514910771AF9Ca656af840dff83E8264EcF986CA'],
+]);
+
+const dest = new Map<string, string>([
+  ['ronin', '6916147374840168594'],
+]);
+
+const commitStore = "0x2aa101BF99CaeF7fc1355D4c493a1fe187A007cE";
+
+async function updateCCIPStats(dm: DeploymentManager) {
+  if (dm.network === 'mainnet') {
+    const commitStore = await dm.getSigner("0x2aa101bf99caef7fc1355d4c493a1fe187a007ce");
+    const priceRegistry = "0x8c9b2Efb7c64C394119270bfecE7f54763b958Ad";
+    const abi = [
+      {
+        "inputs": [
+          {
+            "components": [
+              {
+                "components": [
+                  {
+                    "internalType": "address",
+                    "name": "sourceToken",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "uint224",
+                    "name": "usdPerToken",
+                    "type": "uint224"
+                  }
+                ],
+                "internalType": "struct TokenPriceUpdate[]",
+                "name": "tokenPriceUpdates",
+                "type": "tuple[]"
+              },
+              {
+                "components": [
+                  {
+                    "internalType": "uint64",
+                    "name": "destChainSelector",
+                    "type": "uint64"
+                  },
+                  {
+                    "internalType": "uint224",
+                    "name": "usdPerUnitGas",
+                    "type": "uint224"
+                  }
+                ],
+                "internalType": "struct GasPriceUpdate[]",
+                "name": "gasPriceUpdates",
+                "type": "tuple[]"
+              }
+            ],
+            "internalType": "struct PriceUpdates",
+            "name": "priceUpdates",
+            "type": "tuple"
+          }
+        ],
+        "name": "updatePrices",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint64",
+            "name": "destChainSelector",
+            "type": "uint64"
+          }
+        ],
+        "name": "getDestinationChainGasPrice",
+        "outputs": [
+          {
+            "components": [
+              {
+                "internalType": "uint224",
+                "name": "value",
+                "type": "uint224"
+              },
+              {
+                "internalType": "uint32",
+                "name": "timestamp",
+                "type": "uint32"
+              }
+            ],
+            "internalType": "struct TimestampedPackedUint224",
+            "name": "",
+            "type": "tuple"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+          }
+        ],
+        "name": "getTokenPrice",
+        "outputs": [
+          {
+            "components": [
+              {
+                "internalType": "uint224",
+                "name": "value",
+                "type": "uint224"
+              },
+              {
+                "internalType": "uint32",
+                "name": "timestamp",
+                "type": "uint32"
+              }
+            ],
+            "internalType": "struct TimestampedPackedUint224",
+            "name": "",
+            "type": "tuple"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      }
+    ]
+
+
+    const registryContract = new Contract(priceRegistry, abi, dm.hre.ethers.provider);
+
+    const tokenPrices = [];
+    const gasPrices = [];
+    for (const [, address] of tokens) {
+      const price = await registryContract.getTokenPrice(address);
+      tokenPrices.push([address, price.value]);
+    }
+    for (const [, address] of dest) {
+      const price = await registryContract.getDestinationChainGasPrice(address);
+      gasPrices.push([address, price.value]);
+    }
+
+    const tx0 = await commitStore.sendTransaction({
+      to: priceRegistry,
+      data: registryContract.interface.encodeFunctionData('updatePrices', [{
+        tokenPriceUpdates: tokenPrices,
+        gasPriceUpdates: gasPrices
+      }]),
+    });
+
+    await tx0.wait();
+
+  }
+}
+
 const REDSTONE_FEEDS = {
   mantle: [
     '0x3DFA26B9A15D37190bB8e50aE093730DcA88973E', // USDe / USD
@@ -378,14 +534,14 @@ async function getProxyAdmin(dm: DeploymentManager, proxyAddress: string): Promi
   return adminAddress;
 }
 
-async function mockAllRedstoneOracles(dm: DeploymentManager){
+async function mockAllRedstoneOracles(dm: DeploymentManager) {
   const feeds = REDSTONE_FEEDS[dm.network];
   if (!Array.isArray(feeds)) {
     debug(`No redstone feeds found for network: ${dm.network}`);
     return;
   }
   for (const feed of feeds) {
-    try{
+    try {
       await dm.fromDep(`MockRedstoneOracle:${feed}`, dm.network, dm.deployment);
     }
     catch (_) {
@@ -394,7 +550,7 @@ async function mockAllRedstoneOracles(dm: DeploymentManager){
   }
 }
 
-async function mockRedstoneOracle(dm: DeploymentManager, feed: string){
+async function mockRedstoneOracle(dm: DeploymentManager, feed: string) {
   const feedContract = new Contract(
     feed,
     [
@@ -427,11 +583,7 @@ async function mockRedstoneOracle(dm: DeploymentManager, feed: string){
   await proxyAdmin.connect(owner).upgrade(feed, newImplementation.address);
 }
 
-
-export async function executeOpenProposal(
-  dm: DeploymentManager,
-  { id, startBlock, endBlock }: OpenProposal
-) {
+export async function voteForOpenProposal(dm: DeploymentManager, { id, startBlock, endBlock }: OpenProposal) {
   const governor = await dm.getContractOrThrow('governor');
   const blockNow = await dm.hre.ethers.provider.getBlockNumber();
   const blocksUntilStart = startBlock.toNumber() - blockNow;
@@ -454,6 +606,27 @@ export async function executeOpenProposal(
         debug(`Error while voting for ${whale}`, err.message);
       }
     }
+  }
+}
+
+export async function executeOpenProposal(
+  dm: DeploymentManager,
+  { id, startBlock, endBlock }: OpenProposal
+) {
+  const governor = await dm.getContractOrThrow('governor');
+  const blockNow = await dm.hre.ethers.provider.getBlockNumber();
+  const blocksUntilEnd = endBlock.toNumber() - Math.max(startBlock.toNumber(), blockNow) + 1;
+  await dm.hre.network.provider.request({
+    method: 'hardhat_impersonateAccount',
+    params: [commitStore],
+  });
+
+  await dm.hre.network.provider.request({
+    method: 'hardhat_setBalance',
+    params: [commitStore, '0x56bc75e2d63100000'],
+  })
+
+  if (blocksUntilEnd > 0) {
     await mineBlocks(dm, blocksUntilEnd);
   }
 
@@ -466,13 +639,19 @@ export async function executeOpenProposal(
   // Execute proposal (maybe, w/ gas limit so we see if exec reverts, not a gas estimation error)
   if (await governor.state(id) == ProposalState.Queued) {
     const block = await dm.hre.ethers.provider.getBlock('latest');
-    const proposal = await governor.proposals(id);
-    await setNextBlockTimestamp(dm, Math.max(block.timestamp, proposal.eta.toNumber()) + 1);
+    const eta = await governor.proposalEta(id);
+
+    await setNextBlockTimestamp(dm, Math.max(block.timestamp, eta.toNumber()) + 1);
     await setNextBaseFeeToZero(dm);
-    await governor.execute(id, { gasPrice: 0, gasLimit: 24000000 });
+    console.log("Executing proposal", id);
+    await updateCCIPStats(dm);
+    console.log("Updated CCIP stats");
+    await governor.execute(id, { gasPrice: 0, gasLimit: 120000000 });
   }
   await redeployRenzoOracle(dm);
   await mockAllRedstoneOracles(dm);
+  // mine a block
+  await dm.hre.ethers.provider.send('evm_mine', []);
 }
 
 // Instantly executes some actions through the governance proposal process
@@ -492,16 +671,19 @@ export async function fastGovernanceExecute(
     await governor.connect(proposer).propose(
       targets,
       values,
-      signatures,
-      calldatas,
+      calldatas.map((calldata, i) => {
+        return utils.id(signatures[i]).slice(0, 10) + calldata.slice(2);
+      }),
       'FastExecuteProposal',
       { gasPrice: 0 }
     )
   ).wait();
   const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
   const [id, , , , , , startBlock, endBlock] = proposeEvent.args;
-
-  await executeOpenProposal(dm, { id, startBlock, endBlock });
+  console.log("Proposed with id", proposer.address);
+  await voteForOpenProposal(dm, { id, proposer: proposer.address, targets, values, signatures, calldatas, startBlock, endBlock });
+  console.log("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEe")
+  await executeOpenProposal(dm, { id, proposer: proposer.address, targets, values, signatures, calldatas, startBlock, endBlock });
 }
 
 export async function fastL2GovernanceExecute(
@@ -588,52 +770,6 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       values.push(0);
       signatures.push('sendMessageToChild(address,bytes)');
       calldata.push(sendMessageToChildCalldata);
-      break;
-    }
-    case 'ronin-saigon': {
-
-      const { timelock } = await govDeploymentManager.getContracts();
-
-      await govDeploymentManager.hre.network.provider.request({
-        method: 'hardhat_impersonateAccount',
-        params: [timelock.address],
-      });
-
-      await govDeploymentManager.hre.network.provider.request({
-        method: 'hardhat_setBalance',
-        params: [timelock.address, '0x56bc75e2d63100000'],
-      });
-
-      const l1CCIPRouter = await govDeploymentManager.getContractOrThrow(
-        'l1CCIPRouter'
-      );
-
-      const destinationChainSelector = "13116810400804392105";
-
-      const data =
-      {
-        target: l1CCIPRouter.address,
-        signature: "ccipSend(uint64,(bytes,bytes,(address,uint256)[],address,bytes))",
-        calldata: utils.defaultAbiCoder.encode(
-          ["uint64", "tuple(bytes,bytes,tuple(address,uint256)[],address,bytes)"],
-          [
-            destinationChainSelector,
-            [
-              utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
-              l2ProposalData,
-              [],
-              govDeploymentManager.hre.ethers.constants.AddressZero,
-              "0x"
-            ]
-          ]
-        ),
-        value: utils.parseEther("0.1")
-      }
-
-      targets.push(data.target);
-      values.push(data.value);
-      signatures.push(data.signature);
-      calldata.push(data.calldata);
       break;
     }
     // case 'linea-goerli': {

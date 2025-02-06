@@ -19,7 +19,7 @@ export function getEtherscanApiUrl(network: string): string {
     base: 'api.basescan.org',
     optimism: 'api-optimistic.etherscan.io',
     mantle: 'api.mantlescan.xyz',
-    'ronin-saigon': 'explorer-kintsugi.roninchain.com/v2/2021',
+    'ronin': 'explorer-kintsugi.roninchain.com/v2/2020',
     scroll: 'api.scrollscan.com'
   }[network];
 
@@ -43,7 +43,7 @@ export function getEtherscanUrl(network: string): string {
     base: 'basescan.org',
     optimism: 'optimistic.etherscan.io',
     mantle: 'mantlescan.xyz',
-    'ronin-saigon': 'explorer-kintsugi.roninchain.com/v2/2021',
+    'ronin': 'explorer-kintsugi.roninchain.com/v2/2020',
     scroll: 'scrollscan.com'
   }[network];
 

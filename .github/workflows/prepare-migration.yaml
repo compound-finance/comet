@@ -14,7 +14,7 @@ on:
           - base
           - optimism
           - mantle
-          - ronin-saigon
+          - ronin
       deployment:
         description: Deployment Name (e.g. "usdc")
         required: true
@@ -48,7 +48,7 @@ jobs:
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ inputs.network }}"
-          ethereum_url: "${{ fromJSON('{\"ronin-saigon\":\"https://saigon-testnet.roninchain.com/rpc\",\"mantle\":\"https://mantle-mainnet.infura.io/v3/$INFURA_KEY\",\"optimism\":\"https://rpc.ankr.com/optimism/$ANKR_KEY\",\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"sepolia\":\"https://sepolia.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\",\"base\":\"https://rpc.ankr.com/base/$ANKR_KEY\",\"scroll\":\"https://rpc.scroll.io\"}')[inputs.network] }}"
+          ethereum_url: "${{ fromJSON('{\"ronin\":\"https://api.roninchain.com/rpc\",\"mantle\":\"https://mantle-mainnet.infura.io/v3/$INFURA_KEY\",\"optimism\":\"https://rpc.ankr.com/optimism/$ANKR_KEY\",\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"sepolia\":\"https://sepolia.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\",\"base\":\"https://rpc.ankr.com/base/$ANKR_KEY\",\"scroll\":\"https://rpc.scroll.io\"}')[inputs.network] }}"
           port: 8585
         if: github.event.inputs.eth_pk == ''
 

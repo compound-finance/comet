@@ -100,11 +100,13 @@ const relationConfigMap: RelationConfigMap = {
   governor: {
     artifact: 'contracts/IProxy.sol:IProxy',
     delegates: {
-      field: async (governor) => governor.implementation(),
+      field: {
+        slot: '0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103',
+      },
     },
     relations: {
       COMP: {
-        field: async (governor) => governor.comp(),
+        field: async (governor) => governor.token(),
       }
     }
   },

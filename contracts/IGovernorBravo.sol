@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.15;
+pragma solidity 0.8.26;
 
 /**
  * @dev Interface for interacting with Governor bravo.
@@ -58,17 +58,19 @@ interface IGovernorBravo {
     function propose(
         address[] memory targets,
         uint256[] memory values,
-        string[] memory signatures,
         bytes[] memory calldatas,
         string memory description
     ) external returns (uint256 proposalId);
     function queue(uint256 proposalId) external;
     function execute(uint256 proposalId) external;
     function castVote(uint256 proposalId, uint8 support) external returns (uint256 balance);
-    function getActions(uint proposalId) external view returns (
+    function proposalDetails(uint proposalId) external view returns (
         address[] memory targets,
         uint[] memory values,
-        string[] memory signatures,
-        bytes[] memory calldatas
+        bytes[] memory calldatas,
+        bytes32
     );
+    function proposalEta(uint256 proposalId) external view returns (uint256);
+
+    function token() external view returns (address);
 }

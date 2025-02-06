@@ -40,7 +40,7 @@ import optimismUsdtRelationConfigMap from './deployments/optimism/usdt/relations
 import optimismWethRelationConfigMap from './deployments/optimism/weth/relations';
 import mantleRelationConfigMap from './deployments/mantle/usde/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
-import roninSaigonRelationConfigMap from './deployments/ronin-saigon/weth/relations';
+import roninRelationConfigMap from './deployments/ronin/weth/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -115,9 +115,9 @@ const networkConfigs: NetworkConfig[] = [
     url: `https://rpc.ankr.com/eth_sepolia/${ANKR_KEY}`,
   },
   {
-    network: 'ronin-saigon',
-    chainId: 2021,
-    url: 'https://saigon-testnet.roninchain.com/rpc',
+    network: 'ronin',
+    chainId: 2020,
+    url: 'https://ronin.lgns.net/rpc',
   },
   {
     network: 'polygon',
@@ -184,31 +184,44 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
   }
 }
 
-/**
- * @type import('hardhat/config').HardhatUserConfig
- */
+const optimizerConfig = process.env['OPTIMIZER_DISABLED']
+  ? { enabled: false }
+  : {
+    enabled: true,
+    runs: 1,
+    details: {
+      yulDetails: {
+        optimizerSteps:
+          'dhfoDgvulfnTUtnIf [xa[r]scLM cCTUtTOntnfDIul Lcul Vcul [j] Tpeul xa[rul] xa[r]cL gvif CTUca[r]LsTOtfDnca[r]Iulc] jmul[jul] VcTOcul jmul',
+      },
+    },
+  };
+const commonSettings = {
+  optimizer: optimizerConfig,
+  outputSelection: {
+    '*': {
+      '*': ['evm.deployedBytecode.sourceMap'],
+    },
+  },
+  viaIR: process.env['OPTIMIZER_DISABLED'] ? false : true,
+};
+
 const config: HardhatUserConfig = {
   solidity: {
-    version: '0.8.15',
-    settings: {
-      optimizer: (
-        process.env['OPTIMIZER_DISABLED'] ? { enabled: false } : {
-          enabled: true,
-          runs: 1,
-          details: {
-            yulDetails: {
-              optimizerSteps: 'dhfoDgvulfnTUtnIf [xa[r]scLM cCTUtTOntnfDIul Lcul Vcul [j] Tpeul xa[rul] xa[r]cL gvif CTUca[r]LsTOtfDnca[r]Iulc] jmul[jul] VcTOcul jmul'
-            },
-          },
-        }
-      ),
-      outputSelection: {
-        '*': {
-          '*': ['evm.deployedBytecode.sourceMap']
+    compilers: [
+      {
+        version: '0.8.15',
+        settings: {
+          ...commonSettings,
         },
       },
-      viaIR: process.env['OPTIMIZER_DISABLED'] ? false : true,
-    },
+      {
+        version: '0.8.26',
+        settings: {
+          ...commonSettings,
+        },
+      },
+    ],
   },
 
   networks: {
@@ -223,7 +236,7 @@ const config: HardhatUserConfig = {
         : { mnemonic: MNEMONIC, accountsBalance: (10n ** 36n).toString() },
       // this should only be relied upon for test harnesses and coverage (which does not use viaIR flag)
       allowUnlimitedContractSize: true,
-      hardfork: 'shanghai'
+      hardfork: 'cancun'
     },
   },
 
@@ -292,11 +305,11 @@ const config: HardhatUserConfig = {
         }
       },
       {
-        network: 'ronin-saigon',
-        chainId: 2021,
+        network: 'ronin',
+        chainId: 2020,
         urls: {
-          apiURL: 'https://explorer-kintsugi.roninchain.com/v2/2021',
-          browserURL: 'https://explorer-kintsugi.roninchain.com/v2/2021'
+          apiURL: 'https://explorer-kintsugi.roninchain.com/v2/2020',
+          browserURL: 'https://app.roninchain.com'
         }
       }
     ]
@@ -348,8 +361,8 @@ const config: HardhatUserConfig = {
       'scroll': {
         usdc: scrollRelationConfigMap
       },
-      'ronin-saigon': {
-        weth: roninSaigonRelationConfigMap
+      'ronin': {
+        weth: roninRelationConfigMap
       }
     },
   },
@@ -493,10 +506,10 @@ const config: HardhatUserConfig = {
         auxiliaryBase: 'mainnet'
       },
       {
-        name: 'ronin-saigon',
-        network: 'ronin-saigon',
+        name: 'ronin',
+        network: 'ronin',
         deployment: 'weth',
-        auxiliaryBase: 'sepolia-usdc'
+        auxiliaryBase: 'mainnet'
       }
     ],
   },

@@ -86,13 +86,16 @@ export async function deploy<C extends Contract>(
   hre: HardhatRuntimeEnvironment,
   deployOpts: DeployOpts
 ): Promise<C> {
+  console.log(`Deploying ${contractFile}`);
   const contractFileName = contractFile.split('/').reverse()[0];
   const contractName = contractFileName.replace('.sol', '');
+  console.log(`Factorying ${contractName}`);
   let factory = (await hre.ethers.getContractFactory(contractName));
   if (deployOpts.connect) {
     factory = factory.connect(deployOpts.connect);
   }
 
+  console.log(`Deploying ${contractName} with args ${stringifyJson(deployArgs)}`);
   const contract = await doDeploy(contractName, factory, deployArgs, deployOpts, 'artifact');
   const buildFile = await getBuildFileFromArtifacts(contractFile, contractFileName);
   if (!buildFile.contract) {

@@ -101,7 +101,7 @@ async function addTokens(
   BLOCK_SPAN = 2048
 ) {
 
-  if(dm.network === 'ronin-saigon') {
+  if(dm.network === 'ronin') {
     MAX_SEARCH_BLOCKS = 500;
   }
   // XXX we should really take min of current balance and amount and transfer that much

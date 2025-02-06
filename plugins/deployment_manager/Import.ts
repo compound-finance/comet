@@ -32,8 +32,8 @@ export async function importContract(
   retryDelay: number = DEFAULT_RETRY_DELAY
 ): Promise<BuildFile> {
   try {
-    if(network === 'ronin-saigon') {
-      return (await loadContract('ronin-saigon', network, address)) as BuildFile;
+    if(network === 'ronin') {
+      return (await loadContract('ronin', network, address)) as BuildFile;
     }
     return (await loadContract('etherscan', network, address)) as BuildFile;
   } catch (e) {

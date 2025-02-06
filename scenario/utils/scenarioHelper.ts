@@ -69,7 +69,7 @@ export function getConfigForScenario(ctx: CometContext) {
     config.liquidationAsset = 10000;
   }
 
-  if (ctx.world.base.network === 'ronin-saigon' && ctx.world.base.deployment === 'weth') {
+  if (ctx.world.base.network === 'ronin' && ctx.world.base.deployment === 'weth') {
     config.bulkerBase = 50;
     config.bulkerAsset = 100000;
     config.bulkerAsset1 = 50000;
