@@ -15,16 +15,14 @@ contract CometTest is Test {
         // XXX
     }
 
-    function testFailXXX() public {
-        AssetListFactory factory = new AssetListFactory();
-        CometExtAssetList assetList = new CometExtAssetList(CometConfiguration.ExtConfiguration("name", "symbol"), address(factory));
+    function test_RevertIf_Condition_XXX() public {
         CometConfiguration.AssetConfig[] memory assets = new CometConfiguration.AssetConfig[](0);
         CometConfiguration.Configuration memory config =
             CometConfiguration.Configuration(address(0),
                           address(0),
                           address(0),
                           address(0),
-                          address(assetList),
+                          address(0),
                           0,
                           0,
                           0,
