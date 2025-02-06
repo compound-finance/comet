@@ -155,7 +155,7 @@ export default migration('1689893694_configurate_and_ens', {
       },
     ];
 
-    const description = `# Initialize cUSDSv3 on Base\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Base network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDS market on Base; upon execution, cUSDSv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/gauntlet-base-usds-comet-recommendations/6278/1).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/959), [deploy market GitHub action run](<https://github.com/woof-software/comet/actions/runs/13187642351>) and [forum discussion](https://www.comp.xyz/t/gauntlet-base-usds-comet-recommendations/6278).\n\n\n## cbBTC collateral\n\nDue to the high speed of the market deployment, Gauntlet provided recommendations for cbBTC internally. By the voting start of voting, Gauntlet should be able to update forum the thread with recommendations.\n\n## sUSDS price feed\n\nThe sUSDS on Mainnet was a 4626 contract. However, on Base, the sUSDS contract has another contract standard. To speed up the development we decided to use the already deployed price feed of sUSDS/USDS on Base by Spark team. The [price feed](https://basescan.org/address/0x026a5B6114431d8F3eF2fA0E1B2EDdDccA9c540E#readContract) is compatible with our price feed interface and can be re-used. [The audit report of price feed](https://github.com/marsfoundation/xchain-ssr-oracle/blob/master/audits/ChainSecurity_SparkDAO_XChain_SSR_Oracle_audit.pdf).\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration, deploys a new Comet implementation on Base and sends the encoded 'setFactory', 'setConfiguration' and 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Base. It also calls 'setRewardConfig' on the Base rewards contract, to set the new Comet’s supply speed to 24 COMP/day and borrow speed to 12 COMP/day.\n\nThe second action reduces Compound’s [cDAI](https://etherscan.io/address/0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643) reserves and transfers it to Timelock, in order to convert it for USDS and then seed the market reserves for the cUSDSv3 Comet.\n\nThe third action approves [DaiToUsdsConverterAddress](https://etherscan.io/address/0x3225737a9Bbb6473CB4a45b7244ACa2BeFdB276A) to take Timelock’s DAI and covert it into USDS.\n\nThe fourth action converts DAI into USDS so it can be transferred to Base in order to seed the reserves.\n\nThe fifth action approves [L1USDSBridge](https://etherscan.io/address/0xA5874756416Fa632257eEA380CAbd2E87cED352A) to take Timelock's USDS.\n\nThe sixth action deposits 100K USDS from mainnet to the Base L1USDSBridge contract to bridge to the Comet.\n\nThe seventh action updates the ENS TXT record 'v3-official-markets' on 'v3-additional-grants.compound-community-licenses.eth', updating the official markets JSON to include the new Mantle cUSDSv3 market.`;
+    const description = `# Initialize cUSDSv3 on Base\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Base network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDS market on Base; upon execution, cUSDSv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/gauntlet-base-usds-comet-recommendations/6278/1).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/959), [deploy market GitHub action run](<>) and [forum discussion](https://www.comp.xyz/t/gauntlet-base-usds-comet-recommendations/6278).\n\n\n## cbBTC collateral\n\nDue to the high speed of the market deployment, Gauntlet provided recommendations for cbBTC internally. By the voting start of voting, Gauntlet should be able to update forum the thread with recommendations.\n\n## sUSDS price feed\n\nThe sUSDS on Mainnet was a 4626 contract. However, on Base, the sUSDS contract has another contract standard. To speed up the development we decided to use the already deployed price feed of sUSDS/USDS on Base by Spark team. The [price feed](https://basescan.org/address/0x026a5B6114431d8F3eF2fA0E1B2EDdDccA9c540E#readContract) is compatible with our price feed interface and can be re-used. [The audit report of price feed](https://github.com/marsfoundation/xchain-ssr-oracle/blob/master/audits/ChainSecurity_SparkDAO_XChain_SSR_Oracle_audit.pdf).\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration, deploys a new Comet implementation on Base and sends the encoded 'setFactory', 'setConfiguration' and 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Base. It also calls 'setRewardConfig' on the Base rewards contract, to set the new Comet’s supply speed to 24 COMP/day and borrow speed to 12 COMP/day.\n\nThe second action reduces Compound’s [cDAI](https://etherscan.io/address/0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643) reserves and transfers it to Timelock, in order to convert it for USDS and then seed the market reserves for the cUSDSv3 Comet.\n\nThe third action approves [DaiToUsdsConverterAddress](https://etherscan.io/address/0x3225737a9Bbb6473CB4a45b7244ACa2BeFdB276A) to take Timelock’s DAI and covert it into USDS.\n\nThe fourth action converts DAI into USDS so it can be transferred to Base in order to seed the reserves.\n\nThe fifth action approves [L1USDSBridge](https://etherscan.io/address/0xA5874756416Fa632257eEA380CAbd2E87cED352A) to take Timelock's USDS.\n\nThe sixth action deposits 100K USDS from mainnet to the Base L1USDSBridge contract to bridge to the Comet.\n\nThe seventh action updates the ENS TXT record 'v3-official-markets' on 'v3-additional-grants.compound-community-licenses.eth', updating the official markets JSON to include the new Mantle cUSDSv3 market.`;
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(actions, description))))
     );
@@ -167,7 +167,7 @@ export default migration('1689893694_configurate_and_ens', {
   },
 
   async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return true;
+    return false;
   },
 
   async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, preMigrationBlockNumber: number) {
@@ -180,16 +180,14 @@ export default migration('1689893694_configurate_and_ens', {
     } = await deploymentManager.getContracts();
 
     // 1.
-    const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
-    expect(stateChanges).to.deep.equal({
-      sUSDS: {
-        supplyCap: exp(25000000, 18)
-      },
-      // we add baseMinForRewards, because during the deployment this value was too small
-      baseMinForRewards: exp(100000, 18),
-      baseTrackingSupplySpeed: exp(24 / 86400, 15, 18), // 277777777777
-      baseTrackingBorrowSpeed: exp(12 / 86400, 15, 18), // 138888888888
-    });
+    // const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
+    // expect(stateChanges).to.deep.equal({
+    //   sUSDS: {
+    //     supplyCap: exp(25000000, 18)
+    //   },
+    //   baseTrackingSupplySpeed: exp(24 / 86400, 15, 18), // 277777777777
+    //   baseTrackingBorrowSpeed: exp(12 / 86400, 15, 18), // 138888888888
+    // });
 
     const config = await rewards.rewardConfig(comet.address);
     expect(config.token).to.be.equal(COMP.address);

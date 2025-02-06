@@ -20,8 +20,8 @@
   },
   "tracking": {
     "indexScale": "1e15",
-    "baseSupplySpeed": "277777777777e0",
-    "baseBorrowSpeed": "138888888888e0",
+    "baseSupplySpeed": "0e0",
+    "baseBorrowSpeed": "0e0",
     "baseMinForRewards": "100000e18"
   },
   "assets": {
@@ -31,7 +31,7 @@
       "borrowCF": 0.93,
       "liquidateCF": 0.95,
       "liquidationFactor": 0.96,
-      "supplyCap": "25000000e18"
+      "supplyCap": "0e18"
     },
     "cbBTC": {
       "address": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
@@ -40,7 +40,7 @@
       "borrowCF": 0.8,
       "liquidateCF": 0.85,
       "liquidationFactor": 0.95,
-      "supplyCap": "0.1e8"
+      "supplyCap": "0e8"
     }
   }
 }
