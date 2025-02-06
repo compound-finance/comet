@@ -185,6 +185,8 @@ export default migration('1689893694_configurate_and_ens', {
       sUSDS: {
         supplyCap: exp(25000000, 18)
       },
+      // we add baseMinForRewards, because during the deployment this value was too small
+      baseMinForRewards: exp(100000, 18),
       baseTrackingSupplySpeed: exp(24 / 86400, 15, 18), // 277777777777
       baseTrackingBorrowSpeed: exp(12 / 86400, 15, 18), // 138888888888
     });
