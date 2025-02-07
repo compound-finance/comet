@@ -1,4 +1,4 @@
-import { ethers, utils } from 'ethers';
+import { ethers, utils, Contract } from 'ethers';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { exp, getConfigurationStruct, proposal } from '../../../../src/deploy';
@@ -122,7 +122,9 @@ export default migration('1737396251_configurate_and_ens', {
       timelock,
       COMP,
       pumpBTC,
-      LBTC
+      LBTC,
+      cometFactory,
+      assetListFactory
     } = await deploymentManager.getContracts();
 
     // 1. & 2. & 3.
@@ -135,7 +137,18 @@ export default migration('1737396251_configurate_and_ens', {
     // expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(1 / 86400, 15, 18)); // 11574074074
     expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(0));
 
+    const cometNew = new Contract(
+      comet.address,
+      [
+        'function assetList() external view returns (address)',
+      ],
+      await deploymentManager.getSigner()
+    );
 
+    const assetListAddress = await cometNew.assetList();
+
+    expect(assetListAddress).to.not.be.equal(ethers.constants.AddressZero);
+    expect(await comet.getReserves()).to.be.equal(WBTCAmount);
     // 4
     const config = await rewards.rewardConfig(comet.address);
     expect(config.token).to.be.equal(COMP.address);

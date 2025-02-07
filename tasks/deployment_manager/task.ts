@@ -74,7 +74,7 @@ task('deploy', 'Deploys market')
       maybeForkEnv,
       {
         writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
-        verificationStrategy: 'lazy',
+        verificationStrategy: simulate? 'lazy' : 'eager',
       }
     );
 
@@ -261,7 +261,7 @@ task('deploy_and_migrate', 'Runs deploy and migration')
         maybeForkEnv,
         {
           writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
-          verificationStrategy: 'lazy',
+          verificationStrategy: simulate? 'lazy' : 'eager',
         }
       );
 

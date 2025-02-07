@@ -40,6 +40,7 @@ const addresses = {
     CB_ETH: '0xBe9895146f7AF43049ca1c1AE358B0541Ea49704',
     WST_ETH: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0',
     SOLVBTC_BBN: '0xd9D920AA40f578ab794426F5C90F6C731D159DEf',
+    LBTC: '0x8236a87084f8B84306f72007F36F2618A5634494',
     RS_ETH: '0xA1290d69c65A6Fe4DF752f95823fae25cB99e5A7',
     USDT: '0xdAC17F958D2ee523a2206206994597C13D831ec7'
   },
@@ -206,6 +207,14 @@ export function getPoolConfig(tokenAddress: string) {
       }
     },
     [addresses.mainnet.SOLVBTC_BBN.toLowerCase()]: {
+      ...defaultPoolConfig,
+      ...{
+        exchange: Exchange.Uniswap,
+        swapViaWeth: false,
+        uniswapPoolFee: 500
+      }
+    },
+    [addresses.mainnet.LBTC.toLowerCase()]: {
       ...defaultPoolConfig,
       ...{
         exchange: Exchange.Uniswap,
