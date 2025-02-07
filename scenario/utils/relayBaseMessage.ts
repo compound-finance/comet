@@ -4,7 +4,6 @@ import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
 import { BigNumber, ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { OpenBridgedProposal } from '../context/Gov';
-
 /*
 The Base relayer applies an offset to the message sender.
 
@@ -27,6 +26,7 @@ export default async function relayBaseMessage(
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
   const l2CrossDomainMessenger = await bridgeDeploymentManager.getContractOrThrow('l2CrossDomainMessenger');
   const l2StandardBridge = await bridgeDeploymentManager.getContractOrThrow('l2StandardBridge');
+  const l2USDSBridge = await bridgeDeploymentManager.contract('l2USDSBridge');
 
   const openBridgedProposals: OpenBridgedProposal[] = [];
 
@@ -63,7 +63,9 @@ export default async function relayBaseMessage(
     // there are two types:
     // 1. Bridging ERC20 token or ETH
     // 2. Cross-chain message passing
-    if (target === l2StandardBridge.address) {
+    if (target === l2StandardBridge.address ||
+      (l2USDSBridge ? target === l2USDSBridge.address : target.toLowerCase() === '0xee44cdb68D618d58F75d9fe0818B640BD7B8A7B7'.toLowerCase())
+    ) {
       // Bridging ERC20 token
       const messageWithoutPrefix = message.slice(2); // strip out the 0x prefix
       const messageWithoutSigHash = '0x' + messageWithoutPrefix.slice(8);
