@@ -6,7 +6,7 @@ import { DeploymentManager } from '../../plugins/deployment_manager';
 import { isBridgedDeployment, executeOpenProposal, voteForOpenProposal, executeOpenProposalAndRelay } from '../utils';
 import { getOpenBridgedProposals, executeBridgedProposal } from '../utils/bridgeProposal';
 
-async function getOpenProposals(deploymentManager: DeploymentManager, governor: IGovernorBravo): Promise<OpenProposal[]> {
+export async function getOpenProposals(deploymentManager: DeploymentManager, governor: IGovernorBravo): Promise<OpenProposal[]> {
   const timelockBuf = 30000; // XXX this should be timelock.delay + timelock.GRACE_PERIOD
   const votingDelay = (await governor.votingDelay()).toNumber();
   const votingPeriod = (await governor.votingPeriod()).toNumber();
@@ -18,7 +18,7 @@ async function getOpenProposals(deploymentManager: DeploymentManager, governor: 
   if (logs) {
     for (let log of logs) {
       if (log.args === undefined) continue;
-      const [id, , , , , , startBlock, endBlock] = log.args;
+      const [id, proposer, targets, values, signatures, calldatas, startBlock, endBlock] = log.args;
       const state = await governor.state(id);
       if ([
         ProposalState.Pending,
@@ -26,7 +26,18 @@ async function getOpenProposals(deploymentManager: DeploymentManager, governor: 
         ProposalState.Succeeded,
         ProposalState.Queued,
       ].includes(state)) {
-        proposals.push({ id, startBlock, endBlock });
+        proposals.push(
+          {
+            id,
+            proposer,
+            targets,
+            values,
+            signatures,
+            calldatas,
+            startBlock,
+            endBlock
+          }
+        );
       }
     }
   }
