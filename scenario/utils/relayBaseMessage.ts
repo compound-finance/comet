@@ -69,8 +69,8 @@ export default async function relayBaseMessage(
       const messageWithoutSigHash = '0x' + messageWithoutPrefix.slice(8);
       try {
         // 1a. Bridging ERC20 token
-        const { l1Token, _l2Token, _from, to, amount, _data } = ethers.utils.defaultAbiCoder.decode(
-          ['address l1Token', 'address l2Token', 'address from', 'address to', 'uint256 amount', 'bytes data'],
+        const { _l2Token, l1Token, _from, to, amount, _data } = ethers.utils.defaultAbiCoder.decode(
+          ['address l2Token', 'address l1Token', 'address from', 'address to', 'uint256 amount', 'bytes data'],
           messageWithoutSigHash
         );
 

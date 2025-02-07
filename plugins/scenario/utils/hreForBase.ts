@@ -70,6 +70,9 @@ function getBlockRollback(base: ForkSpec){
   else if(base.network === 'unichain-sepolia'){
     return 1;
   }
+  else if(base.network === 'base'){
+    return 200;
+  }
   else
     return 280;
 }
