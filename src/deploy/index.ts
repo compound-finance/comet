@@ -63,6 +63,13 @@ export type Proposal = [
   string[], // calldatas
   string // description
 ];
+export type TestnetProposal = [
+  string[], // targets
+  BigNumberish[], // values
+  string[], // signatures
+  string[], // calldatas
+  string // description
+];
 
 // Note: this list could change over time
 // Ideally these wouldn't be hardcoded, but other solutions are much more complex, and slower
@@ -160,6 +167,30 @@ export const WHALES = {
 export async function calldata(req: Promise<PopulatedTransaction>): Promise<string> {
   // Splice out the first 4 bytes (function selector) of the tx data
   return '0x' + (await req).data.slice(2 + 8);
+}
+
+export async function testnetProposal(actions: ProposalAction[], description: string): Promise<TestnetProposal> {
+  const targets = [],
+    values = [],
+    signatures = [],
+    calldatas = [];
+  for (const action of actions) {
+    if (action['contract']) {
+      const { contract, value, signature, args } = action as ContractAction;
+      targets.push(contract.address);
+      values.push(value ?? 0);
+      signatures.push(signature);
+      calldatas.push(await calldata(contract.populateTransaction[signature](...args)));
+    } else {
+      const { target, value, signature, calldata } = action as TargetAction;
+      targets.push(target);
+      values.push(value ?? 0);
+      signatures.push(signature);
+      calldatas.push(calldata);
+    }
+  }
+  return [targets, values, signatures, calldatas, description];
+  
 }
 
 export async function proposal(actions: ProposalAction[], description: string): Promise<Proposal> {

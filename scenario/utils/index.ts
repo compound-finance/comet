@@ -474,9 +474,15 @@ export async function executeOpenProposal(
   // Execute proposal (maybe, w/ gas limit so we see if exec reverts, not a gas estimation error)
   if (await governor.state(id) == ProposalState.Queued) {
     const block = await dm.hre.ethers.provider.getBlock('latest');
-    const eta = await governor.proposalEta(id);
-    
-    await setNextBlockTimestamp(dm, Math.max(block.timestamp, eta.toNumber()) + 1);
+
+    if(governor.address !== '0x309a862bbC1A00e45506cB8A802D1ff10004c8C0') {
+      const proposal = await governor.proposals(id);
+      await setNextBlockTimestamp(dm, Math.max(block.timestamp, proposal.eta.toNumber()) + 1);
+    }
+    else{
+      const eta = await governor.proposalEta(id);
+      await setNextBlockTimestamp(dm, Math.max(block.timestamp, eta.toNumber()) + 1);
+    }
     await setNextBaseFeeToZero(dm);
     await governor.execute(id, { gasPrice: 0, gasLimit: 120000000 });
   }
@@ -484,6 +490,34 @@ export async function executeOpenProposal(
   await mockAllRedstoneOracles(dm);
   // mine a block
   await dm.hre.ethers.provider.send('evm_mine', []);
+}
+
+async function testnetPropose(
+  dm: DeploymentManager,
+  proposer: SignerWithAddress,
+  targets: string[],
+  values: BigNumberish[],
+  signatures: string[],
+  calldatas: string[],
+  description: string,
+  gasPrice: BigNumberish
+) {
+  const governor = await dm.getContractOrThrow('governor');
+  const testnetGovernor = new Contract(
+    governor.address, [
+      'function propose(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) external returns (uint256 proposalId)',
+      'event ProposalCreated(uint256 proposalId, address proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 startBlock, uint256 endBlock, string description)'
+    ], governor.signer
+  );
+  
+  return testnetGovernor.connect(proposer).propose(
+    targets,
+    values,
+    signatures,
+    calldatas,
+    description,
+    { gasPrice }
+  );
 }
 
 // Instantly executes some actions through the governance proposal process
@@ -499,7 +533,7 @@ export async function fastGovernanceExecute(
 
   await setNextBaseFeeToZero(dm);
 
-  const proposeTxn = await (
+  const proposeTxn = dm.network === 'mainnet' ? await (
     await governor.connect(proposer).propose(
       targets,
       values,
@@ -509,6 +543,8 @@ export async function fastGovernanceExecute(
       'FastExecuteProposal',
       { gasPrice: 0 }
     )
+  ).wait() : await (
+    await testnetPropose(dm, proposer, targets, values, signatures, calldatas, 'FastExecuteProposal', 0)
   ).wait();
   const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
   const [id, , , , , , startBlock, endBlock] = proposeEvent.args;

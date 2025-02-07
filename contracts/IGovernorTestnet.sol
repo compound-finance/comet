@@ -5,7 +5,7 @@ pragma solidity 0.8.15;
  * @dev Interface for interacting with Governor bravo.
  * Note Not a comprehensive interface
  */
-interface IGovernorBravo {
+interface IGovernorTestnet {
     enum ProposalState {
         Pending,
         Active,
@@ -50,7 +50,6 @@ interface IGovernorBravo {
     function MIN_PROPOSAL_THRESHOLD() external view returns (uint256);
 
     function comp() external view returns (address); // for testnet only
-    function token() external view returns (address);
     function proposalEta(uint256) external view returns (uint256);
     function proposalCount() external view returns (uint256);
     function proposals(uint256 proposalId) external view returns (Proposal memory);
@@ -60,9 +59,10 @@ interface IGovernorBravo {
     function propose(
         address[] memory targets,
         uint256[] memory values,
+        string[] memory signatures,
         bytes[] memory calldatas,
         string memory description
-    ) external returns (uint256 proposalId);
+    ) external returns (uint256 proposalId); // for testnet only
     function queue(uint256 proposalId) external;
     function execute(uint256 proposalId) external;
     function castVote(uint256 proposalId, uint8 support) external returns (uint256 balance);

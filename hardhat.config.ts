@@ -223,9 +223,10 @@ const config: HardhatUserConfig = {
         : { mnemonic: MNEMONIC, accountsBalance: (10n ** 36n).toString() },
       // this should only be relied upon for test harnesses and coverage (which does not use viaIR flag)
       allowUnlimitedContractSize: true,
-      hardfork: 'cancun',
+      hardfork: networkConfigs.some(({ chainId }) => chainId === 1) ? 'cancun' : 'shanghai',
       chains: networkConfigs.reduce((acc, { chainId }) => {
         if (chainId === 1) return acc;
+        if (chainId === 1301) return acc;
         acc[chainId] = {
           hardforkHistory: {
             berlin: 1,

@@ -4,10 +4,10 @@ import {
   calldata,
   exp,
   getConfigurationStruct,
-  proposal,
+  testnetProposal,
 } from '../../../../src/deploy';
 import { expect } from 'chai';
-import { utils } from 'ethers';
+import { Contract, utils } from 'ethers';
 
 const sepoliaCOMP = '0xD3A6Ffc1fc9e7e4f34eD15Fb7Dd04102AC3470A2';
 
@@ -155,7 +155,13 @@ export default migration('1727774346_configurate_and_ens', {
     ];
 
     const description = `DESCRIPTION`;
-    const txn = await(await governor.propose(...(await proposal(actions, description)))).wait();
+    const testnetGovernor = new Contract(
+      governor.address, [
+        'function propose(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) external returns (uint256 proposalId)',
+        'event ProposalCreated(uint256 proposalId, address proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 startBlock, uint256 endBlock, string description)'
+      ], governor.signer
+    );
+    const txn = await(await testnetGovernor.propose(...(await testnetProposal(actions, description)))).wait();
 
     const event = txn.events.find((event) => event.event === 'ProposalCreated');
     const [proposalId] = event.args;
