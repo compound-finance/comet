@@ -11,7 +11,7 @@ The Base relayer applies an offset to the message sender.
 applyL1ToL2Alias mimics the AddressAliasHelper.applyL1ToL2Alias fn that converts
 an L1 address to its offset, L2 equivalent.
 
-https://goerli.basescan.org/address/0x4200000000000000000000000000000000000007#code
+https://sepolia.basescan.org/address/0x4200000000000000000000000000000000000007#code
 */
 function applyL1ToL2Alias(address: string) {
   const offset = BigInt('0x1111000000000000000000000000000000001111');
@@ -69,8 +69,8 @@ export default async function relayBaseMessage(
       const messageWithoutSigHash = '0x' + messageWithoutPrefix.slice(8);
       try {
         // 1a. Bridging ERC20 token
-        const { l1Token, _l2Token, _from, to, amount, _data } = ethers.utils.defaultAbiCoder.decode(
-          ['address l1Token', 'address l2Token', 'address from', 'address to', 'uint256 amount', 'bytes data'],
+        const { _l2Token, l1Token, _from, to, amount, _data } = ethers.utils.defaultAbiCoder.decode(
+          ['address l2Token', 'address l1Token', 'address from', 'address to', 'uint256 amount', 'bytes data'],
           messageWithoutSigHash
         );
 

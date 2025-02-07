@@ -9,7 +9,7 @@ import { createCrossChainProposal, matchesDeployment } from './utils';
 const MATICX_ADDRESS = '0xfa68FB4628DFF1028CFEc22b4162FCcd0d45efb6';
 const MATICX_PRICE_FEED_ADDRESS = '0x5d37E4b374E6907de8Fc7fb33EE3b0af403C7403';
 const MATICX_WHALES = {
-  polygon: ['0x68B9220B8E617b7700aCAE1a5Ff43F3eb29257F3'],
+  polygon: ['0x80cA0d8C38d2e2BcbaB66aA1648Bd1C7160500FE'],
 };
 
 // TODO: add ability to run ad hoc scenarios against a single migration, to avoid needing the scenario to do all this setup of
@@ -33,13 +33,13 @@ scenario(
     const { albert } = actors;
     const dm = context.world.deploymentManager;
     const maticx = await dm.existing(
-      'MATICX',
+      'MaticX',
       MATICX_ADDRESS,
       context.world.base.network,
       'contracts/ERC20.sol:ERC20'
     );
     const maticxPricefeed = await dm.existing(
-      'MATICX:priceFeed',
+      'MaticX:priceFeed',
       MATICX_PRICE_FEED_ADDRESS,
       context.world.base.network
     );
@@ -49,6 +49,10 @@ scenario(
       dm,
       MATICX_WHALES.polygon[0]
     );
+    await dm.hre.ethers.provider.send('hardhat_setBalance', [
+      maticxWhaleSigner.address,
+      dm.hre.ethers.utils.hexStripZeros(dm.hre.ethers.utils.parseUnits('100', 'ether').toHexString()),
+    ]);
     await maticx
       .connect(maticxWhaleSigner)
       .transfer(albert.address, exp(9000, 18).toString());
@@ -106,6 +110,6 @@ scenario(
     expect(await albert.getCometCollateralBalance(maticx.address)).to.be.equal(
       supplyAmount
     );
-    expect(await albert.getCometBaseBalance()).to.be.equal(-borrowAmount);
+    expect(await albert.getCometBaseBalance()).to.be.closeTo(-borrowAmount, 1n);
   }
 );

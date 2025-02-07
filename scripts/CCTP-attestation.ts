@@ -1,7 +1,7 @@
 /*
  A script to help check if CCTP's attestation server to acquire signature to mint native USDC on arbitrum
  Example: 
- DEPLOYMENT=usdc BURN_TXN_HASH=<burn_txn_hash> SOURCE_NETWORK=goerli DEST_NETWORK=arbitrum-goerli ETH_PK=<private_key> npx hardhat run scripts/CCTP-attestation.ts
+ DEPLOYMENT=usdc BURN_TXN_HASH=<burn_txn_hash> SOURCE_NETWORK=sepolia DEST_NETWORK=arbitrum-sepolia ETH_PK=<private_key> npx hardhat run scripts/CCTP-attestation.ts
 */
 import hre from 'hardhat';
 import { DeploymentManager } from '../plugins/deployment_manager/DeploymentManager';

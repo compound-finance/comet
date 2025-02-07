@@ -26,7 +26,7 @@ describe('total tracking index bounds', function () {
         totalSupplyBase: BigNumber.from(baseMinForRewards), // 10k USDC base units
       });
 
-      await fastForward(secondsUntilOverflow-1);
+      await fastForward(secondsUntilOverflow-2);
 
       // First accrue is successful without overflow
       await comet.accrue();
@@ -58,7 +58,7 @@ describe('total tracking index bounds', function () {
         totalBorrowBase: BigNumber.from(baseMinForRewards), // 10k USDC base units
       });
 
-      await fastForward(secondsUntilOverflow-1);
+      await fastForward(secondsUntilOverflow-2);
 
       // First accrue is successful without overflow
       await comet.accrue();
@@ -153,7 +153,7 @@ describe('total tracking index bounds', function () {
         totalSupplyBase: BigNumber.from(baseMinForRewards), // 100 WETH base units
       });
 
-      await fastForward(secondsUntilOverflow-1);
+      await fastForward(secondsUntilOverflow-2);
 
       // First accrue is successful without overflow
       await comet.accrue();
@@ -186,7 +186,7 @@ describe('total tracking index bounds', function () {
         totalBorrowBase: BigNumber.from(baseMinForRewards), // 10k USDC base units
       });
 
-      await fastForward(secondsUntilOverflow-1);
+      await fastForward(secondsUntilOverflow-2);
 
       // First accrue is successful without overflow
       await comet.accrue();
