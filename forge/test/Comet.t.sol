@@ -12,7 +12,7 @@ contract CometTest is Test {
         // XXX
     }
 
-    function testFailXXX() public {
+    function test_RevertIf_Condition_XXX() public {
         CometConfiguration.AssetConfig[] memory assets = new CometConfiguration.AssetConfig[](0);
         CometConfiguration.Configuration memory config =
             CometConfiguration.Configuration(address(0),
@@ -36,6 +36,7 @@ contract CometTest is Test {
                           0,
                           0,
                           assets);
+        vm.expectRevert();
         comet = new Comet(config);
     }
 }

@@ -1,0 +1,46 @@
+{
+  "name": "Compound USDS",
+  "symbol": "cUSDSv3",
+  "baseToken": "USDS",
+  "baseTokenAddress": "0x820C137fa70C8691f0e44Dc420a5e53c168921Dc",
+  "baseTokenPriceFeed": "0x2330aaE3bca5F05169d5f4597964D44522F62930",
+  "borrowMin": "1e0",
+  "pauseGuardian": "0x3cb4653f3b45f448d9100b118b75a1503281d2ee",
+  "storeFrontPriceFactor": 0.6,
+  "targetReserves": "20000000e18",
+  "rates": {
+    "borrowBase": 0.015,
+    "borrowSlopeLow": 0.05,
+    "borrowKink": 0.9,
+    "borrowSlopeHigh": 3.4,
+    "supplyBase": 0,
+    "supplySlopeLow": 0.054,
+    "supplyKink": 0.9,
+    "supplySlopeHigh": 3.034
+  },
+  "tracking": {
+    "indexScale": "1e15",
+    "baseSupplySpeed": "277777777777e0",
+    "baseBorrowSpeed": "138888888888e0",
+    "baseMinForRewards": "100000e18"
+  },
+  "assets": {
+    "sUSDS": {
+      "address": "0x5875eEE11Cf8398102FdAd704C9E96607675467a",
+      "decimals": "18",
+      "borrowCF": 0.93,
+      "liquidateCF": 0.95,
+      "liquidationFactor": 0.96,
+      "supplyCap": "25000000e18"
+    },
+    "cbBTC": {
+      "address": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
+      "priceFeed": "0x07DA0E54543a844a80ABE69c8A12F22B3aA59f9D",
+      "decimals": "8",
+      "borrowCF": 0.8,
+      "liquidateCF": 0.85,
+      "liquidationFactor": 0.95,
+      "supplyCap": "0.1e8"
+    }
+  }
+}
