@@ -27,7 +27,7 @@ export async function cloneGov(
 
   const COMP = await deploymentManager.clone('COMP', clone.comp, [admin.address]);
 
-  const governorImpl = await deploymentManager.clone('governor:implementation', clone.governorBravoImpl, []);
+  const governorImpl = await deploymentManager.clone('governor:implementation', clone.governorBravoImpl, [], 'mainnet', true);
   const governorProxy = await deploymentManager.clone('governor', clone.governorBravo, [
     timelock.address,
     COMP.address,
@@ -226,7 +226,7 @@ export async function deployNetworkComet(
     'configurator:implementation',
     'Configurator.sol',
     [],
-    maybeForce(deploySpec.cometMain)
+    maybeForce()
   );
 
   // If we deploy a new proxy, we initialize it to the current/new impl
@@ -259,7 +259,7 @@ export async function deployNetworkComet(
   // Call initializeStorage if storage not initialized
   // Note: we now rely on the fact that anyone may call, which helps separate the proposal
   await deploymentManager.idempotent(
-    async () => (await comet.totalsBasic()).lastAccrualTime == 0,
+    async () => (await comet.connect(admin).totalsBasic()).lastAccrualTime == 0,
     async () => {
       trace(`Initializing Comet at ${comet.address}`);
       trace(await wait(comet.connect(admin).initializeStorage()));
@@ -338,5 +338,5 @@ export async function deployNetworkComet(
     }
   );
 
-  return { comet, configurator, rewards };
+  return { comet, configurator, rewards, cometFactory };
 }
