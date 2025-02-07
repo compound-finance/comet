@@ -55,8 +55,8 @@ export async function nonForkedHreForBase(base: ForkSpec): Promise<HardhatRuntim
       }
     },
     ctx.tasksDSL.getTaskDefinitions(),
-    ctx.extendersManager.getExtenders(),
-    ctx.experimentalHardhatNetworkMessageTraceHooks,
+    ctx.environment.scopes,
+    ctx.environmentExtenders,
     userConfig
   );
 }
@@ -66,6 +66,9 @@ function getBlockRollback(base: ForkSpec){
     return base.blockNumber;
   else if(base.network === 'arbitrum'){
     return undefined;
+  }
+  else if(base.network === 'base'){
+    return 200;
   }
   else
     return 280;
@@ -86,7 +89,7 @@ export async function forkedHreForBase(base: ForkSpec): Promise<HardhatRuntimeEn
   const provider = new ethers.providers.JsonRpcProvider(baseNetwork.url);
 
   // noNetwork otherwise
-  if(!base.blockNumber && baseNetwork.url)
+  if(!base.blockNumber && baseNetwork.url && getBlockRollback(base) !== undefined)
     base.blockNumber = await provider.getBlockNumber() - getBlockRollback(base); // arbitrary number of blocks to go back
 
   if (!baseNetwork) {
@@ -121,8 +124,8 @@ export async function forkedHreForBase(base: ForkSpec): Promise<HardhatRuntimeEn
     forkedConfig,
     hardhatArguments,
     ctx.tasksDSL.getTaskDefinitions(),
-    ctx.extendersManager.getExtenders(),
-    ctx.experimentalHardhatNetworkMessageTraceHooks,
+    ctx.environment.scopes,
+    ctx.environmentExtenders,
     userConfig
   );
 }

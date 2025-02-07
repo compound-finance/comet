@@ -3,10 +3,10 @@ import { IGovernorBravo, ProposalState, OpenProposal } from '../context/Gov';
 import { CometContext } from '../context/CometContext';
 import { fetchLogs } from '../utils';
 import { DeploymentManager } from '../../plugins/deployment_manager';
-import { isBridgedDeployment, executeOpenProposal, executeOpenProposalAndRelay } from '../utils';
+import { isBridgedDeployment, executeOpenProposal, voteForOpenProposal, executeOpenProposalAndRelay } from '../utils';
 import { getOpenBridgedProposals, executeBridgedProposal } from '../utils/bridgeProposal';
 
-async function getOpenProposals(deploymentManager: DeploymentManager, governor: IGovernorBravo): Promise<OpenProposal[]> {
+export async function getOpenProposals(deploymentManager: DeploymentManager, governor: IGovernorBravo): Promise<OpenProposal[]> {
   const timelockBuf = 30000; // XXX this should be timelock.delay + timelock.GRACE_PERIOD
   const votingDelay = (await governor.votingDelay()).toNumber();
   const votingPeriod = (await governor.votingPeriod()).toNumber();
@@ -18,7 +18,7 @@ async function getOpenProposals(deploymentManager: DeploymentManager, governor: 
   if (logs) {
     for (let log of logs) {
       if (log.args === undefined) continue;
-      const [id, , , , , , startBlock, endBlock] = log.args;
+      const [id, proposer, targets, values, signatures, calldatas, startBlock, endBlock] = log.args;
       const state = await governor.state(id);
       if ([
         ProposalState.Pending,
@@ -26,7 +26,18 @@ async function getOpenProposals(deploymentManager: DeploymentManager, governor: 
         ProposalState.Succeeded,
         ProposalState.Queued,
       ].includes(state)) {
-        proposals.push({ id, startBlock, endBlock });
+        proposals.push(
+          {
+            id,
+            proposer,
+            targets,
+            values,
+            signatures,
+            calldatas,
+            startBlock,
+            endBlock
+          }
+        );
       }
     }
   }
@@ -53,6 +64,11 @@ export class ProposalConstraint<T extends CometContext> implements StaticConstra
       const governanceDeploymentManager = ctx.world.auxiliaryDeploymentManager || deploymentManager;
       const governor = await governanceDeploymentManager.contract('governor') as IGovernorBravo;
       const proposals = await getOpenProposals(governanceDeploymentManager, governor);
+
+      for (const proposal of proposals) {
+        await voteForOpenProposal(governanceDeploymentManager, proposal);
+      }
+
       for (const proposal of proposals) {
         const preExecutionBlockNumber = await ctx.world.deploymentManager.hre.ethers.provider.getBlockNumber();
         let migrationData;
@@ -62,9 +78,9 @@ export class ProposalConstraint<T extends CometContext> implements StaticConstra
           );
         }
 
-        // temporary hack to skip proposal 393 - governance update
-        if (proposal.id.eq(393)) {
-          console.log('Skipping proposal 393');
+        // temporary hack to skip proposal 395
+        if (proposal.id.eq(395)) {
+          console.log('Skipping proposal 395');
           continue;
         }
 
