@@ -90,7 +90,7 @@ export default migration('1736257010_configurate_and_ens', {
     if (!(officialMarkets[8453] as { baseSymbol: string, cometAddress: string }[])?.find(({ baseSymbol }) => baseSymbol === 'USDS')) {
       updatedMarkets[8453].push({
         baseSymbol: 'USDS',
-        cometAddress: '0x8D38A3d6B3c3B7d96D6536DA7Eef94A9d7dbC991'
+        cometAddress: '0x2c776041CCFe903071AF44aa147368a9c8EEA518'
       });
     }
 
@@ -288,7 +288,7 @@ export default migration('1736257010_configurate_and_ens', {
         },
         {
           baseSymbol: 'USDS',
-          cometAddress: '0x8D38A3d6B3c3B7d96D6536DA7Eef94A9d7dbC991'
+          cometAddress: '0x2c776041CCFe903071AF44aa147368a9c8EEA518'
         }
       ],
       534352: [
