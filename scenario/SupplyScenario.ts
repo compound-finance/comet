@@ -509,6 +509,8 @@ scenario(
         symbol === 'WETH' ? /Transaction reverted without a reason string/ : /.^/,
         symbol === 'wstETH' ? /0xc2139725/ : /.^/,
         symbol === 'WMATIC' ? /Transaction reverted without a reason string/ : /.^/,
+        symbol === 'WPOL' ? /Transaction reverted without a reason string/ : /.^/,
+        symbol === 'sUSDS' ? /SUsds\/insufficient-allowance/ : /.^/,
       ]
     );
   }
@@ -595,6 +597,8 @@ scenario(
         symbol === 'WETH' ? /Transaction reverted without a reason string/ : /.^/,
         symbol === 'wstETH' ? /0x00b284f2/ : /.^/,
         symbol === 'WMATIC' ? /Transaction reverted without a reason string/ : /.^/,
+        symbol === 'WPOL' ? /Transaction reverted without a reason string/ : /.^/,
+        symbol === 'sUSDS' ? /SUsds\/insufficient-balance/ : /.^/,
       ]
     );
   }

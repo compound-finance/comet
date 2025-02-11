@@ -15,7 +15,6 @@ export default async function relayMessage(
   const bridgeNetwork = bridgeDeploymentManager.network;
   switch (bridgeNetwork) {
     case 'base':
-    case 'base-goerli':
       await relayBaseMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
@@ -36,7 +35,6 @@ export default async function relayMessage(
         startingBlockNumber
       );
       break;
-    case 'mumbai':
     case 'polygon':
       await relayPolygonMessage(
         governanceDeploymentManager,
@@ -45,7 +43,6 @@ export default async function relayMessage(
       );
       break;
     case 'arbitrum':
-    case 'arbitrum-goerli':
       await relayArbitrumMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
@@ -57,7 +54,7 @@ export default async function relayMessage(
         startingBlockNumber
       );
       break;
-    case 'linea-goerli':
+    case 'linea':
       await relayLineaMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
@@ -65,7 +62,6 @@ export default async function relayMessage(
       );
       break;
     case 'scroll':
-    case 'scroll-goerli':
       await relayScrollMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
