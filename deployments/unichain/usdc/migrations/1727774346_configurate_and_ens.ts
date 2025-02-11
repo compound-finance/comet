@@ -157,13 +157,13 @@ export default migration('1727774346_configurate_and_ens', {
           '0x',
         ],
       },
-      // 3. Set Comet configuration + deployAndUpgradeTo new Comet, set Reward Config on Optimism
+      // 5. Set Comet configuration + deployAndUpgradeTo new Comet, set Reward Config on Optimism
       {
         contract: unichainL1CrossDomainMessenger,
         signature: 'sendMessage(address,bytes,uint32)',
         args: [bridgeReceiver.address, l2ProposalData, 3_000_000],
       },
-      // 4. Update the list of official markets
+      // 6. Update the list of official markets
       {
         target: ENSResolverAddress,
         signature: 'setText(bytes32,string,string)',
@@ -175,7 +175,7 @@ export default migration('1727774346_configurate_and_ens', {
     ];
   
     // the description has speeds. speeds will be set up on on-chain proposal
-    const description = 'DESCRIPTION';
+    const description = '# Initialize cUSDCv3 on Unichain\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Unichain network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Unichain; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](<>).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/961), [deploy market GitHub action run](<>) and [forum discussion](<>).\n\n\n## Proposal Actions\n\nThe first action approves COMP tokens to the bridge.\n\nThe second action sends COMP tokens to the Unichain via a native standard bridge.\n\nThe third action approves  USDC tokens to the bridge.\n\nThe fourth action sends USDC tokens to the Unichain via a native standard bridge.\n\nThe fifth proposal action sets the Comet configuration and deploys a new Comet implementation on Unichain. This sends the encoded `setFactory`, `setConfiguration`, `deployAndUpgradeTo`and `setRewardConfig` calls across the bridge to the governance receiver on Unichain.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Unichain cUSDCv3 market.';
     const txn = await govDeploymentManager.retry(async () => {
       return trace(await governor.propose(...(await proposal(actions, description))));
     }
