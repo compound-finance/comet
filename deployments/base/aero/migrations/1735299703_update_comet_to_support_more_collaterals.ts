@@ -20,16 +20,16 @@ const USDBC_EXT = '0x2F9E3953b2Ef89fA265f2a32ed9F80D00229125B';
 
 export default migration('1735299703_update_comet_to_support_more_collaterals', {
   async prepare(deploymentManager: DeploymentManager) {
-    const _assetListFactory = await deploymentManager.deploy(
+    // deployed on USDS on Base
+    const _assetListFactory = await deploymentManager.existing(
       'assetListFactory',
-      'AssetListFactory.sol',
-      []
+      '0x995e394b8b2437ac8ce61ee0bc610d617962b214'
     );
 
-    const cometFactoryWithExtendedAssetList = await deploymentManager.deploy(
-      'cometFactoryWithExtendedAssetList',
-      'CometFactoryWithExtendedAssetList.sol',
-      []
+    // deployed on USDS on Base
+    const cometFactoryWithExtendedAssetList = await deploymentManager.existing(
+      'cometFactory',
+      '0x3D0bb1ccaB520A66e607822fC55BC921738fAFE3'
     );
     const {
       comet
