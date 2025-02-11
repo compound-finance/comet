@@ -93,6 +93,7 @@ export function requireEnv(varName, msg?: string): string {
   'LINEASCAN_KEY',
   'OPTIMISMSCAN_KEY',
   'MANTLESCAN_KEY',
+  'UNICHAIN_QUICKNODE_KEY',
   'SCROLLSCAN_KEY'
 ].map((v) => requireEnv(v));
 
