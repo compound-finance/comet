@@ -368,6 +368,12 @@ const REDSTONE_FEEDS = {
     '0x9b2C948dbA5952A1f5Ab6fA16101c1392b8da1ab', // mETH / ETH
     '0xFc34806fbD673c21c1AEC26d69AA247F1e69a2C6', // ETH / USD
   ],
+  unichain: [
+    '0xe8D9FbC10e00ecc9f0694617075fDAF657a76FB2', // ETH / USD
+    '0xD15862FC3D5407A03B696548b6902D6464A69b8c', // USDC / ETH
+    '0xc44be6D00307c3565FDf753e852Fc003036cBc13', // BTC / USD
+    '0xf1454949C6dEdfb500ae63Aa6c784Aa1Dde08A6c', // UNI / USD
+  ],
 };
 
 async function getProxyAdmin(dm: DeploymentManager, proxyAddress: string): Promise<string> {
@@ -691,6 +697,20 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
         'unichainSepoliaL1CrossDomainMessenger'
       );
       targets.push(unichainSepoliaL1CrossDomainMessenger.address);
+      values.push(0);
+      signatures.push('sendMessage(address,bytes,uint32)');
+      calldata.push(sendMessageCalldata);
+      break;
+    }
+    case 'unichain': {
+      const sendMessageCalldata = utils.defaultAbiCoder.encode(
+        ['address', 'bytes', 'uint256'],
+        [bridgeReceiver.address, l2ProposalData, 2_500_000]
+      );
+      const unichainL1CrossDomainMessenger = await govDeploymentManager.getContractOrThrow(
+        'unichainL1CrossDomainMessenger'
+      );
+      targets.push(unichainL1CrossDomainMessenger.address);
       values.push(0);
       signatures.push('sendMessage(address,bytes,uint32)');
       calldata.push(sendMessageCalldata);

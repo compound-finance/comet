@@ -86,6 +86,20 @@ export async function isBridgeProposal(
       ];
       return targets.some(t => bridgeContracts.includes(t));
     }
+    case 'unichain': {
+      const unichainL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow(
+        'unichainL1CrossDomainMessenger'
+      );
+      const unichainL1StandardBridge = await governanceDeploymentManager.getContractOrThrow(
+        'unichainL1StandardBridge'
+      );
+      const targets = openProposal.targets;
+      const bridgeContracts = [
+        unichainL1CrossDomainMessenger.address,
+        unichainL1StandardBridge.address
+      ];
+      return targets.some(t => bridgeContracts.includes(t));
+    }
     case 'scroll': {
       const scrollMessenger = await governanceDeploymentManager.getContractOrThrow(
         'scrollMessenger'

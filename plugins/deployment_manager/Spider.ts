@@ -40,7 +40,7 @@ interface DiscoverNode {
 function maybeStore(alias: Alias, address: Address, into: Aliases): boolean {
   const maybeExists = into.get(alias);
   if (maybeExists) {
-    if (maybeExists === address) {
+    if (maybeExists.toLowerCase() === address.toLowerCase()) {
       return false;
     } else if (maybeExists === constants.AddressZero && address !== constants.AddressZero) {
       into.set(alias, address);

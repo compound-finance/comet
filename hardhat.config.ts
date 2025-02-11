@@ -39,7 +39,8 @@ import optimismRelationConfigMap from './deployments/optimism/usdc/relations';
 import optimismUsdtRelationConfigMap from './deployments/optimism/usdt/relations';
 import optimismWethRelationConfigMap from './deployments/optimism/weth/relations';
 import mantleRelationConfigMap from './deployments/mantle/usde/relations';
-import unichainRelationConfigMap from './deployments/unichain-sepolia/weth/relations';
+import unichainRelationConfigMap from './deployments/unichain/usdc/relations';
+import unichainSepoliaRelationConfigMap from './deployments/unichain-sepolia/weth/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
@@ -64,6 +65,7 @@ const {
   NETWORK_PROVIDER = '',
   GOV_NETWORK_PROVIDER = '',
   GOV_NETWORK = '',
+  UNICHAIN_QUICKNODE_KEY = '',
   REMOTE_ACCOUNTS = ''
 } = process.env;
 
@@ -136,6 +138,11 @@ const networkConfigs: NetworkConfig[] = [
     network: 'unichain-sepolia',
     chainId: 1301,
     url: `https://sepolia.unichain.org`,
+  },
+  {
+    network: 'unichain',
+    chainId: 130,
+    url: `https://multi-boldest-patina.unichain-mainnet.quiknode.pro/${UNICHAIN_QUICKNODE_KEY}`,
   },
   {
     network: 'base',
@@ -293,13 +300,16 @@ const config: HardhatUserConfig = {
         network: 'unichain-sepolia',
         chainId: 1301,
         urls: {
-          // apiURL: 'https://rpc.mantle.xyz',
-          // links for scenarios
           apiURL: 'https://unichain-sepolia.blockscout.com/api',
           browserURL: 'https://unichain-sepolia.blockscout.com/'
-          // links for deployment
-          // apiURL: 'https://api.mantlescan.xyz/api',
-          // browserURL: 'https://mantlescan.xyz/'
+        }
+      },
+      {
+        network: 'unichain',
+        chainId: 130,
+        urls: {
+          apiURL: 'https://unichain.blockscout.com/api',
+          browserURL: 'https://unichain.blockscout.com/'
         }
       },
       {
@@ -362,7 +372,10 @@ const config: HardhatUserConfig = {
         'usde': mantleRelationConfigMap
       },
       'unichain-sepolia': {
-        'weth': unichainRelationConfigMap
+        'weth': unichainSepoliaRelationConfigMap
+      },
+      'unichain': {
+        'usdc': unichainRelationConfigMap
       },
       'scroll': {
         usdc: scrollRelationConfigMap
@@ -507,6 +520,12 @@ const config: HardhatUserConfig = {
         network: 'unichain-sepolia',
         deployment: 'weth',
         auxiliaryBase: 'sepolia-usdc'
+      },
+      {
+        name: 'unichain-usdc',
+        network: 'unichain',
+        deployment: 'usdc',
+        auxiliaryBase: 'mainnet'
       },
       {
         name: 'scroll-usdc',

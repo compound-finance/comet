@@ -162,6 +162,9 @@ export const WHALES = {
     '0xd3A19CfC8b926f631C62d6D1213b51c27719Aa49', // USDC whale
     '0xc8Da76f5A01a6531926fFc06398FE0Af2bb277d3', // WETH whale
   ],
+  'unichain': [
+    '0x4200000000000000000000000000000000000006', // WETH whale
+  ],
 };
 
 export async function calldata(req: Promise<PopulatedTransaction>): Promise<string> {

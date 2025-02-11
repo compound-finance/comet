@@ -6,6 +6,7 @@ import relayLineaMessage from './relayLineaMessage';
 import relayOptimismMessage from './relayOptimismMessage';
 import relayMantleMessage from './relayMantleMessage';
 import relayUnichainSepoliaMessage from './relayUnichainSepoliaMessage';
+import relayUnichainMessage from './relayUnichainMessage';
 import relayScrollMessage from './relayScrollMessage';
 
 export default async function relayMessage(
@@ -38,6 +39,13 @@ export default async function relayMessage(
       break;
     case 'unichain-sepolia':
       await relayUnichainSepoliaMessage(
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
+        startingBlockNumber
+      );
+      break;
+    case 'unichain':
+      await relayUnichainMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber
