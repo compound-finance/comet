@@ -27,10 +27,8 @@ export default migration('1735299703_update_comet_to_support_more_collaterals', 
     );
 
     // deployed on USDS on Base
-    const cometFactoryWithExtendedAssetList = await deploymentManager.existing(
-      'cometFactory',
-      '0x3D0bb1ccaB520A66e607822fC55BC921738fAFE3'
-    );
+    const cometFactoryWithExtendedAssetListAddress = '0x3D0bb1ccaB520A66e607822fC55BC921738fAFE3';
+
     const {
       comet
     } = await deploymentManager.getContracts();
@@ -132,7 +130,7 @@ export default migration('1735299703_update_comet_to_support_more_collaterals', 
       true
     );
     return {
-      cometFactoryWithExtendedAssetList: cometFactoryWithExtendedAssetList.address,
+      cometFactoryWithExtendedAssetList: cometFactoryWithExtendedAssetListAddress,
       newCometExtAERO: _newCometExtAERO.address,
       newCometExtUSDC: _newCometExtUSDC.address,
       newCometExtWETH: _newCometExtWETH.address,
