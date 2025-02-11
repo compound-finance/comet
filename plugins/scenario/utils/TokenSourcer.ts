@@ -113,7 +113,7 @@ async function addTokens(
   block = block ?? (await ethers.provider.getBlockNumber());
   let tokenContract = new ethers.Contract(asset, erc20, ethers.provider);
   let filter = tokenContract.filters.Transfer();
-  if (mintableByBridgeConfig[dm.network].map((addr: string) => addr.toLowerCase()).includes(asset.toLowerCase())) {
+  if (mintableByBridgeConfig[dm.network] && mintableByBridgeConfig[dm.network].map((addr: string) => addr.toLowerCase()).includes(asset.toLowerCase())) {
     await dm.hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: ['0x4200000000000000000000000000000000000010'],
