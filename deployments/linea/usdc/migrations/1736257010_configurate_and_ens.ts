@@ -87,6 +87,13 @@ export default migration('1736257010_configurate_and_ens', {
       ],
     };
 
+    if (!(officialMarkets[8453] as { baseSymbol: string, cometAddress: string }[])?.find(({ baseSymbol }) => baseSymbol === 'USDS')) {
+      updatedMarkets[8453].push({
+        baseSymbol: 'USDS',
+        cometAddress: '0x8D38A3d6B3c3B7d96D6536DA7Eef94A9d7dbC991'
+      });
+    }
+
     const mainnetActions = [
       // 1. Set Comet configuration and deployAndUpgradeTo new Comet on Linea.
       {
@@ -129,7 +136,7 @@ export default migration('1736257010_configurate_and_ens', {
       }
     ];
 
-    const description = '# Initialize cUSDCv3 on Linea network\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Linea network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Linea; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-linea/4460/19).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/953), [deploy market GitHub action run](https://github.com/woof-software/comet/actions/runs/13041520838/job/36384262627) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-linea/4460).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Linea. This sends the encoded `setFactory`, `setConfiguration`, `deployAndUpgradeTo` calls across the bridge to the governance receiver on Linea.\n\nThe second action approves USDC tokens to the bridge.\n\nThe third action sends USDC tokens to the Linea chain via a special native USDC bridge.\n\nThe fourth action approves  COMP tokens to the bridge.\n\nThe fifth action sends COMP tokens to the Linea chain via bridge.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Linea cUSDCv3 market.';
+    const description = '## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Linea network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Linea; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-linea/4460/19).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/953), [deploy market GitHub action run](https://github.com/woof-software/comet/actions/runs/13041520838/job/36384262627) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-linea/4460).\n\n\n## ENS TXT record update\n\n[USDS on Base proposal](https://www.tally.xyz/gov/compound/proposal/395?govId=eip155:1:0x309a862bbC1A00e45506cB8A802D1ff10004c8C0) is active on the moment of pushing this proposal. The proposal reached the quorum and we expect that the proposal will be executed without fail. In case we need to cancel proposal 395, we need to cancel this proposal too\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration, deploys a new Comet implementation, and sets the reward config on Linea. This sends the encoded `setConfiguration`, `deployAndUpgradeTo`, `setRewardConfig` calls across the bridge to the governance receiver on Linea.\n\nThe second action approves USDC tokens to the bridge.\n\nThe third action sends USDC tokens to the Linea chain via a special native USDC bridge.\n\nThe fourth action approves  COMP tokens to the bridge.\n\nThe fifth action sends COMP tokens to the Linea chain via bridge.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Linea cUSDCv3 market.';
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(mainnetActions, description))))
     );
@@ -190,6 +197,7 @@ export default migration('1736257010_configurate_and_ens', {
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
     const officialMarketsJSON = await ENSResolver.text(subdomainHash, ENSTextRecordKey);
     const officialMarkets = JSON.parse(officialMarketsJSON);
+
     expect(officialMarkets).to.deep.equal({
       1: [
         {
@@ -277,6 +285,10 @@ export default migration('1736257010_configurate_and_ens', {
         {
           baseSymbol: 'AERO',
           cometAddress: '0x784efeB622244d2348d4F2522f8860B96fbEcE89'
+        },
+        {
+          baseSymbol: 'USDS',
+          cometAddress: '0x8D38A3d6B3c3B7d96D6536DA7Eef94A9d7dbC991'
         }
       ],
       534352: [
