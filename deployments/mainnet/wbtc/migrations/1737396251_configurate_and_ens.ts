@@ -29,9 +29,9 @@ export default migration('1737396251_configurate_and_ens', {
       rewards,
       COMP,
       WBTC,
+      cometFactory,
       governor
     } = await deploymentManager.getContracts();
-    const cometFactory = await deploymentManager.fromDep('cometFactory', 'mainnet', 'usdc');
 
     const configuration = await getConfigurationStruct(deploymentManager);
 
@@ -140,8 +140,6 @@ export default migration('1737396251_configurate_and_ens', {
       COMP,
       pumpBTC,
       LBTC,
-      cometFactory,
-      assetListFactory
     } = await deploymentManager.getContracts();
 
     // 1. & 2. & 3.
