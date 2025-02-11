@@ -155,6 +155,8 @@ export async function getActorAddressFromName(name: string, context: CometContex
     }
     return actorAddress;
   } else {
+    console.log("Name " + name);
+    console.log("Actors ", context.actors[name]);
     return context.actors[name].address;
   }
 }
@@ -643,9 +645,7 @@ export async function executeOpenProposal(
 
     await setNextBlockTimestamp(dm, Math.max(block.timestamp, eta.toNumber()) + 1);
     await setNextBaseFeeToZero(dm);
-    console.log("Executing proposal", id);
     await updateCCIPStats(dm);
-    console.log("Updated CCIP stats");
     await governor.execute(id, { gasPrice: 0, gasLimit: 120000000 });
   }
   await redeployRenzoOracle(dm);
@@ -695,6 +695,7 @@ export async function fastL2GovernanceExecute(
   calldatas: string[]
 ) {
   const startingBlockNumber = await governanceDeploymentManager.hre.ethers.provider.getBlockNumber();
+  console.log("2")
   await fastGovernanceExecute(
     governanceDeploymentManager,
     proposer,
@@ -703,6 +704,7 @@ export async function fastL2GovernanceExecute(
     signatures,
     calldatas
   );
+  console.log("3")
 
   await relayMessage(governanceDeploymentManager, bridgeDeploymentManager, startingBlockNumber);
 }
@@ -828,11 +830,40 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageCalldata);
       break;
     }
+    case 'ronin': {
+      const l1CCIPRouter = await govDeploymentManager.getContractOrThrow(
+        'l1CCIPRouter'
+      );
+
+      targets.push(l1CCIPRouter.address);
+      values.push(utils.parseEther("0.5"));
+
+      const destinationChainSelector = "6916147374840168594"
+
+      const args = [
+        destinationChainSelector,
+        [
+          utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
+          l2ProposalData,
+          [],
+          constants.AddressZero,
+          "0x"
+        ]
+      ];
+
+      const data = utils.defaultAbiCoder.encode(['uint64', '(bytes,bytes,(address,uint256)[],address,bytes)'], args);
+
+      signatures.push('ccipSend(uint64,(bytes,bytes,(address,uint256)[],address,bytes))');
+      calldata.push(data);
+      break;
+    }
     default:
       throw new Error(
         `No cross-chain proposal constructor implementation for ${govDeploymentManager.network} -> ${bridgeNetwork}`
       );
   }
+
+  console.log("1")
 
   await fastL2GovernanceExecute(
     govDeploymentManager,

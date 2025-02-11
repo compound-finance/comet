@@ -117,7 +117,7 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'ronin',
     chainId: 2020,
-    url: 'https://ronin.lgns.net/rpc',
+    url: 'https://ronin.gateway.tenderly.co/54gVtrV6WkHGpZPzkiz9Mz',
   },
   {
     network: 'polygon',
@@ -243,6 +243,8 @@ const config: HardhatUserConfig = {
           hardforkHistory: {
             berlin: 1,
             london: 2,
+            shanghai: 3,
+            cancun: 4,
           },
         };
         return acc;

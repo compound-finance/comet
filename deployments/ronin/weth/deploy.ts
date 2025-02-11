@@ -7,7 +7,7 @@ import { DeploySpec, deployComet, exp } from '../../../src/deploy';
 const HOUR = 60 * 60;
 const DAY = 24 * HOUR;
 
-const SEPOLIA_TIMELOCK = '0x54a06047087927D9B0fb21c1cf0ebd792764dDB8';
+const MAINNET_TIMELOCK = '0x6d903f6003cca6255D85CcA4D3B5E5146dC33925';
 
 export default async function deploy(
   deploymentManager: DeploymentManager,
@@ -29,6 +29,12 @@ async function deployContracts(
     'ronin'
   );
 
+  const roninl2NativeBridge = await deploymentManager.existing(
+    'roninl2NativeBridge',
+    '0x0cf8ff40a508bdbc39fbe1bb679dcba64e65c7df',
+    'ronin'
+  );
+
   const bridgeReceiver = await deploymentManager.deploy(
     'bridgeReceiver',
     'bridges/ronin/RoninBridgeReceiver.sol',
@@ -41,6 +47,7 @@ async function deployContracts(
     '0xc99a6a985ed2cac1ef41640596c5a5f9f4e19ef5',
     'ronin'
   );
+
   // pre-deployed OptimismMintableERC20
   const COMP = await deploymentManager.existing(
     'COMP',
@@ -74,7 +81,7 @@ async function deployContracts(
     async () => {
       trace(`Initializing BridgeReceiver`);
       await bridgeReceiver.initialize(
-        SEPOLIA_TIMELOCK,     // govTimelock
+        MAINNET_TIMELOCK,     // govTimelock
         localTimelock.address // localTimelock
       );
       trace(`BridgeReceiver initialized`);
@@ -82,61 +89,59 @@ async function deployContracts(
   );
 
   const WETHPriceFeed = await deploymentManager.deploy(
-    'WETH:simplePriceFeed',
-    'test/SimplePriceFeed.sol',
-    [
-      exp(1, 18),
-      8
+    'WETH:priceFeed',
+    'pricefeeds/ConstantPriceFeed.sol',
+    [ 
+      8,
+      exp(2600, 8),
+     
     ]
   );
 
-  // const WRONPriceFeed = await deploymentManager.deploy(
-  //   'WRON:simplePriceFeed',
-  //   'test/SimplePriceFeed.sol',
-  //   [
-  //     exp(0.047, 18),
-  //     8
-  //   ]
-  // );
+  const WRONPriceFeed = await deploymentManager.deploy(
+    'WRON:priceFeed',
+    'pricefeeds/ConstantPriceFeed.sol',
+    [
+      8,
+      exp(10.04, 8)
+    ]
+  );
+
+
+  const AXSPriceFeed = await deploymentManager.deploy(
+    'AXS:priceFeed',
+    'pricefeeds/ConstantPriceFeed.sol',
+    [
+      8,
+      exp(4.02, 8),
+    ]
+  );
+
+
+  const USDCPriceFeed = await deploymentManager.deploy(
+    'USDC:priceFeed',
+    'pricefeeds/ConstantPriceFeed.sol',
+    [
+      8,
+      exp(1, 8),
+    ]
+  );
+
 
   const COMPPriceFeed = await deploymentManager.deploy(
-    'COMP:simplePriceFeed',
-    'test/SimplePriceFeed.sol',
+    'LINK:priceFeed',
+    'pricefeeds/ConstantPriceFeed.sol',
     [
-      exp(0.022, 18),
-      8
+      8,
+      exp(18.4, 18),
     ]
   );
 
-
-  // const assetConfig0 = {
-  //   asset: WETH.address,
-  //   priceFeed: WRONPriceFeed.address,
-  //   decimals: (18).toString(),
-  //   borrowCollateralFactor: (0.9e18).toString(),
-  //   liquidateCollateralFactor: (0.91e18).toString(),
-  //   liquidationFactor: (0.95e18).toString(),
-  //   supplyCap: (1000000e8).toString(),
-  // };
-
-  const assetConfig1 = {
-    asset: COMP.address,
-    priceFeed: COMPPriceFeed.address,
-    decimals: (18).toString(),
-    borrowCollateralFactor: (0.9e18).toString(),
-    liquidateCollateralFactor: (0.91e18).toString(),
-    liquidationFactor: (0.95e18).toString(),
-    supplyCap: (1000000e8).toString(),
-  };
 
 
 
   // Deploy all Comet-related contracts
-  const deployed = await deployComet(deploymentManager, deploySpec, {
-    baseTokenPriceFeed: WETHPriceFeed.address,
-    //assetConfigs: [assetConfig0, assetConfig1],\
-    assetConfigs: [assetConfig1],
-  });
+  const deployed = await deployComet(deploymentManager, deploySpec);
   // Deploy Comet
   const { comet } = deployed;
 
@@ -147,7 +152,7 @@ async function deployContracts(
     'bulkers/BaseBulker.sol',
     [
       await comet.governor(), // admin
-      WETH.address,        // wrapped native token
+      '0xe514d9deb7966c8be0ca922de8a064264ea6bcd4',        // wrapped native token
     ]
   );
   // Deploy stETH / ETH SimplePriceFeed
@@ -158,6 +163,7 @@ async function deployContracts(
     bridgeReceiver,
     l2CCIPRouter,
     l2CCIPOffRamp,
+    roninl2NativeBridge,
     bulker,
     COMP,
     // WETH

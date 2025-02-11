@@ -79,16 +79,13 @@ export default {
       }
     }
   },
-  // l1CCIPRouter: {
-  //   delegates: {
-  //     field: async () => '0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59'
-  //   }
-  // },
-  // roninl1CCIPOnRamp: {
-  //   delegates: {
-  //     field: async () => '0xc15308F6567644508EF8dcfa6D2C974e215979f6'
-  //   }
-  // },
+  roninl1NativeBridge: {
+    delegates: {
+      field: {
+        slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+      }
+    }
+  },
   scrollMessenger: {
     delegates: {
       field: {

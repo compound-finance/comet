@@ -10,29 +10,42 @@ export default async function relayRoninMessage(
   bridgeDeploymentManager: DeploymentManager,
   startingBlockNumber: number
 ) {
-  const roninl1CCIPOnRamp = await governanceDeploymentManager.getContractOrThrow('roninl1CCIPOnRamp');
+  //const nativeBridgeManager = await impersonateAddress(bridgeDeploymentManager, "");
+  const l1CCIPOnRamp = await governanceDeploymentManager.getContractOrThrow('roninl1CCIPOnRamp');
   const l2Router = (await bridgeDeploymentManager.getContractOrThrow('l2CCIPRouter'))
   const l2CCIPOffRamp = (await bridgeDeploymentManager.getContractOrThrow('l2CCIPOffRamp'))
   const bridgeReceiver = (await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver'))
+  const l1NativeBridge = (await governanceDeploymentManager.getContractOrThrow('roninl1NativeBridge'))
+  const l2NativeBridge = (await bridgeDeploymentManager.getContractOrThrow('roninl2NativeBridge'))
+  const offRampSigner = await impersonateAddress(bridgeDeploymentManager, l2CCIPOffRamp.address);
 
   const openBridgedProposals: OpenBridgedProposal[] = [];
 
-  const filter = roninl1CCIPOnRamp.filters.CCIPSendRequested();
+  const filterCCIP = l1CCIPOnRamp.filters.CCIPSendRequested();
+  const filterNative = l1NativeBridge.filters.DepositRequested();
   const latestBlock = (await governanceDeploymentManager.hre.ethers.provider.getBlock('latest')).number;
-  const logs: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+  const logsCCIP: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: latestBlock - 500,
     toBlock: 'latest',
-    address: roninl1CCIPOnRamp.address,
-    topics: filter.topics || []
+    address: l1CCIPOnRamp.address,
+    topics: filterCCIP.topics || []
+  });
+  const logsNativeBridge: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+    fromBlock: latestBlock - 500,
+    toBlock: 'latest',
+    address: l1NativeBridge.address,
+    topics: filterNative.topics || []
   });
 
-  for (const log of logs) {
-    const parsedLog = roninl1CCIPOnRamp.interface.parseLog(log);
+  let routeReceipt;
+  let bridgeReceipt;
+  let routeTx;
+  let bridgeTx;
+  for (const log of logsCCIP) {
+    const parsedLog = l1CCIPOnRamp.interface.parseLog(log);
     const internalMsg = parsedLog.args.message;
 
     console.log(`[CCIP L1->L2] Found CCIPSendRequested with messageId=${internalMsg.messageId}`);
-
-    const offRampSigner = await impersonateAddress(bridgeDeploymentManager, l2CCIPOffRamp.address);
 
     await bridgeDeploymentManager.hre.network.provider.request({
       method: 'hardhat_setBalance',
@@ -40,7 +53,9 @@ export default async function relayRoninMessage(
     });
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
-
+    console.log("BridgeReceiver " + internalMsg.receiver);
+    console.log("sender" + internalMsg.sender);
+    console.log(await bridgeReceiver.govTimelock());
     const any2EVMMessage = {
       messageId: internalMsg.messageId,
       sourceChainSelector: internalMsg.sourceChainSelector,
@@ -52,7 +67,7 @@ export default async function relayRoninMessage(
       })),
     };
 
-    const routeTx = await l2Router
+    routeTx = await l2Router
       .connect(offRampSigner)
       .routeMessage(
         any2EVMMessage,
@@ -61,20 +76,54 @@ export default async function relayRoninMessage(
         internalMsg.receiver,
       );
 
-    const routeReceipt = await routeTx.wait();
-    console.log(`[CCIP L2] routeMessage done, txHash=${routeTx.hash}`);
+    
+    routeReceipt = await routeTx.wait();
+  }
 
-    const proposalCreatedEvent = routeReceipt.events?.find(
-      (ev) =>
-        ev.address.toLowerCase() === bridgeReceiver.address.toLowerCase() &&
-        ev.topics[0] === bridgeReceiver.interface.getEventTopic('ProposalCreated')
-    );
-    if (proposalCreatedEvent) {
-      const decoded = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
-      const { id, eta } = decoded.args;
-      openBridgedProposals.push({ id, eta });
-      console.log(`[CCIP L2] Queued proposal: id=${id.toString()}, eta=${eta.toString()}`);
-    }
+
+  for (const log of logsNativeBridge) {
+    const parsedLog = l1NativeBridge.interface.parseLog(log);
+    const internalMsg = parsedLog.args.receipt;
+
+    await bridgeDeploymentManager.hre.network.provider.request({
+      method: 'hardhat_setBalance',
+      params: [l2NativeBridge.address, '0x1000000000000000000000']
+    });
+
+    await setNextBaseFeeToZero(bridgeDeploymentManager);
+
+    const bridgeSigner = await impersonateAddress(bridgeDeploymentManager, l2NativeBridge.address);
+
+    const transferSelector = ethers.utils.id("transfer(address,uint256)").slice(0, 10);
+    const encodedData = transferSelector + ethers.utils.defaultAbiCoder.encode(
+      ['address', 'uint256'],
+      [internalMsg.ronin.addr, internalMsg.info.quantity]
+    ).slice(2);
+
+    //bridgeTx = await l2NativeBridge.connect(bridgeSigner).depositFor(internalMsg);
+    bridgeTx = await bridgeSigner.sendTransaction({
+      to: internalMsg.ronin.tokenAddr,
+      data: encodedData
+    });
+    
+    bridgeReceipt = await bridgeTx.wait();
+  }
+
+  console.log("bridgeTx");
+  console.log(routeReceipt);
+
+  const proposalCreatedEvent = routeReceipt.events?.find(
+    (ev) =>
+      ev.address.toLowerCase() === bridgeReceiver.address.toLowerCase() &&
+      ev.topics[0] === bridgeReceiver.interface.getEventTopic('ProposalCreated')
+  );
+
+  console.log(`[CCIP L2] Found proposalCreatedEvent: ${proposalCreatedEvent}`);
+  if (proposalCreatedEvent) {
+    const decoded = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
+    const { id, eta } = decoded.args;
+    openBridgedProposals.push({ id, eta });
+    console.log(`[CCIP L2] Queued proposal: id=${id.toString()}, eta=${eta.toString()}`);
   }
 
   for (const proposal of openBridgedProposals) {

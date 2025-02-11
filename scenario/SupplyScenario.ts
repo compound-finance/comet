@@ -5,6 +5,7 @@ import { ContractReceipt } from 'ethers';
 import { matchesDeployment } from './utils';
 import { exp } from '../test/helpers';
 import { ethers } from 'hardhat';
+import { getConfigForScenario } from './utils/scenarioHelper';
 
 // XXX introduce a SupplyCapConstraint to separately test the happy path and revert path instead
 // of testing them conditionally
@@ -188,12 +189,15 @@ scenario(
 scenario(
   'Comet#supply > repay borrow',
   {
-    tokenBalances: {
-      albert: { $base: '==1000' }
-    },
-    cometBalances: {
-      albert: { $base: -1000 } // in units of asset, not wei
-    },
+    tokenBalances: async (ctx) => (
+      {
+        albert: {
+          $base: ` ==${getConfigForScenario(ctx).liquidationBase}`
+        }
+      }),
+    cometBalances: async (ctx) => ({
+      albert: { $base: -getConfigForScenario(ctx).liquidationBase },
+    }),
   },
   async ({ comet, actors }, context) => {
     const { albert } = actors;
@@ -203,14 +207,14 @@ scenario(
     const utilization = await comet.getUtilization();
     const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
 
-    expectApproximately(await albert.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, 1n) + 1n);
+    expectApproximately(await albert.getCometBaseBalance(), -BigInt(getConfigForScenario(context).liquidationBase) * scale, getInterest(BigInt(getConfigForScenario(context).liquidationBase) * scale, borrowRate, 1n) + 1n);
 
     // Albert repays 100 units of base borrow
     await baseAsset.approve(albert, comet.address);
-    const txn = await albert.supplyAsset({ asset: baseAsset.address, amount: 1000n * scale });
+    const txn = await albert.supplyAsset({ asset: baseAsset.address, amount: BigInt(getConfigForScenario(context).liquidationBase) * scale });
 
     // XXX all these timings are crazy
-    expectApproximately(await albert.getCometBaseBalance(), 0n, getInterest(1000n * scale, borrowRate, 4n) + 2n);
+    expectApproximately(await albert.getCometBaseBalance(), 0n, getInterest(BigInt(getConfigForScenario(context).liquidationBase) * scale, borrowRate, 4n) + 2n);
 
     return txn; // return txn to measure gas
   }
@@ -583,7 +587,7 @@ scenario(
 
     await collateralAsset.approve(albert, comet.address);
     await albert.allow(betty, true);
-    
+
     await expectRevertMatches(
       betty.supplyAssetFrom({
         src: albert.address,

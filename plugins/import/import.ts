@@ -1,5 +1,6 @@
 import { get, post, getEtherscanApiKey, getEtherscanApiUrl, getEtherscanUrl } from './etherscan';
 import { ethers } from 'ethers';
+import { erc20 } from '../scenario/utils/ERC20';
 
 export function debug(...args: any[]) {
   if (process.env['DEBUG']) {
@@ -55,11 +56,26 @@ interface EtherscanData {
   constructorArgs: string;
 }
 
-async function getRoninApiData(network: string, address: string) {
+async function getRoninApiData(network: string, address: string, apiKey: string): Promise<EtherscanData> {
   let apiUrl = await getEtherscanUrl(network);
   let contract = (await get(`${apiUrl}/contract/${address}`, {})).result.contract_name;
   let abi = (await get(`${apiUrl}/contract/${address}/abi`, {})).result.output.abi;
-  let src = (await get(`${apiUrl}/contract/${address}/src`, {})).result[0].content;
+  let src;
+  if (address.toLowerCase() === '0xe514d9deb7966c8be0ca922de8a064264ea6bcd4') {
+    let apiUrl = await getEtherscanApiUrl('mainnet');
+
+    let result = await get(apiUrl, {
+      module: 'contract',
+      action: 'getsourcecode',
+      address: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+      apikey: apiKey,
+    });
+
+    let s = <EtherscanSource>(<unknown>result.result[0]);
+    src = s.SourceCode;
+  } else {
+    src = (await get(`${apiUrl}/contract/${address}/src`, {})).result[0].content;
+  }
   let metadata = (await get(`${apiUrl}/contract/${address}/metadata`, {})).result;
   let deploymentBytecode = (await get(`${apiUrl}/contract/${address}`, {})).result.at_tx;
   let compiler = metadata.compiler.version;
@@ -258,7 +274,8 @@ function parseSources({ source, contract, optimized, optimizationRuns }: Ethersc
 
 export async function loadRoninContract(network: string, address: string) {
   const networkName = network;
-  const roninData = await getRoninApiData(networkName, address);
+  const apiKey = getEtherscanApiKey('mainnet');
+  const roninData = await getRoninApiData(networkName, address, apiKey);
   const { language, settings, sources } = parseSources(roninData);
   let contractCreationCode = await getContractCreationCode(networkName, address);
   let {

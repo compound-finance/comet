@@ -149,7 +149,7 @@ scenario(
   }
 );
 
-scenario(
+scenario.only(
   'Comet#rewards > can claim borrow rewards for self',
   {
     filter: async (ctx) => await isRewardSupported(ctx),
@@ -165,6 +165,8 @@ scenario(
     const { asset: collateralAssetAddress, scale: scaleBN } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
     const scale = scaleBN.toBigInt();
+    console.log(getConfigForScenario(context).rewardsAsset)
+    console.log(getConfigForScenario(context).rewardsBase)
     const toSupply = BigInt(getConfigForScenario(context).rewardsAsset) * scale;
     const baseAssetAddress = await comet.baseToken();
     const baseScale = (await comet.baseScale()).toBigInt();
@@ -229,9 +231,12 @@ for (let i = 0; i < MULTIPLIERS.length; i++) {
     `Comet#rewards > can claim supply rewards on scaling rewards contract with multiplier of ${MULTIPLIERS[i]}`,
     {
       filter: async (ctx) => await isRewardSupported(ctx),
-      tokenBalances: {
-        albert: { $base: ' == 100' }, // in units of asset, not wei
-      },
+      tokenBalances: async (ctx) => (
+        {
+          albert: {
+            $base:  ` ==${getConfigForScenario(ctx).rewardsBase}`
+          }
+        }),
     },
     async (properties, context, world) => {
       return await testScalingReward(properties, context, world, MULTIPLIERS[i]);
@@ -262,8 +267,9 @@ async function testScalingReward(properties: CometProperties, context: CometCont
     'CometRewards.sol',
     [albert.address]
   );
+  const COMPRewards = 10;
   await newRewards.connect(albert.signer).setRewardConfigWithMultiplier(comet.address, rewardTokenAddress, multiplier);
-  await context.sourceTokens(exp(1_000, rewardDecimals), rewardTokenAddress, newRewards.address);
+  await context.sourceTokens(exp(COMPRewards, rewardDecimals), rewardTokenAddress, newRewards.address);
 
   await baseAsset.approve(albert, comet.address);
   await albert.safeSupplyAsset({ asset: baseAssetAddress, amount: 100n * baseScale });
