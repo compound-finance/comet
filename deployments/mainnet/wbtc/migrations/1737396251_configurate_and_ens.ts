@@ -47,6 +47,23 @@ export default migration('1737396251_configurate_and_ens', {
       officialMarketsJSON[currentChainId] = [newMarketObject];
     }
 
+    // USDS on Base is live, ENS is not updated until proposal will be executed
+    if (!(officialMarketsJSON[8453] as { baseSymbol: string, cometAddress: string }[])?.find(({ baseSymbol }) => baseSymbol === 'USDS')) {
+      officialMarketsJSON[8453].push({
+        baseSymbol: 'USDS',
+        cometAddress: '0x2c776041CCFe903071AF44aa147368a9c8EEA518'
+      });
+    }
+
+    // USDC on Linea is live, ENS is not updated until proposal will be executed
+    if (!officialMarketsJSON[59144]) {
+      officialMarketsJSON[59144] = [{
+        baseSymbol: 'USDC',
+        cometAddress: '0x8D38A3d6B3c3B7d96D6536DA7Eef94A9d7dbC991'
+      }];
+    }
+
+
     const _reduceReservesCalldata = utils.defaultAbiCoder.encode(
       ['uint256'],
       [WBTCAmount]
@@ -244,6 +261,10 @@ export default migration('1737396251_configurate_and_ens', {
           baseSymbol: 'AERO',
           cometAddress: '0x784efeB622244d2348d4F2522f8860B96fbEcE89'
         },
+        {
+          baseSymbol: 'USDS',
+          cometAddress: '0x2c776041CCFe903071AF44aa147368a9c8EEA518'
+        },
       ],
       42161: [
         {
@@ -267,6 +288,12 @@ export default migration('1737396251_configurate_and_ens', {
         {
           baseSymbol: 'USDC',
           cometAddress: '0xB2f97c1Bd3bf02f5e74d13f02E3e26F93D77CE44'
+        }
+      ],
+      59144: [
+        {
+          baseSymbol: 'USDC',
+          cometAddress: '0x8D38A3d6B3c3B7d96D6536DA7Eef94A9d7dbC991'
         }
       ]
     });
