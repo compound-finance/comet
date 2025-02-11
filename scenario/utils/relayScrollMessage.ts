@@ -81,21 +81,21 @@ export default async function relayScrollMessage(
     // 2. Cross-chain message passing
     if (target === l2ERC20Gateway.address) {
       // 1a. Bridging ERC20 token
-      const { l1Token, _l2Token, _from, to, amount, _data } = ethers.utils.defaultAbiCoder.decode(
+      const [ l1Token, _l2Token, _from, to, amount, _data ] = ethers.utils.defaultAbiCoder.decode(
         ['address _l1Token', 'address _l2Token','address _from', 'address _to','uint256 _amount', 'bytes _data'],
         messageWithoutSigHash
       );
-  
+
       console.log(
         `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Bridged over ${amount} of ${l1Token} to user ${to}`
       );
     } else if (target === l2ETHGateway.address){
       // 1a. Bridging ETH
-      const { _from, to, amount, _data } = ethers.utils.defaultAbiCoder.decode(
+      const [ _from, to, amount, _data ] = ethers.utils.defaultAbiCoder.decode(
         ['address _from', 'address _to', 'uint256 _amount', 'bytes _data'],
         messageWithoutSigHash
       );
-  
+
       const oldBalance = await bridgeDeploymentManager.hre.ethers.provider.getBalance(to);
       const newBalance = oldBalance.add(BigNumber.from(amount));
       // This is our best attempt to mimic the deposit transaction type (not supported in Hardhat) that Optimism uses to deposit ETH to an L2 address
@@ -103,48 +103,48 @@ export default async function relayScrollMessage(
         to,
         ethers.utils.hexStripZeros(newBalance.toHexString()),
       ]);
-  
+
       console.log(
         `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Bridged over ${amount} of ETH to user ${to}`
       );
     }else if (target === l2WETHGateway.address){
       // 1c. Bridging WETH
-      const { _l1Token, _l2Token, _from, to, amount, _data } = ethers.utils.defaultAbiCoder.decode(
+      const [ _l1Token, _l2Token, _from, to, amount, _data ] = ethers.utils.defaultAbiCoder.decode(
         ['address _l1Token', 'address _l2Token','address _from', 'address _to','uint256 _amount', 'bytes _data'],
         messageWithoutSigHash
       );
-  
+
       console.log(
         `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Bridged over ${amount} of WETH to user ${to}`
       );
     } else if (target === l2WstETHGateway.address){
       // 1d. Bridging WstETH
-      const { _l1Token, _l2Token, _from, to, amount, _data } = ethers.utils.defaultAbiCoder.decode(
+      const [ _l1Token, _l2Token, _from, to, amount, _data ] = ethers.utils.defaultAbiCoder.decode(
         ['address _l1Token', 'address _l2Token','address _from', 'address _to','uint256 _amount', 'bytes _data'],
         messageWithoutSigHash
       );
-  
+
       console.log(
         `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Bridged over ${amount} of WstETH to user ${to}`
       );
     } else if (target === bridgeReceiver.address) {
       // Cross-chain message passing
-      const proposalCreatedEvent = relayMessageTxn.events.find(event => event.address === bridgeReceiver.address);
+      const proposalCreatedEvent = relayMessageTxn.events.find(event => event.address.toLowerCase() === bridgeReceiver.address.toLowerCase());
       const { args: { id, eta } } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
-  
+
       // Add the proposal to the list of open bridged proposals to be executed after all the messages have been relayed
       openBridgedProposals.push({ id, eta });
     } else {
       throw new Error(`[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Unrecognized target for cross-chain message`);
     }
   }
-  
+
   // Execute open bridged proposals now that all messages have been bridged
   for (let proposal of openBridgedProposals) {
     const { eta, id } = proposal;
     // Fast forward l2 time
     await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
-  
+
     // Execute queued proposal
     await setNextBaseFeeToZero(bridgeDeploymentManager);
     await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
