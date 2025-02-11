@@ -3,7 +3,7 @@
   "symbol": "cWETHv3",
   "baseToken": "WETH",
   "baseTokenAddress": "0xc99a6a985ed2cac1ef41640596c5a5f9f4e19ef5",
-  "rewardTokenAddress": "0x3902228D6A3d2Dc44731fD9d45FeE6a61c722D0b",
+  "rewardTokenAddress": "",
   "borrowMin": "0.01e18",
   "storeFrontPriceFactor": 0.6,
   "targetReserves": "5_000_000e18",
@@ -20,8 +20,8 @@
   },
   "tracking": {
     "indexScale": "1e15",
-    "baseSupplySpeed": "46296296296e0",
-    "baseBorrowSpeed": "46296296296e0",
+    "baseSupplySpeed": "0e0",
+    "baseBorrowSpeed": "0e0",
     "baseMinForRewards": "1000e18"
   },
   "assets": {

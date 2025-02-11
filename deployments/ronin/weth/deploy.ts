@@ -166,6 +166,7 @@ async function deployContracts(
     roninl2NativeBridge,
     bulker,
     COMP,
+    localTimelock
     // WETH
   };
 }

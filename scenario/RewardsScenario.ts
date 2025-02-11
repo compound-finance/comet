@@ -149,7 +149,7 @@ scenario(
   }
 );
 
-scenario.only(
+scenario(
   'Comet#rewards > can claim borrow rewards for self',
   {
     filter: async (ctx) => await isRewardSupported(ctx),
@@ -165,8 +165,6 @@ scenario.only(
     const { asset: collateralAssetAddress, scale: scaleBN } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
     const scale = scaleBN.toBigInt();
-    console.log(getConfigForScenario(context).rewardsAsset)
-    console.log(getConfigForScenario(context).rewardsBase)
     const toSupply = BigInt(getConfigForScenario(context).rewardsAsset) * scale;
     const baseAssetAddress = await comet.baseToken();
     const baseScale = (await comet.baseScale()).toBigInt();

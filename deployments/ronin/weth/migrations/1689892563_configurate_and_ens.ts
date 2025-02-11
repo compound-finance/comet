@@ -39,6 +39,7 @@ export default migration("1707394874_configurate_and_ens", {
     const { bridgeReceiver, comet, cometAdmin, configurator, rewards } =
       await deploymentManager.getContracts();
 
+
     const {
       l1CCIPRouter,
       roninl1NativeBridge,
@@ -66,23 +67,31 @@ export default migration("1707394874_configurate_and_ens", {
       [comet.address, CompL2]
     );
 
+    const sweepTokenCalldataComp = utils.defaultAbiCoder.encode(
+      ["address", "address"],
+      [rewards.address, CompL2]
+    );
+    
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ["address[]", "uint256[]", "string[]", "bytes[]"],
       [
-        [configurator.address, cometAdmin.address, rewards.address],
-        [0, 0, 0],
+        [configurator.address, cometAdmin.address, rewards.address, bridgeReceiver.address],
+        [0, 0, 0, 0],
         [
           "setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))",
           "deployAndUpgradeTo(address,address)",
           "setRewardConfig(address,address)",
+          "sweepToken(address,address)"
         ],
         [
           setConfigurationCalldata,
           deployAndUpgradeToCalldata,
           setRewardConfigCalldata,
+          sweepTokenCalldataComp
         ],
       ]
     );
+
 
     const COMPAmountToBridge = exp(1, 18);
     const ETHAmountToBridge = exp(1, 18);
@@ -110,6 +119,9 @@ export default migration("1707394874_configurate_and_ens", {
       method: 'hardhat_impersonateAccount',
       params: [whale],
     });
+
+
+
     const whaleSigner = await govDeploymentManager.getSigner(whale);
 
     const tx = await whaleSigner.sendTransaction({
@@ -172,7 +184,6 @@ export default migration("1707394874_configurate_and_ens", {
       },
     ];
 
-    console.log(bridgeReceiver.address);
 
     const description = "# Initialize cUSDCv3 on Ronin\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes deployment of Compound III to Optimism network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Optimism; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-optimism/4975/6).\n\nFurther detailed information can be found on the corresponding [deployment pull request](https://github.com/compound-finance/comet/pull/838), [proposal pull request](https://github.com/compound-finance/comet/pull/842), [deploy market GitHub action run](https://github.com/dmitriy-bergman-works/comet-optimism/actions/runs/8581592608) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-optimism/4975).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Optimism. This sends the encoded `setConfiguration` and `deployAndUpgradeTo` calls across the bridge to the governance receiver on Optimism. It also calls `setRewardConfig` on the Optimism rewards contract, to establish Optimism’s bridged version of COMP as the reward token for the deployment and set the initial supply speed to be 5 COMP/day and borrow speed to be 5 COMP/day.\n\nThe second action approves Circle’s Cross-Chain Transfer Protocol (CCTP) [TokenMessenger](https://etherscan.io/address/0xbd3fa81b58ba92a82136038b25adec7066af3155) to take the Timelock's USDC on Mainnet, in order to seed the market reserves through the CCTP.\n\nThe third action deposits and burns 10K USDC from mainnet via depositForBurn function on CCTP’s TokenMessenger contract to mint native USDC to Comet on Optimism.\n\nThe fourth action approves Optimism’s [L1StandardBridge](https://etherscan.io/address/0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1) to take Timelock's COMP, in order to seed the rewards contract through the bridge.\n\nThe fifth action deposits 3.6K COMP from mainnet to the Optimism L1StandardBridge contract to bridge to CometRewards.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Optimism cUSDCv3 market";
 
@@ -206,25 +217,28 @@ export default migration("1707394874_configurate_and_ens", {
     const ethers = deploymentManager.hre.ethers;
     const { utils } = ethers;
     await deploymentManager.spider();
-    const {
-      l1CCIPRouter, timelock
-    } = await govDeploymentManager.getContracts();
-
-    const { comet, rewards } = await deploymentManager.getContracts();
+    const { comet, rewards, COMP, WETH } = await deploymentManager.getContracts();
 
     // 1.
-    const stateChanges = await diffState(
-      comet,
-      getCometConfig,
-      preMigrationBlockNumber
-    );
+    // const stateChanges = await diffState(
+    //   comet,
+    //   getCometConfig,
+    //   preMigrationBlockNumber
+    // );
     // expect(stateChanges).to.deep.equal({
-    //   WETH: {
-    //     supplyCap: exp(2800, 18)
+    //   WRON: {
+    //     supplyCap: exp(2500000, 18)
     //   },
+    //   USDC: {
+    //     supplyCap: exp(800000, 6)
+    //   },
+    //   AXS: {
+    //     supplyCap: exp(250000, 18)
+    //   }
     //   baseTrackingSupplySpeed: exp(4 / 86400, 15, 18), // 46296296296
     //   baseTrackingBorrowSpeed: exp(4 / 86400, 15, 18), // 46296296296
     // });
+
 
     const config = await rewards.rewardConfig(comet.address);
     expect(config.token).to.be.equal(CompL2);
@@ -232,14 +246,15 @@ export default migration("1707394874_configurate_and_ens", {
     expect(config.shouldUpscale).to.be.equal(true);
 
     // 4. & 5.
-    // expect(await COMP.balanceOf(rewards.address)).to.be.equal(exp(3_600, 18));
+    expect(await COMP.balanceOf(rewards.address)).to.be.equal(exp(1, 18));
+    expect(await WETH.balanceOf(comet.address)).to.be.equal(exp(1, 18));
 
     // 6.
     const ENSResolver = await govDeploymentManager.existing(
       'ENSResolver',
       ENSResolverAddress
     );
-    const subdomainHash = deploymentManager.hre.ethers.utils.namehash(ENSSubdomain);
+    const subdomainHash = utils.namehash(ENSSubdomain);
     const officialMarketsJSON = await ENSResolver.text(
       subdomainHash,
       ENSTextRecordKey

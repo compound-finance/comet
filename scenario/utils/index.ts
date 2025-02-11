@@ -155,8 +155,6 @@ export async function getActorAddressFromName(name: string, context: CometContex
     }
     return actorAddress;
   } else {
-    console.log("Name " + name);
-    console.log("Actors ", context.actors[name]);
     return context.actors[name].address;
   }
 }
@@ -695,7 +693,6 @@ export async function fastL2GovernanceExecute(
   calldatas: string[]
 ) {
   const startingBlockNumber = await governanceDeploymentManager.hre.ethers.provider.getBlockNumber();
-  console.log("2")
   await fastGovernanceExecute(
     governanceDeploymentManager,
     proposer,
@@ -704,7 +701,6 @@ export async function fastL2GovernanceExecute(
     signatures,
     calldatas
   );
-  console.log("3")
 
   await relayMessage(governanceDeploymentManager, bridgeDeploymentManager, startingBlockNumber);
 }
@@ -863,7 +859,6 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       );
   }
 
-  console.log("1")
 
   await fastL2GovernanceExecute(
     govDeploymentManager,

@@ -5,12 +5,13 @@ import { BigNumber, ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { OpenBridgedProposal } from '../context/Gov';
 
+const MINTER = "0xA6F175104fAAa5C1b034fB82c98bd674e3C6E7d7";
+
 export default async function relayRoninMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
   startingBlockNumber: number
 ) {
-  //const nativeBridgeManager = await impersonateAddress(bridgeDeploymentManager, "");
   const l1CCIPOnRamp = await governanceDeploymentManager.getContractOrThrow('roninl1CCIPOnRamp');
   const l2Router = (await bridgeDeploymentManager.getContractOrThrow('l2CCIPRouter'))
   const l2CCIPOffRamp = (await bridgeDeploymentManager.getContractOrThrow('l2CCIPOffRamp'))
@@ -38,7 +39,6 @@ export default async function relayRoninMessage(
   });
 
   let routeReceipt;
-  let bridgeReceipt;
   let routeTx;
   let bridgeTx;
   for (const log of logsCCIP) {
@@ -53,9 +53,6 @@ export default async function relayRoninMessage(
     });
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
-    console.log("BridgeReceiver " + internalMsg.receiver);
-    console.log("sender" + internalMsg.sender);
-    console.log(await bridgeReceiver.govTimelock());
     const any2EVMMessage = {
       messageId: internalMsg.messageId,
       sourceChainSelector: internalMsg.sourceChainSelector,
@@ -67,6 +64,7 @@ export default async function relayRoninMessage(
       })),
     };
 
+    const { COMP } = await bridgeDeploymentManager.getContracts();
     routeTx = await l2Router
       .connect(offRampSigner)
       .routeMessage(
@@ -76,12 +74,38 @@ export default async function relayRoninMessage(
         internalMsg.receiver,
       );
 
-    
     routeReceipt = await routeTx.wait();
+
+    await bridgeDeploymentManager.hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [MINTER]
+    });
+
+    await impersonateAddress(bridgeDeploymentManager, MINTER);
+
+    if (internalMsg.tokenAmounts.length) {
+      const mintSigner = await bridgeDeploymentManager.getSigner(MINTER);
+      const mintSelector = ethers.utils.id("mint(address,uint256)").slice(0, 10);
+      const encodedData = mintSelector + ethers.utils.defaultAbiCoder.encode(
+        ['address', 'uint256'],
+        [internalMsg.receiver, internalMsg.tokenAmounts[0].amount]
+      ).slice(2);
+
+      const mintTx = await mintSigner.sendTransaction({
+        to: COMP.address,
+        data: encodedData
+      });
+
+      await mintTx.wait();
+    }
+
+
+    console.log(`[CCIP L1->L2] Routed message to ${internalMsg.receiver}`);
   }
 
 
   for (const log of logsNativeBridge) {
+    console.log(`[Native L1->L2] Found DepositRequested`);
     const parsedLog = l1NativeBridge.interface.parseLog(log);
     const internalMsg = parsedLog.args.receipt;
 
@@ -100,17 +124,14 @@ export default async function relayRoninMessage(
       [internalMsg.ronin.addr, internalMsg.info.quantity]
     ).slice(2);
 
-    //bridgeTx = await l2NativeBridge.connect(bridgeSigner).depositFor(internalMsg);
     bridgeTx = await bridgeSigner.sendTransaction({
       to: internalMsg.ronin.tokenAddr,
       data: encodedData
     });
-    
+
+    console.log(`[Native L1->L2] Deposited ${internalMsg.info.quantity} to ${internalMsg.ronin.addr} of token ${internalMsg.ronin.tokenAddr}`);
     bridgeReceipt = await bridgeTx.wait();
   }
-
-  console.log("bridgeTx");
-  console.log(routeReceipt);
 
   const proposalCreatedEvent = routeReceipt.events?.find(
     (ev) =>

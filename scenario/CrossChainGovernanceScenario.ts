@@ -7,7 +7,7 @@ import { isBridgedDeployment, matchesDeployment, createCrossChainProposal } from
 import { ArbitrumBridgeReceiver } from '../build/types';
 
 // This is a generic scenario that runs for all L2s and sidechains
-scenario.only(
+scenario(
   'execute cross-chain governance proposal',
   {
     filter: async ctx => isBridgedDeployment(ctx)
