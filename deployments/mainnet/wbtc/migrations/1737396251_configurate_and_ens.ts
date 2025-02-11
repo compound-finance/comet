@@ -11,7 +11,7 @@ const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
 
-const cWBTCAddress = '0xC11b1268C1A384e55C48c2391d8d480264A3A7F4';
+const cWBTCAddress = '0xccF4429DB6322D5C611ee964527D42E5d685DD6a';
 const WBTCAmount = ethers.BigNumber.from(exp(2, 8));
 
 export default migration('1737396251_configurate_and_ens', {
