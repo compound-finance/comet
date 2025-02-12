@@ -62,7 +62,20 @@ export function getConfigForScenario(ctx: CometContext) {
     config.interestSeconds = 110;
   }
 
+  if (ctx.world.base.network === 'arbitrum' && ctx.world.base.deployment === 'usdc') {
+    config.withdrawAsset = 3500;
+  }
+
+  if (ctx.world.base.network === 'arbitrum' && ctx.world.base.deployment === 'usdt') {
+    config.withdrawAsset = 3500;
+  }
+
   if (ctx.world.base.network === 'arbitrum' && ctx.world.base.deployment === 'usdc.e') {
+    config.withdrawAsset = 7000;
+    config.bulkerAsset = 10000;
+    config.bulkerAsset1 = 10000;
+    config.transferAsset = 10000;
+    config.transferAsset1 = 10000;
     config.liquidationDenominator = 84;
     config.liquidationBase = 100000;
     config.liquidationBase1 = 50000;
@@ -84,7 +97,12 @@ export function getConfigForScenario(ctx: CometContext) {
     config.withdrawAsset1 = 10000;
     config.liquidationBase = 100;
     config.liquidationBase1 = 50;
-
+    config.bulkerAsset = 100000;
+    config.bulkerAsset1 = 100000;
+    config.bulkerComet = 100;
+    config.bulkerBorrowBase = 10;
+    config.bulkerBorrowAsset = 10;
+    config.bulkerBase = 100;
   }
 
   if (ctx.world.base.network === 'polygon' && ctx.world.base.deployment === 'usdc') {

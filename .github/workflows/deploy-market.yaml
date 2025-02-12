@@ -70,7 +70,7 @@ jobs:
       - name: Run Deploy
         run: |
           yarn hardhat deploy --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }}
-        env:
+        env: 
           DEBUG: true
           ETH_PK: "${{ inputs.eth_pk }}"
           NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}

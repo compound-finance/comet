@@ -39,6 +39,7 @@ export default async function relayRoninMessage(
   });
 
   let routeReceipt;
+  let bridgeReceipt;
   let routeTx;
   let bridgeTx;
   for (const log of logsCCIP) {

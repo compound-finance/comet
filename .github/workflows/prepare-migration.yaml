@@ -14,7 +14,11 @@ on:
           - base
           - optimism
           - mantle
+<<<<<<< HEAD
           - ronin
+=======
+          - scroll
+>>>>>>> 36f59c9410f608c2dd1db660a4dab4a10dacfbc3
       deployment:
         description: Deployment Name (e.g. "usdc")
         required: true

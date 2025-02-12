@@ -375,7 +375,8 @@ const commitStore = "0x2aa101BF99CaeF7fc1355D4c493a1fe187A007cE";
 
 async function updateCCIPStats(dm: DeploymentManager) {
   if (dm.network === 'mainnet') {
-    const commitStore = await dm.getSigner("0x2aa101bf99caef7fc1355d4c493a1fe187a007ce");
+    const commitStore = "0x2aa101bf99caef7fc1355d4c493a1fe187a007ce"
+    
     const priceRegistry = "0x8c9b2Efb7c64C394119270bfecE7f54763b958Ad";
     const abi = [
       {
@@ -491,6 +492,16 @@ async function updateCCIPStats(dm: DeploymentManager) {
       }
     ]
 
+    await dm.hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [commitStore],
+    });
+
+    await dm.hre.network.provider.request({
+      method: 'hardhat_setBalance',
+      params: [commitStore, '0x56bc75e2d63100000'],
+    })
+    const commitStoreSigner = await dm.hre.ethers.getSigner(commitStore);
 
     const registryContract = new Contract(priceRegistry, abi, dm.hre.ethers.provider);
 
@@ -505,7 +516,7 @@ async function updateCCIPStats(dm: DeploymentManager) {
       gasPrices.push([address, price.value]);
     }
 
-    const tx0 = await commitStore.sendTransaction({
+    const tx0 = await commitStoreSigner.sendTransaction({
       to: priceRegistry,
       data: registryContract.interface.encodeFunctionData('updatePrices', [{
         tokenPriceUpdates: tokenPrices,
@@ -609,6 +620,7 @@ export async function voteForOpenProposal(dm: DeploymentManager, { id, startBloc
   }
 }
 
+
 export async function executeOpenProposal(
   dm: DeploymentManager,
   { id, startBlock, endBlock }: OpenProposal
@@ -616,15 +628,6 @@ export async function executeOpenProposal(
   const governor = await dm.getContractOrThrow('governor');
   const blockNow = await dm.hre.ethers.provider.getBlockNumber();
   const blocksUntilEnd = endBlock.toNumber() - Math.max(startBlock.toNumber(), blockNow) + 1;
-  await dm.hre.network.provider.request({
-    method: 'hardhat_impersonateAccount',
-    params: [commitStore],
-  });
-
-  await dm.hre.network.provider.request({
-    method: 'hardhat_setBalance',
-    params: [commitStore, '0x56bc75e2d63100000'],
-  })
 
   if (blocksUntilEnd > 0) {
     await mineBlocks(dm, blocksUntilEnd);
