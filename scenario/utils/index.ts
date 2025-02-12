@@ -640,7 +640,7 @@ export async function executeOpenProposal(
   if (await governor.state(id) == ProposalState.Queued) {
     const block = await dm.hre.ethers.provider.getBlock('latest');
     const eta = await governor.proposalEta(id);
-
+    
     await setNextBlockTimestamp(dm, Math.max(block.timestamp, eta.toNumber()) + 1);
     await setNextBaseFeeToZero(dm);
     await updateCCIPStats(dm);

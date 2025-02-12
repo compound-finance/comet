@@ -153,6 +153,7 @@ async function crawl(
               contracts,
               trace
             );
+
             // Add the aliasTemplate in place to the relative context
             (context[subKey] = context[subKey] || []).push(contracts.get(subAlias));
           }

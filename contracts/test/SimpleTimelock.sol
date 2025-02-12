@@ -74,7 +74,6 @@ contract SimpleTimelock {
         }
 
         (bool success, bytes memory returnData) = target.call{value: value}(callData);
-    
         require(success, "Timelock::executeTransaction: Transaction execution reverted.");
         
         emit ExecuteTransaction(txHash, target, value, signature, data, eta);

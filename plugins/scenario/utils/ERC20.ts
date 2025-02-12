@@ -220,5 +220,5 @@ export const erc20 = new ethers.utils.Interface([
     ],
     'name': 'Transfer',
     'type': 'event'
-  },
+  }
 ]);

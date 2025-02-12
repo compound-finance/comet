@@ -114,7 +114,6 @@ export async function deploy<C extends Contract>(
     factory = factory.connect(deployOpts.connect);
   }
 
-  console.log(`Deploying ${contractName} with args ${stringifyJson(deployArgs)}`);
   const contract = await doDeploy(contractName, factory, deployArgs, deployOpts, 'artifact');
   const buildFile = await getBuildFileFromArtifacts(contractFile, contractFileName);
   if (!buildFile.contract) {

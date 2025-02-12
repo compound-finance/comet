@@ -208,7 +208,7 @@ const config: HardhatUserConfig = {
       viaIR: process.env['OPTIMIZER_DISABLED'] ? false : true,
     },
   },
-  
+
   networks: {
     hardhat: {
       chainId: 1337,
