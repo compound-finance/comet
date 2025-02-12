@@ -545,7 +545,7 @@ async function getProxyAdmin(dm: DeploymentManager, proxyAddress: string): Promi
 
 async function mockAllRedstoneOracles(dm: DeploymentManager){
   const feeds = REDSTONE_FEEDS[dm.network];
-  if(!Array.isArray(feeds)) {
+  if (!Array.isArray(feeds)) {
     debug(`No redstone feeds found for network: ${dm.network}`);
     return;
   }
@@ -640,7 +640,7 @@ export async function executeOpenProposal(
   if (await governor.state(id) == ProposalState.Queued) {
     const block = await dm.hre.ethers.provider.getBlock('latest');
     const eta = await governor.proposalEta(id);
-    
+
     await setNextBlockTimestamp(dm, Math.max(block.timestamp, eta.toNumber()) + 1);
     await setNextBaseFeeToZero(dm);
     await updateCCIPStats(dm);

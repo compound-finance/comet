@@ -185,6 +185,9 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
   }
 }
 
+/**
+ * @type import('hardhat/config').HardhatUserConfig
+ */
 const config: HardhatUserConfig = {
   solidity: {
     version: '0.8.15',
