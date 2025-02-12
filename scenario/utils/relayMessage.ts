@@ -5,7 +5,6 @@ import relayBaseMessage from './relayBaseMessage';
 import relayLineaMessage from './relayLineaMessage';
 import relayOptimismMessage from './relayOptimismMessage';
 import relayMantleMessage from './relayMantleMessage';
-import relayUnichainSepoliaMessage from './relayUnichainSepoliaMessage';
 import relayUnichainMessage from './relayUnichainMessage';
 import relayScrollMessage from './relayScrollMessage';
 
