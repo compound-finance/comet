@@ -9,7 +9,6 @@ export interface Result {
 
 export function getBlockscoutApiUrl(network: string): string {
   let host = {
-    'unichain-sepolia': 'unichain-sepolia.blockscout.com',
     'unichain': 'unichain.blockscout.com',
   }[network];
 
@@ -22,7 +21,6 @@ export function getBlockscoutApiUrl(network: string): string {
 
 export function getBlockscoutUrl(network: string): string {
   let host = {
-    'unichain-sepolia': 'unichain-sepolia.blockscout.com',
     'unichain': 'unichain.blockscout.com',
   }[network];
 
@@ -35,7 +33,6 @@ export function getBlockscoutUrl(network: string): string {
 
 export async function getBlockscoutRPCUrl(network: string): Promise<string> {
   let host = {
-    'unichain-sepolia': 'sepolia.unichain.org',
     'unichain': `multi-boldest-patina.unichain-mainnet.quiknode.pro/${process.env.UNICHAIN_QUICKNODE_KEY}/`
   }[network];
 

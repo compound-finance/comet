@@ -688,20 +688,6 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageCalldata);
       break;
     }
-    case 'unichain-sepolia': {
-      const sendMessageCalldata = utils.defaultAbiCoder.encode(
-        ['address', 'bytes', 'uint256'],
-        [bridgeReceiver.address, l2ProposalData, 2_500_000]
-      );
-      const unichainSepoliaL1CrossDomainMessenger = await govDeploymentManager.getContractOrThrow(
-        'unichainSepoliaL1CrossDomainMessenger'
-      );
-      targets.push(unichainSepoliaL1CrossDomainMessenger.address);
-      values.push(0);
-      signatures.push('sendMessage(address,bytes,uint32)');
-      calldata.push(sendMessageCalldata);
-      break;
-    }
     case 'unichain': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'bytes', 'uint256'],

@@ -37,13 +37,6 @@ export default async function relayMessage(
         startingBlockNumber
       );
       break;
-    case 'unichain-sepolia':
-      await relayUnichainSepoliaMessage(
-        governanceDeploymentManager,
-        bridgeDeploymentManager,
-        startingBlockNumber
-      );
-      break;
     case 'unichain':
       await relayUnichainMessage(
         governanceDeploymentManager,

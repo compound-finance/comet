@@ -159,10 +159,6 @@ export const WHALES = {
     '0x233493E9DC68e548AC27E4933A600A3A4682c0c3', // FBTC whale
     '0xCd83CbBFCE149d141A5171C3D6a0F0fCCeE225Ab', // COMP whale
   ],
-  'unichain-sepolia': [
-    '0xd3A19CfC8b926f631C62d6D1213b51c27719Aa49', // USDC whale
-    '0xc8Da76f5A01a6531926fFc06398FE0Af2bb277d3', // WETH whale
-  ],
   'unichain': [
     '0x4200000000000000000000000000000000000006', // WETH whale
   ],

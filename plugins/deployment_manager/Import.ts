@@ -23,7 +23,7 @@ export async function fetchAndCacheContract(
   return buildFile;
 }
 
-const blockScoutNetworks = ['unichain-sepolia', 'unichain'];
+const blockScoutNetworks = ['unichain'];
 
 // Wrapper for pulling contract data from Etherscan
 export async function importContract(

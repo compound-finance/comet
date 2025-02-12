@@ -40,7 +40,6 @@ import optimismUsdtRelationConfigMap from './deployments/optimism/usdt/relations
 import optimismWethRelationConfigMap from './deployments/optimism/weth/relations';
 import mantleRelationConfigMap from './deployments/mantle/usde/relations';
 import unichainRelationConfigMap from './deployments/unichain/usdc/relations';
-import unichainSepoliaRelationConfigMap from './deployments/unichain-sepolia/weth/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
@@ -134,11 +133,6 @@ const networkConfigs: NetworkConfig[] = [
     url: `https://rpc.ankr.com/mantle/${ANKR_KEY}`,
     // link for deployment
     // url: `https://rpc.mantle.xyz`,
-  },
-  {
-    network: 'unichain-sepolia',
-    chainId: 1301,
-    url: `https://sepolia.unichain.org`,
   },
   {
     network: 'unichain',
@@ -298,14 +292,6 @@ const config: HardhatUserConfig = {
         }
       },
       {
-        network: 'unichain-sepolia',
-        chainId: 1301,
-        urls: {
-          apiURL: 'https://unichain-sepolia.blockscout.com/api',
-          browserURL: 'https://unichain-sepolia.blockscout.com/'
-        }
-      },
-      {
         network: 'unichain',
         chainId: 130,
         urls: {
@@ -371,9 +357,6 @@ const config: HardhatUserConfig = {
       },
       'mantle': {
         'usde': mantleRelationConfigMap
-      },
-      'unichain-sepolia': {
-        'weth': unichainSepoliaRelationConfigMap
       },
       'unichain': {
         'usdc': unichainRelationConfigMap
@@ -515,12 +498,6 @@ const config: HardhatUserConfig = {
         network: 'mantle',
         deployment: 'usde',
         auxiliaryBase: 'mainnet'
-      },
-      {
-        name: 'unichain-sepolia-weth',
-        network: 'unichain-sepolia',
-        deployment: 'weth',
-        auxiliaryBase: 'sepolia-usdc'
       },
       {
         name: 'unichain-usdc',

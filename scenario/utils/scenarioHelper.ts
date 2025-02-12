@@ -104,23 +104,5 @@ export function getConfigForScenario(ctx: CometContext) {
     config.bulkerAsset1 = 10;
   }
 
-  if (ctx.world.base.network === 'unichain-sepolia' && ctx.world.base.deployment === 'weth') {
-    config.bulkerBase = 50;
-    config.bulkerComet = 50;
-    config.bulkerBorrowBase = 10;
-    config.bulkerBorrowAsset = 50;
-    config.bulkerAsset = 1000000;
-    config.bulkerAsset2 = 1000000;
-    config.rewardsAsset = 100000;
-    config.rewardsBase = 10;
-    config.transferBase = 10;
-    config.transferAsset = 500000;
-    config.transferAsset1 = 500000;
-    config.withdrawBase = 10;
-    config.withdrawAsset = 1000000;
-    config.withdrawBase1 = 50;
-    config.withdrawAsset1 = 500000;
-  }
-
   return config;
 }
