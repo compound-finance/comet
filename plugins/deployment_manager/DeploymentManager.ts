@@ -180,7 +180,6 @@ export class DeploymentManager {
     force?: boolean,
     retries?: number
   ): Promise<C> {
-    
     const maybeExisting: C = await this.contract(alias);
     if (!maybeExisting || force) {
       const contract: C = await this._deploy(contractFile, deployArgs, retries);
@@ -247,7 +246,6 @@ export class DeploymentManager {
       async () => deploy(contractFile, deployArgs, this.hre, await this.deployOpts()),
       retries
     );
-
     this.counter++;
     return contract;
   }

@@ -189,7 +189,6 @@ export async function proposal(actions: ProposalAction[], description: string): 
       values.push(value ?? 0);
       calldatas.push(utils.id(signature).slice(0, 10) + calldata.slice(2));
     }
-    
   }
   return [targets, values, calldatas, description];
 }

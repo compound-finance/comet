@@ -165,8 +165,7 @@ async function deployContracts(
     l2CCIPOffRamp,
     roninl2NativeBridge,
     bulker,
-    COMP,
-    localTimelock
+    COMP
     // WETH
   };
 }

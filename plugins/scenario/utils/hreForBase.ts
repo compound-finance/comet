@@ -61,8 +61,8 @@ export async function nonForkedHreForBase(base: ForkSpec): Promise<HardhatRuntim
   );
 }
 
-function getBlockRollback(base: ForkSpec) {
-  if (base.blockNumber)
+function getBlockRollback(base: ForkSpec){
+  if(base.blockNumber)
     return base.blockNumber;
   else if (base.network === 'ronin')
     return 0;

@@ -18,7 +18,6 @@ export async function fetchAndCacheContract(
   importRetryDelay = DEFAULT_RETRY_DELAY,
   force = false
 ): Promise<BuildFile> {
-
   const buildFile = await fetchContract(cache, network, address, importRetries, importRetryDelay, force);
   await storeBuildFile(cache, network, address, buildFile);
   return buildFile;

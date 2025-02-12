@@ -168,13 +168,8 @@ contract Timelock is ITimelock {
         (bool success, bytes memory returnData) = target.call{value: value}(
             callData
         );
-        if (!success) {
-            assembly {
-                let returndata_size := mload(returnData)
-                revert(add(32, returnData), returndata_size)
-            }
-        }
-        //require(success, "Timelock::executeTransaction: Transaction execution reverted.");
+
+        require(success, "Timelock::executeTransaction: Transaction execution reverted.");
 
         emit ExecuteTransaction(txHash, target, value, signature, data, eta);
 

@@ -1,6 +1,4 @@
 import { get, post, getEtherscanApiKey, getEtherscanApiUrl, getEtherscanUrl } from './etherscan';
-import { ethers } from 'ethers';
-import { erc20 } from '../scenario/utils/ERC20';
 
 export function debug(...args: any[]) {
   if (process.env['DEBUG']) {
@@ -90,7 +88,7 @@ async function getRoninApiData(network: string, address: string, apiKey: string)
     optimized: optimized,
     optimizationRuns: optimizationRuns,
     constructorArgs: deploymentBytecode,
-  }
+  };
 }
 
 async function getEtherscanApiData(network: string, address: string, apiKey: string): Promise<EtherscanData> {
@@ -132,7 +130,7 @@ async function scrapeContractCreationCodeFromEtherscanApi(network: string, addre
     apikey: getEtherscanApiKey(network)
   };
   const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
-  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({ ...params, ...{ apikey: '[API_KEY]' } })}`;
+  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({ ...params, ...{ apikey: '[API_KEY]'}})}`;
 
   debug(`Attempting to pull Contract Creation code from API at ${debugUrl}`);
   const result = await get(url, {});
@@ -166,7 +164,7 @@ async function scrapeContractCreationCodeFromEtherscan(network: string, address:
 }
 
 function paramString(params: { [k: string]: string | number }) {
-  return Object.entries(params).map(([k, v]) => `${k}=${v}`).join('&');
+  return Object.entries(params).map(([k,v]) => `${k}=${v}`).join('&');
 }
 
 async function pullFirstTransactionForContract(network: string, address: string) {
@@ -182,7 +180,7 @@ async function pullFirstTransactionForContract(network: string, address: string)
     apikey: getEtherscanApiKey(network)
   };
   const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
-  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({ ...params, ...{ apikey: '[API_KEY]' } })}`;
+  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({ ...params, ...{ apikey: '[API_KEY]'}})}`;
 
   debug(`Attempting to pull Contract Creation code from first tx at ${debugUrl}`);
   const result = await get(url, {});

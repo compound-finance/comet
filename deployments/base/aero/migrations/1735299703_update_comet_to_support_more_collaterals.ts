@@ -130,11 +130,7 @@ export default migration('1735299703_update_comet_to_support_more_collaterals', 
       true
     );
     return {
-<<<<<<< HEAD
-      cometFactoryWithExtendedAssetList: cometFactoryWithExtendedAssetList.address,
-=======
       cometFactoryWithExtendedAssetList: cometFactoryWithExtendedAssetListAddress,
->>>>>>> 36f59c9410f608c2dd1db660a4dab4a10dacfbc3
       newCometExtAERO: _newCometExtAERO.address,
       newCometExtUSDC: _newCometExtUSDC.address,
       newCometExtWETH: _newCometExtWETH.address,

@@ -332,8 +332,8 @@ export async function fetchLogs(
   }
 }
 
-async function redeployRenzoOracle(dm: DeploymentManager) {
-  if (dm.network === 'mainnet') {
+async function redeployRenzoOracle(dm: DeploymentManager){
+  if(dm.network === 'mainnet') {
     // renzo admin 	0xD1e6626310fD54Eceb5b9a51dA2eC329D6D4B68A
     const renzoOracle = new Contract(
       '0x5a12796f7e7EBbbc8a402667d266d2e65A814042',
@@ -371,126 +371,124 @@ const dest = new Map<string, string>([
   ['ronin', '6916147374840168594'],
 ]);
 
-const commitStore = "0x2aa101BF99CaeF7fc1355D4c493a1fe187A007cE";
-
-async function updateCCIPStats(dm: DeploymentManager) {
-  if (dm.network === 'mainnet') {
-    const commitStore = "0x2aa101bf99caef7fc1355d4c493a1fe187a007ce"
+async function updateCCIPStats(dm: DeploymentManager){
+  if(dm.network === 'mainnet') {
+    const commitStore = '0x2aa101bf99caef7fc1355d4c493a1fe187a007ce';
     
-    const priceRegistry = "0x8c9b2Efb7c64C394119270bfecE7f54763b958Ad";
+    const priceRegistry = '0x8c9b2Efb7c64C394119270bfecE7f54763b958Ad';
     const abi = [
       {
-        "inputs": [
+        'inputs': [
           {
-            "components": [
+            'components': [
               {
-                "components": [
+                'components': [
                   {
-                    "internalType": "address",
-                    "name": "sourceToken",
-                    "type": "address"
+                    'internalType': 'address',
+                    'name': 'sourceToken',
+                    'type': 'address'
                   },
                   {
-                    "internalType": "uint224",
-                    "name": "usdPerToken",
-                    "type": "uint224"
+                    'internalType': 'uint224',
+                    'name': 'usdPerToken',
+                    'type': 'uint224'
                   }
                 ],
-                "internalType": "struct TokenPriceUpdate[]",
-                "name": "tokenPriceUpdates",
-                "type": "tuple[]"
+                'internalType': 'struct TokenPriceUpdate[]',
+                'name': 'tokenPriceUpdates',
+                'type': 'tuple[]'
               },
               {
-                "components": [
+                'components': [
                   {
-                    "internalType": "uint64",
-                    "name": "destChainSelector",
-                    "type": "uint64"
+                    'internalType': 'uint64',
+                    'name': 'destChainSelector',
+                    'type': 'uint64'
                   },
                   {
-                    "internalType": "uint224",
-                    "name": "usdPerUnitGas",
-                    "type": "uint224"
+                    'internalType': 'uint224',
+                    'name': 'usdPerUnitGas',
+                    'type': 'uint224'
                   }
                 ],
-                "internalType": "struct GasPriceUpdate[]",
-                "name": "gasPriceUpdates",
-                "type": "tuple[]"
+                'internalType': 'struct GasPriceUpdate[]',
+                'name': 'gasPriceUpdates',
+                'type': 'tuple[]'
               }
             ],
-            "internalType": "struct PriceUpdates",
-            "name": "priceUpdates",
-            "type": "tuple"
+            'internalType': 'struct PriceUpdates',
+            'name': 'priceUpdates',
+            'type': 'tuple'
           }
         ],
-        "name": "updatePrices",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
+        'name': 'updatePrices',
+        'outputs': [],
+        'stateMutability': 'nonpayable',
+        'type': 'function'
       },
       {
-        "inputs": [
+        'inputs': [
           {
-            "internalType": "uint64",
-            "name": "destChainSelector",
-            "type": "uint64"
+            'internalType': 'uint64',
+            'name': 'destChainSelector',
+            'type': 'uint64'
           }
         ],
-        "name": "getDestinationChainGasPrice",
-        "outputs": [
+        'name': 'getDestinationChainGasPrice',
+        'outputs': [
           {
-            "components": [
+            'components': [
               {
-                "internalType": "uint224",
-                "name": "value",
-                "type": "uint224"
+                'internalType': 'uint224',
+                'name': 'value',
+                'type': 'uint224'
               },
               {
-                "internalType": "uint32",
-                "name": "timestamp",
-                "type": "uint32"
+                'internalType': 'uint32',
+                'name': 'timestamp',
+                'type': 'uint32'
               }
             ],
-            "internalType": "struct TimestampedPackedUint224",
-            "name": "",
-            "type": "tuple"
+            'internalType': 'struct TimestampedPackedUint224',
+            'name': '',
+            'type': 'tuple'
           }
         ],
-        "stateMutability": "view",
-        "type": "function"
+        'stateMutability': 'view',
+        'type': 'function'
       },
       {
-        "inputs": [
+        'inputs': [
           {
-            "internalType": "address",
-            "name": "token",
-            "type": "address"
+            'internalType': 'address',
+            'name': 'token',
+            'type': 'address'
           }
         ],
-        "name": "getTokenPrice",
-        "outputs": [
+        'name': 'getTokenPrice',
+        'outputs': [
           {
-            "components": [
+            'components': [
               {
-                "internalType": "uint224",
-                "name": "value",
-                "type": "uint224"
+                'internalType': 'uint224',
+                'name': 'value',
+                'type': 'uint224'
               },
               {
-                "internalType": "uint32",
-                "name": "timestamp",
-                "type": "uint32"
+                'internalType': 'uint32',
+                'name': 'timestamp',
+                'type': 'uint32'
               }
             ],
-            "internalType": "struct TimestampedPackedUint224",
-            "name": "",
-            "type": "tuple"
+            'internalType': 'struct TimestampedPackedUint224',
+            'name': '',
+            'type': 'tuple'
           }
         ],
-        "stateMutability": "view",
-        "type": "function"
+        'stateMutability': 'view',
+        'type': 'function'
       }
-    ]
+    ];
 
     await dm.hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
@@ -500,7 +498,7 @@ async function updateCCIPStats(dm: DeploymentManager) {
     await dm.hre.network.provider.request({
       method: 'hardhat_setBalance',
       params: [commitStore, '0x56bc75e2d63100000'],
-    })
+    });
     const commitStoreSigner = await dm.hre.ethers.getSigner(commitStore);
 
     const registryContract = new Contract(priceRegistry, abi, dm.hre.ethers.provider);
@@ -545,14 +543,14 @@ async function getProxyAdmin(dm: DeploymentManager, proxyAddress: string): Promi
   return adminAddress;
 }
 
-async function mockAllRedstoneOracles(dm: DeploymentManager) {
+async function mockAllRedstoneOracles(dm: DeploymentManager){
   const feeds = REDSTONE_FEEDS[dm.network];
-  if (!Array.isArray(feeds)) {
+  if(!Array.isArray(feeds)) {
     debug(`No redstone feeds found for network: ${dm.network}`);
     return;
   }
   for (const feed of feeds) {
-    try {
+    try{
       await dm.fromDep(`MockRedstoneOracle:${feed}`, dm.network, dm.deployment);
     }
     catch (_) {
@@ -561,7 +559,7 @@ async function mockAllRedstoneOracles(dm: DeploymentManager) {
   }
 }
 
-async function mockRedstoneOracle(dm: DeploymentManager, feed: string) {
+async function mockRedstoneOracle(dm: DeploymentManager, feed: string){
   const feedContract = new Contract(
     feed,
     [
@@ -619,7 +617,6 @@ export async function voteForOpenProposal(dm: DeploymentManager, { id, startBloc
     }
   }
 }
-
 
 export async function executeOpenProposal(
   dm: DeploymentManager,
@@ -835,9 +832,9 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       );
 
       targets.push(l1CCIPRouter.address);
-      values.push(utils.parseEther("0.5"));
+      values.push(utils.parseEther('0.5'));
 
-      const destinationChainSelector = "6916147374840168594"
+      const destinationChainSelector = '6916147374840168594';
 
       const args = [
         destinationChainSelector,
@@ -846,7 +843,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
           l2ProposalData,
           [],
           constants.AddressZero,
-          "0x"
+          '0x'
         ]
       ];
 
@@ -861,7 +858,6 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
         `No cross-chain proposal constructor implementation for ${govDeploymentManager.network} -> ${bridgeNetwork}`
       );
   }
-
 
   await fastL2GovernanceExecute(
     govDeploymentManager,
