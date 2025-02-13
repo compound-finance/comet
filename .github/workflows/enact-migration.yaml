@@ -8,18 +8,12 @@ on:
         options:
           - fuji
           - mainnet
-          - goerli
           - sepolia
-          - mumbai
           - polygon
           - arbitrum
-          - arbitrum-goerli
           - base
-          - base-goerli
-          - linea-goerli
           - optimism
           - mantle
-          - scroll-goerli
           - scroll
           - sonic
       deployment:
@@ -62,21 +56,22 @@ jobs:
       LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
       OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
       MANTLESCAN_KEY: ${{ secrets.MANTLESCAN_KEY }}
-      SONICSCAN_KEY: ${{ secrets.SONICSCAN_KEY }}
+      SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
+      GOV_NETWORK: ${{ secrets.GOV_NETWORK }}
     steps:
       - name: Get governance network
         run: |
           case ${{ github.event.inputs.network }} in
-            polygon | arbitrum | base | optimism | mantle | sonic)
+            polygon | arbitrum | base | optimism | mantle | scroll | sonic)
                 echo "GOV_NETWORK=mainnet" >> $GITHUB_ENV ;;
-            mumbai | arbitrum-goerli | base-goerli | linea-goerli | scroll-goerli | scroll)
-                echo "GOV_NETWORK=goerli" >> $GITHUB_ENV ;;
+            sepolia)
+                echo "GOV_NETWORK=sepolia" >> $GITHUB_ENV ;;
             *)
                 echo "No governance network for selected network" ;;
           esac
 
       - name: Seacrest
-        uses: hayesgm/seacrest@5d8e5e3023669e93d197963273ae159ecda9d2b2
+        uses: hayesgm/seacrest@42330b57a0554d5b9f4b47b186d483b5e18addbf
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ inputs.network }}"
@@ -85,7 +80,7 @@ jobs:
         if: github.event.inputs.eth_pk == ''
 
       - name: Seacrest (governance network)
-        uses: hayesgm/seacrest@5d8e5e3023669e93d197963273ae159ecda9d2b2
+        uses: hayesgm/seacrest@42330b57a0554d5b9f4b47b186d483b5e18addbf
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ env.GOV_NETWORK }}"
@@ -98,7 +93,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '16'
+          node-version: '18'
 
       - name: Install packages
         run: yarn install --non-interactive --frozen-lockfile
@@ -115,7 +110,7 @@ jobs:
           run_id: ${{ github.event.inputs.run_id }}
           name: ${{ github.event.inputs.network }}-${{ github.event.inputs.deployment }}-${{ github.event.inputs.migration }}
           path: deployments/${{ github.event.inputs.network }}/${{ github.event.inputs.deployment }}/artifacts/
-        if: github.event.inputs.run_id != ''
+        if: github.event.inputs.run_id != '' && github.event.inputs.run_id != 0
 
       - name: Run Deploy Market and Enact Migration (impersonate)
         run: |
@@ -142,6 +137,17 @@ jobs:
       - name: Run Enact Migration (impersonate)
         run: |
           yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true'] }} ${{ github.event.inputs.migration }} --impersonate ${{ github.event.inputs.impersonateAccount }}
+        env:
+          DEBUG: true
+          ETH_PK: "${{ inputs.eth_pk }}"
+          NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
+          GOV_NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8685"]')[github.event.inputs.eth_pk == '' && env.GOV_NETWORK != ''] }}
+          GOV_NETWORK: ${{ env.GOV_NETWORK }}
+          REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
+        if: github.event.inputs.impersonateAccount != '' && github.event.inputs.run_id != 0
+      - name: Run Prepare and Enact Migration (impersonate)
+        run: |
+          yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --prepare --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true'] }} ${{ github.event.inputs.migration }} --impersonate ${{ github.event.inputs.impersonateAccount }}
         env:
           DEBUG: true
           ETH_PK: "${{ inputs.eth_pk }}"

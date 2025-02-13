@@ -8,18 +8,12 @@ on:
         options:
           - fuji
           - mainnet
-          - goerli
           - sepolia
-          - mumbai
           - polygon
           - arbitrum
-          - arbitrum-goerli
           - base
-          - base-goerli
-          - linea-goerli
           - optimism
           - mantle
-          - scroll-goerli
           - scroll
       deployment:
         description: Deployment Name (e.g. "usdc")
@@ -45,6 +39,7 @@ jobs:
       OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
       MANTLESCAN_KEY: ${{ secrets.MANTLESCAN_KEY }}
       SONICSCAN_KEY: ${{ secrets.SONICSCAN_KEY }}
+      SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
     steps:
       - name: Seacrest
         uses: hayesgm/seacrest@5748b3a066f517973ca2ca03d0af39bbf2b82d10
@@ -60,7 +55,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '16'
+          node-version: '18'
 
       - name: Install packages
         run: yarn install --non-interactive --frozen-lockfile
@@ -74,7 +69,7 @@ jobs:
       - name: Run Deploy
         run: |
           yarn hardhat deploy --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }}
-        env:
+        env: 
           DEBUG: true
           ETH_PK: "${{ inputs.eth_pk }}"
           NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}

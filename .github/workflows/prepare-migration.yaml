@@ -8,16 +8,13 @@ on:
         options:
           - fuji
           - mainnet
-          - goerli
           - sepolia
-          - mumbai
           - polygon
           - arbitrum
-          - arbitrum-goerli
           - base
-          - base-goerli
           - optimism
           - mantle
+          - scroll
       deployment:
         description: Deployment Name (e.g. "usdc")
         required: true
@@ -44,6 +41,7 @@ jobs:
       LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
       OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
       MANTLESCAN_KEY: ${{ secrets.MANTLESCAN_KEY }}
+      SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
     steps:
       - name: Seacrest
         uses: hayesgm/seacrest@5748b3a066f517973ca2ca03d0af39bbf2b82d10
@@ -59,7 +57,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '16'
+          node-version: '18'
 
       - name: Install packages
         run: yarn install --non-interactive --frozen-lockfile
