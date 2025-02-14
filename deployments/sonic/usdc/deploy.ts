@@ -27,24 +27,6 @@ async function deployContracts(
   const USDC = await deploymentManager.existing('USDC', '0x29219dd400f2Bf60E5a23d13Be72B486D4038894', 'sonic');
   const WETH = await deploymentManager.existing('WETH', '0x50c42dEAcD8Fc9773493ED674b675bE577f2634b', 'sonic');
 
-  const l2CrossDomainMessenger = await deploymentManager.existing(
-    'l2CrossDomainMessenger',
-    [
-      '0xC0d3c0d3c0D3c0D3C0d3C0D3C0D3c0d3c0d30007',
-      '0x4200000000000000000000000000000000000007',
-    ],
-    'sonic'
-  );
-
-  const l2StandardBridge = await deploymentManager.existing(
-    'l2StandardBridge',
-    [
-      '0xC0d3c0d3c0D3c0d3C0D3c0D3C0d3C0D3C0D30010',
-      '0x4200000000000000000000000000000000000010',
-    ],
-    'sonic'
-  );
-
   const bridgeReceiver = await deploymentManager.deploy(
     'bridgeReceiver',
     'bridges/optimism/OptimismBridgeReceiver.sol', //TODO other
@@ -64,17 +46,19 @@ async function deployContracts(
   );
 
   // Initialize OptimismBridgeReceiver
-  await deploymentManager.idempotent(
-    async () => !(await bridgeReceiver.initialized()),
-    async () => {
-      trace(`Initializing BridgeReceiver`);
-      await bridgeReceiver.initialize(
-        MAINNET_TIMELOCK, // govTimelock
-        localTimelock.address // localTimelock
-      );
-      trace(`BridgeReceiver initialized`);
-    }
-  );
+  await deploymentManager.retry(() => {
+    return deploymentManager.idempotent(
+      async () => !(await bridgeReceiver.initialized()),
+      async () => {
+        trace(`Initializing BridgeReceiver`);
+        await bridgeReceiver.initialize(
+          MAINNET_TIMELOCK, // govTimelock
+          localTimelock.address // localTimelock
+        );
+        trace(`BridgeReceiver initialized`);
+      }
+    );
+  });
 
   // Deploy Comet
   const deployed = await deployComet(deploymentManager, deploySpec);
