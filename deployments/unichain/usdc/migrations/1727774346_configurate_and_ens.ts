@@ -7,7 +7,8 @@ import {
   proposal,
 } from '../../../../src/deploy';
 import { expect } from 'chai';
-import { utils } from 'ethers';
+import { forkedHreForBase } from '../../../../plugins/scenario/utils/hreForBase';
+import { utils, Contract, constants } from 'ethers';
 import { diffState, getCometConfig } from '../../../../plugins/deployment_manager/DiffState';
 
 const ENSName = 'compound-community-licenses.eth';
@@ -34,7 +35,6 @@ export default migration('1727774346_configurate_and_ens', {
       bridgeReceiver,
       comet,
       cometAdmin,
-      cometFactory,
       configurator,
       rewards,
       COMP: COMP_L2,
@@ -68,12 +68,6 @@ export default migration('1727774346_configurate_and_ens', {
     }
   
     const configuration = await getConfigurationStruct(deploymentManager);
-    const setFactoryCalldata = await calldata(
-      configurator.populateTransaction.setFactory(
-        comet.address,
-        cometFactory.address
-      )
-    );
     const setConfigurationCalldata = await calldata(
       configurator.populateTransaction.setConfiguration(
         comet.address,
@@ -94,19 +88,16 @@ export default migration('1727774346_configurate_and_ens', {
       [
         [
           configurator.address,
-          configurator.address,
           cometAdmin.address,
           rewards.address,
         ],
-        [0, 0, 0, 0],
+        [0, 0, 0],
         [
-          'setFactory(address,address)',
           'setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))',
           'deployAndUpgradeTo(address,address)',
           'setRewardConfig(address,address)'
         ],
         [
-          setFactoryCalldata,
           setConfigurationCalldata,
           deployAndUpgradeToCalldata,
           setRewardConfigCalldata
@@ -225,6 +216,44 @@ export default migration('1727774346_configurate_and_ens', {
     expect(config.token.toLowerCase()).to.be.equal(COMP.address.toLowerCase());
     expect(config.rescaleFactor).to.be.equal(exp(1, 12));
     expect(config.shouldUpscale).to.be.equal(true);
+
+    const cometNew = new Contract(
+      comet.address,
+      [
+        'function assetList() external view returns (address)',
+      ],
+      await deploymentManager.getSigner()
+    );
+
+    const assetListAddress = await cometNew.assetList();
+
+    expect(assetListAddress).to.not.be.equal(constants.AddressZero);
+
+    const pauseGuardian = new Contract(
+      await comet.pauseGuardian(),
+      [
+        'function getOwners() external view returns (address[] memory)',
+      ],
+      await deploymentManager.getSigner()
+    );
+
+    const hreMainnet = await forkedHreForBase({ name: '', network: 'mainnet', deployment: '' });
+    const dm = new DeploymentManager('mainnet', 'usdc', hreMainnet);
+  
+    const cometMainnet = await dm.contract('comet') as Contract;
+    const guardian = await cometMainnet.pauseGuardian();
+    const GnosisSafeContract = new Contract(
+      guardian,
+      [
+        'function getOwners() external view returns (address[] memory)',
+      ],
+      await dm.getSigner()
+    );
+    const ownersMainnet = await GnosisSafeContract.getOwners();
+    
+    const owners = await pauseGuardian.getOwners();
+    expect(owners).to.deep.equal(ownersMainnet);
+    expect(owners.length).to.not.be.equal(0);
   
     // 1.
     expect(await COMP.balanceOf(rewards.address)).to.be.equal(COMPAmountToBridge);

@@ -6,7 +6,7 @@
     "borrowMin": "0.01e6",
     "storeFrontPriceFactor": 0.6,
     "targetReserves": "5_000_000e6",
-    "pauseGuardian": "",
+    "pauseGuardian": "0x6784FC9e931D7d5B1075e665A4016c299ee6C31B",
     "rates": {
       "borrowBase": 0.015,
       "borrowSlopeLow": 0.0333,
