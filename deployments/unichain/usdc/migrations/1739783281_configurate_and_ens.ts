@@ -18,10 +18,10 @@ const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
 const unichainCOMPAddress = '0xdf78e4f0a8279942ca68046476919a90f2288656';
-const USDCAmountToSeed = exp(100_000, 6);
+const USDCAmountToSeed = exp(50_000, 6);
 const COMPAmountToBridge = exp(1000, 18);
 
-export default migration('1727774346_configurate_and_ens', {
+export default migration('1739783281_configurate_and_ens', {
   prepare: async () => {
     return {};
   },
@@ -166,7 +166,7 @@ export default migration('1727774346_configurate_and_ens', {
     ];
   
     // the description has speeds. speeds will be set up on on-chain proposal
-    const description = '# Initialize cUSDCv3 on Unichain\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Unichain network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Unichain; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](<>).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/961), [deploy market GitHub action run](<>) and [forum discussion](<>).\n\n\n## Proposal Actions\n\nThe first action approves COMP tokens to the bridge.\n\nThe second action sends COMP tokens to the Unichain via a native standard bridge.\n\nThe third action approves  USDC tokens to the bridge.\n\nThe fourth action sends USDC tokens to the Unichain via a native standard bridge.\n\nThe fifth proposal action sets the Comet configuration and deploys a new Comet implementation on Unichain. This sends the encoded `setFactory`, `setConfiguration`, `deployAndUpgradeTo`and `setRewardConfig` calls across the bridge to the governance receiver on Unichain.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Unichain cUSDCv3 market.';
+    const description = '# Initialize cUSDCv3 on Unichain\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Unichain network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Unichain; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-unichain/6320/9).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/961), [deploy market GitHub action run](<>) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-unichain/6320).\n\n\n## Proposal Actions\n\nThe first action approves COMP tokens to the bridge.\n\nThe second action sends COMP tokens to the Unichain via a native standard bridge.\n\nThe third action approves  USDC tokens to the bridge.\n\nThe fourth action sends USDC tokens to the Unichain via a native standard bridge.\n\nThe fifth proposal action sets the Comet configuration and deploys a new Comet implementation on Unichain. This sends the encoded `setFactory`, `setConfiguration`, `deployAndUpgradeTo`and `setRewardConfig` calls across the bridge to the governance receiver on Unichain.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Unichain cUSDCv3 market.';
     const txn = await govDeploymentManager.retry(async () => {
       return trace(await governor.propose(...(await proposal(actions, description))));
     }
@@ -200,16 +200,13 @@ export default migration('1727774346_configurate_and_ens', {
     // const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
     // expect(stateChanges).to.deep.equal({
     //   UNI: {
-    //     supplyCap: exp(470, 18)
+    //     supplyCap: exp(7000, 18)
     //   },
     //   WETH: {
-    //     supplyCap: exp(1_300, 18)
+    //     supplyCap: exp(50, 18)
     //   },
-    //   WBTC: {
-    //     supplyCap: exp(60, 8)
-    //   },
-    //   baseTrackingSupplySpeed: exp(4 / 86400, 15, 18), // 46296296296
-    //   baseTrackingBorrowSpeed: exp(3 / 86400, 15, 18), // 34722222222
+    //   baseTrackingSupplySpeed: exp(1 / 86400, 15, 18), // 115740740740
+    //   baseTrackingBorrowSpeed: exp(1 / 86400, 15, 18), // 115740740740
     // });
   
     const config = await rewards.rewardConfig(comet.address);
@@ -350,6 +347,10 @@ export default migration('1727774346_configurate_and_ens', {
         {
           baseSymbol: 'AERO',
           cometAddress: '0x784efeB622244d2348d4F2522f8860B96fbEcE89'
+        },
+        {
+          baseSymbol: 'USDS',
+          cometAddress: '0x2c776041CCFe903071AF44aa147368a9c8EEA518'
         }
       ],
       42161: [

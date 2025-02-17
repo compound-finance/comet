@@ -35,11 +35,6 @@ async function deployContracts(
     '0x949d3A70722731d3bA8E0ca4061E12387c659E75',
     'unichain'
   );
-  const _WBTC = await deploymentManager.existing(
-    'WBTC',
-    '0x927b51f251480a681271180da4de28d44ec4afb8',
-    'unichain'
-  );
   const _UNI = await deploymentManager.existing(
     'UNI',
     '0x8f187aa05619a017077f5308904739877ce9ea21',
@@ -65,15 +60,6 @@ async function deployContracts(
     'pricefeeds/ScalingPriceFeed.sol',
     [
       '0xD15862FC3D5407A03B696548b6902D6464A69b8c', // oracle
-      8,                                            // decimals
-    ]
-  );
-
-  const _WBTCConstantPriceFeed = await deploymentManager.deploy(
-    'WBTC:priceFeed',
-    'pricefeeds/ScalingPriceFeed.sol',
-    [
-      '0xc44be6D00307c3565FDf753e852Fc003036cBc13', // oracle
       8,                                            // decimals
     ]
   );
@@ -139,7 +125,7 @@ async function deployContracts(
   );
 
   // Deploy Comet
-  const deployed = await deployComet(deploymentManager, deploySpec,{}, true);
+  const deployed = await deployComet(deploymentManager, deploySpec, {}, true);
   const { comet } = deployed;
   // const signer = await deploymentManager.getSigner();
 
