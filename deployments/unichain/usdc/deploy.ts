@@ -23,7 +23,7 @@ async function deployContracts(
 ): Promise<Deployed> {
   const trace = deploymentManager.tracer();
 
-  const signer = await deploymentManager.getSigner(); 
+  const signer = await deploymentManager.getSigner();
   // Pull in existing assets
   const WETH = await deploymentManager.existing(
     'WETH',
@@ -46,7 +46,7 @@ async function deployContracts(
     'unichain'
   );
 
-  const _WETHConstantPriceFeed = await deploymentManager.deploy(
+  const _WETHPriceFeed = await deploymentManager.deploy(
     'WETH:priceFeed',
     'pricefeeds/ScalingPriceFeed.sol',
     [
@@ -55,7 +55,7 @@ async function deployContracts(
     ]
   );
 
-  const _USDCConstantPriceFeed = await deploymentManager.deploy(
+  const _USDCPriceFeed = await deploymentManager.deploy(
     'USDC:priceFeed',
     'pricefeeds/ScalingPriceFeed.sol',
     [
@@ -64,7 +64,7 @@ async function deployContracts(
     ]
   );
 
-  const _UNIConstantPriceFeed = await deploymentManager.deploy(
+  const _UNIPriceFeed = await deploymentManager.deploy(
     'UNI:priceFeed',
     'pricefeeds/ScalingPriceFeed.sol',
     [

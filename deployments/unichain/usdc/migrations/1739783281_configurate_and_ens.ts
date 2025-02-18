@@ -19,7 +19,7 @@ const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
 const unichainCOMPAddress = '0xdf78e4f0a8279942ca68046476919a90f2288656';
 const USDCAmountToSeed = exp(50_000, 6);
-const COMPAmountToBridge = exp(1000, 18);
+const COMPAmountToBridge = exp(300, 18);
 
 export default migration('1739783281_configurate_and_ens', {
   prepare: async () => {
@@ -40,7 +40,7 @@ export default migration('1739783281_configurate_and_ens', {
       COMP: COMP_L2,
       USDC: USDC_L2,
     } = await deploymentManager.getContracts();
-  
+
     const {
       unichainL1CrossDomainMessenger,
       unichainL1StandardBridge,
@@ -68,7 +68,7 @@ export default migration('1739783281_configurate_and_ens', {
     } else {
       officialMarketsJSON[unichainChainId] = [newMarketObject];
     }
-  
+
     const configuration = await getConfigurationStruct(deploymentManager);
     const setConfigurationCalldata = await calldata(
       configurator.populateTransaction.setConfiguration(
@@ -84,7 +84,7 @@ export default migration('1739783281_configurate_and_ens', {
       ['address', 'address'],
       [comet.address, unichainCOMPAddress]
     );
-  
+
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
@@ -106,7 +106,7 @@ export default migration('1739783281_configurate_and_ens', {
         ],
       ]
     );
-  
+
     const actions = [
       // 1. Approve L1StandardBridge to transfer COMP
       {
@@ -157,17 +157,17 @@ export default migration('1739783281_configurate_and_ens', {
         ),
       },
     ];
-  
+
     // the description has speeds. speeds will be set up on on-chain proposal
     const description = '# Initialize cUSDCv3 on Unichain\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Unichain network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Unichain; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-unichain/6320/9).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/961), [deploy market GitHub action run](<>) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-unichain/6320).\n\n\n## Proposal Actions\n\nThe first action approves COMP tokens to the bridge.\n\nThe second action sends COMP tokens to the Unichain via a native standard bridge.\n\nThe third action approves  USDC tokens to the bridge.\n\nThe fourth action sends USDC tokens to the Unichain via a CCTP bridge.\n\nThe fifth proposal action sets the Comet configuration and deploys a new Comet implementation on Unichain. This sends the encoded `setFactory`, `setConfiguration`, `deployAndUpgradeTo`and `setRewardConfig` calls across the bridge to the governance receiver on Unichain.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Unichain cUSDCv3 market.';
     const txn = await govDeploymentManager.retry(async () => {
       return trace(await governor.propose(...(await proposal(actions, description))));
     }
     );
-  
+
     const event = txn.events.find((event) => event.event === 'ProposalCreated');
     const [proposalId] = event.args;
-  
+
     trace(`Created proposal ${proposalId}.`);
   },
 
@@ -183,11 +183,11 @@ export default migration('1739783281_configurate_and_ens', {
       rewards,
       COMP
     } = await deploymentManager.getContracts();
-  
+
     const {
       timelock
     } = await govDeploymentManager.getContracts();
-  
+
     // 2.
     // uncomment on on-chain proposal PR
     // const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
@@ -198,10 +198,10 @@ export default migration('1739783281_configurate_and_ens', {
     //   WETH: {
     //     supplyCap: exp(50, 18)
     //   },
-    //   baseTrackingSupplySpeed: exp(1 / 86400, 15, 18), // 115740740740
-    //   baseTrackingBorrowSpeed: exp(1 / 86400, 15, 18), // 115740740740
+    //   baseTrackingSupplySpeed: exp(1 / 86400, 15, 18), // 11574074074
+    //   baseTrackingBorrowSpeed: exp(1 / 86400, 15, 18), // 11574074074
     // });
-  
+
     const config = await rewards.rewardConfig(comet.address);
     expect(config.token.toLowerCase()).to.be.equal(COMP.address.toLowerCase());
     expect(config.rescaleFactor).to.be.equal(exp(1, 12));
@@ -229,7 +229,7 @@ export default migration('1739783281_configurate_and_ens', {
 
     const hreMainnet = await forkedHreForBase({ name: '', network: 'mainnet', deployment: '' });
     const dm = new DeploymentManager('mainnet', 'usdc', hreMainnet);
-  
+
     const cometMainnet = await dm.contract('comet') as Contract;
     const guardian = await cometMainnet.pauseGuardian();
     const GnosisSafeContract = new Contract(
@@ -240,15 +240,15 @@ export default migration('1739783281_configurate_and_ens', {
       await dm.getSigner()
     );
     const ownersMainnet = await GnosisSafeContract.getOwners();
-    
+
     const owners = await pauseGuardian.getOwners();
     expect(owners).to.deep.equal(ownersMainnet);
     expect(owners.length).to.not.be.equal(0);
-  
+
     // 1.
     expect(await COMP.balanceOf(rewards.address)).to.be.equal(COMPAmountToBridge);
     expect(await comet.getReserves()).to.be.equal(USDCAmountToSeed);
-  
+
     // 3.
     const ENSResolver = await govDeploymentManager.existing(
       'ENSResolver',
@@ -362,6 +362,12 @@ export default migration('1739783281_configurate_and_ens', {
         {
           baseSymbol: 'USDT',
           cometAddress: '0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07'
+        }
+      ],
+      59144: [
+        {
+          baseSymbol: 'USDC',
+          cometAddress: '0x8D38A3d6B3c3B7d96D6536DA7Eef94A9d7dbC991'
         }
       ],
       534352: [

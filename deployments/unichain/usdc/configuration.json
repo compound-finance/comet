@@ -21,7 +21,7 @@
       "indexScale": "1e15",
       "baseSupplySpeed": "0e0",
       "baseBorrowSpeed": "0e0",
-      "baseMinForRewards": "10e6"
+      "baseMinForRewards": "10000e6"
     },
     "assets": {
       "UNI": {
