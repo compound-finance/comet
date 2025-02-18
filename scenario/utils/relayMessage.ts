@@ -1,11 +1,11 @@
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import relayPolygonMessage from './relayPolygonMessage';
-import { relayArbitrumMessage, relayCCTPMint } from './relayArbitrumMessage';
+import { relayArbitrumMessage, relayArbitrumCCTPMint } from './relayArbitrumMessage';
 import relayBaseMessage from './relayBaseMessage';
 import relayLineaMessage from './relayLineaMessage';
 import relayOptimismMessage from './relayOptimismMessage';
 import relayMantleMessage from './relayMantleMessage';
-import relayUnichainMessage from './relayUnichainMessage';
+import { relayUnichainMessage, relayUnichainCCTPMint } from './relayUnichainMessage';
 import relayScrollMessage from './relayScrollMessage';
 
 export default async function relayMessage(
@@ -42,6 +42,11 @@ export default async function relayMessage(
         bridgeDeploymentManager,
         startingBlockNumber
       );
+      await relayUnichainCCTPMint(
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
+        startingBlockNumber
+      );
       break;
     case 'polygon':
       await relayPolygonMessage(
@@ -56,7 +61,7 @@ export default async function relayMessage(
         bridgeDeploymentManager,
         startingBlockNumber
       );
-      await relayCCTPMint(
+      await relayArbitrumCCTPMint(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber

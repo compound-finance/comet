@@ -44,6 +44,7 @@ export default migration('1739783281_configurate_and_ens', {
     const {
       unichainL1CrossDomainMessenger,
       unichainL1StandardBridge,
+      CCTPTokenMessenger,
       governor,
       COMP: COMP_L1,
       USDC: USDC_L1,
@@ -57,6 +58,7 @@ export default migration('1739783281_configurate_and_ens', {
     );
     const subdomainHash = utils.namehash(ENSSubdomain);
     const unichainChainId = 130;
+    const UnichainDestinationDomain = 10;
     const newMarketObject = { baseSymbol: 'USDC', cometAddress: comet.address };
     const officialMarketsJSON = JSON.parse(
       await ENSResolver.text(subdomainHash, ENSTextRecordKey)
@@ -127,28 +129,19 @@ export default migration('1739783281_configurate_and_ens', {
           '0x',
         ],
       },
-      // 3. Approve L1StandardBridge to transfer USDC
+      // 3. Approve USDC to CCTP
       {
         contract: USDC_L1,
         signature: 'approve(address,uint256)',
-        args: [unichainL1StandardBridge.address, USDCAmountToSeed],
+        args: [CCTPTokenMessenger.address, USDCAmountToSeed]
       },
-      // 4. Bridge USDC from Ethereum to Mantle Timelock using L1StandardBridge
+      // 4. Burn USDC to Unichain via CCTP
       {
-        contract: unichainL1StandardBridge,
-        // function depositERC20To(address _l1Token, address _l2Token, address _to, uint256 _amount, uint32 _l2Gas,bytes calldata _data)
-        signature:
-          'depositERC20To(address,address,address,uint256,uint32,bytes)',
-        args: [
-          USDC_L1.address,
-          USDC_L2.address,
-          comet.address,
-          USDCAmountToSeed,
-          200_000,
-          '0x',
-        ],
+        contract: CCTPTokenMessenger,
+        signature: 'depositForBurn(uint256,uint32,bytes32,address)',
+        args: [USDCAmountToSeed, UnichainDestinationDomain, utils.hexZeroPad(comet.address, 32), USDC_L1.address],
       },
-      // 5. Set Comet configuration + deployAndUpgradeTo new Comet, set Reward Config on Optimism
+      // 5. Set Comet configuration + deployAndUpgradeTo new Comet, set Reward Config on Unichain
       {
         contract: unichainL1CrossDomainMessenger,
         signature: 'sendMessage(address,bytes,uint32)',
@@ -166,7 +159,7 @@ export default migration('1739783281_configurate_and_ens', {
     ];
   
     // the description has speeds. speeds will be set up on on-chain proposal
-    const description = '# Initialize cUSDCv3 on Unichain\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Unichain network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Unichain; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-unichain/6320/9).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/961), [deploy market GitHub action run](<>) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-unichain/6320).\n\n\n## Proposal Actions\n\nThe first action approves COMP tokens to the bridge.\n\nThe second action sends COMP tokens to the Unichain via a native standard bridge.\n\nThe third action approves  USDC tokens to the bridge.\n\nThe fourth action sends USDC tokens to the Unichain via a native standard bridge.\n\nThe fifth proposal action sets the Comet configuration and deploys a new Comet implementation on Unichain. This sends the encoded `setFactory`, `setConfiguration`, `deployAndUpgradeTo`and `setRewardConfig` calls across the bridge to the governance receiver on Unichain.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Unichain cUSDCv3 market.';
+    const description = '# Initialize cUSDCv3 on Unichain\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Unichain network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Unichain; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-unichain/6320/9).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/961), [deploy market GitHub action run](<>) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-unichain/6320).\n\n\n## Proposal Actions\n\nThe first action approves COMP tokens to the bridge.\n\nThe second action sends COMP tokens to the Unichain via a native standard bridge.\n\nThe third action approves  USDC tokens to the bridge.\n\nThe fourth action sends USDC tokens to the Unichain via a CCTP bridge.\n\nThe fifth proposal action sets the Comet configuration and deploys a new Comet implementation on Unichain. This sends the encoded `setFactory`, `setConfiguration`, `deployAndUpgradeTo`and `setRewardConfig` calls across the bridge to the governance receiver on Unichain.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Unichain cUSDCv3 market.';
     const txn = await govDeploymentManager.retry(async () => {
       return trace(await governor.propose(...(await proposal(actions, description))));
     }

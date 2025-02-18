@@ -32,7 +32,7 @@ async function deployContracts(
   );
   const _USDC = await deploymentManager.existing(
     'USDC',
-    '0x949d3A70722731d3bA8E0ca4061E12387c659E75',
+    '0x078D782b760474a361dDA0AF3839290b0EF57AD6',
     'unichain'
   );
   const _UNI = await deploymentManager.existing(
@@ -88,6 +88,12 @@ async function deployContracts(
       '0xC0d3c0d3c0D3c0d3C0D3c0D3C0d3C0D3C0D30010',
       '0x4200000000000000000000000000000000000010',
     ],
+    'unichain'
+  );
+
+  const TokenMinter = await deploymentManager.existing(
+    'TokenMinter',
+    '0x726bFEF3cBb3f8AF7d8CB141E78F86Ae43C34163',
     'unichain'
   );
 
@@ -147,5 +153,6 @@ async function deployContracts(
     l2StandardBridge,
     bulker,
     COMP,
+    TokenMinter
   };
 }

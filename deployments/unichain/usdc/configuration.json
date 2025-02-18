@@ -2,7 +2,7 @@
     "name": "Compound USDC",
     "symbol": "cUSDCv3",
     "baseToken": "USDC",
-    "baseTokenAddress": "0x949d3A70722731d3bA8E0ca4061E12387c659E75",
+    "baseTokenAddress": "0x078D782b760474a361dDA0AF3839290b0EF57AD6",
     "borrowMin": "1e6",
     "storeFrontPriceFactor": 0.6,
     "targetReserves": "20_000_000e6",
