@@ -63,7 +63,7 @@ jobs:
       - name: Get governance network
         run: |
           case ${{ github.event.inputs.network }} in
-            polygon | arbitrum | base | optimism | mantle | scroll)
+            polygon | arbitrum | base | optimism | mantle | scroll | unichain)
                 echo "GOV_NETWORK=mainnet" >> $GITHUB_ENV ;;
             sepolia)
                 echo "GOV_NETWORK=sepolia" >> $GITHUB_ENV ;;
@@ -72,7 +72,7 @@ jobs:
           esac
 
       - name: Seacrest
-        uses: hayesgm/seacrest@42330b57a0554d5b9f4b47b186d483b5e18addbf
+        uses: hayesgm/seacrest@5c129519f47a472e4924416e56eb74756087b028
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ inputs.network }}"
@@ -81,7 +81,7 @@ jobs:
         if: github.event.inputs.eth_pk == ''
 
       - name: Seacrest (governance network)
-        uses: hayesgm/seacrest@42330b57a0554d5b9f4b47b186d483b5e18addbf
+        uses: hayesgm/seacrest@5c129519f47a472e4924416e56eb74756087b028
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ env.GOV_NETWORK }}"
