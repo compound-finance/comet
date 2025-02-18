@@ -329,6 +329,10 @@ export default migration("1707394874_configurate_and_ens", {
         {
           baseSymbol: 'AERO',
           cometAddress: '0x784efeB622244d2348d4F2522f8860B96fbEcE89'
+        },
+        {
+          baseSymbol: 'USDS',
+          cometAddress: '0x2c776041CCFe903071AF44aa147368a9c8EEA518'
         }
       ],
       42161: [
