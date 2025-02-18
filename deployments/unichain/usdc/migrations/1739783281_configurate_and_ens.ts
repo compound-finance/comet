@@ -364,12 +364,13 @@ export default migration('1739783281_configurate_and_ens', {
           cometAddress: '0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07'
         }
       ],
-      59144: [
-        {
-          baseSymbol: 'USDC',
-          cometAddress: '0x8D38A3d6B3c3B7d96D6536DA7Eef94A9d7dbC991'
-        }
-      ],
+      // uncomment when Linea USDC will be executed
+      // 59144: [
+      //   {
+      //     baseSymbol: 'USDC',
+      //     cometAddress: '0x8D38A3d6B3c3B7d96D6536DA7Eef94A9d7dbC991'
+      //   }
+      // ],
       534352: [
         {
           baseSymbol: 'USDC',
