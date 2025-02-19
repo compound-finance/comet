@@ -52,7 +52,7 @@ scenario(
 
     const toSupplyStEth = exp(.1, 18);
 
-    await context.sourceTokens(toSupplyStEth + 3n, new CometAsset(stETH), albert);
+    await context.sourceTokens(toSupplyStEth + 4n, new CometAsset(stETH), albert);
 
     expect(await stETH.balanceOf(albert.address)).to.be.greaterThanOrEqual(toSupplyStEth);
 
