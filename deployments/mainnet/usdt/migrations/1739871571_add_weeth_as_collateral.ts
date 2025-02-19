@@ -5,23 +5,33 @@ import { exp, proposal } from '../../../../src/deploy';
 
 
 const weETH_ADDRESS = '0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee';
-const weETH_ETH_PRICE_FEED_ADDRESS = '0x1Ad4CEBa9f8135A557bBe317DB62Aa125C330F26';
 const ETH_USD_PRICE_FEED_ADDRESS = '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419';
 
 export default migration('1739871571_add_weeth_as_collateral', {
    async prepare(deploymentManager: DeploymentManager) {
-      const weethMultiplicativePriceFeed = await deploymentManager.deploy(
-        'weETH:priceFeed',
-        'pricefeeds/MultiplicativePriceFeed.sol',
-        [
-          weETH_ETH_PRICE_FEED_ADDRESS,  // weETH / eETH price feed
-          ETH_USD_PRICE_FEED_ADDRESS,   // ETH / USD price feed 
-          8,                            // decimals
-          'weETH / USD price feed'
-        ]
-      );
-      return { weethPriceFeedAddress: weethMultiplicativePriceFeed.address };
-    },
+         const weethRateBasedScalingPriceFeed = await deploymentManager.deploy(
+           'weETH:priceRateOracle',
+           'pricefeeds/RateBasedScalingPriceFeed.sol',
+           [
+             weETH_ADDRESS, // ETH / USD price feed
+             8,
+             18,
+             'weETH / ETH price feed'
+           ]
+         )
+   
+         const weethMultiplicativePriceFeed = await deploymentManager.deploy(
+           'weETH:priceFeed',
+           'pricefeeds/MultiplicativePriceFeed.sol',
+           [
+             weethRateBasedScalingPriceFeed.address,  // weETH / eETH price feed
+             ETH_USD_PRICE_FEED_ADDRESS,   // ETH / USD price feed 
+             8,                            // decimals
+             'weETH / USD price feed'
+           ]
+         );
+         return { weethPriceFeedAddress: weethMultiplicativePriceFeed.address };
+       },
   
     async enact(deploymentManager: DeploymentManager, _, { weethPriceFeedAddress }) {
       const trace = deploymentManager.tracer();
@@ -71,7 +81,7 @@ export default migration('1739871571_add_weeth_as_collateral', {
         },
       ];
   
-      const description = '# Add weETH as collateral into cUSDTv3 on Mainnet\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to add weETH into cUSDTv3 on Ethereum network. This proposal takes the governance steps recommended and necessary to update a Compound III WETH market on Ethereum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based on the [recommendations from Gauntlet](https://www.comp.xyz/t/add-weeth-as-collateral-to-usdt-usdc-and-usds-markets-on-mainnet/6044).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/963) and [forum discussion](https://www.comp.xyz/t/add-weeth-as-collateral-to-usdt-usdc-and-usds-markets-on-mainnet/6044).\n\n\n## Proposal Actions\n\nThe first action adds weETH asset as collateral with corresponding configurations.\n\nThe second action deploys and upgrades Comet to a new version.';
+      const description = '# Add weETH as collateral into cUSDTv3 on Mainnet\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to add weETH into cUSDTv3 on Ethereum network. This proposal takes the governance steps recommended and necessary to update a Compound III USDT market on Ethereum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based on the [recommendations from Gauntlet](https://www.comp.xyz/t/add-weeth-as-collateral-to-usdt-usdc-and-usds-markets-on-mainnet/6044).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/963) and [forum discussion](https://www.comp.xyz/t/add-weeth-as-collateral-to-usdt-usdc-and-usds-markets-on-mainnet/6044).\n\n\n## Proposal Actions\n\nThe first action adds weETH asset as collateral with corresponding configurations.\n\nThe second action deploys and upgrades Comet to a new version.';
 
       const txn = await deploymentManager.retry(async () =>
         trace(
