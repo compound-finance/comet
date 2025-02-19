@@ -1,8 +1,10 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 
-scenario('Comet#allow > allows a user to authorize a manager', {}, async ({ comet, actors }) => {
+scenario('Comet#allow > allows a user to authorize a manager', {}, async ({ comet, actors }, context) => {
   const { albert, betty } = actors;
+
+  await context.world.deploymentManager.hre.network.provider.send('evm_mine', []);
 
   const txn = await albert.allow(betty, true);
 

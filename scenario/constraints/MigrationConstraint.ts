@@ -22,7 +22,7 @@ export class MigrationConstraint<T extends CometContext> implements StaticConstr
   async solve(world: World) {
     const label = `[${world.base.name}] {MigrationConstraint}`;
     const solutions: Solution<T>[] = [];
-    const migrationPaths = [...subsets(await getMigrations(world))];
+    const migrationPaths = [await getMigrations(world)];
 
     for (const migrationList of migrationPaths) {
       if (migrationList.length == 0 && migrationPaths.length > 1) {

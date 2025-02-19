@@ -8,7 +8,7 @@ Scenarios are high-level property and ad-hoc tests for the Comet protocol. To ru
 
 You can run scenarios against a given base as:
 
-`npx hardhat scenario --bases development,goerli,fuji`
+`npx hardhat scenario --bases development,sepolia,fuji`
 
 You can run spider persistently first if you wish:
 
