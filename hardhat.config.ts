@@ -261,6 +261,7 @@ const config: HardhatUserConfig = {
       optimisticEthereum: OPTIMISMSCAN_KEY,
       // Mantle
       mantle: MANTLESCAN_KEY,
+      unichain: ETHERSCAN_KEY,
       // Scroll
       'scroll': SCROLLSCAN_KEY,
     },
