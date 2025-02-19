@@ -8,19 +8,10 @@ const SKY_ADDRESS = '0x56072C95FAA701256059aa122697B133aDEd9279';
 const SKY_USD_PRICE_FEED_ADDRESS = '0xee10fE5E7aa92dd7b136597449c3d5813cFC5F18';
 export default migration('1739941365_add_sky_as_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
-      const skyMultiplicativePriceFeed = await deploymentManager.deploy(
-        'SKY:priceFeed',
-        'pricefeeds/ScalingPriceFeed.sol',
-        [
-          SKY_USD_PRICE_FEED_ADDRESS,   // ETH / USD price feed 
-          8,                            // decimals
-        ],
-        true
-      );
-      return { skyPriceFeedAddress: skyMultiplicativePriceFeed.address };
+      return {};
     },
   
-    async enact(deploymentManager: DeploymentManager, _, { skyPriceFeedAddress }) {
+    async enact(deploymentManager: DeploymentManager, _) {
       const trace = deploymentManager.tracer();
   
       const SKY = await deploymentManager.existing(
@@ -29,10 +20,10 @@ export default migration('1739941365_add_sky_as_collateral', {
         'mainnet',
         'contracts/ERC20.sol:ERC20'
       );
-  
+
       const skyPricefeed = await deploymentManager.existing(
         'SKY:priceFeed',
-        skyPriceFeedAddress,
+        SKY_USD_PRICE_FEED_ADDRESS,
         'mainnet'
       );
   
@@ -68,7 +59,7 @@ export default migration('1739941365_add_sky_as_collateral', {
         },
       ];
   
-      const description = '# Add SKY as collateral into cUSDCv3 on Mainnet\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to add SKY into cUSDCv3 on Ethereum network. This proposal takes the governance steps recommended and necessary to update a Compound III WETH market on Ethereum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based on the [recommendations from Gauntlet](https://www.comp.xyz/t/add-sky-as-collateral-to-usdt-usdc-and-usds-markets-on-mainnet/6044).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/963) and [forum discussion](https://www.comp.xyz/t/add-sky-as-collateral-to-usdt-usdc-and-usds-markets-on-mainnet/6044).\n\n\n## Proposal Actions\n\nThe first action adds SKY asset as collateral with corresponding configurations.\n\nThe second action deploys and upgrades Comet to a new version.';
+      const description = '# Add SKY as collateral into cUSDSv3 on Mainnet\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to add SKY into cUSDSv3 on Ethereum network. This proposal takes the governance steps recommended and necessary to update a Compound III USDS market on Ethereum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based on the [recommendations from Gauntlet](https://www.comp.xyz/t/add-sky-as-collateral-on-usds-usdc-usdt-markets-on-eth-mainnet/6074).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/964) and [forum discussion](https://www.comp.xyz/t/add-sky-as-collateral-on-usds-usdc-usdt-markets-on-eth-mainnet/6074).\n\n\n## Proposal Actions\n\nThe first action adds SKY asset as collateral with corresponding configurations.\n\nThe second action deploys and upgrades Comet to a new version.';
   
       const txn = await deploymentManager.retry(async () =>
         trace(
