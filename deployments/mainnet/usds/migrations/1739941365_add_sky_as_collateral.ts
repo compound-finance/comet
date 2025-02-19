@@ -45,7 +45,7 @@ export default migration('1739941365_add_sky_as_collateral', {
       };
   
       const mainnetActions = [
-        // 1. Add ezETH as asset
+        // 1. Add SKY as asset
         {
           contract: configurator,
           signature: 'addAsset(address,(address,address,uint8,uint64,uint64,uint64,uint128))',
