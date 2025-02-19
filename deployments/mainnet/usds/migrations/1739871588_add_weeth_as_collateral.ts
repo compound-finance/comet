@@ -68,7 +68,7 @@ export default migration('1739871588_add_weeth_as_collateral', {
     };
 
     const mainnetActions = [
-      // 1. Add ezETH as asset
+      // 1. Add weETH as asset
       {
         contract: configurator,
         signature: 'addAsset(address,(address,address,uint8,uint64,uint64,uint64,uint128))',
