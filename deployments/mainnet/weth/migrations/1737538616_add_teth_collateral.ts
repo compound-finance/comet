@@ -9,7 +9,7 @@ const TETH_TO_WSTETH_PRICE_FEED = '0x7B2Fb2c667af80Bccc0B2556378352dFDE2be914';
 let newPriceFeedAddress: string;
 
 export default migration('1737538616_add_teth_collateral', {
-  async prepare(deploymentManager: DeploymentManager) {    
+  async prepare(deploymentManager: DeploymentManager) {
     const _wstETHToETHPriceFeed = await deploymentManager.fromDep('wstETH:priceFeed', 'mainnet', 'weth');
     const tETHMultiplicativePriceFeed = await deploymentManager.deploy(
       'tETH:priceFeed',
@@ -75,15 +75,9 @@ export default migration('1737538616_add_teth_collateral', {
     ];
 
     const description = '# Add tETH as collateral into cWETHv3 on Mainnet\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to add tETH into cWETHv3 on Ethereum network. This proposal takes the governance steps recommended and necessary to update a Compound III WETH market on Ethereum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based on the [recommendations from Gauntlet](https://www.comp.xyz/t/listing-teth-on-compound/5925/4).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/955) and [forum discussion](https://www.comp.xyz/t/listing-teth-on-compound/5925).\n\n\n## Proposal Actions\n\nThe first action adds tETH asset as collateral with corresponding configurations.\n\nThe second action deploys and upgrades Comet to a new version.';
-    // impersonate the proposer
-    await deploymentManager.hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: ['0x7e959eab54932f5cfd10239160a7fd6474171318'],
-    });
-    const signer = await deploymentManager.getSigner('0x7e959eab54932f5cfd10239160a7fd6474171318');
     const txn = await deploymentManager.retry(async () =>
       trace(
-        await governor.connect(signer).propose(...(await proposal(mainnetActions, description)))
+        await governor.propose(...(await proposal(mainnetActions, description)))
       )
     );
 
