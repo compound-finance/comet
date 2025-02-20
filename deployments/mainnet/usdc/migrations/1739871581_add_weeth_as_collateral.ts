@@ -14,7 +14,7 @@ export default migration('1739871581_add_weeth_as_collateral', {
       'weETH:priceRateOracle',
       'pricefeeds/RateBasedScalingPriceFeed.sol',
       [
-        weETH_ADDRESS, // ETH / USD price feed
+        weETH_ADDRESS, // ETH / eETH price feed
         8,
         18,
         'weETH / ETH price feed'
