@@ -78,9 +78,9 @@ export class ProposalConstraint<T extends CometContext> implements StaticConstra
           );
         }
 
-        // temporary hack to skip proposal 395
-        if (proposal.id.eq(395)) {
-          console.log('Skipping proposal 395');
+        // temporary hack to skip proposal 393
+        if (proposal.id.eq(393)) {
+          console.log('Skipping proposal 393');
           continue;
         }
 
