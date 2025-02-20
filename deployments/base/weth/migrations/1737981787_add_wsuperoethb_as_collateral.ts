@@ -16,7 +16,7 @@ export default migration('1737981787_add_wsuperoethb_as_collateral', {
       [
         WSUPEROETHB_ADDRESS,            // wsuperOETHb / superOETHb price feed
         ethPriceFeed.address,                   // constant ETH price feed (we consider 1 superOETHb = 1 ETH)
-        8,                              // decimals
+        8,                              // decimals 
         'wsuperOETHb / ETH price feed', // description
       ]
     );
