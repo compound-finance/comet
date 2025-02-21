@@ -21,7 +21,7 @@ const ENSResolverAddress = '0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41';
 const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
-const whale = '0xF977814e90dA44bFA03b6295A0616a897441aceC';
+//const whale = '0xF977814e90dA44bFA03b6295A0616a897441aceC';
 
 export default migration("1707394874_configurate_and_ens", {
   prepare: async (deploymentManager: DeploymentManager) => {
@@ -44,7 +44,6 @@ export default migration("1707394874_configurate_and_ens", {
       l1CCIPRouter,
       roninl1NativeBridge,
       governor,
-      COMP,
       timelock
     } = await govDeploymentManager.getContracts();
 
@@ -93,7 +92,7 @@ export default migration("1707394874_configurate_and_ens", {
     );
 
 
-    const COMPAmountToBridge = exp(1, 18);
+    //const COMPAmountToBridge = exp(1, 18);
     const ETHAmountToBridge = exp(1, 18);
 
     const ENSResolver = await govDeploymentManager.existing(
@@ -115,31 +114,31 @@ export default migration("1707394874_configurate_and_ens", {
       officialMarketsJSON[baseChainId] = [newMarketObject];
     }
 
-    await govDeploymentManager.hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [whale],
-    });
+    // await govDeploymentManager.hre.network.provider.request({
+    //   method: 'hardhat_impersonateAccount',
+    //   params: [whale],
+    // });
 
 
 
-    const whaleSigner = await govDeploymentManager.getSigner(whale);
+    // const whaleSigner = await govDeploymentManager.getSigner(whale);
 
-    const tx = await whaleSigner.sendTransaction({
-      to: Comp,
-      data: COMP.interface.encodeFunctionData('transfer', [timelock.address, COMPAmountToBridge]),
-    });
+    // const tx = await whaleSigner.sendTransaction({
+    //   to: Comp,
+    //   data: COMP.interface.encodeFunctionData('transfer', [timelock.address, COMPAmountToBridge]),
+    // });
 
-    await tx.wait();
+    //await tx.wait();
 
     const actions = [
-      {
-        target: Comp,
-        signature: "approve(address,uint256)",
-        calldata: utils.defaultAbiCoder.encode(
-          ["address", "uint256"],
-          [l1CCIPRouter.address, COMPAmountToBridge]
-        ),
-      },
+      // {
+      //   target: Comp,
+      //   signature: "approve(address,uint256)",
+      //   calldata: utils.defaultAbiCoder.encode(
+      //     ["address", "uint256"],
+      //     [l1CCIPRouter.address, COMPAmountToBridge]
+      //   ),
+      // },
       {
         contract: roninl1NativeBridge,
         signature: "requestDepositFor((address,address,(uint8,uint256,uint256)))",
@@ -162,10 +161,10 @@ export default migration("1707394874_configurate_and_ens", {
               utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
               l2ProposalData,
               [
-                [
-                  Comp,
-                  COMPAmountToBridge
-                ]
+                // [
+                //   Comp,
+                //   COMPAmountToBridge
+                // ]
               ],
               ethers.constants.AddressZero,
               "0x"
@@ -217,7 +216,7 @@ export default migration("1707394874_configurate_and_ens", {
     const ethers = deploymentManager.hre.ethers;
     const { utils } = ethers;
     await deploymentManager.spider();
-    const { comet, rewards, COMP, WETH } = await deploymentManager.getContracts();
+    const { comet, rewards, WETH } = await deploymentManager.getContracts();
 
     // 1.
     // const stateChanges = await diffState(
@@ -227,16 +226,16 @@ export default migration("1707394874_configurate_and_ens", {
     // );
     // expect(stateChanges).to.deep.equal({
     //   WRON: {
-    //     supplyCap: exp(3000000, 18) // 3000000e18
+    //     supplyCap: exp(2500000, 18)
     //   },
     //   USDC: {
-    //     supplyCap: exp(400000, 6) // 400000e6
+    //     supplyCap: exp(800000, 6)
     //   },
     //   AXS: {
-    //     supplyCap: exp(300000, 18) // 300000e18
+    //     supplyCap: exp(250000, 18)
     //   }
-    //   baseTrackingSupplySpeed: exp(0 / 86400, 15, 18), // 0
-    //   baseTrackingBorrowSpeed: exp(0 / 86400, 15, 18), // 0
+    //   baseTrackingSupplySpeed: exp(4 / 86400, 15, 18), // 46296296296
+    //   baseTrackingBorrowSpeed: exp(4 / 86400, 15, 18), // 46296296296
     // });
 
 
@@ -246,7 +245,7 @@ export default migration("1707394874_configurate_and_ens", {
     expect(config.shouldUpscale).to.be.equal(true);
 
     // 4. & 5.
-    expect(await COMP.balanceOf(rewards.address)).to.be.equal(exp(1, 18));
+    // expect(await COMP.balanceOf(rewards.address)).to.be.equal(exp(1, 18));
     expect(await WETH.balanceOf(comet.address)).to.be.equal(exp(1, 18));
 
     // 6.
@@ -352,6 +351,12 @@ export default migration("1707394874_configurate_and_ens", {
           baseSymbol: 'USDT',
           cometAddress: '0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07',
         },
+      ],
+      59144: [
+        {
+          baseSymbol: 'USDC',
+          cometAddress: '0x8D38A3d6B3c3B7d96D6536DA7Eef94A9d7dbC991'
+        }
       ],
       534352: [
         {

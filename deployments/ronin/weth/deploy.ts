@@ -8,6 +8,9 @@ const HOUR = 60 * 60;
 const DAY = 24 * HOUR;
 
 const MAINNET_TIMELOCK = '0x6d903f6003cca6255D85CcA4D3B5E5146dC33925';
+const ETH_USD_PRICE_FEED = '0x662Fdb0E7D95d89CD3458E4A3506296E48BB1F44';
+const RON_USD_PRICE_FEED = '0x0B6074F21488B95945989E513EFEA070096d931D';
+const AXS_USD_PRICE_FEED = '0x81DfC7A054C8F60497e47579c5A5cEB37bc047e8';
 
 export default async function deploy(
   deploymentManager: DeploymentManager,
@@ -48,12 +51,12 @@ async function deployContracts(
     'ronin'
   );
 
-  // pre-deployed OptimismMintableERC20
-  const COMP = await deploymentManager.existing(
-    'COMP',
-    '0x3902228d6a3d2dc44731fd9d45fee6a61c722d0b',
-    'ronin'
-  );
+  // // pre-deployed OptimismMintableERC20
+  // const COMP = await deploymentManager.existing(
+  //   'COMP',
+  //   '0x3902228d6a3d2dc44731fd9d45fee6a61c722d0b',
+  //   'ronin'
+  // );
 
   const l2CCIPOffRamp = await deploymentManager.existing(
     'l2CCIPOffRamp',
@@ -88,56 +91,59 @@ async function deployContracts(
     }
   );
 
+
+
   const WETHPriceFeed = await deploymentManager.deploy(
     'WETH:priceFeed',
     'pricefeeds/ConstantPriceFeed.sol',
     [ 
       8,
-      exp(2600, 8),
+      exp(1, 8),
      
     ]
   );
 
-  const WRONPriceFeed = await deploymentManager.deploy(
-    'WRON:priceFeed',
-    'pricefeeds/ConstantPriceFeed.sol',
+
+  const WRONMultiplicativePriceFeed = await deploymentManager.deploy(
+    'wstETH:priceFeed',
+    'pricefeeds/MultiplicativePriceFeed.sol',
     [
-      8,
-      exp(10.04, 8)
+      RON_USD_PRICE_FEED, // RON / USD price feed
+      ETH_USD_PRICE_FEED, // ETH / USD
+      8,                                            // decimals
+      'RON/USD price feed'                       // description
     ]
   );
 
-
-  const AXSPriceFeed = await deploymentManager.deploy(
-    'AXS:priceFeed',
-    'pricefeeds/ConstantPriceFeed.sol',
+  const AXSMultiplicativePriceFeed = await deploymentManager.deploy(
+    'wstETH:priceFeed',
+    'pricefeeds/MultiplicativePriceFeed.sol',
     [
-      8,
-      exp(4.02, 8),
+      AXS_USD_PRICE_FEED, // RON / USD price feed
+      ETH_USD_PRICE_FEED, // ETH / USD
+      8,                                            // decimals
+      'AXS/USD price feed'                       // description
     ]
   );
-
 
   const USDCPriceFeed = await deploymentManager.deploy(
     'USDC:priceFeed',
-    'pricefeeds/ConstantPriceFeed.sol',
+    'pricefeeds/ScalingPriceFeed.sol',
     [
-      8,
-      exp(1, 8),
+      ETH_USD_PRICE_FEED, // ETH / USD price feed
+      8
     ]
   );
 
 
-  const COMPPriceFeed = await deploymentManager.deploy(
-    'LINK:priceFeed',
-    'pricefeeds/ConstantPriceFeed.sol',
-    [
-      8,
-      exp(18.4, 18),
-    ]
-  );
-
-
+  // const COMPPriceFeed = await deploymentManager.deploy(
+  //   'LINK:priceFeed',
+  //   'pricefeeds/ConstantPriceFeed.sol',
+  //   [
+  //     8,
+  //     exp(18.4, 18),
+  //   ]
+  // );
 
 
   // Deploy all Comet-related contracts
@@ -165,7 +171,7 @@ async function deployContracts(
     l2CCIPOffRamp,
     roninl2NativeBridge,
     bulker,
-    COMP
+    // COMP
     // WETH
   };
 }
