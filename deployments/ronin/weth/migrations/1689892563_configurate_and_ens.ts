@@ -11,13 +11,14 @@ import {
   proposal,
 } from "../../../../src/deploy";
 import { expect } from "chai";
+import { forkedHreForBase } from '../../../../plugins/scenario/utils/hreForBase';
 
-const SECONDS_PER_YEAR = 31_536_000n;
 const destinationChainSelector = "6916147374840168594";
 const Comp = "0x514910771AF9Ca656af840dff83E8264EcF986CA";
 const CompL2 = "0x3902228D6A3d2Dc44731fD9d45FeE6a61c722D0b";
 const ENSName = 'compound-community-licenses.eth';
 const ENSResolverAddress = '0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41';
+const ENSRegistryAddress = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
@@ -218,6 +219,47 @@ export default migration("1707394874_configurate_and_ens", {
     await deploymentManager.spider();
     const { comet, rewards, WETH } = await deploymentManager.getContracts();
 
+    const hreMainnet = await forkedHreForBase({ name: '', network: 'mainnet', deployment: '' });
+    const dm = new DeploymentManager('mainnet', 'usdc', hreMainnet);
+
+    const cometMainnet = await dm.contract('comet');
+    const { timelock } = await govDeploymentManager.getContracts();
+    const guardian = await cometMainnet!.pauseGuardian();
+
+    const pauseGuardian = new ethers.Contract(
+      await comet.pauseGuardian(),
+      [
+        'function getOwners() external view returns (address[] memory)',
+      ],
+      await deploymentManager.getSigner()
+    );
+
+    const GnosisSafeContract = new ethers.Contract(
+      guardian,
+      [
+        'function getOwners() external view returns (address[] memory)',
+      ],
+      await govDeploymentManager.getSigner()
+    );
+    const ownersMainnet = await GnosisSafeContract.getOwners();
+
+    const owners = await pauseGuardian.getOwners();
+    expect(owners).to.deep.equal(ownersMainnet);
+    expect(owners.length).to.not.be.equal(0);
+    
+    const cometNew = new ethers.Contract(
+      comet.address,
+      [
+        'function assetList() external view returns (address)',
+      ],
+      await deploymentManager.getSigner()
+    );
+
+
+    const assetListAddress = await cometNew.assetList();
+
+    expect(assetListAddress).to.not.be.equal(ethers.constants.AddressZero);
+
     // 1.
     // const stateChanges = await diffState(
     //   comet,
@@ -238,7 +280,6 @@ export default migration("1707394874_configurate_and_ens", {
     //   baseTrackingBorrowSpeed: exp(4 / 86400, 15, 18), // 46296296296
     // });
 
-
     const config = await rewards.rewardConfig(comet.address);
     expect(config.token).to.be.equal(CompL2);
     expect(config.rescaleFactor).to.be.equal(exp(1, 12));
@@ -247,18 +288,23 @@ export default migration("1707394874_configurate_and_ens", {
     // 4. & 5.
     // expect(await COMP.balanceOf(rewards.address)).to.be.equal(exp(1, 18));
     expect(await WETH.balanceOf(comet.address)).to.be.equal(exp(1, 18));
-
     // 6.
     const ENSResolver = await govDeploymentManager.existing(
       'ENSResolver',
       ENSResolverAddress
     );
+    const ENSRegistry = await govDeploymentManager.existing('ENSRegistry', ENSRegistryAddress, 'mainnet');
     const subdomainHash = utils.namehash(ENSSubdomain);
     const officialMarketsJSON = await ENSResolver.text(
       subdomainHash,
       ENSTextRecordKey
     );
+    expect(await ENSRegistry.recordExists(subdomainHash)).to.be.equal(true);
+    expect(await ENSRegistry.owner(subdomainHash)).to.be.equal(timelock.address);
+    expect(await ENSRegistry.resolver(subdomainHash)).to.be.equal(ENSResolverAddress);
+    expect(await ENSRegistry.ttl(subdomainHash)).to.be.equal(0);
     const officialMarkets = JSON.parse(officialMarketsJSON);
+    
     expect(officialMarkets).to.deep.equal({
       1: [
         {

@@ -49,7 +49,7 @@ task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
 /* note: boolean environment variables are imported as strings */
 const {
   COINMARKETCAP_API_KEY,
-  ETH_PK = '',
+  ETH_PK,
   ETHERSCAN_KEY,
   SNOWTRACE_KEY,
   POLYGONSCAN_KEY,

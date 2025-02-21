@@ -86,19 +86,15 @@ export default async function relayRoninMessage(
     if (internalMsg.tokenAmounts.length) {
       const mintSigner = await bridgeDeploymentManager.getSigner(MINTER);
       const mintSelector = ethers.utils.id('mint(address,uint256)').slice(0, 10);
-      const encodedData = mintSelector + ethers.utils.defaultAbiCoder.encode(
-        ['address', 'uint256'],
-        [internalMsg.receiver, internalMsg.tokenAmounts[0].amount]
-      ).slice(2);
-
-      const mintTx = await mintSigner.sendTransaction({
-        to: COMP.address,
-        data: encodedData
-      });
-
-      await mintTx.wait();
+      for (const tokenTransferData of internalMsg.tokenAmounts) {
+        const encodedData = mintSelector + tokenTransferData.token.slice(2).padStart(64, '0') + tokenTransferData.amount.toHexString().slice(2).padStart(64, '0');
+        const mintTx = await mintSigner.sendTransaction({
+          to: tokenTransferData.token,
+          data: encodedData
+        });
+        await mintTx.wait();
+      }
     }
-
 
     console.log(`[CCIP L1->L2] Routed message to ${internalMsg.receiver}`);
   }
@@ -140,7 +136,7 @@ export default async function relayRoninMessage(
   );
 
   console.log(`[CCIP L2] Found proposalCreatedEvent: ${proposalCreatedEvent}`);
-  if (proposalCreatedEvent) {
+  if(proposalCreatedEvent) {
     const decoded = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
     const { id, eta } = decoded.args;
     openBridgedProposals.push({ id, eta });
