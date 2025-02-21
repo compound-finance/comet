@@ -71,7 +71,7 @@ export default migration("1707394874_configurate_and_ens", {
       ["address", "address"],
       [rewards.address, CompL2]
     );
-    
+
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ["address[]", "uint256[]", "string[]", "bytes[]"],
       [
@@ -227,16 +227,16 @@ export default migration("1707394874_configurate_and_ens", {
     // );
     // expect(stateChanges).to.deep.equal({
     //   WRON: {
-    //     supplyCap: exp(2500000, 18)
+    //     supplyCap: exp(3000000, 18) // 3000000e18
     //   },
     //   USDC: {
-    //     supplyCap: exp(800000, 6)
+    //     supplyCap: exp(400000, 6) // 400000e6
     //   },
     //   AXS: {
-    //     supplyCap: exp(250000, 18)
+    //     supplyCap: exp(300000, 18) // 300000e18
     //   }
-    //   baseTrackingSupplySpeed: exp(4 / 86400, 15, 18), // 46296296296
-    //   baseTrackingBorrowSpeed: exp(4 / 86400, 15, 18), // 46296296296
+    //   baseTrackingSupplySpeed: exp(0 / 86400, 15, 18), // 0
+    //   baseTrackingBorrowSpeed: exp(0 / 86400, 15, 18), // 0
     // });
 
 
