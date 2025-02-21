@@ -1,7 +1,7 @@
 import { StaticConstraint, Solution, World, debug } from '../../plugins/scenario';
 import { CometContext, MigrationData } from '../context/CometContext';
 import { Migration, loadMigrations, Actions } from '../../plugins/deployment_manager/Migration';
-import { modifiedPaths, subsets } from '../utils';
+import { modifiedPaths } from '../utils';
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import { exp } from '../../test/helpers';
@@ -22,7 +22,7 @@ export class MigrationConstraint<T extends CometContext> implements StaticConstr
   async solve(world: World) {
     const label = `[${world.base.name}] {MigrationConstraint}`;
     const solutions: Solution<T>[] = [];
-    const migrationPaths = [...subsets(await getMigrations(world))];
+    const migrationPaths = [await getMigrations(world)];
 
     for (const migrationList of migrationPaths) {
       if (migrationList.length == 0 && migrationPaths.length > 1) {
@@ -48,7 +48,7 @@ export class MigrationConstraint<T extends CometContext> implements StaticConstr
         for (const migrationData of migrations) {
           const migration = migrationData.migration;
           const artifact = await migration.actions.prepare(ctx.world.deploymentManager, govDeploymentManager);
-          debug(`${label} Prepared migration ${migration.name}.\n for network ${govDeploymentManager.network}  Artifact\n-------\n\n${JSON.stringify(artifact, null, 2)}\n-------\n`);
+          debug(`${label} Prepared migration ${migration.name}.\n  Artifact\n-------\n\n${JSON.stringify(artifact, null, 2)}\n-------\n`);
           if (await isEnacted(migration.actions, ctx.world.deploymentManager, govDeploymentManager)) {
             migrationData.skipVerify = true;
             debug(`${label} Migration ${migration.name} has already been enacted`);
@@ -61,7 +61,7 @@ export class MigrationConstraint<T extends CometContext> implements StaticConstr
             if (lastProposalAfter > lastProposalBefore) {
               migrationData.lastProposal = lastProposalAfter.toNumber();
             }
-            debug(`${label} Enacted migration ${migration.name} on network ${govDeploymentManager.network}`);
+            debug(`${label} Enacted migration ${migration.name}`);
           }
         }
 
