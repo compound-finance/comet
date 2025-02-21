@@ -91,7 +91,7 @@ async function scrapeContractCreationCodeFromEtherscanApi(network: string, addre
     apikey: getEtherscanApiKey(network)
   };
   const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
-  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({ ...params, ...{ apikey: '[API_KEY]'}})}`;
+  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({ ...params, ...{}})}`;
 
   debug(`Attempting to pull Contract Creation code from API at ${debugUrl}`);
   const result = await get(url, {});
