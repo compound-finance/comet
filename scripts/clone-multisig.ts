@@ -7,12 +7,11 @@ const SRC_NETWORK = process.env['SRC_NETWORK'] ?? 'mainnet';
 const DST_NETWORK = process.env['DST_NETWORK'] ?? 'hardhat';
 
 async function main() {
-  console.log('SRC_NETWORK:', SRC_NETWORK);
-  console.log('DST_NETWORK:', DST_NETWORK);
   await hre.changeNetwork(SRC_NETWORK);
-  console.log('Network:', hre.network);
+
   const dm = new DeploymentManager(SRC_NETWORK, 'usdc', hre);
-  const signer_ = await new hre.ethers.Wallet(process.env['ETH_PK'], hre.ethers.provider);
+
+  const signer_ = await dm.getSigner();
   const comet = await dm.contract('comet');
   const guardian = await comet.pauseGuardian();
 
@@ -30,7 +29,7 @@ async function main() {
 
   await hre.changeNetwork(DST_NETWORK);
 
-  const signer = await new hre.ethers.Wallet(process.env['ETH_PK'], hre.ethers.provider);
+  const signer = await hre.ethers.provider.getSigner(signer_.address);
   const ethAdapter = new EthersAdapter({ ethers: hre.ethers, signerOrProvider: signer });
   const safeFactory = await SafeFactory.create({ ethAdapter: ethAdapter });
   const safeSdk = await safeFactory.deploySafe({ safeAccountConfig });
