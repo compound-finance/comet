@@ -14,8 +14,8 @@ import { expect } from "chai";
 import { forkedHreForBase } from '../../../../plugins/scenario/utils/hreForBase';
 
 const destinationChainSelector = "6916147374840168594";
-const Comp = "0x514910771AF9Ca656af840dff83E8264EcF986CA";
-const CompL2 = "0x3902228D6A3d2Dc44731fD9d45FeE6a61c722D0b";
+// const Comp = "0x514910771AF9Ca656af840dff83E8264EcF986CA";
+// const CompL2 = "0x3902228D6A3d2Dc44731fD9d45FeE6a61c722D0b";
 const ENSName = 'compound-community-licenses.eth';
 const ENSResolverAddress = '0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41';
 const ENSRegistryAddress = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
@@ -62,15 +62,15 @@ export default migration("1707394874_configurate_and_ens", {
       [configurator.address, comet.address]
     );
 
-    const setRewardConfigCalldata = utils.defaultAbiCoder.encode(
-      ["address", "address"],
-      [comet.address, CompL2]
-    );
+    // const setRewardConfigCalldata = utils.defaultAbiCoder.encode(
+    //   ["address", "address"],
+    //   [comet.address, CompL2]
+    // );
 
-    const sweepTokenCalldataComp = utils.defaultAbiCoder.encode(
-      ["address", "address"],
-      [rewards.address, CompL2]
-    );
+    // const sweepTokenCalldataComp = utils.defaultAbiCoder.encode(
+    //   ["address", "address"],
+    //   [rewards.address, CompL2]
+    // );
 
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ["address[]", "uint256[]", "string[]", "bytes[]"],
@@ -80,14 +80,14 @@ export default migration("1707394874_configurate_and_ens", {
         [
           "setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))",
           "deployAndUpgradeTo(address,address)",
-          "setRewardConfig(address,address)",
-          "sweepToken(address,address)"
+          // "setRewardConfig(address,address)",
+          // "sweepToken(address,address)"
         ],
         [
           setConfigurationCalldata,
           deployAndUpgradeToCalldata,
-          setRewardConfigCalldata,
-          sweepTokenCalldataComp
+          // setRewardConfigCalldata,
+          // sweepTokenCalldataComp
         ],
       ]
     );
@@ -280,10 +280,10 @@ export default migration("1707394874_configurate_and_ens", {
     //   baseTrackingBorrowSpeed: exp(4 / 86400, 15, 18), // 46296296296
     // });
 
-    const config = await rewards.rewardConfig(comet.address);
-    expect(config.token).to.be.equal(CompL2);
-    expect(config.rescaleFactor).to.be.equal(exp(1, 12));
-    expect(config.shouldUpscale).to.be.equal(true);
+    // const config = await rewards.rewardConfig(comet.address);
+    // expect(config.token).to.be.equal(CompL2);
+    // expect(config.rescaleFactor).to.be.equal(exp(1, 12));
+    // expect(config.shouldUpscale).to.be.equal(true);
 
     // 4. & 5.
     // expect(await COMP.balanceOf(rewards.address)).to.be.equal(exp(1, 18));
