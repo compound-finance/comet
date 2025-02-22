@@ -75,8 +75,10 @@ export default migration("1707394874_configurate_and_ens", {
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ["address[]", "uint256[]", "string[]", "bytes[]"],
       [
-        [configurator.address, cometAdmin.address, rewards.address, bridgeReceiver.address],
-        [0, 0, 0, 0],
+        //[configurator.address, cometAdmin.address, rewards.address, bridgeReceiver.address],
+        [configurator.address, cometAdmin.address],
+        //[0, 0, 0, 0],
+        [0, 0],
         [
           "setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))",
           "deployAndUpgradeTo(address,address)",
@@ -246,7 +248,7 @@ export default migration("1707394874_configurate_and_ens", {
     const owners = await pauseGuardian.getOwners();
     expect(owners).to.deep.equal(ownersMainnet);
     expect(owners.length).to.not.be.equal(0);
-    
+
     const cometNew = new ethers.Contract(
       comet.address,
       [
@@ -304,7 +306,7 @@ export default migration("1707394874_configurate_and_ens", {
     expect(await ENSRegistry.resolver(subdomainHash)).to.be.equal(ENSResolverAddress);
     expect(await ENSRegistry.ttl(subdomainHash)).to.be.equal(0);
     const officialMarkets = JSON.parse(officialMarketsJSON);
-    
+
     expect(officialMarkets).to.deep.equal({
       1: [
         {

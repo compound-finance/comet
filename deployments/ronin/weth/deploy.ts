@@ -105,7 +105,7 @@ async function deployContracts(
 
 
   const WRONMultiplicativePriceFeed = await deploymentManager.deploy(
-    'wstETH:priceFeed',
+    'WRON:priceFeed',
     'pricefeeds/MultiplicativePriceFeed.sol',
     [
       RON_USD_PRICE_FEED, // RON / USD price feed
@@ -116,7 +116,7 @@ async function deployContracts(
   );
 
   const AXSMultiplicativePriceFeed = await deploymentManager.deploy(
-    'wstETH:priceFeed',
+    'AXS:priceFeed',
     'pricefeeds/MultiplicativePriceFeed.sol',
     [
       AXS_USD_PRICE_FEED, // RON / USD price feed

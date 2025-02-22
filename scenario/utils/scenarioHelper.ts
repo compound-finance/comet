@@ -83,9 +83,6 @@ export function getConfigForScenario(ctx: CometContext) {
   }
 
   if (ctx.world.base.network === 'ronin' && ctx.world.base.deployment === 'weth') {
-    config.bulkerBase = 50;
-    config.bulkerAsset = 100000;
-    config.bulkerAsset1 = 50000;
     config.transferBase = 50;
     config.transferAsset = 100000;
     config.transferAsset1 = 100000;
@@ -95,8 +92,9 @@ export function getConfigForScenario(ctx: CometContext) {
     config.withdrawBase1 = 100;
     config.withdrawAsset = 100000;
     config.withdrawAsset1 = 10000;
-    config.liquidationBase = 100;
+    config.liquidationBase = 150;
     config.liquidationBase1 = 50;
+    config.liquidationAsset = 5;
     config.bulkerAsset = 100000;
     config.bulkerAsset1 = 100000;
     config.bulkerComet = 100;
