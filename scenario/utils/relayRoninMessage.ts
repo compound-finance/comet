@@ -64,7 +64,6 @@ export default async function relayRoninMessage(
       })),
     };
 
-    const { COMP } = await bridgeDeploymentManager.getContracts();
     routeTx = await l2Router
       .connect(offRampSigner)
       .routeMessage(

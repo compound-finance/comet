@@ -7,6 +7,7 @@ import { DeploySpec, deployComet, exp } from '../../../src/deploy';
 const HOUR = 60 * 60;
 const DAY = 24 * HOUR;
 
+const USDC_USD_PRICE_FEED = '0x88f415c12d45d4C6DC018553BBE472A4558ff3f8';
 const MAINNET_TIMELOCK = '0x6d903f6003cca6255D85CcA4D3B5E5146dC33925';
 const ETH_USD_PRICE_FEED = '0x662Fdb0E7D95d89CD3458E4A3506296E48BB1F44';
 const RON_USD_PRICE_FEED = '0x0B6074F21488B95945989E513EFEA070096d931D';
@@ -99,39 +100,40 @@ async function deployContracts(
     [ 
       8,
       exp(1, 8),
-     
     ]
   );
 
 
   const WRONMultiplicativePriceFeed = await deploymentManager.deploy(
     'WRON:priceFeed',
-    'pricefeeds/MultiplicativePriceFeed.sol',
+    'pricefeeds/ReverseMultiplicativePriceFeed.sol',
     [
       RON_USD_PRICE_FEED, // RON / USD price feed
       ETH_USD_PRICE_FEED, // ETH / USD
       8,                                            // decimals
-      'RON/USD price feed'                       // description
+      'RON/ETH price feed'                       // description
     ]
   );
 
   const AXSMultiplicativePriceFeed = await deploymentManager.deploy(
     'AXS:priceFeed',
-    'pricefeeds/MultiplicativePriceFeed.sol',
+    'pricefeeds/ReverseMultiplicativePriceFeed.sol',
     [
       AXS_USD_PRICE_FEED, // RON / USD price feed
       ETH_USD_PRICE_FEED, // ETH / USD
       8,                                            // decimals
-      'AXS/USD price feed'                       // description
+      'AXS/ETH price feed'                       // description
     ]
-  );
+  )
 
-  const USDCPriceFeed = await deploymentManager.deploy(
-    'USDC:priceFeed',
-    'pricefeeds/ScalingPriceFeed.sol',
+  const USDCMultiplicativePriceFeed = await deploymentManager.deploy(
+    'AXS:priceFeed',
+    'pricefeeds/ReverseMultiplicativePriceFeed.sol',
     [
-      ETH_USD_PRICE_FEED, // ETH / USD price feed
-      8
+      USDC_USD_PRICE_FEED, // RON / USD price feed
+      ETH_USD_PRICE_FEED, // ETH / USD
+      8,                                            // decimals
+      'USDC/ETH price feed'                       // description
     ]
   );
 

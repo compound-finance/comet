@@ -83,13 +83,13 @@ export function getConfigForScenario(ctx: CometContext) {
   }
 
   if (ctx.world.base.network === 'ronin' && ctx.world.base.deployment === 'weth') {
-    config.transferBase = 50;
+    config.transferBase = 10;
     config.transferAsset = 100000;
     config.transferAsset1 = 100000;
     config.rewardsAsset = 1000000;
     config.rewardsBase = 200;
-    config.withdrawBase = 50;
-    config.withdrawBase1 = 100;
+    config.withdrawBase = 10;
+    config.withdrawBase1 = 10;
     config.withdrawAsset = 100000;
     config.withdrawAsset1 = 10000;
     config.liquidationBase = 150;

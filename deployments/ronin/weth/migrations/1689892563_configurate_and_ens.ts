@@ -103,7 +103,7 @@ export default migration("1707394874_configurate_and_ens", {
       ENSResolverAddress
     );
     const subdomainHash = utils.namehash(ENSSubdomain);
-    const baseChainId = 2020;
+    const chainId = 2020;
     const newMarketObject = {
       baseSymbol: 'WETH',
       cometAddress: comet.address,
@@ -111,10 +111,10 @@ export default migration("1707394874_configurate_and_ens", {
     const officialMarketsJSON = JSON.parse(
       await ENSResolver.text(subdomainHash, ENSTextRecordKey)
     );
-    if (officialMarketsJSON[baseChainId]) {
-      officialMarketsJSON[baseChainId].push(newMarketObject);
+    if (officialMarketsJSON[chainId]) {
+      officialMarketsJSON[chainId].push(newMarketObject);
     } else {
-      officialMarketsJSON[baseChainId] = [newMarketObject];
+      officialMarketsJSON[chainId] = [newMarketObject];
     }
 
     // await govDeploymentManager.hre.network.provider.request({
