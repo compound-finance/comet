@@ -506,7 +506,7 @@ const config: HardhatUserConfig = {
         auxiliaryBase: 'mainnet'
       },
       {
-        name: 'ronin',
+        name: 'ronin-weth',
         network: 'ronin',
         deployment: 'weth',
         auxiliaryBase: 'mainnet'
