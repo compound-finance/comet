@@ -15,6 +15,9 @@
     "opL1StandardBridge": "0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1",
     "mantleL1CrossDomainMessenger": "0x676A795fe6E43C17c668de16730c3F690FEB7120",
     "mantleL1StandardBridge": "0x95fC37A27a2f68e3A647CDc081F0A89bb47c3012",
+    "lineaMessageService": "0xd19d4B5d358258f05D7B411E21A1460D11B0876F",
+    "lineaL1TokenBridge": "0x051F1D88f0aF5763fB888eC4378b4D8B29ea3319",
+    "lineaL1USDCBridge": "0x504A330327A089d8364C4ab3811Ee26976d388ce",
     "scrollMessenger": "0x6774Bcbd5ceCeF1336b5300fb5186a12DDD8b367",
     "scrollL1USDCGateway": "0xf1AF3b23DE0A5Ca3CAb7261cb0061C0D779A5c7B"
 }

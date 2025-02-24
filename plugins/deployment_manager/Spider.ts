@@ -1,4 +1,4 @@
-import { Contract } from 'ethers';
+import { Contract, constants } from 'ethers';
 import { HardhatRuntimeEnvironment as HRE } from 'hardhat/types';
 
 import { Cache } from './Cache';
@@ -42,6 +42,9 @@ function maybeStore(alias: Alias, address: Address, into: Aliases): boolean {
   if (maybeExists) {
     if (maybeExists === address) {
       return false;
+    } else if (maybeExists === constants.AddressZero && address !== constants.AddressZero) {
+      into.set(alias, address);
+      return true;
     } else {
       throw new Error(`Had ${alias} -> ${maybeExists}, not ${address}`);
     }
