@@ -54,7 +54,7 @@ async function deployContracts(
 
   // const COMP = await deploymentManager.existing(
   //   'COMP',
-  //   '0x3902228d6a3d2dc44731fd9d45fee6a61c722d0b',
+  //   '',
   //   'ronin'
   // );
 
@@ -138,13 +138,7 @@ async function deployContracts(
 
 
   // const COMPPriceFeed = await deploymentManager.deploy(
-  //   'LINK:priceFeed',
-  //   'pricefeeds/ConstantPriceFeed.sol',
-  //   [
-  //     8,
-  //     exp(18.4, 18),
-  //   ]
-  // );
+  //   'COMP:priceFeed',);
 
 
   // Deploy all Comet-related contracts
@@ -162,7 +156,6 @@ async function deployContracts(
       '0xe514d9deb7966c8be0ca922de8a064264ea6bcd4',        // wrapped native token
     ]
   );
-  // Deploy stETH / ETH SimplePriceFeed
   
 
   return {
@@ -173,6 +166,5 @@ async function deployContracts(
     roninl2NativeBridge,
     bulker,
     // COMP
-    // WETH
   };
 }
