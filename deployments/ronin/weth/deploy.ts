@@ -52,7 +52,6 @@ async function deployContracts(
     'ronin'
   );
 
-  // // pre-deployed OptimismMintableERC20
   // const COMP = await deploymentManager.existing(
   //   'COMP',
   //   '0x3902228d6a3d2dc44731fd9d45fee6a61c722d0b',
@@ -127,7 +126,7 @@ async function deployContracts(
   )
 
   const USDCMultiplicativePriceFeed = await deploymentManager.deploy(
-    'AXS:priceFeed',
+    'USDC:priceFeed',
     'pricefeeds/ReverseMultiplicativePriceFeed.sol',
     [
       USDC_USD_PRICE_FEED, // RON / USD price feed
