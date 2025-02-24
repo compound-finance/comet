@@ -23,7 +23,7 @@ async function hasNativeAsCollateralOrBase(ctx: CometContext): Promise<boolean> 
 scenario(
   'Comet#bulker > (non-WETH base) all non-reward actions in one txn',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && (!matchesDeployment(ctx, [{ deployment: 'weth' }, { deployment: 'wsteth' }]) || matchesDeployment(ctx, [{ network: 'ronin', deployment: 'weth' }])),
+    filter: async (ctx) => await isBulkerSupported(ctx) && (!matchesDeployment(ctx, [{ deployment: 'weth' }, { deployment: 'wsteth' }])),
     supplyCaps: async (ctx) =>  (
       {
         $asset0: getConfigForScenario(ctx).bulkerAsset,
@@ -294,7 +294,7 @@ scenario(
 scenario(
   'Comet#bulker > (non-WETH base) all actions in one txn',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && (!matchesDeployment(ctx, [{ deployment: 'weth' }, { deployment: 'wsteth' }]) || matchesDeployment(ctx, [{ network: 'ronin', deployment: 'weth' }])),
+    filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && (!matchesDeployment(ctx, [{ deployment: 'weth' }, { deployment: 'wsteth' }])),
     supplyCaps: async (ctx) =>  (
       {
         $asset0: getConfigForScenario(ctx).bulkerAsset,

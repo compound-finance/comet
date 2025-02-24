@@ -20,8 +20,9 @@ const ENSRegistryAddress = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
+const ETHAmountToBridge = exp(10, 18);
 
-export default migration("1707394874_configurate_and_ens", {
+export default migration("1689892563_configurate_and_ens", {
   prepare: async (deploymentManager: DeploymentManager) => {
     return {};
   },
@@ -76,7 +77,7 @@ export default migration("1707394874_configurate_and_ens", {
     );
 
 
-    const ETHAmountToBridge = exp(1, 18);
+
 
     const ENSResolver = await govDeploymentManager.existing(
       'ENSResolver',
@@ -138,16 +139,6 @@ export default migration("1707394874_configurate_and_ens", {
 
 
     const description = "# Initialize cUSDCv3 on Ronin\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes deployment of Compound III to Optimism network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Optimism; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-optimism/4975/6).\n\nFurther detailed information can be found on the corresponding [deployment pull request](https://github.com/compound-finance/comet/pull/838), [proposal pull request](https://github.com/compound-finance/comet/pull/842), [deploy market GitHub action run](https://github.com/dmitriy-bergman-works/comet-optimism/actions/runs/8581592608) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-optimism/4975).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Optimism. This sends the encoded `setConfiguration` and `deployAndUpgradeTo` calls across the bridge to the governance receiver on Optimism. It also calls `setRewardConfig` on the Optimism rewards contract, to establish Optimism’s bridged version of COMP as the reward token for the deployment and set the initial supply speed to be 5 COMP/day and borrow speed to be 5 COMP/day.\n\nThe second action approves Circle’s Cross-Chain Transfer Protocol (CCTP) [TokenMessenger](https://etherscan.io/address/0xbd3fa81b58ba92a82136038b25adec7066af3155) to take the Timelock's USDC on Mainnet, in order to seed the market reserves through the CCTP.\n\nThe third action deposits and burns 10K USDC from mainnet via depositForBurn function on CCTP’s TokenMessenger contract to mint native USDC to Comet on Optimism.\n\nThe fourth action approves Optimism’s [L1StandardBridge](https://etherscan.io/address/0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1) to take Timelock's COMP, in order to seed the rewards contract through the bridge.\n\nThe fifth action deposits 3.6K COMP from mainnet to the Optimism L1StandardBridge contract to bridge to CometRewards.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Optimism cUSDCv3 market";
-
-    await govDeploymentManager.hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [timelock.address],
-    });
-
-    await govDeploymentManager.hre.network.provider.request({
-      method: 'hardhat_setBalance',
-      params: [timelock.address, '0x56bc75e2d63100000'],
-    })
 
     const txn = await governor.propose(...(await proposal(actions, description)))
     const event = (await txn.wait()).events.find((event) => event.event === "ProposalCreated");
@@ -220,25 +211,24 @@ export default migration("1707394874_configurate_and_ens", {
     // );
     // expect(stateChanges).to.deep.equal({
     //   WRON: {
-    //     supplyCap: exp(2500000, 18)
+    //     supplyCap: exp(3000000, 18)
     //   },
     //   USDC: {
-    //     supplyCap: exp(800000, 6)
+    //     supplyCap: exp(400000, 6)
     //   },
     //   AXS: {
-    //     supplyCap: exp(250000, 18)
+    //     supplyCap: exp(300000, 18)
     //   }
-    //   baseTrackingSupplySpeed: exp(4 / 86400, 15, 18), // 46296296296
-    //   baseTrackingBorrowSpeed: exp(4 / 86400, 15, 18), // 46296296296
+    //   baseTrackingSupplySpeed: 0,
+    //   baseTrackingBorrowSpeed: 0,
     // });
 
     // const config = await rewards.rewardConfig(comet.address);
-    // expect(config.token).to.be.equal(CompL2);
     // expect(config.rescaleFactor).to.be.equal(exp(1, 12));
     // expect(config.shouldUpscale).to.be.equal(true);
 
     // 4. & 5.
-    expect(await WETH.balanceOf(comet.address)).to.be.equal(exp(1, 18));
+    expect(await WETH.balanceOf(comet.address)).to.be.equal(exp(10, 18));
     // 6.
     const ENSResolver = await govDeploymentManager.existing(
       'ENSResolver',
@@ -366,7 +356,14 @@ export default migration("1707394874_configurate_and_ens", {
           baseSymbol: 'WETH',
           cometAddress: comet.address,
         },
-      ]
+      ],
+      //TODO: Unichain market
+      // 130: [
+      //   {
+      //     baseSymbol: 'USDC',
+      //     cometAdress: 
+      //   }
+      // ]
     });
   },
 });
