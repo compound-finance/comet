@@ -134,8 +134,8 @@ export default async function relayRoninMessage(
       ev.topics[0] === bridgeReceiver.interface.getEventTopic('ProposalCreated')
   );
 
-  console.log(`[CCIP L2] Found proposalCreatedEvent: ${proposalCreatedEvent}`);
-  if(proposalCreatedEvent) {
+  console.log(`[CCIP L2] Found proposalCreatedEvent: ${JSON.stringify(proposalCreatedEvent)}`);
+  if (proposalCreatedEvent) {
     const decoded = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
     const { id, eta } = decoded.args;
     openBridgedProposals.push({ id, eta });

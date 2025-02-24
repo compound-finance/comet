@@ -19,7 +19,7 @@ import { isBridgeProposal } from './isBridgeProposal';
 
 export { mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp };
 
-export const MAX_ASSETS = 30;
+export const MAX_ASSETS = 24;
 export const UINT256_MAX = 2n ** 256n - 1n;
 
 export interface ComparativeAmount {
@@ -332,8 +332,8 @@ export async function fetchLogs(
   }
 }
 
-async function redeployRenzoOracle(dm: DeploymentManager){
-  if(dm.network === 'mainnet') {
+async function redeployRenzoOracle(dm: DeploymentManager) {
+  if (dm.network === 'mainnet') {
     // renzo admin 	0xD1e6626310fD54Eceb5b9a51dA2eC329D6D4B68A
     const renzoOracle = new Contract(
       '0x5a12796f7e7EBbbc8a402667d266d2e65A814042',
@@ -371,10 +371,10 @@ const dest = new Map<string, string>([
   ['ronin', '6916147374840168594'],
 ]);
 
-async function updateCCIPStats(dm: DeploymentManager){
-  if(dm.network === 'mainnet') {
+async function updateCCIPStats(dm: DeploymentManager) {
+  if (dm.network === 'mainnet') {
     const commitStore = '0x2aa101bf99caef7fc1355d4c493a1fe187a007ce';
-    
+
     const priceRegistry = '0x8c9b2Efb7c64C394119270bfecE7f54763b958Ad';
     const abi = [
       {
@@ -543,14 +543,14 @@ async function getProxyAdmin(dm: DeploymentManager, proxyAddress: string): Promi
   return adminAddress;
 }
 
-async function mockAllRedstoneOracles(dm: DeploymentManager){
+async function mockAllRedstoneOracles(dm: DeploymentManager) {
   const feeds = REDSTONE_FEEDS[dm.network];
   if (!Array.isArray(feeds)) {
     debug(`No redstone feeds found for network: ${dm.network}`);
     return;
   }
   for (const feed of feeds) {
-    try{
+    try {
       await dm.fromDep(`MockRedstoneOracle:${feed}`, dm.network, dm.deployment);
     }
     catch (_) {
@@ -559,7 +559,7 @@ async function mockAllRedstoneOracles(dm: DeploymentManager){
   }
 }
 
-async function mockRedstoneOracle(dm: DeploymentManager, feed: string){
+async function mockRedstoneOracle(dm: DeploymentManager, feed: string) {
   const feedContract = new Contract(
     feed,
     [
