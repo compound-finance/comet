@@ -19,7 +19,7 @@ import { isBridgeProposal } from './isBridgeProposal';
 
 export { mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp };
 
-export const MAX_ASSETS = 15;
+export const MAX_ASSETS = 30;
 export const UINT256_MAX = 2n ** 256n - 1n;
 
 export interface ComparativeAmount {
@@ -299,10 +299,15 @@ export function matchesDeployment(ctx: CometContext, deploymentCriteria: Deploym
 export async function isRewardSupported(ctx: CometContext): Promise<boolean> {
   const rewards = await ctx.getRewards();
   const comet = await ctx.getComet();
+  const COMP = await ctx.getComp();
+
   if (rewards == null) return false;
 
   const [rewardTokenAddress] = await rewards.rewardConfig(comet.address);
   if (rewardTokenAddress === constants.AddressZero) return false;
+
+  const totalSupply = await COMP.totalSupply();
+  if (totalSupply.toBigInt() < exp(1, 18)) return false;
 
   return true;
 }
@@ -422,11 +427,7 @@ async function mockRedstoneOracle(dm: DeploymentManager, feed: string){
   await proxyAdmin.connect(owner).upgrade(feed, newImplementation.address);
 }
 
-
-export async function executeOpenProposal(
-  dm: DeploymentManager,
-  { id, startBlock, endBlock }: OpenProposal
-) {
+export async function voteForOpenProposal(dm: DeploymentManager, { id, startBlock, endBlock }: OpenProposal) {
   const governor = await dm.getContractOrThrow('governor');
   const blockNow = await dm.hre.ethers.provider.getBlockNumber();
   const blocksUntilStart = startBlock.toNumber() - blockNow;
@@ -449,6 +450,18 @@ export async function executeOpenProposal(
         debug(`Error while voting for ${whale}`, err.message);
       }
     }
+  }
+}
+
+export async function executeOpenProposal(
+  dm: DeploymentManager,
+  { id, startBlock, endBlock }: OpenProposal
+) {
+  const governor = await dm.getContractOrThrow('governor');
+  const blockNow = await dm.hre.ethers.provider.getBlockNumber();
+  const blocksUntilEnd = endBlock.toNumber() - Math.max(startBlock.toNumber(), blockNow) + 1;
+
+  if (blocksUntilEnd > 0) {
     await mineBlocks(dm, blocksUntilEnd);
   }
 
@@ -461,13 +474,16 @@ export async function executeOpenProposal(
   // Execute proposal (maybe, w/ gas limit so we see if exec reverts, not a gas estimation error)
   if (await governor.state(id) == ProposalState.Queued) {
     const block = await dm.hre.ethers.provider.getBlock('latest');
-    const proposal = await governor.proposals(id);
-    await setNextBlockTimestamp(dm, Math.max(block.timestamp, proposal.eta.toNumber()) + 1);
+    const eta = await governor.proposalEta(id);
+    
+    await setNextBlockTimestamp(dm, Math.max(block.timestamp, eta.toNumber()) + 1);
     await setNextBaseFeeToZero(dm);
-    await governor.execute(id, { gasPrice: 0, gasLimit: 12000000 });
+    await governor.execute(id, { gasPrice: 0, gasLimit: 120000000 });
   }
   await redeployRenzoOracle(dm);
   await mockAllRedstoneOracles(dm);
+  // mine a block
+  await dm.hre.ethers.provider.send('evm_mine', []);
 }
 
 // Instantly executes some actions through the governance proposal process
@@ -487,8 +503,9 @@ export async function fastGovernanceExecute(
     await governor.connect(proposer).propose(
       targets,
       values,
-      signatures,
-      calldatas,
+      calldatas.map((calldata, i) => {
+        return utils.id(signatures[i]).slice(0, 10) + calldata.slice(2);
+      }),
       'FastExecuteProposal',
       { gasPrice: 0 }
     )
@@ -496,7 +513,8 @@ export async function fastGovernanceExecute(
   const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
   const [id, , , , , , startBlock, endBlock] = proposeEvent.args;
 
-  await executeOpenProposal(dm, { id, startBlock, endBlock });
+  await voteForOpenProposal(dm, { id, proposer: proposer.address, targets, values, signatures, calldatas, startBlock, endBlock });
+  await executeOpenProposal(dm, { id, proposer: proposer.address, targets, values, signatures, calldatas, startBlock, endBlock });
 }
 
 export async function fastL2GovernanceExecute(
@@ -533,8 +551,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
 
   // Create the chain-specific wrapper around the L2 proposal data
   switch (bridgeNetwork) {
-    case 'arbitrum':
-    case 'arbitrum-goerli': {
+    case 'arbitrum': {
       const inbox = await govDeploymentManager.getContractOrThrow('arbitrumInbox');
       const refundAddress = constants.AddressZero;
       const createRetryableTicketCalldata = utils.defaultAbiCoder.encode(
@@ -558,8 +575,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(createRetryableTicketCalldata);
       break;
     }
-    case 'base':
-    case 'base-goerli': {
+    case 'base': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'bytes', 'uint32'],
         [bridgeReceiver.address, l2ProposalData, 1_000_000] // XXX find a reliable way to estimate the gasLimit
@@ -574,7 +590,6 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageCalldata);
       break;
     }
-    case 'mumbai':
     case 'polygon': {
       const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(
         ['address', 'bytes'],
@@ -588,20 +603,20 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageToChildCalldata);
       break;
     }
-    case 'linea-goerli': {
-      const sendMessageCalldata = utils.defaultAbiCoder.encode(
-        ['address', 'uint256', 'bytes'],
-        [bridgeReceiver.address, 0, l2ProposalData]
-      );
-      const lineaMessageService = await govDeploymentManager.getContractOrThrow(
-        'lineaMessageService'
-      );
-      targets.push(lineaMessageService.address);
-      values.push(0);
-      signatures.push('sendMessage(address,uint256,bytes)');
-      calldata.push(sendMessageCalldata);
-      break;
-    }
+    // case 'linea-goerli': {
+    //   const sendMessageCalldata = utils.defaultAbiCoder.encode(
+    //     ['address', 'uint256', 'bytes'],
+    //     [bridgeReceiver.address, 0, l2ProposalData]
+    //   );
+    //   const lineaMessageService = await govDeploymentManager.getContractOrThrow(
+    //     'lineaMessageService'
+    //   );
+    //   targets.push(lineaMessageService.address);
+    //   values.push(0);
+    //   signatures.push('sendMessage(address,uint256,bytes)');
+    //   calldata.push(sendMessageCalldata);
+    //   break;
+    // }
     case 'optimism': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'bytes', 'uint32'],
@@ -631,8 +646,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageCalldata);
       break;
     }
-    case 'scroll': 
-    case 'scroll-goerli': {
+    case 'scroll': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'uint256', 'bytes', 'uint256'],
         [bridgeReceiver.address, 0, l2ProposalData, 1_000_000] // XXX find a reliable way to estimate the gasLimit
