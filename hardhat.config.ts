@@ -59,12 +59,13 @@ const {
   MANTLESCAN_KEY,
   SCROLLSCAN_KEY,
   ANKR_KEY,
+  TENDERLY_KEY_RONIN,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
   GOV_NETWORK_PROVIDER = '',
   GOV_NETWORK = '',
-  REMOTE_ACCOUNTS
+  REMOTE_ACCOUNTS = ''
 } = process.env;
 
 function* deriveAccounts(pk: string, n: number = 10) {
@@ -117,7 +118,10 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'ronin',
     chainId: 2020,
-    url: `https://ronin.lgns.net/rpc`,
+    // use if you want to run scenarios, enacts
+    url: `https://ronin.gateway.tenderly.co/${TENDERLY_KEY_RONIN}`,
+    // use if you want to deploy contracts
+    // url: `https://ronin.lgns.net/rpc`,
   },
   {
     network: 'polygon',
