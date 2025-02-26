@@ -338,7 +338,7 @@ export default migration("1689892563_configurate_and_ens", {
       59144: [
         {
           baseSymbol: 'USDC',
-          cometAddress: '0x8D38A3d6B3c3B7d96D6536DA7Eef94A9d7dbC991'
+          cometAddress: '0x57580a13355C7723A859c6A4ab1c6B2173AAD9e0'
         }
       ],
       534352: [
