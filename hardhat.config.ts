@@ -118,10 +118,7 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'ronin',
     chainId: 2020,
-    // use if you want to run scenarios, enacts
-    url: `https://ronin.gateway.tenderly.co/${TENDERLY_KEY_RONIN}`,
-    // use if you want to deploy contracts
-    // url: `https://ronin.lgns.net/rpc`,
+    url: `https://api.roninchain.com/rpc`,
   },
   {
     network: 'polygon',

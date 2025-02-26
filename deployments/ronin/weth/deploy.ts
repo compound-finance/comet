@@ -39,11 +39,10 @@ async function deployContracts(
     'ronin'
   );
 
-  const bridgeReceiver = await deploymentManager.deploy(
+  const bridgeReceiver = await deploymentManager.existing(
     'bridgeReceiver',
-    'bridges/ronin/RoninBridgeReceiver.sol',
-    [l2CCIPRouter.address], 
-    true
+    '0x74820c6a7a069A4F5a5310c084abFad036bF3873',
+    'ronin'
   );
 
   const WETH = await deploymentManager.existing(
@@ -83,7 +82,7 @@ async function deployContracts(
     async () => !(await bridgeReceiver.initialized()),
     async () => {
       trace(`Initializing BridgeReceiver`);
-      await bridgeReceiver.initialize(
+      await bridgeReceiver.connect(await deploymentManager.getSigner()).initialize(
         MAINNET_TIMELOCK,     // govTimelock
         localTimelock.address // localTimelock
       );
