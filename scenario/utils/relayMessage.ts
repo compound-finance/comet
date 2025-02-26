@@ -72,8 +72,7 @@ export default async function relayMessage(
     case 'sonic':
       await relaySonicMessage(
         governanceDeploymentManager,
-        bridgeDeploymentManager,
-        startingBlockNumber
+        bridgeDeploymentManager
       );
       break;
     default:

@@ -74,6 +74,27 @@ export async function isBridgeProposal(
       ];
       return targets.some(t => bridgeContracts.includes(t));
     }
+    case 'sonic': {
+      const l1CCIPRouter = await governanceDeploymentManager.getContractOrThrow(
+        'l1CCIPRouter'
+      );
+      const sonicL1GatewayBridge = await governanceDeploymentManager.getContractOrThrow(
+        'sonicL1GatewayBridge'
+      );
+      const targets = openProposal.targets;
+      const calldatas = openProposal.calldatas;
+      // if any calldatas begins with call(address[],bytes[]) signature, it's a bridge proposal
+      if (calldatas.some(c => c.startsWith(
+        governanceDeploymentManager.hre.ethers.utils.id('call(address[],bytes[])').slice(0, 10)
+      ))) {
+        return true;
+      }
+      const bridgeContracts = [
+        l1CCIPRouter.address,
+        sonicL1GatewayBridge.address
+      ];
+      return targets.some(t => bridgeContracts.includes(t));
+    }
     case 'scroll': {
       const scrollMessenger = await governanceDeploymentManager.getContractOrThrow(
         'scrollMessenger'

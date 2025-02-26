@@ -4,25 +4,27 @@ export default {
   ...baseRelationConfig,
   governor: {
     artifact:
-      'contracts/bridges/optimism/OptimismBridgeReceiver.sol:OptimismBridgeReceiver',
+      'contracts/bridges/sonic/SonicBridgeReceiver.sol:SonicBridgeReceiver',
   },
 
-  l2CrossDomainMessenger: {
+  l2SonicBridge: {
     delegates: {
       field: {
-        slot:
-          '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc',
-      },
-    },
+        slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+      }
+    }
   },
 
-  l2StandardBridge: {
+  l2CCIPOffRamp: {
+  },
+
+  ERC1967Proxy: {
+    artifact: 'contracts/ERC20.sol:ERC20',
     delegates: {
       field: {
-        slot:
-          '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc',
-      },
-    },
+        slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+      }
+    }
   },
 
   TransparentUpgradeableProxy: {

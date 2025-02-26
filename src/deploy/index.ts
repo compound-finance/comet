@@ -152,6 +152,9 @@ export const WHALES = {
     '0x233493E9DC68e548AC27E4933A600A3A4682c0c3', // FBTC whale
     '0xCd83CbBFCE149d141A5171C3D6a0F0fCCeE225Ab', // COMP whale
   ],
+  sonic: [
+    '0xA4E471dbfe8C95d4c44f520b19CEe436c01c3267', // S whale
+  ],
 };
 
 export async function calldata(req: Promise<PopulatedTransaction>): Promise<string> {

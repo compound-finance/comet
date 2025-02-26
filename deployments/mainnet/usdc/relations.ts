@@ -79,11 +79,6 @@ export default {
       }
     }
   },
-  sonicL1LayerZeroMessenger: {
-    delegates: {
-      field: async () => '0x1a44076050125825900e736c501f859c50fE728c'
-    }
-  },
   sonicL1GatewayBridge: {
     delegates: {
       field: {

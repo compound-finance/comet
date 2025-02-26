@@ -19,7 +19,8 @@ export function getEtherscanApiUrl(network: string): string {
     base: 'api.basescan.org',
     optimism: 'api-optimistic.etherscan.io',
     mantle: 'api.mantlescan.xyz',
-    scroll: 'api.scrollscan.com'
+    scroll: 'api.scrollscan.com',
+    sonic: 'api.sonicscan.org',
   }[network];
 
   if (!host) {
@@ -42,7 +43,8 @@ export function getEtherscanUrl(network: string): string {
     base: 'basescan.org',
     optimism: 'optimistic.etherscan.io',
     mantle: 'mantlescan.xyz',
-    scroll: 'scrollscan.com'
+    scroll: 'scrollscan.com',
+    sonic: 'sonicscan.org',
   }[network];
 
   if (!host) {
@@ -65,7 +67,8 @@ export function getEtherscanApiKey(network: string): string {
     base: process.env.BASESCAN_KEY,
     optimism: process.env.OPTIMISMSCAN_KEY,
     mantle: process.env.MANTLESCAN_KEY,
-    scroll: process.env.SCROLLSCAN_KEY
+    scroll: process.env.SCROLLSCAN_KEY,
+    sonic: process.env.SONICSCAN_KEY,
   }[network];
 
   if (!apiKey) {

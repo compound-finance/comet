@@ -1,0 +1,135 @@
+import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
+import { migration } from '../../../../plugins/deployment_manager/Migration';
+import {
+  exp,
+  proposal,
+} from '../../../../src/deploy';
+import { expect } from 'chai';
+import { utils, constants } from 'ethers';
+import 'dotenv/config';
+
+const USDCAmountToSeed = exp(50_000, 6);
+const COMPAmountToBridge = exp(1000, 18);
+
+const uidCOMP = Date.now();
+const uidUSDC = Date.now() + 1;
+
+const delegatorAddress = process.env.DELEGATOR_ADDRESS || '';
+
+export default migration('1739783281_configurate_and_ens', {
+  prepare: async () => {
+    return {};
+  },
+
+  enact: async (
+    deploymentManager: DeploymentManager,
+    govDeploymentManager: DeploymentManager,
+  ) => {
+    const trace = deploymentManager.tracer();
+
+
+    const {
+      sonicL1GatewayBridge,
+      governor,
+      COMP: COMP_L1,
+      USDC: USDC_L1,
+      // timelock,
+    } = await govDeploymentManager.getContracts();
+
+
+    const _approveUSDCCalldata = await USDC_L1.populateTransaction.approve(sonicL1GatewayBridge.address, USDCAmountToSeed);
+    const _depositUSDCCalldata = await sonicL1GatewayBridge.populateTransaction.deposit(uidUSDC, USDC_L1.address, USDCAmountToSeed);
+    const depositUSDCCalldata = utils.defaultAbiCoder.encode(
+      ['address[]', 'bytes[]', 'uint256[]'],
+      [[USDC_L1.address, sonicL1GatewayBridge.address], [_approveUSDCCalldata.data, _depositUSDCCalldata.data], [0, 0]]
+    );
+
+    const _approveCOMPCalldata = await COMP_L1.populateTransaction.approve(sonicL1GatewayBridge.address, COMPAmountToBridge);
+    const _depositCOMPCalldata = await sonicL1GatewayBridge.populateTransaction.deposit(uidCOMP, COMP_L1.address, COMPAmountToBridge);
+    const depositCOMPCalldata = utils.defaultAbiCoder.encode(
+      ['address[]', 'bytes[]', 'uint256[]'],
+      [[COMP_L1.address, sonicL1GatewayBridge.address], [_approveCOMPCalldata.data, _depositCOMPCalldata.data], [0, 0]]
+    );
+
+    const actions = [
+      // 1. Transfer COMP to Delegator
+      {
+        contract: COMP_L1,
+        signature: 'transfer(address,uint256)',
+        args: [delegatorAddress, COMPAmountToBridge],
+      },
+      // 2. Bridge COMP from Ethereum Delegator to Sonic Delegator
+      {
+        target: delegatorAddress,
+        signature: 'call(address[],bytes[],uint256[])',
+        calldata: depositCOMPCalldata
+      },
+      // 3. Transfer USDC to Delegator
+      {
+        contract: USDC_L1,
+        signature: 'transfer(address,uint256)',
+        args: [delegatorAddress, USDCAmountToSeed]
+      },
+      // 4. Bridge USDC from Ethereum Delegator to Sonic Delegator
+      {
+        target: delegatorAddress,
+        signature: 'call(address[],bytes[],uint256[])',
+        calldata: depositUSDCCalldata
+      },
+    ];
+
+    const description = 'DESCRIPTION';
+    const txn = await govDeploymentManager.retry(async () => {
+      return trace(await governor.propose(...(await proposal(actions, description))));
+    }
+    );
+
+    const event = txn.events.find((event) => event.event === 'ProposalCreated');
+    const [proposalId] = event.args;
+
+    trace(`Bridge COMP uid: ${uidCOMP}`);
+    trace(`Bridge USDC uid: ${uidUSDC}`);
+    trace(`Created proposal ${proposalId}.`);
+  },
+
+  async enacted(): Promise<boolean> {
+    return false;
+  },
+
+  async verify(
+    deploymentManager: DeploymentManager,
+    govDeploymentManager: DeploymentManager,
+    _,
+  ) {
+    const {
+      sonicL1GatewayBridge,
+    } = await govDeploymentManager.getContracts();
+
+    const {
+      l2SonicBridge,
+    } = await deploymentManager.getContracts();
+
+  
+    const depositIdCOMP = await l2SonicBridge.userOperationId(delegatorAddress, uidCOMP);
+    const depositIdUSDC = await l2SonicBridge.userOperationId(delegatorAddress, uidUSDC);
+
+    const storageSlotCOMP = utils.keccak256(
+      utils.defaultAbiCoder.encode(['uint256', 'uint8'], [depositIdCOMP, 7])
+    );
+    const storageSlotUSDC = utils.keccak256(
+      utils.defaultAbiCoder.encode(['uint256', 'uint8'], [depositIdUSDC, 7])
+    );
+
+    const dataFromStorageCOMP = await govDeploymentManager.hre.ethers.provider.getStorageAt(
+      sonicL1GatewayBridge.address,
+      storageSlotCOMP
+    );
+    expect(dataFromStorageCOMP).to.not.be.equal(constants.HashZero);
+
+    const dataFromStorageUSDC = await govDeploymentManager.hre.ethers.provider.getStorageAt(
+      sonicL1GatewayBridge.address,
+      storageSlotUSDC
+    );
+    expect(dataFromStorageUSDC).to.not.be.equal(constants.HashZero);
+  },
+});

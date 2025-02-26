@@ -40,6 +40,7 @@ import optimismUsdtRelationConfigMap from './deployments/optimism/usdt/relations
 import optimismWethRelationConfigMap from './deployments/optimism/weth/relations';
 import mantleRelationConfigMap from './deployments/mantle/usde/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
+import sonicRelationConfigMap from './deployments/sonic/usdc/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -63,7 +64,8 @@ const {
   NETWORK_PROVIDER = '',
   GOV_NETWORK_PROVIDER = '',
   GOV_NETWORK = '',
-  REMOTE_ACCOUNTS = ''
+  REMOTE_ACCOUNTS = '',
+  SONICSCAN_KEY = '',
 } = process.env;
 
 function* deriveAccounts(pk: string, n: number = 10) {
@@ -90,7 +92,8 @@ export function requireEnv(varName, msg?: string): string {
   'LINEASCAN_KEY',
   'OPTIMISMSCAN_KEY',
   'MANTLESCAN_KEY',
-  'SCROLLSCAN_KEY'
+  'SCROLLSCAN_KEY',
+  'SONICSCAN_KEY',
 ].map((v) => requireEnv(v));
 
 // Networks
@@ -117,6 +120,11 @@ const networkConfigs: NetworkConfig[] = [
     network: 'polygon',
     chainId: 137,
     url: `https://rpc.ankr.com/polygon/${ANKR_KEY}`,
+  },
+  {
+    network: 'sonic',
+    chainId: 146,
+    url: `https://rpc.ankr.com/sonic_mainnet/${ANKR_KEY}`,
   },
   {
     network: 'optimism',
@@ -173,7 +181,7 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
         getDefaultProviderURL(netConfig.network),
       gas: netConfig.gas || 'auto',
       gasPrice: netConfig.gasPrice || 'auto',
-      accounts: REMOTE_ACCOUNTS ? 'remote' : (ETH_PK ? [...deriveAccounts(ETH_PK)] : { mnemonic: MNEMONIC }),
+      accounts: REMOTE_ACCOUNTS ? 'remote' : (ETH_PK ? [ETH_PK] : { mnemonic: MNEMONIC }),
     };
   }
 }
@@ -254,6 +262,7 @@ const config: HardhatUserConfig = {
       mantle: MANTLESCAN_KEY,
       // Scroll
       'scroll': SCROLLSCAN_KEY,
+      sonic: SONICSCAN_KEY,
     },
     customChains: [
       {
@@ -293,6 +302,14 @@ const config: HardhatUserConfig = {
           // links for deployment
           // apiURL: 'https://api.mantlescan.xyz/api',
           // browserURL: 'https://mantlescan.xyz/'
+        }
+      },
+      {
+        network: 'sonic',
+        chainId: 146,
+        urls: {
+          apiURL: 'https://api.sonicscan.org/api',
+          browserURL: 'https://sonicscan.org/'
         }
       }
     ]
@@ -343,6 +360,9 @@ const config: HardhatUserConfig = {
       },
       'scroll': {
         usdc: scrollRelationConfigMap
+      },
+      'sonic': {
+        usdc: sonicRelationConfigMap
       }
     },
   },
@@ -477,6 +497,12 @@ const config: HardhatUserConfig = {
         name: 'mantle-usde',
         network: 'mantle',
         deployment: 'usde',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'sonic-usdc',
+        network: 'sonic',
+        deployment: 'usdc',
         auxiliaryBase: 'mainnet'
       },
       {

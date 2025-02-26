@@ -427,6 +427,193 @@ async function mockRedstoneOracle(dm: DeploymentManager, feed: string){
   await proxyAdmin.connect(owner).upgrade(feed, newImplementation.address);
 }
 
+const tokens = new Map<string, string>([
+  ['WETH', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'],
+  ['LINK', '0x514910771AF9Ca656af840dff83E8264EcF986CA'],
+]);
+
+const dest = new Map<string, string>([
+  // ['ronin', '6916147374840168594'],
+  ['sonic', '1673871237479749969']
+]);
+
+async function updateCCIPStats(dm: DeploymentManager){
+  if(dm.network === 'mainnet') {
+    const commitStore = '0x2aa101bf99caef7fc1355d4c493a1fe187a007ce';
+
+    const priceRegistry = '0x8c9b2Efb7c64C394119270bfecE7f54763b958Ad';
+    const abi = [
+      {
+        'inputs': [
+          {
+            'components': [
+              {
+                'components': [
+                  {
+                    'internalType': 'address',
+                    'name': 'sourceToken',
+                    'type': 'address'
+                  },
+                  {
+                    'internalType': 'uint224',
+                    'name': 'usdPerToken',
+                    'type': 'uint224'
+                  }
+                ],
+                'internalType': 'struct TokenPriceUpdate[]',
+                'name': 'tokenPriceUpdates',
+                'type': 'tuple[]'
+              },
+              {
+                'components': [
+                  {
+                    'internalType': 'uint64',
+                    'name': 'destChainSelector',
+                    'type': 'uint64'
+                  },
+                  {
+                    'internalType': 'uint224',
+                    'name': 'usdPerUnitGas',
+                    'type': 'uint224'
+                  }
+                ],
+                'internalType': 'struct GasPriceUpdate[]',
+                'name': 'gasPriceUpdates',
+                'type': 'tuple[]'
+              }
+            ],
+            'internalType': 'struct PriceUpdates',
+            'name': 'priceUpdates',
+            'type': 'tuple'
+          }
+        ],
+        'name': 'updatePrices',
+        'outputs': [],
+        'stateMutability': 'nonpayable',
+        'type': 'function'
+      },
+      {
+        'inputs': [
+          {
+            'internalType': 'uint64',
+            'name': 'destChainSelector',
+            'type': 'uint64'
+          }
+        ],
+        'name': 'getDestinationChainGasPrice',
+        'outputs': [
+          {
+            'components': [
+              {
+                'internalType': 'uint224',
+                'name': 'value',
+                'type': 'uint224'
+              },
+              {
+                'internalType': 'uint32',
+                'name': 'timestamp',
+                'type': 'uint32'
+              }
+            ],
+            'internalType': 'struct TimestampedPackedUint224',
+            'name': '',
+            'type': 'tuple'
+          }
+        ],
+        'stateMutability': 'view',
+        'type': 'function'
+      },
+      {
+        'inputs': [
+          {
+            'internalType': 'address',
+            'name': 'token',
+            'type': 'address'
+          }
+        ],
+        'name': 'getTokenPrice',
+        'outputs': [
+          {
+            'components': [
+              {
+                'internalType': 'uint224',
+                'name': 'value',
+                'type': 'uint224'
+              },
+              {
+                'internalType': 'uint32',
+                'name': 'timestamp',
+                'type': 'uint32'
+              }
+            ],
+            'internalType': 'struct TimestampedPackedUint224',
+            'name': '',
+            'type': 'tuple'
+          }
+        ],
+        'stateMutability': 'view',
+        'type': 'function'
+      }
+    ];
+
+    await dm.hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [commitStore],
+    });
+
+    await dm.hre.network.provider.request({
+      method: 'hardhat_setBalance',
+      params: [commitStore, '0x56bc75e2d63100000'],
+    });
+    const commitStoreSigner = await dm.hre.ethers.getSigner(commitStore);
+
+    const registryContract = new Contract(priceRegistry, abi, commitStoreSigner);
+
+    const tokenPrices = [];
+    const gasPrices = [];
+    for (const [, address] of tokens) {
+      const price = await registryContract.getTokenPrice(address);
+      tokenPrices.push([address, price.value]);
+    }
+    for (const [, destinationSelector] of dest) {
+      const price = await registryContract.getDestinationChainGasPrice(destinationSelector);
+      gasPrices.push([destinationSelector, price.value]);
+    }
+    const tx0 = await registryContract.updatePrices({
+      tokenPriceUpdates: tokenPrices,
+      gasPriceUpdates: gasPrices
+    });
+
+    await tx0.wait();
+  }
+}
+
+async function updateSonicStateOracle(dm: DeploymentManager){
+  const stateOracleContract = new Contract(
+    '0xB7e8CC3F5FeA12443136f0cc13D81F109B2dEd7f',
+    [
+      'function update(uint256 blockNum, bytes32 stateRoot) external',      
+      'function lastBlockNum() external view returns(uint256)',
+      'function lastState() external view returns(bytes32)',
+      'function owner() external view returns(address)',
+    ],
+    dm.hre.ethers.provider
+  );
+  const blockNum = await dm.hre.ethers.provider.getBlockNumber();
+  const stateRoot = await stateOracleContract.lastState();
+
+  const ownerAddress = await stateOracleContract.owner();
+  const owner = await impersonateAddress(dm, ownerAddress);
+  // set balance
+  await dm.hre.ethers.provider.send('hardhat_setBalance', [
+    owner.address,
+    dm.hre.ethers.utils.hexStripZeros(dm.hre.ethers.utils.parseUnits('100', 'ether').toHexString()),
+  ]);
+
+  const tx = await stateOracleContract.connect(owner).update(blockNum, stateRoot);
+  await tx.wait();
+}
+
 export async function voteForOpenProposal(dm: DeploymentManager, { id, startBlock, endBlock }: OpenProposal) {
   const governor = await dm.getContractOrThrow('governor');
   const blockNow = await dm.hre.ethers.provider.getBlockNumber();
@@ -468,8 +655,13 @@ export async function executeOpenProposal(
   // Queue proposal (maybe)
   if (await governor.state(id) == ProposalState.Succeeded) {
     await setNextBaseFeeToZero(dm);
-    await governor.queue(id, { gasPrice: 0 });
+    const nonce = await dm.hre.ethers.provider.getTransactionCount(await governor.signer.getAddress());
+    await governor.queue(id, { gasPrice: 0, nonce: nonce });
   }
+  await dm.hre.ethers.provider.send('evm_mine', []);
+  await redeployRenzoOracle(dm);
+  await mockAllRedstoneOracles(dm);
+  await setNextBaseFeeToZero(dm);
 
   // Execute proposal (maybe, w/ gas limit so we see if exec reverts, not a gas estimation error)
   if (await governor.state(id) == ProposalState.Queued) {
@@ -477,11 +669,10 @@ export async function executeOpenProposal(
     const eta = await governor.proposalEta(id);
     
     await setNextBlockTimestamp(dm, Math.max(block.timestamp, eta.toNumber()) + 1);
-    await setNextBaseFeeToZero(dm);
+    await updateSonicStateOracle(dm);
+    await updateCCIPStats(dm);
     await governor.execute(id, { gasPrice: 0, gasLimit: 120000000 });
   }
-  await redeployRenzoOracle(dm);
-  await mockAllRedstoneOracles(dm);
   // mine a block
   await dm.hre.ethers.provider.send('evm_mine', []);
 }
@@ -644,6 +835,30 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       values.push(0);
       signatures.push('sendMessage(address,bytes,uint32)');
       calldata.push(sendMessageCalldata);
+      break;
+    }
+    case 'sonic': {
+      const destinationChainSelector = '1673871237479749969';
+      const ccipSendCalldata = utils.defaultAbiCoder.encode(
+        ['uint64','(bytes,bytes,(address,uint256)[],address,bytes)'],
+        [
+          destinationChainSelector, 
+          [
+            utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
+            l2ProposalData,
+            [],
+            constants.AddressZero,
+            '0x'
+          ]
+        ]
+      );
+      const l1CCIPRouter = await govDeploymentManager.getContractOrThrow(
+        'l1CCIPRouter'
+      );
+      targets.push(l1CCIPRouter.address);
+      values.push(utils.parseEther('0.5'));
+      signatures.push('ccipSend(uint64,(bytes,bytes,(address,uint256)[],address,bytes))');
+      calldata.push(ccipSendCalldata);
       break;
     }
     case 'scroll': {

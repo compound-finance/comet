@@ -16,7 +16,8 @@
     "opL1StandardBridge": "0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1",
     "mantleL1CrossDomainMessenger": "0x676A795fe6E43C17c668de16730c3F690FEB7120",
     "mantleL1StandardBridge": "0x95fC37A27a2f68e3A647CDc081F0A89bb47c3012",
-    "sonicL1LayerZeroMessenger": "0x1a44076050125825900e736c501f859c50fE728c",
+    "l1CCIPRouter": "0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D",
+    "sonicl1CCIPOnRamp": "0x4fdAaDe22bd05537EeaB204cF7319589CE595D6a",
     "sonicL1GatewayBridge": "0xa1E2481a9CD0Cb0447EeB1cbc26F1b3fff3bec20",
     "scrollMessenger": "0x6774Bcbd5ceCeF1336b5300fb5186a12DDD8b367",
     "scrollL1USDCGateway": "0xf1AF3b23DE0A5Ca3CAb7261cb0061C0D779A5c7B"
