@@ -532,4 +532,88 @@ describe('absorb', function () {
 
     expect(await comet.getAssetList(underwater.address)).to.be.empty;
   });
+
+  it('updates assetsIn for liquidated account in 24 assets', async () => {
+    const protocol = await makeProtocol({
+      assets: {
+        // 24 assets
+        COMP: {
+          initial: 1e7,
+          decimals: 18,
+          initialPrice: 175,
+        },
+        WETH: {
+          initial: 1e4,
+          decimals: 18,
+          initialPrice: 3000,
+        },
+        WBTC: {
+          initial: 1e3,
+          decimals: 8,
+          initialPrice: 41000,
+        },
+        ASSET3: {},
+        ASSET4: {},
+        ASSET5: {},
+        ASSET6: {},
+        ASSET7: {},
+        ASSET8: {},
+        ASSET9: {},
+        ASSET10: {},
+        ASSET11: {},
+        ASSET12: {},
+        ASSET13: {},
+        ASSET14: {},
+        ASSET15: {},
+        ASSET16: {},
+        ASSET17: {},
+        ASSET18: {},
+        ASSET19: {},
+        ASSET20: {},
+        ASSET21: {},
+        ASSET22: {},
+        ASSET23: {},
+        USDC: {
+          initial: 1e6,
+          decimals: 6,
+        },
+      },
+      reward: 'COMP',
+    });
+    const { cometWithExtendedAssetList : comet, tokens: {
+      COMP,
+      WETH,
+    }, users: [absorber, underwater] } = protocol;
+
+    await bumpTotalsCollateral(comet, COMP, exp(1, 18));
+    await bumpTotalsCollateral(comet, WETH, exp(1, 18));
+
+    await comet.setCollateralBalance(underwater.address, COMP.address, exp(1, 18));
+    await comet.setCollateralBalance(underwater.address, WETH.address, exp(1, 18));
+
+    
+    for (let i = 3; i < 24; i++) {
+      const asset = `ASSET${i}`;
+      await bumpTotalsCollateral(comet, protocol.tokens[asset], exp(1, 18));
+      await comet.setCollateralBalance(underwater.address, protocol.tokens[asset].address, exp(1, 18));
+    }
+
+    expect(await comet.getAssetList(underwater.address)).to.deep.equal([
+      COMP.address,
+      WETH.address,
+      ...Array.from({ length: 21 }, (_, i) => protocol.tokens[`ASSET${i + 3}`].address),
+    ]);
+
+    const borrowAmount = exp(4000, 6); // borrow of $4k > collateral of $3k + $175
+    await comet.setBasePrincipal(underwater.address, -borrowAmount);
+    await setTotalsBasic(comet, { totalBorrowBase: borrowAmount });
+
+    const isLiquidatable = await comet.isLiquidatable(underwater.address);
+
+    expect(isLiquidatable).to.be.true;
+
+    await comet.absorb(absorber.address, [underwater.address]);
+
+    expect(await comet.getAssetList(underwater.address)).to.be.empty;
+  });
 });

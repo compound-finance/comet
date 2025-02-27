@@ -46,6 +46,82 @@ describe('bulker', function () {
     expect(await comet.collateralBalanceOf(alice.address, COMP.address)).to.be.equal(supplyAmount);
   });
 
+  it('supply 24 collateral assets', async () => {
+    const protocol = await makeProtocol({
+      assets: {
+        // 24 assets
+        USDC: {},
+        COMP: {},
+        WETH: {},
+        ASSET3: {},
+        ASSET4: {},
+        ASSET5: {},
+        ASSET6: {},
+        ASSET7: {},
+        ASSET8: {},
+        ASSET9: {},
+        ASSET10: {},
+        ASSET11: {},
+        ASSET12: {},
+        ASSET13: {},
+        ASSET14: {},
+        ASSET15: {},
+        ASSET16: {},
+        ASSET17: {},
+        ASSET18: {},
+        ASSET19: {},
+        ASSET20: {},
+        ASSET21: {},
+        ASSET22: {},
+        ASSET23: {},
+      },
+      reward: 'COMP',
+    });
+    const { cometWithExtendedAssetList : comet, tokens: {
+      COMP,
+      WETH,
+      USDC,
+    }, users: [alice] } = protocol;
+    const bulkerInfo = await makeBulker({ weth: WETH.address });
+    const { bulker } = bulkerInfo;
+
+    // Alice approves 10 COMP to Comet
+    const supplyAmount = exp(10, 18);
+    await COMP.allocateTo(alice.address, supplyAmount);
+    await COMP.connect(alice).approve(comet.address, ethers.constants.MaxUint256);
+
+    await USDC.connect(alice).approve(comet.address, ethers.constants.MaxUint256);
+
+    for (let i = 3; i < 24; i++) {
+      const asset = `ASSET${i}`;
+      await protocol.tokens[asset].allocateTo(alice.address, supplyAmount);
+      await protocol.tokens[asset].connect(alice).approve(comet.address, ethers.constants.MaxUint256);
+    }
+
+    // Alice gives the Bulker permission over her account
+    await comet.connect(alice).allow(bulker.address, true);
+
+
+    // Alice supplies 10 COMP through the bulker
+    const supplyCOMPCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'address', 'uint'], [comet.address, alice.address, COMP.address, supplyAmount]);
+    const actions = [await bulker.ACTION_SUPPLY_ASSET()];
+    const calldatas = [supplyCOMPCalldata];
+    for(let i = 3; i < 24; i++) {
+      actions.push(await bulker.ACTION_SUPPLY_ASSET());
+      const asset = `ASSET${i}`;
+      const supplyAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'address', 'uint'], [comet.address, alice.address, protocol.tokens[asset].address, supplyAmount]);
+      calldatas.push(supplyAssetCalldata);
+    }
+
+    await bulker.connect(alice).invoke(actions, calldatas);
+
+    expect(await comet.collateralBalanceOf(alice.address, COMP.address)).to.be.equal(supplyAmount);
+    for (let i = 3; i < 24; i++) {
+      const asset = `ASSET${i}`;
+      expect(await comet.collateralBalanceOf(alice.address, protocol.tokens[asset].address)).to.be.equal(supplyAmount);
+    }
+  });
+
   it('supply collateral asset to a different account', async () => {
     const protocol = await makeProtocol({});
     const { comet, tokens: { COMP, WETH }, users: [alice, bob] } = protocol;
@@ -283,6 +359,87 @@ describe('bulker', function () {
 
     expect(await comet.collateralBalanceOf(alice.address, COMP.address)).to.be.equal(0);
     expect(await COMP.balanceOf(alice.address)).to.be.equal(withdrawAmount);
+  });
+
+  it('withdraw 24 collateral assets', async () => {
+    const protocol = await makeProtocol({
+      assets: {
+        // 24 assets
+        USDC: {},
+        COMP: {},
+        WETH: {},
+        ASSET3: {},
+        ASSET4: {},
+        ASSET5: {},
+        ASSET6: {},
+        ASSET7: {},
+        ASSET8: {},
+        ASSET9: {},
+        ASSET10: {},
+        ASSET11: {},
+        ASSET12: {},
+        ASSET13: {},
+        ASSET14: {},
+        ASSET15: {},
+        ASSET16: {},
+        ASSET17: {},
+        ASSET18: {},
+        ASSET19: {},
+        ASSET20: {},
+        ASSET21: {},
+        ASSET22: {},
+        ASSET23: {},
+      },
+      reward: 'COMP',
+    });
+    const { cometWithExtendedAssetList : comet, tokens: {
+      COMP,
+      WETH,
+    }, users: [alice] } = protocol;
+    const bulkerInfo = await makeBulker({ weth: WETH.address });
+    const { bulker } = bulkerInfo;
+
+    // Allocate collateral asset to Comet and Alice's Comet balance
+    const withdrawAmount = exp(10, 18);
+    await COMP.allocateTo(comet.address, withdrawAmount);
+    const t0 = Object.assign({}, await comet.totalsCollateral(COMP.address), {
+      totalSupplyAsset: withdrawAmount,
+    });
+    await wait(comet.setTotalsCollateral(COMP.address, t0));
+    await comet.setCollateralBalance(alice.address, COMP.address, withdrawAmount);
+
+    for(let i = 3; i < 24; i++) {
+      const asset = `ASSET${i}`;
+      await protocol.tokens[asset].allocateTo(comet.address, withdrawAmount);
+      const t1 = Object.assign({}, await comet.totalsCollateral(protocol.tokens[asset].address), {
+        totalSupplyAsset: withdrawAmount,
+      });
+      await wait(comet.setTotalsCollateral(protocol.tokens[asset].address, t1));
+      await comet.setCollateralBalance(alice.address, protocol.tokens[asset].address, withdrawAmount);
+    }
+
+    // Alice gives the Bulker permission over her account
+    await comet.connect(alice).allow(bulker.address, true);
+
+    // Alice withdraws 10 COMP through the bulker
+    const withdrawAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'address', 'uint'], [comet.address, alice.address, COMP.address, withdrawAmount]);
+    const actions = [await bulker.ACTION_WITHDRAW_ASSET()];
+    const calldatas = [withdrawAssetCalldata];
+    for(let i = 3; i < 24; i++) {
+      actions.push(await bulker.ACTION_WITHDRAW_ASSET());
+      const asset = `ASSET${i}`;
+      const withdrawAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'address', 'uint'], [comet.address, alice.address, protocol.tokens[asset].address, withdrawAmount]);
+      calldatas.push(withdrawAssetCalldata);
+    }
+    await bulker.connect(alice).invoke(actions, calldatas);
+
+    expect(await comet.collateralBalanceOf(alice.address, COMP.address)).to.be.equal(0);
+    expect(await COMP.balanceOf(alice.address)).to.be.equal(withdrawAmount);
+    for (let i = 3; i < 24; i++) {
+      const asset = `ASSET${i}`;
+      expect(await comet.collateralBalanceOf(alice.address, protocol.tokens[asset].address)).to.be.equal(0);
+      expect(await protocol.tokens[asset].balanceOf(alice.address)).to.be.equal(withdrawAmount);
+    }
   });
 
   it('withdraw collateral asset to a different account', async () => {
