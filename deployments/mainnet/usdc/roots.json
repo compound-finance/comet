@@ -11,6 +11,7 @@
     "CCTPMessageTransmitter": "0x0a992d191deec32afe36203ad87d7d289a738f81",
     "baseL1CrossDomainMessenger": "0x866E82a600A1414e583f7F13623F1aC5d58b0Afa",
     "baseL1StandardBridge": "0x3154Cf16ccdb4C6d922629664174b904d80F2C35",
+    "baseL1USDSBridge": "0xA5874756416Fa632257eEA380CAbd2E87cED352A",
     "opL1CrossDomainMessenger": "0x25ace71c97B33Cc4729CF772ae268934F7ab5fA1",
     "opL1StandardBridge": "0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1",
     "mantleL1CrossDomainMessenger": "0x676A795fe6E43C17c668de16730c3F690FEB7120",
