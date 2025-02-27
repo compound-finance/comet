@@ -119,7 +119,7 @@ export default migration('1739783281_configurate_and_ens', {
         contract: unichainL1StandardBridge,
         // function depositERC20To(address _l1Token, address _l2Token, address _to, uint256 _amount, uint32 _l2Gas,bytes calldata _data)
         signature:
-          'depositERC20To(address,address,address,uint256,uint32,bytes)',
+          'bridgeERC20To(address,address,address,uint256,uint32,bytes)',
         args: [
           COMP_L1.address,
           COMP_L2.address,
@@ -365,12 +365,12 @@ export default migration('1739783281_configurate_and_ens', {
         }
       ],
       // uncomment when Linea USDC will be executed
-      // 59144: [
-      //   {
-      //     baseSymbol: 'USDC',
-      //     cometAddress: '0x8D38A3d6B3c3B7d96D6536DA7Eef94A9d7dbC991'
-      //   }
-      // ],
+      59144: [
+        {
+          baseSymbol: 'USDC',
+          cometAddress: '0x8D38A3d6B3c3B7d96D6536DA7Eef94A9d7dbC991'
+        }
+      ],
       534352: [
         {
           baseSymbol: 'USDC',
