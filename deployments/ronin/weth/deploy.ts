@@ -83,7 +83,7 @@ async function deployContracts(
     async () => !(await bridgeReceiver.initialized()),
     async () => {
       trace(`Initializing BridgeReceiver`);
-      await bridgeReceiver.initialize(
+      await bridgeReceiver.connect(await deploymentManager.getSigner()).initialize(
         MAINNET_TIMELOCK,     // govTimelock
         localTimelock.address // localTimelock
       );
