@@ -41,9 +41,10 @@ async function deployContracts(
 
   const bridgeReceiver = await deploymentManager.existing(
     'bridgeReceiver',
-    '0x57580a13355C7723A859c6A4ab1c6B2173AAD9e0',
+    '0xeFE63e5daa8108a5cafEeEa53c272607f2d336e7',
     'ronin'
   );
+
 
   const WETH = await deploymentManager.existing(
     'WETH',
@@ -62,7 +63,7 @@ async function deployContracts(
     '0x320A10449556388503Fd71D74A16AB52e0BD1dEb',
     'ronin'
   );
-  
+
 
   // Deploy Local Timelock
   const localTimelock = await deploymentManager.deploy(
@@ -82,7 +83,7 @@ async function deployContracts(
     async () => !(await bridgeReceiver.initialized()),
     async () => {
       trace(`Initializing BridgeReceiver`);
-      await bridgeReceiver.connect(await deploymentManager.getSigner()).initialize(
+      await bridgeReceiver.initialize(
         MAINNET_TIMELOCK,     // govTimelock
         localTimelock.address // localTimelock
       );
@@ -95,7 +96,7 @@ async function deployContracts(
   const WETHPriceFeed = await deploymentManager.deploy(
     'WETH:priceFeed',
     'pricefeeds/ConstantPriceFeed.sol',
-    [ 
+    [
       8,
       exp(1, 8),
     ]
@@ -117,7 +118,7 @@ async function deployContracts(
     'AXS:priceFeed',
     'pricefeeds/ReverseMultiplicativePriceFeed.sol',
     [
-      AXS_USD_PRICE_FEED, // RON / USD price feed
+      AXS_USD_PRICE_FEED, // AXS / USD price feed
       ETH_USD_PRICE_FEED, // ETH / USD
       8,                                            // decimals
       'AXS/ETH price feed'                       // description
@@ -128,7 +129,7 @@ async function deployContracts(
     'USDC:priceFeed',
     'pricefeeds/ReverseMultiplicativePriceFeed.sol',
     [
-      USDC_USD_PRICE_FEED, // RON / USD price feed
+      USDC_USD_PRICE_FEED, // USDC / USD price feed
       ETH_USD_PRICE_FEED, // ETH / USD
       8,                                            // decimals
       'USDC/ETH price feed'                       // description
@@ -146,7 +147,6 @@ async function deployContracts(
   const { comet } = deployed;
 
   // Deploy Bulker
-  // It won't be used, as we do not have MNT as a base and as a collateral 
   const bulker = await deploymentManager.deploy(
     'bulker',
     'bulkers/BaseBulker.sol',
@@ -155,7 +155,7 @@ async function deployContracts(
       '0xe514d9deb7966c8be0ca922de8a064264ea6bcd4',        // wrapped native token
     ]
   );
-  
+
 
   return {
     ...deployed,

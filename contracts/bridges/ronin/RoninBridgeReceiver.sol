@@ -2,25 +2,24 @@
 pragma solidity 0.8.15;
 
 import "../SweepableBridgeReceiver.sol";
+import {IERC165} from "../../IERC165.sol";
+import {IAny2EVMMessageReceiver, Any2EVMMessage} from "../../IAny2EVMMessageReceiver.sol";
 
-contract RoninBridgeReceiver is SweepableBridgeReceiver {
-    struct Any2EVMMessage {
-        bytes32 messageId;
-        uint64 sourceChainSelector;
-        bytes sender;
-        bytes data;
-        EVMTokenAmount[] destTokenAmounts;
-    }
-    struct EVMTokenAmount {
-        address token;
-        uint256 amount;
+contract RoninBridgeReceiver is SweepableBridgeReceiver, IERC165, IAny2EVMMessageReceiver{
+
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override returns (bool) {
+        return
+            interfaceId == type(IAny2EVMMessageReceiver).interfaceId ||
+            interfaceId == type(IERC165).interfaceId;
     }
 
     error InvalidRouter();
 
     address public l2Router;
 
-    constructor(address  l2Router_) {
+    constructor(address l2Router_) {
         l2Router = l2Router_;
     }
 
