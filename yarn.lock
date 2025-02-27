@@ -936,6 +936,16 @@
     table "^6.8.0"
     undici "^5.14.0"
 
+"@openzeppelin/merkle-tree@^1.0.7":
+  version "1.0.7"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/merkle-tree/-/merkle-tree-1.0.7.tgz#88f815df8ba39033e312e5f3dc6debeb62845916"
+  integrity sha512-i93t0YYv6ZxTCYU3CdO5Q+DXK0JH10A4dCBOMlzYbX+ujTXm+k1lXiEyVqmf94t3sqmv8sm/XT5zTa0+efnPgQ==
+  dependencies:
+    "@ethersproject/abi" "^5.7.0"
+    "@ethersproject/bytes" "^5.7.0"
+    "@ethersproject/constants" "^5.7.0"
+    "@ethersproject/keccak256" "^5.7.0"
+
 "@safe-global/safe-core-sdk-types@^1.9.0":
   version "1.9.0"
   resolved "https://registry.yarnpkg.com/@safe-global/safe-core-sdk-types/-/safe-core-sdk-types-1.9.0.tgz#dba18f34ab905da6c1c03a3262aeb47cc0bead14"

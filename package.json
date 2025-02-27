@@ -41,7 +41,8 @@
     "audit:liquidator": "vendoza contracts/liquidator/vendor/manifest.json",
     "audit:vendor": "vendoza contracts/vendor/manifest.json",
     "slither:fn-clashes": "slither-check-upgradeability contracts/Configurator.sol Configurator --proxy-filename contracts/ConfiguratorProxy.sol --proxy-name ConfiguratorProxy",
-    "liquidation-bot": "hardhat run scripts/liquidation_bot/index.ts"
+    "liquidation-bot": "hardhat run scripts/liquidation_bot/index.ts",
+    "rewards-v2": "hardhat run scripts/rewards_v2/index.ts"
   },
   "keywords": [],
   "author": "Compound Finance",
@@ -60,6 +61,7 @@
     "@ethersproject/experimental": "^5.6.3",
     "@nomiclabs/hardhat-ethers": "^2.0.4",
     "@nomiclabs/hardhat-etherscan": "3.1.7",
+    "@openzeppelin/merkle-tree": "^1.0.7",
     "@safe-global/safe-core-sdk": "^3.3.2",
     "@safe-global/safe-ethers-lib": "^1.9.2",
     "@typechain/ethers-v5": "^8.0.2",
