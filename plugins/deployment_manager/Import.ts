@@ -18,6 +18,7 @@ export async function fetchAndCacheContract(
   importRetryDelay = DEFAULT_RETRY_DELAY,
   force = false
 ): Promise<BuildFile> {
+
   const buildFile = await fetchContract(cache, network, address, importRetries, importRetryDelay, force);
   await storeBuildFile(cache, network, address, buildFile);
   return buildFile;
@@ -31,7 +32,9 @@ export async function importContract(
   retryDelay: number = DEFAULT_RETRY_DELAY
 ): Promise<BuildFile> {
   try {
-    console.log(`Importing ${address} from ${network} etherscan`);
+    if(network === 'ronin-saigon') {
+      return (await loadContract('ronin-saigon', network, address)) as BuildFile;
+    }
     return (await loadContract('etherscan', network, address)) as BuildFile;
   } catch (e) {
     if (retries === 0 || (e.message && e.message.includes('Contract source code not verified'))) {

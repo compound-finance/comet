@@ -19,7 +19,7 @@ import { isBridgeProposal } from './isBridgeProposal';
 
 export { mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp };
 
-export const MAX_ASSETS = 15;
+export const MAX_ASSETS = 30;
 export const UINT256_MAX = 2n ** 256n - 1n;
 
 export interface ComparativeAmount {
@@ -299,10 +299,15 @@ export function matchesDeployment(ctx: CometContext, deploymentCriteria: Deploym
 export async function isRewardSupported(ctx: CometContext): Promise<boolean> {
   const rewards = await ctx.getRewards();
   const comet = await ctx.getComet();
+  const COMP = await ctx.getComp();
+
   if (rewards == null) return false;
 
   const [rewardTokenAddress] = await rewards.rewardConfig(comet.address);
   if (rewardTokenAddress === constants.AddressZero) return false;
+
+  const totalSupply = await COMP.totalSupply();
+  if (totalSupply.toBigInt() < exp(1, 18)) return false;
 
   return true;
 }
@@ -337,7 +342,7 @@ async function redeployRenzoOracle(dm: DeploymentManager){
       ],
       dm.hre.ethers.provider
     );
-    
+
     const admin = await impersonateAddress(dm, '0xD1e6626310fD54Eceb5b9a51dA2eC329D6D4B68A');
     // set balance
     await dm.hre.ethers.provider.send('hardhat_setBalance', [
@@ -464,7 +469,7 @@ export async function executeOpenProposal(
     const proposal = await governor.proposals(id);
     await setNextBlockTimestamp(dm, Math.max(block.timestamp, proposal.eta.toNumber()) + 1);
     await setNextBaseFeeToZero(dm);
-    await governor.execute(id, { gasPrice: 0, gasLimit: 12000000 });
+    await governor.execute(id, { gasPrice: 0, gasLimit: 24000000 });
   }
   await redeployRenzoOracle(dm);
   await mockAllRedstoneOracles(dm);
@@ -533,8 +538,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
 
   // Create the chain-specific wrapper around the L2 proposal data
   switch (bridgeNetwork) {
-    case 'arbitrum':
-    case 'arbitrum-goerli': {
+    case 'arbitrum': {
       const inbox = await govDeploymentManager.getContractOrThrow('arbitrumInbox');
       const refundAddress = constants.AddressZero;
       const createRetryableTicketCalldata = utils.defaultAbiCoder.encode(
@@ -558,8 +562,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(createRetryableTicketCalldata);
       break;
     }
-    case 'base':
-    case 'base-goerli': {
+    case 'base': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'bytes', 'uint32'],
         [bridgeReceiver.address, l2ProposalData, 1_000_000] // XXX find a reliable way to estimate the gasLimit
@@ -574,7 +577,6 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageCalldata);
       break;
     }
-    case 'mumbai':
     case 'polygon': {
       const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(
         ['address', 'bytes'],
@@ -588,20 +590,66 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageToChildCalldata);
       break;
     }
-    case 'linea-goerli': {
-      const sendMessageCalldata = utils.defaultAbiCoder.encode(
-        ['address', 'uint256', 'bytes'],
-        [bridgeReceiver.address, 0, l2ProposalData]
+    case 'ronin-saigon': {
+
+      const { timelock } = await govDeploymentManager.getContracts();
+
+      await govDeploymentManager.hre.network.provider.request({
+        method: 'hardhat_impersonateAccount',
+        params: [timelock.address],
+      });
+
+      await govDeploymentManager.hre.network.provider.request({
+        method: 'hardhat_setBalance',
+        params: [timelock.address, '0x56bc75e2d63100000'],
+      });
+
+      const l1CCIPRouter = await govDeploymentManager.getContractOrThrow(
+        'l1CCIPRouter'
       );
-      const lineaMessageService = await govDeploymentManager.getContractOrThrow(
-        'lineaMessageService'
-      );
-      targets.push(lineaMessageService.address);
-      values.push(0);
-      signatures.push('sendMessage(address,uint256,bytes)');
-      calldata.push(sendMessageCalldata);
+
+      const destinationChainSelector = "13116810400804392105";
+
+      const data =
+      {
+        target: l1CCIPRouter.address,
+        signature: "ccipSend(uint64,(bytes,bytes,(address,uint256)[],address,bytes))",
+        calldata: utils.defaultAbiCoder.encode(
+          ["uint64", "tuple(bytes,bytes,tuple(address,uint256)[],address,bytes)"],
+          [
+            destinationChainSelector,
+            [
+              utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
+              l2ProposalData,
+              [],
+              govDeploymentManager.hre.ethers.constants.AddressZero,
+              "0x"
+            ]
+          ]
+        ),
+        value: utils.parseEther("0.1")
+      }
+
+      targets.push(data.target);
+      values.push(data.value);
+      signatures.push(data.signature);
+      calldata.push(data.calldata);
       break;
     }
+    // case 'linea-goerli': {
+    //   const sendMessageCalldata = utils.defaultAbiCoder.encode(
+    //     ['address', 'uint256', 'bytes'],
+    //     [bridgeReceiver.address, 0, l2ProposalData]
+    //   );
+    //   const lineaMessageService = await govDeploymentManager.getContractOrThrow(
+    //     'lineaMessageService'
+    //   );
+    //   targets.push(lineaMessageService.address);
+    //   values.push(0);
+    //   signatures.push('sendMessage(address,uint256,bytes)');
+    //   calldata.push(sendMessageCalldata);
+    //   break;
+    // }
     case 'optimism': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'bytes', 'uint32'],
@@ -631,8 +679,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageCalldata);
       break;
     }
-    case 'scroll': 
-    case 'scroll-goerli': {
+    case 'scroll': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'uint256', 'bytes', 'uint256'],
         [bridgeReceiver.address, 0, l2ProposalData, 1_000_000] // XXX find a reliable way to estimate the gasLimit
