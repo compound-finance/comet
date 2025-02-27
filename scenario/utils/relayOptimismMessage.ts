@@ -61,7 +61,7 @@ export default async function relayOptimismMessage(
       const messageWithoutSigHash = '0x' + messageWithoutPrefix.slice(8);
       try {
         // 1a. Bridging ERC20 token
-        const { l1Token, _l2Token, _from, to, amount, _data } = ethers.utils.defaultAbiCoder.decode(
+        const [ l1Token, _l2Token, _from, to, amount, _data ] = ethers.utils.defaultAbiCoder.decode(
           ['address l1Token', 'address l2Token', 'address from', 'address to', 'uint256 amount', 'bytes data'],
           messageWithoutSigHash
         );
@@ -71,7 +71,7 @@ export default async function relayOptimismMessage(
         );
       } catch (e) {
         // 1a. Bridging ETH
-        const { _from, to, amount, _data } = ethers.utils.defaultAbiCoder.decode(
+        const [ _from, to, amount, _data ] = ethers.utils.defaultAbiCoder.decode(
           ['address from', 'address to', 'uint256 amount', 'bytes data'],
           messageWithoutSigHash
         );
@@ -90,11 +90,18 @@ export default async function relayOptimismMessage(
       }
     } else if (target === bridgeReceiver.address) {
       // Cross-chain message passing
-      const proposalCreatedEvent = relayMessageTxn.events.find(event => event.address === bridgeReceiver.address);
-      const { args: { id, eta } } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
-
-      // Add the proposal to the list of open bridged proposals to be executed after all the messages have been relayed
-      openBridgedProposals.push({ id, eta });
+      try {
+        const proposalCreatedEvent = relayMessageTxn.events.find(event => event.address === bridgeReceiver.address);
+        const { args: { id, eta } } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
+        // Add the proposal to the list of open bridged proposals to be executed after all the messages have been relayed
+        openBridgedProposals.push({ id, eta });
+      } catch (e) {
+        if(relayMessageTxn.events[0].event === 'FailedRelayedMessage'){
+          console.log('Failed to relay message');
+          continue;
+        }
+        throw e;
+      }
     } else {
       throw new Error(`[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Unrecognized target for cross-chain message`);
     }
