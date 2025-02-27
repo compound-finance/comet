@@ -12,7 +12,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '16'
+          node-version: '18'
 
       - uses: actions/setup-python@v4
         with:
@@ -23,6 +23,9 @@ jobs:
 
       - name: Install packages
         run: pip install slither-analyzer solc-select
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
 
       - name: Switch to solidity version
         run: solc-select install 0.8.15;solc-select use 0.8.15

@@ -55,8 +55,8 @@ export function nonForkedHreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
       }
     },
     ctx.tasksDSL.getTaskDefinitions(),
-    ctx.extendersManager.getExtenders(),
-    ctx.experimentalHardhatNetworkMessageTraceHooks,
+    ctx.tasksDSL.getScopesDefinitions(),
+    ctx.environmentExtenders,
     userConfig
   );
 }
@@ -105,8 +105,8 @@ export function forkedHreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
     forkedConfig,
     hardhatArguments,
     ctx.tasksDSL.getTaskDefinitions(),
-    ctx.extendersManager.getExtenders(),
-    ctx.experimentalHardhatNetworkMessageTraceHooks,
+    ctx.tasksDSL.getScopesDefinitions(),
+    ctx.environmentExtenders,
     userConfig
   );
 }

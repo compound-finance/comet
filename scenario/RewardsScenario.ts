@@ -5,6 +5,7 @@ import { isRewardSupported, matchesDeployment } from './utils';
 import { Contract, ContractReceipt } from 'ethers';
 import { CometRewards, ERC20__factory } from '../build/types';
 import {World} from '../plugins/scenario';
+import { getConfigForScenario } from './utils/scenarioHelper';
 
 function calculateRewardsOwed(
   userBalance: bigint,
@@ -152,20 +153,22 @@ scenario(
   'Comet#rewards > can claim borrow rewards for self',
   {
     filter: async (ctx) => await isRewardSupported(ctx),
-    tokenBalances: {
-      albert: { $asset0: ' == 10000' }, // in units of asset, not wei
-      $comet: { $base: ' >= 1000 ' }
-    },
+    tokenBalances: async (ctx) => (
+      {
+        albert: { $asset0: ` == ${getConfigForScenario(ctx).rewardsAsset}` }, // in units of asset, not wei
+        $comet: { $base: ` >= ${getConfigForScenario(ctx).rewardsBase} ` }
+      }
+    ),
   },
   async ({ comet, rewards, actors }, context, world) => {
     const { albert } = actors;
     const { asset: collateralAssetAddress, scale: scaleBN } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
     const scale = scaleBN.toBigInt();
-    const toSupply = 10_000n * scale;
+    const toSupply = BigInt(getConfigForScenario(context).rewardsAsset) * scale;
     const baseAssetAddress = await comet.baseToken();
     const baseScale = (await comet.baseScale()).toBigInt();
-    const toBorrow = 1_000n * baseScale;
+    const toBorrow = BigInt(getConfigForScenario(context).rewardsBase) * baseScale;
 
     const { rescaleFactor } = await context.getRewardConfig();
     const rewardToken = await context.getRewardToken();
