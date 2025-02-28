@@ -30,7 +30,7 @@
       "borrowCF": 0.75,
       "liquidateCF": 0.80,
       "liquidationFactor": 0.88,
-      "supplyCap": "3000000e18"
+      "supplyCap": "0e18"
     },
     "USDC": {
       "address": "0x0b7007c13325c48911f73a2dad5fa5dcbf808adc",
@@ -38,7 +38,7 @@
       "borrowCF": 0.83,
       "liquidateCF": 0.90,
       "liquidationFactor": 0.95,
-      "supplyCap": "400000e6"
+      "supplyCap": "0e6"
     },
     "AXS": {
       "address": "0x97a9107c1793bc407d6f527b77e7fff4d812bece",
@@ -46,7 +46,7 @@
       "borrowCF": 0.70,
       "liquidateCF": 0.75,
       "liquidationFactor": 0.80,
-      "supplyCap": "300000e18"
+      "supplyCap": "0e18"
     }
   }
 }
