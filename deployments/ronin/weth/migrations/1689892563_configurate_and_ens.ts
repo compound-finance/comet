@@ -256,6 +256,9 @@ export default migration("1689892563_configurate_and_ens", {
     expect(await ENSRegistry.ttl(subdomainHash)).to.be.equal(0);
     const officialMarkets = JSON.parse(officialMarketsJSON);
 
+    console.log(JSON.stringify(officialMarkets));
+    console.log(officialMarkets);
+
     expect(officialMarkets).to.deep.equal({
       1: [
         {
