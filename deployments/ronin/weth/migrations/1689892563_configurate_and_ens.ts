@@ -234,9 +234,10 @@ export default migration("1689892563_configurate_and_ens", {
       // baseTrackingBorrowSpeed: exp(1/86400, 15, 18),
     });
 
-    const config = await rewards.rewardConfig(comet.address);
-    expect(config.rescaleFactor).to.be.equal(exp(1, 12));
-    expect(config.shouldUpscale).to.be.equal(true);
+    // We should not do this check, as rewards only deployed, but without reward token
+    // const config = await rewards.rewardConfig(comet.address);
+    // expect(config.rescaleFactor).to.be.equal(exp(1, 12));
+    // expect(config.shouldUpscale).to.be.equal(true);
 
     // 4. & 5.
     expect(await WETH.balanceOf(comet.address)).to.be.equal(exp(25, 18));
