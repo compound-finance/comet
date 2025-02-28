@@ -118,7 +118,7 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'ronin',
     chainId: 2020,
-    url: `https://api.roninchain.com/rpc`,
+    url: `https://ronin.gateway.tenderly.co/${TENDERLY_KEY_RONIN}`,
   },
   {
     network: 'polygon',

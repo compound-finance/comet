@@ -142,7 +142,7 @@ export default migration("1689892563_configurate_and_ens", {
     ];
 
 
-    const description = "# Initialize cWETHv3 on Ronin\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes deployment of Compound III to Ronin network. This proposal takes the governance steps recommended and necessary to initialize a Compound III WETH market on Ronin; upon execution, cWETHv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-ronin/6128/8).\n\nFurther detailed information can be found on the corresponding [deployment pull request](https://github.com/compound-finance/comet/pull/962), [deploy market GitHub action run](https://github.com/woof-software/comet/actions/runs/13510905041/job/37750806965) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-ronin/6128).\n\n\n## Rewards\n\nGauntlet provided recommendations for COMP rewards, however, the COMP token is not whitelisted on CCIP. When the COMP token is whitelisted, we will create a proposal to bridge COMP tokens and set up speeds.\n\n## Proposal Actions\n\nThe first proposal action bridges ETH seed reserves to the comet using [roninl1NativeBridge](https://etherscan.io/address/0x64192819Ac13Ef72bF6b5AE239AC672B43a9AF08). Bridged ETH will be converted to WETH automatically.\n\nThe second proposal action sets the Comet configuration and deploys a new Comet implementation on Ronin. This sends the encoded `setConfiguration` and `deployAndUpgradeTo` calls across the [l1CCIPRouter](https://etherscan.io/address/0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D) to the bridge receiver on Ronin. \n\nThe third action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Ronin cWETHv3 market.";
+    const description = "# Initialize cWETHv3 on Ronin\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes deployment of Compound III to Ronin network. This proposal takes the governance steps recommended and necessary to initialize a Compound III WETH market on Ronin; upon execution, cWETHv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite] (https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-ronin/6128/8).\n\nFurther detailed information can be found on the corresponding [deployment pull request](https://github.com/woof-software/comet/pull/123), [deploy market GitHub action run](https://github.com/woof-software/comet/actions/runs/13578786406) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-ronin/6128).\n\n\n## Rewards\n\nGauntlet provided recommendations for COMP rewards, however, the COMP token is not whitelisted on CCIP. When the COMP token is whitelisted, we will create a proposal to bridge COMP tokens and set up speeds.\n\n## Proposal Actions\n\nThe first proposal action bridges ETH seed reserves to the comet using [roninl1NativeBridge](https://etherscan.io/address/0x64192819Ac13Ef72bF6b5AE239AC672B43a9AF08). Bridged ETH will be converted to WETH automatically.\n\nThe second proposal action sets the Comet configuration and deploys a new Comet implementation on Ronin. This sends the encoded `setConfiguration` and `deployAndUpgradeTo` calls across the [l1CCIPRouter](https://etherscan.io/address/0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D) to the bridge receiver on Ronin. \n\nThe third action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Ronin cWETHv3 market.";
 
     const txn = await governor.propose(...(await proposal(actions, description)))
     const event = (await txn.wait()).events.find((event) => event.event === "ProposalCreated");
@@ -207,32 +207,31 @@ export default migration("1689892563_configurate_and_ens", {
 
     expect(assetListAddress).to.not.be.equal(ethers.constants.AddressZero);
 
-    // 1.
-    // const stateChanges = await diffState(
-    //   comet,
-    //   getCometConfig,
-    //   preMigrationBlockNumber
-    // );
-    // expect(stateChanges).to.deep.equal({
-    //   WRON: {
-    //     supplyCap: exp(3000000, 18)
-    //   },
-    //   USDC: {
-    //     supplyCap: exp(400000, 6)
-    //   },
-    //   AXS: {
-    //     supplyCap: exp(300000, 18)
-    //   },
-    //   baseTrackingSupplySpeed: 0,
-    //   baseTrackingBorrowSpeed: 0,
-    // });
+    const stateChanges = await diffState(
+      comet,
+      getCometConfig,
+      preMigrationBlockNumber
+    );
+    expect(stateChanges).to.deep.equal({
+      WRON: {
+        supplyCap: exp(3000000, 18)
+      },
+      USDC: {
+        supplyCap: exp(400000, 6)
+      },
+      AXS: {
+        supplyCap: exp(300000, 18)
+      },
+      // baseTrackingSupplySpeed: exp(2/86400, 15, 18),
+      // baseTrackingBorrowSpeed: exp(1/86400, 15, 18),
+    });
 
-    const config = await rewards.rewardConfig(comet.address);
-    //expect(config.rescaleFactor).to.be.equal(exp(1, 12));
-    //expect(config.shouldUpscale).to.be.equal(true);
+    // const config = await rewards.rewardConfig(comet.address);
+    // expect(config.rescaleFactor).to.be.equal(exp(1, 12));
+    // expect(config.shouldUpscale).to.be.equal(true);
 
     // 4. & 5.
-    //expect(await WETH.balanceOf(comet.address)).to.be.equal(exp(10, 18));
+    expect(await WETH.balanceOf(comet.address)).to.be.equal(exp(25, 18));
     // 6.
     const ENSResolver = await govDeploymentManager.existing(
       'ENSResolver',
