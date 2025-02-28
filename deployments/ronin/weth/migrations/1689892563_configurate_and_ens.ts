@@ -95,14 +95,12 @@ export default migration("1689892563_configurate_and_ens", {
     }
 
     // Add WBTC market into ENS
-    if (officialMarketsJSON[1].find((market => market.baseSymbol === 'WBTC'))) {
-      officialMarketsJSON[1].push({
+    if (!officialMarketsJSON['1'].find((market => market.baseSymbol === 'WBTC'))) {
+      officialMarketsJSON['1'].push({
         baseSymbol: 'WBTC',
         cometAddress: '0xe85Dc543813B8c2CFEaAc371517b925a166a9293',
       });
     }
-
-    console.log({ officialMarketsJSON })
 
     const fee = await l1CCIPRouter.getFee(destinationChainSelector, [
       utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
@@ -236,9 +234,9 @@ export default migration("1689892563_configurate_and_ens", {
       // baseTrackingBorrowSpeed: exp(1/86400, 15, 18),
     });
 
-    // const config = await rewards.rewardConfig(comet.address);
-    // expect(config.rescaleFactor).to.be.equal(exp(1, 12));
-    // expect(config.shouldUpscale).to.be.equal(true);
+    const config = await rewards.rewardConfig(comet.address);
+    expect(config.rescaleFactor).to.be.equal(exp(1, 12));
+    expect(config.shouldUpscale).to.be.equal(true);
 
     // 4. & 5.
     expect(await WETH.balanceOf(comet.address)).to.be.equal(exp(25, 18));
@@ -258,9 +256,6 @@ export default migration("1689892563_configurate_and_ens", {
     expect(await ENSRegistry.resolver(subdomainHash)).to.be.equal(ENSResolverAddress);
     expect(await ENSRegistry.ttl(subdomainHash)).to.be.equal(0);
     const officialMarkets = JSON.parse(officialMarketsJSON);
-
-    console.log(JSON.stringify(officialMarkets));
-    console.log(officialMarkets);
 
     expect(officialMarkets).to.deep.equal({
       1: [
