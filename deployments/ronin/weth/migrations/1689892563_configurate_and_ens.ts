@@ -270,6 +270,10 @@ export default migration("1689892563_configurate_and_ens", {
         {
           baseSymbol: 'USDS',
           cometAddress: '0x5D409e56D886231aDAf00c8775665AD0f9897b56'
+        },
+        {
+          baseSymbol: 'WBTC',
+          cometAddress: '0xe85Dc543813B8c2CFEaAc371517b925a166a9293'
         }
       ],
       10: [
@@ -286,6 +290,13 @@ export default migration("1689892563_configurate_and_ens", {
           cometAddress: '0xE36A30D249f7761327fd973001A32010b521b6Fd'
         }
       ],
+      // Uncomment when USDC on Unichain will be executed.
+      // 130: [
+      //   {
+      //     baseSymbol: 'USDC',
+      //     cometAdress: '0x2c7118c4C88B9841FCF839074c26Ae8f035f2921'
+      //   }
+      // ],
       137: [
         {
           baseSymbol: 'USDC',
@@ -294,6 +305,12 @@ export default migration("1689892563_configurate_and_ens", {
         {
           baseSymbol: 'USDT',
           cometAddress: '0xaeB318360f27748Acb200CE616E389A6C9409a07',
+        },
+      ],
+      2020: [
+        {
+          baseSymbol: 'WETH',
+          cometAddress: comet.address,
         },
       ],
       5000: [
@@ -353,20 +370,7 @@ export default migration("1689892563_configurate_and_ens", {
           baseSymbol: 'USDC',
           cometAddress: '0xB2f97c1Bd3bf02f5e74d13f02E3e26F93D77CE44',
         },
-      ],
-      2020: [
-        {
-          baseSymbol: 'WETH',
-          cometAddress: comet.address,
-        },
-      ],
-      //TODO: Unichain market
-      // 130: [
-      //   {
-      //     baseSymbol: 'USDC',
-      //     cometAdress: 
-      //   }
-      // ]
+      ]
     });
   },
 });
