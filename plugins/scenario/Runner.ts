@@ -153,6 +153,37 @@ export class Runner<T, U, R> {
   }
 }
 
+
+async function retry(fn: () => Promise<any>, retries: number = 10, timeLimit?: number, wait: number = 250) {
+  try {
+    return await asyncCallWithTimeout(fn(), timeLimit);
+  } catch (e) {
+    if (retries === 0) throw e;
+    if(e.reason !== 'could not detect network')
+      throw e;
+
+    console.warn(`Retrying in ${wait}ms...`);
+
+    await new Promise(ok => setTimeout(ok, wait));
+    return retry(fn, retries - 1, timeLimit, wait >= 10000 ? 10000 : wait * 2);
+  }
+}
+async function asyncCallWithTimeout(asyncPromise: Promise<any>, timeLimit: number = 5000_000) {
+  let timeoutHandle: string | number | NodeJS.Timeout;
+
+  const timeoutPromise = new Promise((_resolve, reject) => {
+    timeoutHandle = setTimeout(
+      () => reject(new Error('Async call timeout limit reached')),
+      timeLimit
+    );
+  });
+
+  return Promise.race([asyncPromise, timeoutPromise]).then(result => {
+    clearTimeout(timeoutHandle);
+    return result;
+  });
+}
+
 export async function runScenarios(bases: ForkSpec[]) {
   const loader = await Loader.load();
   const [runningScenarios, skippedScenarios] = loader.splitScenarios();
@@ -161,16 +192,20 @@ export async function runScenarios(bases: ForkSpec[]) {
   const results: Result[] = [];
 
   for (const base of bases) {
-    const world = new World(base), dm = world.deploymentManager;
-    const delta = await dm.runDeployScript({ allMissing: true });
-    console.log(`[${base.name}] Deployed ${dm.counter} contracts, spent ${dm.spent} to initialize world 🗺`);
-    console.log(`[${base.name}]\n${dm.diffDelta(delta)}`);
+    let runner: Runner<unknown, unknown, unknown>;
+    await retry(async () => {
+      const world = new World(base);
+      await world.initialize(base);
+      const dm = world.deploymentManager;
+      const delta = await dm.runDeployScript({ allMissing: true });
+      console.log(`[${base.name}] Deployed ${dm.counter} contracts, spent ${dm.spent} to initialize world 🗺`);
+      console.log(`[${base.name}]\n${dm.diffDelta(delta)}`);
 
-    if (world.auxiliaryDeploymentManager) {
-      await world.auxiliaryDeploymentManager.spider();
-    }
-
-    const runner = new Runner(base, world);
+      if (world.auxiliaryDeploymentManager) {
+        await world.auxiliaryDeploymentManager.spider();
+      }
+      runner = new Runner(base, world);
+    });
 
     // NB: contexts are (still) a bit awkward
     //  they prob dont even really need to get passed through here currently
