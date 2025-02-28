@@ -1,4 +1,6 @@
 import { get, getEtherscanApiKey, getEtherscanApiUrl, getEtherscanUrl } from './etherscan';
+import { getBlockscoutApiUrl, getBlockscoutRPCUrl } from './blockscout';
+import { providers } from 'ethers';
 
 export function debug(...args: any[]) {
   if (process.env['DEBUG']) {
@@ -22,6 +24,8 @@ export async function loadContract(source: string, network: string, address: str
     throw new Error(`Cannot load ${source} contract for address ${address} on network ${network}. Address invalid.`);
   }
   switch (source) {
+    case 'blockscout':
+      return await loadBlockscoutContract(network, address);
     case 'etherscan':
       return await loadEtherscanContract(network, address);
     default:
@@ -42,6 +46,20 @@ interface EtherscanSource {
   SwarmSource: string;
 }
 
+interface BlockscoutSource {
+  SourceCode: string;
+  ABI: string;
+  ContractName: string;
+  CompilerVersion: string;
+  OptimizationUsed: string;
+  OptimizationRuns: string;
+  ConstructorArguments: string;
+  Library: string;
+  LicenseType: string;
+  SwarmSource: string;
+  ImplementationAddress: string;
+}
+
 interface EtherscanData {
   source: string;
   abi: object;
@@ -50,6 +68,138 @@ interface EtherscanData {
   optimized: boolean;
   optimizationRuns: number;
   constructorArgs: string;
+}
+
+async function pullFirstTransactionForContractFromBlockscout(network: string, address: string) {
+  const params = {
+    module: 'account',
+    action: 'txlist',
+    address: address,
+    startblock: 0,
+    endblock: 99999999,
+    page: 1,
+    offset: 10,
+    sort: 'asc',
+  };
+  const url = `${getBlockscoutApiUrl(network)}?${paramString(params)}`;
+  const debugUrl = `${getBlockscoutApiUrl(network)}?${paramString(params)}`;
+
+  debug(`Attempting to pull Contract Creation code from first tx at ${debugUrl}`);
+  const result = await get(url, {});
+  
+  const contractCreationCode = result.result[0].input;
+  console.log('code', contractCreationCode);
+  if (!contractCreationCode) {
+    throw new Error(`Unable to find Contract Creation tx at ${debugUrl}`);
+  }
+  debug(`Creation Code found in first tx at ${debugUrl}`);
+  return contractCreationCode.slice(2);
+}
+
+async function getBlockscoutApiData(network: string, address: string): Promise<EtherscanData> {
+  let apiUrl = await getBlockscoutApiUrl(network);
+
+  let result = await get(apiUrl, {
+    module: 'contract',
+    action: 'getsourcecode',
+    address,
+  });
+
+  if (result.status !== '1') {
+    throw new Error(`Blockscout Error: ${result.message} - ${result.result}`);
+  }
+
+  let s = <BlockscoutSource>(<unknown>result.result[0]);
+
+  if (s.ABI === 'Contract source code not verified') {
+    throw new Error('Contract source code not verified');
+  }
+
+  return {
+    source: s.SourceCode,
+    abi: JSON.parse(s.ABI),
+    contract: s.ContractName,
+    compiler: s.CompilerVersion,
+    optimized: s.OptimizationUsed as unknown as boolean,
+    optimizationRuns: Number(s.OptimizationRuns),
+    constructorArgs: s.ConstructorArguments,
+  };
+}
+
+async function scrapeContractCreationCodeFromBlockscoutRPC(network: string, address: string) {
+  // get code from JSON rpc
+  const rpcUrl = await getBlockscoutRPCUrl(network);
+  const provider = new providers.JsonRpcProvider(rpcUrl);
+  const code = await provider.send('eth_getCode', [address, 'latest']);
+  return code.slice(2);
+}
+
+async function getContractCreationCodeFromBlockscout(network: string, address: string) {
+  const strategies = [
+    scrapeContractCreationCodeFromBlockscoutRPC,
+    pullFirstTransactionForContractFromBlockscout,
+  ];
+  let errors = [];
+  for (const strategy of strategies) {
+    try {
+      return await strategy(network, address);
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+  throw new Error(errors.join('; '));
+}
+
+export async function loadBlockscoutContract(network: string, address: string) {
+  const networkName = network;
+  const blockscoutData = await getBlockscoutApiData(networkName, address);
+  const {
+    abi,
+    contract,
+    compiler,
+    constructorArgs
+  } = blockscoutData;
+  const { language, settings, sources } = parseSources(blockscoutData);
+  const contractPath = Object.keys(sources)[0];
+  const contractFQN = `${contractPath}:${contract}`;
+
+
+  let contractCreationCode = await getContractCreationCodeFromBlockscout(networkName, address);
+
+  if (constructorArgs?.length > 0 && contractCreationCode?.endsWith(constructorArgs)) {
+    contractCreationCode = contractCreationCode.slice(0, -constructorArgs.length);
+  }
+
+  const encodedABI = JSON.stringify(abi);
+  const contractBuild = {
+    contract,
+    contracts: {
+      [contractFQN]: {
+        network,
+        address,
+        name: contract,
+        abi: encodedABI,
+        bin: contractCreationCode,
+        constructorArgs,
+        metadata: JSON.stringify({
+          compiler: {
+            version: compiler,
+          },
+          language,
+          output: {
+            abi: encodedABI,
+          },
+          devdoc: {},
+          sources,
+          settings,
+          version: 1,
+        }),
+      },
+    },
+    version: compiler,
+  };
+
+  return contractBuild;
 }
 
 async function getEtherscanApiData(network: string, address: string, apiKey: string): Promise<EtherscanData> {
@@ -128,7 +278,7 @@ function paramString(params: { [k: string]: string | number }) {
   return Object.entries(params).map(([k,v]) => `${k}=${v}`).join('&');
 }
 
-async function pullFirstTransactionForContract(network: string, address: string) {
+async function pullFirstTransactionForContractFromEtherscan(network: string, address: string) {
   const params = {
     module: 'account',
     action: 'txlist',
@@ -153,11 +303,11 @@ async function pullFirstTransactionForContract(network: string, address: string)
   return contractCreationCode.slice(2);
 }
 
-async function getContractCreationCode(network: string, address: string) {
+async function getContractCreationCodeFromEtherscan(network: string, address: string) {
   const strategies = [
     scrapeContractCreationCodeFromEtherscan,
     scrapeContractCreationCodeFromEtherscanApi,
-    pullFirstTransactionForContract,
+    pullFirstTransactionForContractFromEtherscan,
   ];
   let errors = [];
   for (const strategy of strategies) {
@@ -221,7 +371,7 @@ export async function loadEtherscanContract(network: string, address: string) {
   const contractPath = Object.keys(sources)[0];
   const contractFQN = `${contractPath}:${contract}`;
 
-  let contractCreationCode = await getContractCreationCode(networkName, address);
+  let contractCreationCode = await getContractCreationCodeFromEtherscan(networkName, address);
   if (constructorArgs.length > 0 && contractCreationCode.endsWith(constructorArgs)) {
     contractCreationCode = contractCreationCode.slice(0, -constructorArgs.length);
   }
