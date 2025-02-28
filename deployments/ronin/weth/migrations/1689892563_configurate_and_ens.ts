@@ -94,12 +94,15 @@ export default migration("1689892563_configurate_and_ens", {
       officialMarketsJSON[chainId] = [newMarketObject];
     }
 
+    // Add WBTC market into ENS
     if (officialMarketsJSON[1].find((market => market.baseSymbol === 'WBTC'))) {
       officialMarketsJSON[1].push({
         baseSymbol: 'WBTC',
         cometAddress: '0xe85Dc543813B8c2CFEaAc371517b925a166a9293',
       });
     }
+
+    console.log({ officialMarketsJSON })
 
     const fee = await l1CCIPRouter.getFee(destinationChainSelector, [
       utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
