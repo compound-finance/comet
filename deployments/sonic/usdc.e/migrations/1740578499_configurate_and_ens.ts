@@ -8,7 +8,7 @@ import {
 } from '../../../../src/deploy';
 import { expect } from 'chai';
 import { forkedHreForBase } from '../../../../plugins/scenario/utils/hreForBase';
-import { utils, Contract, constants, providers } from 'ethers';
+import { utils, Contract, constants } from 'ethers';
 import { diffState, getCometConfig } from '../../../../plugins/deployment_manager/DiffState';
 import 'dotenv/config';
 
@@ -19,21 +19,40 @@ const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
 
-const sonicCOMPAddress = '';
+// const sonicCOMPAddress = '';
 const USDCAmountToSeed = exp(50_000, 6);
 const COMPAmountToBridge = exp(1000, 18);
 
 const destinationChainSelector = '1673871237479749969';
 
-// this should be changed to the actual deposit ids
-const uidCOMP = 123123;
-const uidUSDC = 123124;
+const uidCOMP = Date.now();
+const uidUSDC = uidCOMP + 1;
 
 const delegatorAddress = process.env.DELEGATOR_ADDRESS || '';
 
 export default migration('1739783281_configurate_and_ens', {
-  prepare: async () => {
-    return {};
+  // prepare: async () => {
+  //   return {};
+  // },
+
+  async prepare(deploymentManager: DeploymentManager) {
+    const { timelock, l2SonicBridge } = await deploymentManager.getContracts();
+    const signer = await deploymentManager.getSigner();
+
+    const initializeDelegatorData = utils.defaultAbiCoder.encode(
+      ['address', 'address'],
+      [timelock.address, l2SonicBridge.address]
+    );
+
+    console.log('timelock.address', timelock.address);
+    const txDelegator = await signer.sendTransaction({
+      to: delegatorAddress,
+      value: 0,
+      data: '0x485cc955' + initializeDelegatorData.substring(2)
+    });
+    await txDelegator.wait();
+
+    return { delegatorAddress: delegatorAddress };
   },
 
   enact: async (
@@ -43,20 +62,22 @@ export default migration('1739783281_configurate_and_ens', {
     const trace = deploymentManager.tracer();
 
     const {
-      bridgeReceiver,
       comet,
+      rewards,
       cometAdmin,
       configurator,
-      rewards,
       l2SonicBridge,
+      // COMP: COMP_L2,
+      'USDC.e': USDC_L2,
+      bridgeReceiver,
     } = await deploymentManager.getContracts();
 
     const {
-      l1CCIPRouter,
-      sonicL1GatewayBridge,
       governor,
-      COMP: COMP_L1,
+      l1CCIPRouter,
+      // COMP: COMP_L1,
       USDC: USDC_L1,
+      sonicL1GatewayBridge,
     } = await govDeploymentManager.getContracts();
 
     // ENS Setup
@@ -67,7 +88,7 @@ export default migration('1739783281_configurate_and_ens', {
     );
     const subdomainHash = utils.namehash(ENSSubdomain);
     const sonicChainId = 146;
-    const newMarketObject = { baseSymbol: 'USDC', cometAddress: comet.address };
+    const newMarketObject = { baseSymbol: 'USDC.e', cometAddress: comet.address };
     const officialMarketsJSON = JSON.parse(
       await ENSResolver.text(subdomainHash, ENSTextRecordKey)
     );
@@ -76,6 +97,21 @@ export default migration('1739783281_configurate_and_ens', {
     } else {
       officialMarketsJSON[sonicChainId] = [newMarketObject];
     }
+
+
+    const _approveUSDCCalldata = await USDC_L1.populateTransaction.approve(sonicL1GatewayBridge.address, USDCAmountToSeed);
+    const _depositUSDCCalldata = await sonicL1GatewayBridge.populateTransaction.deposit(uidUSDC, USDC_L1.address, USDCAmountToSeed);
+    const depositUSDCCalldata = utils.defaultAbiCoder.encode(
+      ['address[]', 'bytes[]', 'uint256[]'],
+      [[USDC_L1.address, sonicL1GatewayBridge.address], [_approveUSDCCalldata.data, _depositUSDCCalldata.data], [0, 0]]
+    );
+
+    // const _approveCOMPCalldata = await COMP_L1.populateTransaction.approve(sonicL1GatewayBridge.address, COMPAmountToBridge);
+    // const _depositCOMPCalldata = await sonicL1GatewayBridge.populateTransaction.deposit(uidCOMP, COMP_L1.address, COMPAmountToBridge);
+    // const depositCOMPCalldata = utils.defaultAbiCoder.encode(
+    //   ['address[]', 'bytes[]', 'uint256[]'],
+    //   [[COMP_L1.address, sonicL1GatewayBridge.address], [_approveCOMPCalldata.data, _depositCOMPCalldata.data], [0, 0]]
+    // );
 
     const configuration = await getConfigurationStruct(deploymentManager);
     const setConfigurationCalldata = await calldata(
@@ -88,40 +124,53 @@ export default migration('1739783281_configurate_and_ens', {
       ['address', 'address'],
       [configurator.address, comet.address]
     );
-    const setRewardConfigCalldata = utils.defaultAbiCoder.encode(
-      ['address', 'address'],
-      [comet.address, sonicCOMPAddress]
-    );
+    // const setRewardConfigCalldata = utils.defaultAbiCoder.encode(
+    //   ['address', 'address'],
+    //   [comet.address, sonicCOMPAddress]
+    // );
     
-    const depositIdCOMP = await l2SonicBridge.userOperationId(delegatorAddress, uidCOMP);
+    // const depositIdCOMP = await l2SonicBridge.userOperationId(delegatorAddress, uidCOMP);
     const depositIdUSDC = await l2SonicBridge.userOperationId(delegatorAddress, uidUSDC);
 
-    const _claimCOMPCalldata = await sonicL1GatewayBridge.populateTransaction.claim(
-      depositIdCOMP,
-      COMP_L1,
-      COMPAmountToBridge,
-      await generateProof(depositIdCOMP, govDeploymentManager)
+    const delegatorContract = new Contract(
+      delegatorAddress,
+      [
+        'function setClaimData(uint256,address,uint256,address,address)',
+      ],
+      await deploymentManager.getSigner()
     );
-    const _transferCOMPCalldata = await COMP_L1.populateTransaction.transfer(
-      rewards.address,
-      COMPAmountToBridge
-    );
-    const _claimUSDCCalldata = await sonicL1GatewayBridge.populateTransaction.claim(
+
+    // const setCOMPClaimData = await delegatorContract.populateTransaction.setClaimData(
+    //   depositIdCOMP,
+    //   COMP_L1.address,
+    //   COMPAmountToBridge,
+    //   COMP_L2.address,
+    //   rewards.address
+    // );
+
+    const setUSDCClaimData = await delegatorContract.populateTransaction.setClaimData(
       depositIdUSDC,
-      USDC_L1,
+      USDC_L1.address,
       USDCAmountToSeed,
-      await generateProof(depositIdUSDC, govDeploymentManager)
+      USDC_L2.address,
+      comet.address
     );
-    const _transferUSDCCalldata = await USDC_L1.populateTransaction.transfer(
-      rewards.address,
-      USDCAmountToSeed
-    );
+
     const claimCalldata = utils.defaultAbiCoder.encode(
       ['address[]', 'bytes[]', 'uint256[]'],
       [
-        [sonicL1GatewayBridge.address, COMP_L1.address, sonicL1GatewayBridge.address, USDC_L1.address],
-        [_claimCOMPCalldata.data, _transferCOMPCalldata.data, _claimUSDCCalldata.data, _transferUSDCCalldata.data],
-        [0, 0, 0, 0],
+        [
+          // delegatorAddress,
+          delegatorAddress
+        ],
+        [
+          // setCOMPClaimData.data,
+          setUSDCClaimData.data
+        ],
+        [
+          // 0,
+          0
+        ],
       ]
     );
 
@@ -131,29 +180,54 @@ export default migration('1739783281_configurate_and_ens', {
         [
           configurator.address,
           cometAdmin.address,
-          rewards.address,
+          // rewards.address,
           delegatorAddress,
         ],
         [
-          0, 0, 0, 0,
+          0, 0, 0, 
+          // 0,
         ],
         [
           'setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))',
           'deployAndUpgradeTo(address,address)',
-          'setRewardConfig(address,address)',
+          // 'setRewardConfig(address,address)',
           'call(address[],bytes[],uint256[])',
         ],
         [
           setConfigurationCalldata,
           deployAndUpgradeToCalldata,
-          setRewardConfigCalldata,
+          // setRewardConfigCalldata,
           claimCalldata,
         ],
       ]
     );
 
     const actions = [
-      // 1. Set Comet configuration + deployAndUpgradeTo new Comet, set Reward Config on Sonic
+      // // 1. Transfer COMP to Delegator
+      // {
+      //   contract: COMP_L1,
+      //   signature: 'transfer(address,uint256)',
+      //   args: [delegatorAddress, COMPAmountToBridge],
+      // },
+      // // 2. Bridge COMP from Ethereum Delegator to Sonic Delegator
+      // {
+      //   target: delegatorAddress,
+      //   signature: 'call(address[],bytes[],uint256[])',
+      //   calldata: depositCOMPCalldata
+      // },
+      // 3. Transfer USDC to Delegator
+      {
+        contract: USDC_L1,
+        signature: 'transfer(address,uint256)',
+        args: [delegatorAddress, USDCAmountToSeed]
+      },
+      // 4. Bridge USDC from Ethereum Delegator to Sonic Delegator
+      {
+        target: delegatorAddress,
+        signature: 'call(address[],bytes[],uint256[])',
+        calldata: depositUSDCCalldata
+      },
+      // 5. Set Comet configuration + deployAndUpgradeTo new Comet, set Reward Config on Sonic
       {
         contract: l1CCIPRouter,
         signature: 'ccipSend(uint64,(bytes,bytes,(address,uint256)[],address,bytes))',
@@ -168,9 +242,9 @@ export default migration('1739783281_configurate_and_ens', {
               '0x'
             ]
           ],
-        value: utils.parseEther('0.5')
+        value: utils.parseEther('0.05')
       },
-      // 2. Update the list of official markets
+      // 7. Update the list of official markets
       {
         target: ENSResolverAddress,
         signature: 'setText(bytes32,string,string)',
@@ -204,12 +278,14 @@ export default migration('1739783281_configurate_and_ens', {
   ) {
     const {
       timelock,
+      sonicL1GatewayBridge,
     } = await govDeploymentManager.getContracts();
 
     const {
       comet,
       rewards,
-      COMP
+      COMP,
+      l2SonicBridge,
     } = await deploymentManager.getContracts();
 
     // 1.
@@ -230,10 +306,32 @@ export default migration('1739783281_configurate_and_ens', {
     // });
 
 
-    const config = await rewards.rewardConfig(comet.address);
-    expect(config.token.toLowerCase()).to.be.equal(COMP.address.toLowerCase());
-    expect(config.rescaleFactor).to.be.equal(exp(1, 12));
-    expect(config.shouldUpscale).to.be.equal(true);
+    // const depositIdCOMP = await l2SonicBridge.userOperationId(delegatorAddress, uidCOMP);
+    const depositIdUSDC = await l2SonicBridge.userOperationId(delegatorAddress, uidUSDC);
+
+    // const storageSlotCOMP = utils.keccak256(
+    //   utils.defaultAbiCoder.encode(['uint256', 'uint8'], [depositIdCOMP, 7])
+    // );
+    const storageSlotUSDC = utils.keccak256(
+      utils.defaultAbiCoder.encode(['uint256', 'uint8'], [depositIdUSDC, 7])
+    );
+
+    // const dataFromStorageCOMP = await govDeploymentManager.hre.ethers.provider.getStorageAt(
+    //   sonicL1GatewayBridge.address,
+    //   storageSlotCOMP
+    // );
+    // expect(dataFromStorageCOMP).to.not.be.equal(constants.HashZero);
+
+    const dataFromStorageUSDC = await govDeploymentManager.hre.ethers.provider.getStorageAt(
+      sonicL1GatewayBridge.address,
+      storageSlotUSDC
+    );
+    expect(dataFromStorageUSDC).to.not.be.equal(constants.HashZero);
+
+    // const config = await rewards.rewardConfig(comet.address);
+    // expect(config.token.toLowerCase()).to.be.equal(COMP.address.toLowerCase());
+    // expect(config.rescaleFactor).to.be.equal(exp(1, 12));
+    // expect(config.shouldUpscale).to.be.equal(true);
 
     const cometNew = new Contract(
       comet.address,
@@ -274,8 +372,8 @@ export default migration('1739783281_configurate_and_ens', {
     expect(owners.length).to.not.be.equal(0);
 
     // 1.
-    expect(await COMP.balanceOf(rewards.address)).to.be.equal(COMPAmountToBridge);
-    expect(await comet.getReserves()).to.be.equal(USDCAmountToSeed);
+    // expect(await COMP.balanceOf(rewards.address)).to.be.equal(COMPAmountToBridge);
+    // expect(await comet.getReserves()).to.be.equal(USDCAmountToSeed);
 
     // 2.
     const ENSResolver = await govDeploymentManager.existing(
@@ -342,7 +440,7 @@ export default migration('1739783281_configurate_and_ens', {
       ],
       146: [
         {
-          baseSymbol: 'USDC',
+          baseSymbol: 'USDC.e',
           cometAddress: comet.address
         }
       ],
@@ -408,27 +506,37 @@ export default migration('1739783281_configurate_and_ens', {
   },
 });
 
-async function generateProof(depositId: number, govDeploymentManager: DeploymentManager): Promise<string> {
-  // Generate storage slot for deposit
-  const storageSlot = utils.keccak256(
-    utils.defaultAbiCoder.encode(['uint256', 'uint8'], [depositId, 7])
-  );
 
-  // Get provider
-  const { ANKR_KEY } = process.env;
-  const providerMainnet = new providers.JsonRpcProvider(`https://rpc.ankr.com/eth/${ANKR_KEY}`);
-  const { sonicL1GatewayBridge } = await govDeploymentManager.getContracts();
+// async function generateProof(depositId: number, govDeploymentManager: DeploymentManager): Promise<string> {
+//   // Generate storage slot for deposit
+//   const storageSlot = utils.keccak256(
+//     utils.defaultAbiCoder.encode(['uint256', 'uint8'], [depositId, 7])
+//   );
+
+//   // Get provider
+//   const { ANKR_KEY } = process.env;
+//   const providerMainnet = new providers.JsonRpcProvider(`https://rpc.ankr.com/eth/${ANKR_KEY}`);
+//   const { sonicL1GatewayBridge } = await govDeploymentManager.getContracts();
+
+//   const stateOracle = new Contract(
+//     await sonicL1GatewayBridge.stateOracle(),
+//     [
+//       'function lastBlockNum() view returns(uint256)',
+//     ],
+//     await govDeploymentManager.getSigner()
+//   );
+
+//   const block = await providerMainnet.send('eth_getBlockByNumber', [await stateOracle.lastBlockNum(), false]);
+//   // Get proof from Ethereum node
+//   const proof = await providerMainnet.send('eth_getProof', [
+//     sonicL1GatewayBridge.address,
+//     [storageSlot],
+//     block.hash
+//   ]);
   
-  // Get proof from Ethereum node
-  const proof = await providerMainnet.send('eth_getProof', [
-    sonicL1GatewayBridge.address,
-    [storageSlot],
-    'latest'
-  ]);
-  
-  // Encode proof in required format
-  return utils.RLP.encode([
-    utils.RLP.encode(proof.accountProof),
-    utils.RLP.encode(proof.storageProof[0].proof)
-  ]);
-}
+//   // Encode proof in required format
+//   return utils.RLP.encode([
+//     utils.RLP.encode(proof.accountProof),
+//     utils.RLP.encode(proof.storageProof[0].proof)
+//   ]);
+// }

@@ -40,7 +40,7 @@ import optimismUsdtRelationConfigMap from './deployments/optimism/usdt/relations
 import optimismWethRelationConfigMap from './deployments/optimism/weth/relations';
 import mantleRelationConfigMap from './deployments/mantle/usde/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
-import sonicRelationConfigMap from './deployments/sonic/usdc/relations';
+import sonicRelationConfigMap from './deployments/sonic/usdc.e/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -362,7 +362,7 @@ const config: HardhatUserConfig = {
         usdc: scrollRelationConfigMap
       },
       'sonic': {
-        usdc: sonicRelationConfigMap
+        'usdc.e': sonicRelationConfigMap
       }
     },
   },
@@ -500,9 +500,9 @@ const config: HardhatUserConfig = {
         auxiliaryBase: 'mainnet'
       },
       {
-        name: 'sonic-usdc',
+        name: 'sonic-usdc.e',
         network: 'sonic',
-        deployment: 'usdc',
+        deployment: 'usdc.e',
         auxiliaryBase: 'mainnet'
       },
       {

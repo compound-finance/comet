@@ -1,12 +1,33 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
-contract Delegator {
-    address public timelock;
+import "./IBridge.sol";
+import "../../IERC20.sol";
 
-    function initialize(address _timelock) public {
+contract Delegator {    
+    struct ClaimData {
+        uint256 id;
+        address token;
+        uint256 amount;
+        address l2Token;
+        address to;
+    }
+
+    address public timelock;
+    address public bridge;
+
+    /// @notice Mapping of claim id to claim data
+    mapping(uint256 => ClaimData) public claims;
+
+    function initialize(address _timelock, address _bridge) public {
         require(timelock == address(0), "already initialized");
         timelock = _timelock;
+        bridge = _bridge;
+    }
+
+    function setClaimData(uint256 id, address token, uint256 amount, address l2Token, address to) public {
+        require(msg.sender == address(this), "only delegator");
+        claims[id] = ClaimData(id, token, amount, l2Token, to);
     }
 
     function call(address[] calldata targets, bytes[] calldata callDatas, uint256[] calldata values) public payable {
@@ -27,5 +48,11 @@ contract Delegator {
                 }
             }
         }
+    }
+
+    function proceedClaim(uint256 id, bytes calldata proof) public {
+        ClaimData memory claimData = claims[id];
+        IBridge(bridge).claim(claimData.id, claimData.token, claimData.amount, proof);
+        IERC20(claimData.l2Token).transfer(claimData.to, claimData.amount);     
     }
 }

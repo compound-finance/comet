@@ -23,7 +23,7 @@ async function deployContracts(
 ): Promise<Deployed> {
   const trace = deploymentManager.tracer();
 
-  const _USDC = await deploymentManager.existing('USDC', '0x29219dd400f2Bf60E5a23d13Be72B486D4038894', 'sonic');
+  const _USDC = await deploymentManager.existing('USDC.e', '0x29219dd400f2Bf60E5a23d13Be72B486D4038894', 'sonic');
   const WS = await deploymentManager.existing('wS', '0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38', 'sonic');
   const _stS = await deploymentManager.existing('stS', '0xE5DA20F15420aD15DE0fa650600aFc998bbE3955', 'sonic');
 
