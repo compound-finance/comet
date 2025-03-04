@@ -70,6 +70,9 @@ function getBlockRollback(base: ForkSpec){
   else if(base.network === 'base'){
     return 200;
   }
+  else if(base.network === 'mainnet'){
+    return 50;
+  }
   else
     return 280;
 }
