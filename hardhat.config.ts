@@ -118,7 +118,7 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'ronin',
     chainId: 2020,
-    url: `https://ronin.gateway.tenderly.co/${TENDERLY_KEY_RONIN}`,
+    url: `https://ronin.lgns.net/rpc`,
   },
   {
     network: 'polygon',
@@ -224,9 +224,18 @@ const config: HardhatUserConfig = {
         : { mnemonic: MNEMONIC, accountsBalance: (10n ** 36n).toString() },
       // this should only be relied upon for test harnesses and coverage (which does not use viaIR flag)
       allowUnlimitedContractSize: true,
-      hardfork: 'cancun',
+      //hardfork: 'london',
       chains: networkConfigs.reduce((acc, { chainId }) => {
         if (chainId === 1) return acc;
+        if (chainId === 2020) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+            }
+          };
+          return acc;
+        }
         acc[chainId] = {
           hardforkHistory: {
             berlin: 1,
