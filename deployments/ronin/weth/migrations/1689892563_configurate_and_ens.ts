@@ -102,6 +102,13 @@ export default migration("1689892563_configurate_and_ens", {
       });
     }
 
+    if (!officialMarketsJSON['130']?.find((market => market.baseSymbol === 'USDC'))) {
+      officialMarketsJSON['1'].push({
+        baseSymbol: 'USDC',
+        cometAddress: '0x2c7118c4C88B9841FCF839074c26Ae8f035f2921',
+      });
+    }
+
     const fee = await l1CCIPRouter.getFee(destinationChainSelector, [
       utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
       l2ProposalData,
@@ -300,12 +307,12 @@ export default migration("1689892563_configurate_and_ens", {
         }
       ],
       // Uncomment when USDC on Unichain will be executed.
-      // 130: [
-      //   {
-      //     baseSymbol: 'USDC',
-      //     cometAdress: '0x2c7118c4C88B9841FCF839074c26Ae8f035f2921'
-      //   }
-      // ],
+      130: [
+        {
+          baseSymbol: 'USDC',
+          cometAdress: '0x2c7118c4C88B9841FCF839074c26Ae8f035f2921'
+        }
+      ],
       137: [
         {
           baseSymbol: 'USDC',
