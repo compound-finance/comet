@@ -10,6 +10,7 @@ import 'hardhat-change-network';
 import 'hardhat-contract-sizer';
 import 'hardhat-cover';
 import 'hardhat-gas-reporter';
+import 'solidity-coverage';
 
 // Hardhat tasks
 import './tasks/deployment_manager/task.ts';
