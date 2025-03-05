@@ -39,6 +39,29 @@ export const erc20 = new ethers.utils.Interface([
     'type': 'function'
   },
   {
+    'constant': false,
+    'inputs': [
+      {
+        'name': '_spender',
+        'type': 'address'
+      },
+      {
+        'name': '_value',
+        'type': 'uint256'
+      }
+    ],
+    'name': 'mint',
+    'outputs': [
+      {
+        'name': '',
+        'type': 'bool'
+      }
+    ],
+    'payable': false,
+    'stateMutability': 'nonpayable',
+    'type': 'function'
+  },
+  {
     'constant': true,
     'inputs': [],
     'name': 'totalSupply',
