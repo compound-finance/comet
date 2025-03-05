@@ -1,0 +1,26 @@
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity 0.8.15;
+
+struct Any2EVMMessage {
+    bytes32 messageId;
+    uint64 sourceChainSelector;
+    bytes sender;
+    bytes data;
+    EVMTokenAmount[] destTokenAmounts;
+}
+
+struct EVMTokenAmount {
+    address token;
+    uint256 amount;
+}
+
+/// @notice Application contracts that intend to receive messages from
+/// the router should implement this interface.
+interface IAny2EVMMessageReceiver {
+    /// @notice Called by the Router to deliver a message.
+    /// If this reverts, any token transfers also revert. The message
+    /// will move to a FAILED state and become available for manual execution.
+    /// @param message CCIP Message
+    /// @dev Note ensure you check the msg.sender is the OffRampRouter
+    function ccipReceive(Any2EVMMessage calldata message) external;
+}
