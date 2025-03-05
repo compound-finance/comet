@@ -2,7 +2,7 @@
 pragma solidity 0.8.15;
 
 import "../IERC4626.sol";
-import { PriceCapAdapterBase } from './utils/PriceCapAdapterBase.sol';
+import { PriceCapAdapterBase } from "./utils/PriceCapAdapterBase.sol";
 
 /**
  * @title ERC4626CorrelatedAssetsPriceOracle
