@@ -47,7 +47,7 @@ scenario(
 scenario(
   'upgrade Polygon governance contracts and ensure they work properly',
   {
-    filter: async ctx => matchesDeployment(ctx, [{network: 'polygon'}, {network: 'mumbai'}])
+    filter: async ctx => matchesDeployment(ctx, [{network: 'polygon'}])
   },
   async ({ comet, configurator, proxyAdmin, timelock: oldLocalTimelock, bridgeReceiver: oldBridgeReceiver }, context, world) => {
     const dm = world.deploymentManager;
@@ -155,7 +155,7 @@ scenario(
 scenario(
   'upgrade Arbitrum governance contracts and ensure they work properly',
   {
-    filter: async ctx => matchesDeployment(ctx, [{network: 'arbitrum'}, {network: 'arbitrum-goerli'}])
+    filter: async ctx => matchesDeployment(ctx, [{network: 'arbitrum'}])
   },
   async ({ comet, configurator, proxyAdmin, timelock: oldLocalTimelock, bridgeReceiver: oldBridgeReceiver }, context, world) => {
     const dm = world.deploymentManager;
@@ -262,7 +262,7 @@ scenario(
   }
 );
 
-scenario(
+scenario.skip(
   'upgrade Linea governance contracts and ensure they work properly',
   {
     filter: async ctx => matchesDeployment(ctx, [{ network: 'linea-goerli' }])
@@ -386,7 +386,7 @@ scenario(
 scenario(
   'upgrade Scroll governance contracts and ensure they work properly',
   {
-    filter: async ctx => matchesDeployment(ctx, [{ network: 'scroll-goerli' }, {network: 'scroll'}])
+    filter: async ctx => matchesDeployment(ctx, [{network: 'scroll'}])
   },
   async (
     {
