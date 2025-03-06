@@ -4,7 +4,6 @@ import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
 import { BigNumber, ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { OpenBridgedProposal } from '../context/Gov';
-
 /*
 The Base relayer applies an offset to the message sender.
 

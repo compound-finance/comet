@@ -41,7 +41,7 @@ export function getConfigForScenario(ctx: CometContext) {
     config.transferAsset = 500;
     config.interestSeconds = 70;
   }
-  
+
   if (ctx.world.base.network === 'mainnet' && ctx.world.base.deployment === 'wsteth') {
     config.liquidationBase = 10000;
     config.liquidationBase1 = 1000;
@@ -57,7 +57,7 @@ export function getConfigForScenario(ctx: CometContext) {
   if (ctx.world.base.network === 'mainnet' && ctx.world.base.deployment === 'usds') {
     config.liquidationAsset = 100;
   }
-  
+
   if (ctx.world.base.network === 'base' && ctx.world.base.deployment === 'aero') {
     config.interestSeconds = 110;
   }
@@ -67,7 +67,21 @@ export function getConfigForScenario(ctx: CometContext) {
     config.liquidationAsset1 = 99;
   }
 
+
+  if (ctx.world.base.network === 'arbitrum' && ctx.world.base.deployment === 'usdc') {
+    config.withdrawAsset = 3500;
+  }
+
+  if (ctx.world.base.network === 'arbitrum' && ctx.world.base.deployment === 'usdt') {
+    config.withdrawAsset = 3500;
+  }
+
   if (ctx.world.base.network === 'arbitrum' && ctx.world.base.deployment === 'usdc.e') {
+    config.withdrawAsset = 7000;
+    config.bulkerAsset = 10000;
+    config.bulkerAsset1 = 10000;
+    config.transferAsset = 10000;
+    config.transferAsset1 = 10000;
     config.liquidationDenominator = 84;
     config.liquidationBase = 100000;
     config.liquidationBase1 = 50000;

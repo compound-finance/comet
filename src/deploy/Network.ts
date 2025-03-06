@@ -226,7 +226,7 @@ export async function deployNetworkComet(
     'configurator:implementation',
     'Configurator.sol',
     [],
-    maybeForce(deploySpec.cometMain)
+    maybeForce()
   );
 
   // If we deploy a new proxy, we initialize it to the current/new impl

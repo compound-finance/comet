@@ -13,7 +13,6 @@ let newCometExtAddressWETH: string;
 let newCometExtAddressUSDCE: string;
 
 const USDCE_COMET = '0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA';
-const USDCE_EXT = '0x1B2E88cC7365d90e7E81392432482925BD8437E9';
 const USDT_COMET = '0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07';
 const USDT_EXT = '0x698A949f3b4f7a5DdE236106F25Fa0eAcA0FcEF1';
 const WETH_COMET = '0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486';
@@ -108,16 +107,8 @@ export default migration('1735299626_update_comet_to_support_more_collaterals', 
       true
     );
 
-    const extensionDelegateUSDCE = new Contract(
-      USDCE_EXT,
-      [
-        'function name() external view returns (string)',
-        'function symbol() external view returns (string)',
-      ],
-      await deploymentManager.getSigner()
-    );
-    const nameUSDCE = await extensionDelegateUSDCE.name();
-    const symbolUSDCE = await extensionDelegateUSDCE.symbol();
+    const nameUSDCE = 'Compound USDCe';
+    const symbolUSDCE = 'cUSDCev3';
 
     const _newCometExtUSDCE = await deploymentManager.deploy(
       'CometExtAssetList',
@@ -296,7 +287,7 @@ export default migration('1735299626_update_comet_to_support_more_collaterals', 
   },
 
   async enacted(): Promise<boolean> {
-    return false;
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {
