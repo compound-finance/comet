@@ -95,10 +95,10 @@ export default migration('1739871571_add_weeth_as_collateral', {
       const [proposalId] = event.args;
       trace(`Created proposal ${proposalId}.`);
     },
-  
-    async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-      return true;
-    }, 
+
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
+  }, 
   
     async verify(deploymentManager: DeploymentManager) {
       const { comet, configurator } = await deploymentManager.getContracts();
