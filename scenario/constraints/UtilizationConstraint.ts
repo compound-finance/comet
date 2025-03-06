@@ -58,6 +58,8 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
       // utilization is target number
       return async (context: T): Promise<T> => {
         let comet = await context.getComet();
+        const baseScale = (await comet.baseScale()).toBigInt();
+        const basePrice = (await comet.getPrice(await comet.baseTokenPriceFeed())).toBigInt();
 
         let baseToken = context.getAssetByAddress(await comet.baseToken());
         let utilizationFactor = factor(utilization!);
@@ -66,7 +68,7 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
 
         // always have at least enough supply to cover current borrows
         let toBorrowBase = 0n;
-        let toSupplyBase = totalBorrowBase <= totalSupplyBase ? 10n : totalBorrowBase - totalSupplyBase;
+        let toSupplyBase = totalBorrowBase <= totalSupplyBase ? 10n * baseScale : totalBorrowBase - totalSupplyBase;
 
         let expectedSupplyBase = totalSupplyBase + toSupplyBase;
         let expectedBorrowBase = utilizationFactor * expectedSupplyBase / factorScale;
@@ -111,11 +113,7 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
             const { asset: collateralAsset, borrowCollateralFactor, priceFeed, scale } = await comet.getAssetInfo(i);
 
             const collateralToken = context.getAssetByAddress(collateralAsset);
-
-            const basePrice = (await comet.getPrice(await comet.baseTokenPriceFeed())).toBigInt();
             const collateralPrice = (await comet.getPrice(priceFeed)).toBigInt();
-
-            const baseScale = (await comet.baseScale()).toBigInt();
             const collateralScale = scale.toBigInt();
 
             const collateralWeiPerUnitBase = (collateralScale * basePrice) / collateralPrice;
