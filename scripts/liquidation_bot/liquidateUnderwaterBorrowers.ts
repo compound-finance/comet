@@ -8,7 +8,7 @@ import { ethers, exp } from '../../test/helpers';
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
 import { BigNumberish, Signer } from 'ethers';
 import googleCloudLog, { LogSeverity } from './googleCloudLog';
-import {sendTxn} from './sendTransaction';
+import { sendTxn } from './sendTransaction';
 
 export interface SignerWithFlashbots {
   signer: Signer;
@@ -73,7 +73,7 @@ const liquidationThresholds = {
     'usdc': 10e6
   },
   arbitrum: {
-    'usdc.e': 10e6, 
+    'usdc.e': 10e6,
     usdc: 10e6
   }
 };
@@ -104,7 +104,8 @@ export const flashLoanPools = {
       tokenAddress: addresses.mainnet.WETH9,
       poolFee: 500
     },
-  },
+  }
+},
   polygon: {
     usdc: {
       tokenAddress: addresses.polygon.BOB,
@@ -119,7 +120,7 @@ export const flashLoanPools = {
     'usdc.e': {
       tokenAddress: addresses.arbitrum.USDC, // USDC/USDC_E/.01% pool
       poolFee: 100
-    }, 
+    },
     usdc: {
       tokenAddress: addresses.arbitrum.USDC_E,
       poolFee: 100
@@ -144,7 +145,7 @@ export function getPoolConfig(tokenAddress: string) {
     curvePool: ethers.constants.AddressZero
   };
 
-  const poolConfigs: {[tokenAddress: string]: PoolConfigStruct} = {
+  const poolConfigs: { [tokenAddress: string]: PoolConfigStruct } = {
     [addresses.mainnet.COMP.toLowerCase()]: {
       ...defaultPoolConfig,
       ...{
@@ -312,7 +313,7 @@ export function getPoolConfig(tokenAddress: string) {
 }
 
 function getMaxAmountToPurchase(tokenAddress: string): bigint {
-  const maxAmountsToPurchase: {[tokenAddress: string]: bigint} = {
+  const maxAmountsToPurchase: { [tokenAddress: string]: bigint } = {
     // Mainnet
     [addresses.mainnet.COMP.toLowerCase()]: exp(500, 18),
     [addresses.mainnet.LINK.toLowerCase()]: exp(200_000, 18),
@@ -430,15 +431,15 @@ async function attemptLiquidationViaOnChainLiquidator(
       number,
       number
     ] = [
-      comet.address,
-      targetAddresses,
-      assets,
-      poolConfigs,
-      maxAmountsToPurchase,
-      flashLoanPoolTokenAddress,
-      flashLoanPoolFee,
-      liquidationThreshold
-    ];
+        comet.address,
+        targetAddresses,
+        assets,
+        poolConfigs,
+        maxAmountsToPurchase,
+        flashLoanPoolTokenAddress,
+        flashLoanPoolFee,
+        liquidationThreshold
+      ];
 
     const txn = await liquidator.populateTransaction.absorbAndArbitrage(
       ...args,
