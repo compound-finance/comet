@@ -8,7 +8,7 @@ import { ethers, exp } from '../../test/helpers';
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
 import { BigNumberish, Signer } from 'ethers';
 import googleCloudLog, { LogSeverity } from './googleCloudLog';
-import {sendTxn} from './sendTransaction';
+import { sendTxn } from './sendTransaction';
 
 export interface SignerWithFlashbots {
   signer: Signer;
@@ -39,6 +39,8 @@ const addresses = {
     WETH9: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
     CB_ETH: '0xBe9895146f7AF43049ca1c1AE358B0541Ea49704',
     WST_ETH: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0',
+    SOLVBTC_BBN: '0xd9D920AA40f578ab794426F5C90F6C731D159DEf',
+    LBTC: '0x8236a87084f8B84306f72007F36F2618A5634494',
     RS_ETH: '0xA1290d69c65A6Fe4DF752f95823fae25cB99e5A7',
     USDT: '0xdAC17F958D2ee523a2206206994597C13D831ec7'
   },
@@ -71,7 +73,7 @@ const liquidationThresholds = {
     'usdc': 10e6
   },
   arbitrum: {
-    'usdc.e': 10e6, 
+    'usdc.e': 10e6,
     usdc: 10e6
   }
 };
@@ -97,8 +99,13 @@ export const flashLoanPools = {
     usds: {
       tokenAddress: addresses.mainnet.DAI,
       poolFee: 3000,
-    }
-  },
+    },
+    wbtc: {
+      tokenAddress: addresses.mainnet.WETH9,
+      poolFee: 500
+    },
+  }
+},
   polygon: {
     usdc: {
       tokenAddress: addresses.polygon.BOB,
@@ -113,7 +120,7 @@ export const flashLoanPools = {
     'usdc.e': {
       tokenAddress: addresses.arbitrum.USDC, // USDC/USDC_E/.01% pool
       poolFee: 100
-    }, 
+    },
     usdc: {
       tokenAddress: addresses.arbitrum.USDC_E,
       poolFee: 100
@@ -138,7 +145,7 @@ export function getPoolConfig(tokenAddress: string) {
     curvePool: ethers.constants.AddressZero
   };
 
-  const poolConfigs: {[tokenAddress: string]: PoolConfigStruct} = {
+  const poolConfigs: { [tokenAddress: string]: PoolConfigStruct } = {
     [addresses.mainnet.COMP.toLowerCase()]: {
       ...defaultPoolConfig,
       ...{
@@ -198,6 +205,22 @@ export function getPoolConfig(tokenAddress: string) {
       ...{
         exchange: Exchange.Balancer,
         balancerPoolId: '0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080'
+      }
+    },
+    [addresses.mainnet.SOLVBTC_BBN.toLowerCase()]: {
+      ...defaultPoolConfig,
+      ...{
+        exchange: Exchange.Uniswap,
+        swapViaWeth: false,
+        uniswapPoolFee: 500
+      }
+    },
+    [addresses.mainnet.LBTC.toLowerCase()]: {
+      ...defaultPoolConfig,
+      ...{
+        exchange: Exchange.Uniswap,
+        swapViaWeth: false,
+        uniswapPoolFee: 500
       }
     },
     [addresses.polygon.WMATIC.toLowerCase()]: {
@@ -290,7 +313,7 @@ export function getPoolConfig(tokenAddress: string) {
 }
 
 function getMaxAmountToPurchase(tokenAddress: string): bigint {
-  const maxAmountsToPurchase: {[tokenAddress: string]: bigint} = {
+  const maxAmountsToPurchase: { [tokenAddress: string]: bigint } = {
     // Mainnet
     [addresses.mainnet.COMP.toLowerCase()]: exp(500, 18),
     [addresses.mainnet.LINK.toLowerCase()]: exp(200_000, 18),
@@ -408,15 +431,15 @@ async function attemptLiquidationViaOnChainLiquidator(
       number,
       number
     ] = [
-      comet.address,
-      targetAddresses,
-      assets,
-      poolConfigs,
-      maxAmountsToPurchase,
-      flashLoanPoolTokenAddress,
-      flashLoanPoolFee,
-      liquidationThreshold
-    ];
+        comet.address,
+        targetAddresses,
+        assets,
+        poolConfigs,
+        maxAmountsToPurchase,
+        flashLoanPoolTokenAddress,
+        flashLoanPoolFee,
+        liquidationThreshold
+      ];
 
     const txn = await liquidator.populateTransaction.absorbAndArbitrage(
       ...args,

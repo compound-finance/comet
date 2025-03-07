@@ -104,7 +104,7 @@ export default migration('1735299748_update_comet_to_support_more_collaterals', 
   },
 
   async enacted(): Promise<boolean> {
-    return false;
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {

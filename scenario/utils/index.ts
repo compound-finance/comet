@@ -332,8 +332,8 @@ export async function fetchLogs(
   }
 }
 
-async function redeployRenzoOracle(dm: DeploymentManager){
-  if(dm.network === 'mainnet') {
+async function redeployRenzoOracle(dm: DeploymentManager) {
+  if (dm.network === 'mainnet') {
     // renzo admin 	0xD1e6626310fD54Eceb5b9a51dA2eC329D6D4B68A
     const renzoOracle = new Contract(
       '0x5a12796f7e7EBbbc8a402667d266d2e65A814042',
@@ -342,7 +342,7 @@ async function redeployRenzoOracle(dm: DeploymentManager){
       ],
       dm.hre.ethers.provider
     );
-    
+
     const admin = await impersonateAddress(dm, '0xD1e6626310fD54Eceb5b9a51dA2eC329D6D4B68A');
     // set balance
     await dm.hre.ethers.provider.send('hardhat_setBalance', [
@@ -384,14 +384,14 @@ async function getProxyAdmin(dm: DeploymentManager, proxyAddress: string): Promi
   return adminAddress;
 }
 
-async function mockAllRedstoneOracles(dm: DeploymentManager){
+async function mockAllRedstoneOracles(dm: DeploymentManager) {
   const feeds = REDSTONE_FEEDS[dm.network];
   if (!Array.isArray(feeds)) {
     debug(`No redstone feeds found for network: ${dm.network}`);
     return;
   }
   for (const feed of feeds) {
-    try{
+    try {
       await dm.fromDep(`MockRedstoneOracle:${feed}`, dm.network, dm.deployment);
     }
     catch (_) {
@@ -400,7 +400,7 @@ async function mockAllRedstoneOracles(dm: DeploymentManager){
   }
 }
 
-async function mockRedstoneOracle(dm: DeploymentManager, feed: string){
+async function mockRedstoneOracle(dm: DeploymentManager, feed: string) {
   const feedContract = new Contract(
     feed,
     [
@@ -481,11 +481,11 @@ export async function executeOpenProposal(
   if (await governor.state(id) == ProposalState.Queued) {
     const block = await dm.hre.ethers.provider.getBlock('latest');
 
-    if(governor.address !== '0x309a862bbC1A00e45506cB8A802D1ff10004c8C0') {
+    if (governor.address !== '0x309a862bbC1A00e45506cB8A802D1ff10004c8C0') {
       const proposal = await governor.proposals(id);
       await setNextBlockTimestamp(dm, Math.max(block.timestamp, proposal.eta.toNumber()) + 1);
     }
-    else{
+    else {
       const eta = await governor.proposalEta(id);
       await setNextBlockTimestamp(dm, Math.max(block.timestamp, eta.toNumber()) + 1);
     }
@@ -511,11 +511,11 @@ async function testnetPropose(
   const governor = await dm.getContractOrThrow('governor');
   const testnetGovernor = new Contract(
     governor.address, [
-      'function propose(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) external returns (uint256 proposalId)',
-      'event ProposalCreated(uint256 proposalId, address proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 startBlock, uint256 endBlock, string description)'
-    ], governor.signer
+    'function propose(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) external returns (uint256 proposalId)',
+    'event ProposalCreated(uint256 proposalId, address proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 startBlock, uint256 endBlock, string description)'
+  ], governor.signer
   );
-  
+
   return testnetGovernor.connect(proposer).propose(
     targets,
     values,

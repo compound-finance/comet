@@ -25,6 +25,7 @@ import mainnetWethRelationConfigMap from './deployments/mainnet/weth/relations';
 import mainnetUsdtRelationConfigMap from './deployments/mainnet/usdt/relations';
 import mainnetWstETHRelationConfigMap from './deployments/mainnet/wsteth/relations';
 import mainnetUsdsRelationConfigMap from './deployments/mainnet/usds/relations';
+import mainnetWbtcRelationConfigMap from './deployments/mainnet/wbtc/relations';
 import polygonRelationConfigMap from './deployments/polygon/usdc/relations';
 import polygonUsdtRelationConfigMap from './deployments/polygon/usdt/relations';
 import arbitrumBridgedUsdcRelationConfigMap from './deployments/arbitrum/usdc.e/relations';
@@ -35,6 +36,7 @@ import baseUsdbcRelationConfigMap from './deployments/base/usdbc/relations';
 import baseWethRelationConfigMap from './deployments/base/weth/relations';
 import baseUsdcRelationConfigMap from './deployments/base/usdc/relations';
 import baseAeroRelationConfigMap from './deployments/base/aero/relations';
+import baseUSDSRelationConfigMap from './deployments/base/usds/relations';
 import optimismRelationConfigMap from './deployments/optimism/usdc/relations';
 import optimismUsdtRelationConfigMap from './deployments/optimism/usdt/relations';
 import optimismWethRelationConfigMap from './deployments/optimism/weth/relations';
@@ -334,6 +336,7 @@ const config: HardhatUserConfig = {
         usdt: mainnetUsdtRelationConfigMap,
         wsteth: mainnetWstETHRelationConfigMap,
         usds: mainnetUsdsRelationConfigMap,
+        wbtc: mainnetWbtcRelationConfigMap,
       },
       polygon: {
         usdc: polygonRelationConfigMap,
@@ -349,7 +352,8 @@ const config: HardhatUserConfig = {
         usdbc: baseUsdbcRelationConfigMap,
         weth: baseWethRelationConfigMap,
         usdc: baseUsdcRelationConfigMap,
-        aero: baseAeroRelationConfigMap
+        aero: baseAeroRelationConfigMap,
+        usds: baseUSDSRelationConfigMap
       },
       optimism: {
         usdc: optimismRelationConfigMap,
@@ -395,6 +399,11 @@ const config: HardhatUserConfig = {
         name: 'mainnet-usds',
         network: 'mainnet',
         deployment: 'usds'
+      },
+      {
+        name: 'mainnet-wbtc',
+        network: 'mainnet',
+        deployment: 'wbtc'
       },
       {
         name: 'development',
@@ -474,6 +483,12 @@ const config: HardhatUserConfig = {
         name: 'base-aero',
         network: 'base',
         deployment: 'aero',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'base-usds',
+        network: 'base',
+        deployment: 'usds',
         auxiliaryBase: 'mainnet'
       },
       {

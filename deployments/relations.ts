@@ -106,9 +106,9 @@ const relationConfigMap: RelationConfigMap = {
     },
     relations: {
       COMP: {
-        field: async (governor) =>  {
+        field: async (governor) => {
           if (governor.address === '0x309a862bbC1A00e45506cB8A802D1ff10004c8C0') return governor.token();
-          return governor.comp();          
+          return governor.comp();
         },
       }
     }

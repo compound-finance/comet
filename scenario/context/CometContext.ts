@@ -142,7 +142,7 @@ export class CometContext {
     return configurator.getConfiguration(comet.address);
   }
 
-  async getRewardConfig(): Promise<{token: string, rescaleFactor: BigNumber, shouldUpscale: boolean}> {
+  async getRewardConfig(): Promise<{ token: string, rescaleFactor: BigNumber, shouldUpscale: boolean }> {
     const comet = await this.getComet();
     const rewards = await this.getRewards();
     return await rewards.rewardConfig(comet.address);
@@ -153,7 +153,7 @@ export class CometContext {
 
     const currentComet = await this.getComet();
     const admin = await world.impersonateAddress(await currentComet.governor(), { value: 20n ** 18n });
-    const oldComet = new Contract(currentComet.address, 
+    const oldComet = new Contract(currentComet.address,
       [
         'function governor() view returns (address)',
         'function assetList() view returns (address)',
