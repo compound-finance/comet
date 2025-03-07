@@ -70,7 +70,7 @@ jobs:
           esac
 
       - name: Seacrest
-        uses: hayesgm/seacrest@5d8e5e3023669e93d197963273ae159ecda9d2b2
+        uses: hayesgm/seacrest@42330b57a0554d5b9f4b47b186d483b5e18addbf
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ inputs.network }}"

@@ -34,8 +34,12 @@ export async function isBridgeProposal(
       const baseL1StandardBridge = await governanceDeploymentManager.getContractOrThrow(
         'baseL1StandardBridge'
       );
-      const bridgeContracts = [baseL1CrossDomainMessenger.address, baseL1StandardBridge.address];
+      const baseL1USDSBridge = await governanceDeploymentManager.getContractOrThrow(
+        'baseL1USDSBridge'
+      );
       const targets = openProposal.targets;
+      const bridgeContracts = [baseL1CrossDomainMessenger.address, baseL1StandardBridge.address, baseL1USDSBridge.address];
+
       return targets.some(t => bridgeContracts.includes(t));
     }
     case 'linea': {
@@ -56,6 +60,14 @@ export async function isBridgeProposal(
       const targets = openProposal.targets;
       return targets.some(t => bridgeContracts.includes(t));
     }
+    // case 'linea': {
+    //   const governor = await governanceDeploymentManager.getContractOrThrow('governor');
+    //   const lineaMessageService = await governanceDeploymentManager.getContractOrThrow(
+    //     'lineaMessageService'
+    //   );
+    //   const { targets } = await governor.getActions(openProposal.id);
+    //   return targets.includes(lineaMessageService.address);
+    // }
     case 'optimism': {
       const opL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow(
         'opL1CrossDomainMessenger'

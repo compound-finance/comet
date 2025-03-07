@@ -1,0 +1,48 @@
+{
+  "name": "Compound WBTC",
+  "symbol": "cWBTCv3",
+  "baseToken": "WBTC",
+  "baseTokenAddress": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+  "baseTokenPriceFeed": "0xfdFD9C85aD200c506Cf9e21F1FD8dd01932FBB23",
+  "borrowMin": "0.001e8",
+  "governor": "0x6d903f6003cca6255d85cca4d3b5e5146dc33925",
+  "pauseGuardian": "0xbbf3f1421d886e9b2c5d716b5192ac998af2012c",
+  "storeFrontPriceFactor": 0.7,
+  "targetReserves": "250e8",
+  "rates": {
+    "borrowBase": 0.01,
+    "borrowSlopeLow": 0.014,
+    "borrowKink": 0.85,
+    "borrowSlopeHigh": 1.15,
+    "supplyBase": 0,
+    "supplySlopeLow": 0.012,
+    "supplyKink": 0.85,
+    "supplySlopeHigh": 1
+  },
+  "tracking": {
+    "indexScale": "1e15",
+    "baseSupplySpeed": "11574074074e0",
+    "baseBorrowSpeed": "0e0",
+    "baseMinForRewards": "1e8"
+  },
+  "rewardTokenAddress": "0xc00e94Cb662C3520282E6f5717214004A7f26888",
+  "assets": {
+    "LBTC": {
+      "address": "0x8236a87084f8B84306f72007F36F2618A5634494",
+      "priceFeed": "0x5c29868C58b6e15e2b962943278969Ab6a7D3212",
+      "decimals": "8",
+      "borrowCF": 0.73,
+      "liquidateCF": 0.75,
+      "liquidationFactor": 0.95,
+      "supplyCap": "200e8"
+    },
+    "pumpBTC": {
+      "address": "0xF469fBD2abcd6B9de8E169d128226C0Fc90a012e",
+      "decimals": "8",
+      "borrowCF": 0.75,
+      "liquidateCF": 0.78,
+      "liquidationFactor": 0.9,
+      "supplyCap": "15e8"
+    }
+  }
+}
