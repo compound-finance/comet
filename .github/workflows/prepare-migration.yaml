@@ -14,6 +14,7 @@ on:
           - base
           - optimism
           - mantle
+          - unichain
           - scroll
       deployment:
         description: Deployment Name (e.g. "usdc")
@@ -42,13 +43,14 @@ jobs:
       OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
       MANTLESCAN_KEY: ${{ secrets.MANTLESCAN_KEY }}
       SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
+      UNICHAIN_QUICKNODE_KEY: ${{ secrets.UNICHAIN_QUICKNODE_KEY }}
     steps:
       - name: Seacrest
-        uses: hayesgm/seacrest@5748b3a066f517973ca2ca03d0af39bbf2b82d10
+        uses: hayesgm/seacrest@5c129519f47a472e4924416e56eb74756087b028
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ inputs.network }}"
-          ethereum_url: "${{ fromJSON('{\"mantle\":\"https://mantle-mainnet.infura.io/v3/$INFURA_KEY\",\"optimism\":\"https://rpc.ankr.com/optimism/$ANKR_KEY\",\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"sepolia\":\"https://sepolia.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\",\"base\":\"https://rpc.ankr.com/base/$ANKR_KEY\",\"scroll\":\"https://rpc.scroll.io\"}')[inputs.network] }}"
+          ethereum_url: "${{ fromJSON('{\"unichain\":\"https://multi-boldest-patina.unichain-mainnet.quiknode.pro/${UNICHAIN_QUICKNODE_KEY}\",\"mantle\":\"https://mantle-mainnet.infura.io/v3/$INFURA_KEY\",\"optimism\":\"https://rpc.ankr.com/optimism/$ANKR_KEY\",\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"sepolia\":\"https://sepolia.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\",\"base\":\"https://rpc.ankr.com/base/$ANKR_KEY\",\"scroll\":\"https://rpc.scroll.io\"}')[inputs.network] }}"
           port: 8585
         if: github.event.inputs.eth_pk == ''
 
