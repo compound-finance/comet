@@ -4,7 +4,37 @@ import { expectApproximately, expectRevertCustom, hasMinBorrowGreaterThanOne, is
 import { ContractReceipt } from 'ethers';
 import { getConfigForScenario } from './utils/scenarioHelper';
 
+const customConfig = {
+  linea: {
+    usdc: {
+      2: 10,
+    },
+    usdt: {
+      2: 10,
+    },
+    weth: {
+      2: 10,
+    },
+  }
+};
+
+function getValueOrDefault<T>(network: string, deployment: string, id: number, defaultValue: T): T {
+  try {
+    return customConfig[network][deployment][id] === undefined ? defaultValue : customConfig[network][deployment][id];
+  } catch (e) {
+    return defaultValue;
+  }
+}
+
 async function testWithdrawCollateral(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
+  const amount = BigInt(
+    getValueOrDefault(
+      context.world.deploymentManager.network,
+      context.world.deploymentManager.deployment,
+      assetNum,
+      100n
+    )
+  );
   const comet = await context.getComet();
   const { albert } = context.actors;
   const { asset: assetAddress, scale: scaleBN } = await comet.getAssetInfo(assetNum);
@@ -12,18 +42,26 @@ async function testWithdrawCollateral(context: CometContext, assetNum: number): 
   const scale = scaleBN.toBigInt();
 
   expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(0n);
-  expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(100n * scale);
+  expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(amount * scale);
 
   // Albert withdraws 100 units of collateral from Comet
-  const txn = await albert.withdrawAsset({ asset: collateralAsset.address, amount: 100n * scale });
+  const txn = await albert.withdrawAsset({ asset: collateralAsset.address, amount: amount * scale });
 
-  expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(100n * scale);
+  expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(amount * scale);
   expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(0n);
 
   return txn; // return txn to measure gas
 }
 
 async function testWithdrawFromCollateral(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
+  const amount = BigInt(
+    getValueOrDefault(
+      context.world.deploymentManager.network,
+      context.world.deploymentManager.deployment,
+      assetNum,
+      100n
+    )
+  );
   const comet = await context.getComet();
   const { albert, betty } = context.actors;
   const { asset: assetAddress, scale: scaleBN } = await comet.getAssetInfo(assetNum);
@@ -31,14 +69,14 @@ async function testWithdrawFromCollateral(context: CometContext, assetNum: numbe
   const scale = scaleBN.toBigInt();
 
   expect(await collateralAsset.balanceOf(betty.address)).to.be.equal(0n);
-  expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(100n * scale);
+  expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(amount * scale);
 
   await albert.allow(betty, true);
 
   // Betty withdraws 1000 units of collateral from Albert
-  const txn = await betty.withdrawAssetFrom({ src: albert.address, dst: betty.address, asset: collateralAsset.address, amount: 100n * scale });
+  const txn = await betty.withdrawAssetFrom({ src: albert.address, dst: betty.address, asset: collateralAsset.address, amount: amount * scale });
 
-  expect(await collateralAsset.balanceOf(betty.address)).to.be.equal(100n * scale);
+  expect(await collateralAsset.balanceOf(betty.address)).to.be.equal(amount * scale);
   expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(0n);
 
   return txn; // return txn to measure gas
@@ -50,9 +88,9 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     `Comet#withdraw > collateral asset ${i}`,
     {
       filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToWithdraw),
-      cometBalances: {
-        albert: { [`$asset${i}`]: amountToWithdraw },
-      },
+      cometBalances: async (ctx) => ({
+        albert: { [`$asset${i}`]: getValueOrDefault(ctx.world.deploymentManager.network, ctx.world.deploymentManager.deployment, i, amountToWithdraw) },
+      }),
     },
     async (_properties, context) => {
       return await testWithdrawCollateral(context, i);
@@ -66,9 +104,9 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     `Comet#withdrawFrom > collateral asset ${i}`,
     {
       filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToWithdraw),
-      cometBalances: {
-        albert: { [`$asset${i}`]: amountToWithdraw },
-      },
+      cometBalances: async (ctx) => ({
+        albert: { [`$asset${i}`]: getValueOrDefault(ctx.world.deploymentManager.network, ctx.world.deploymentManager.deployment, i, amountToWithdraw) },
+      }),
     },
     async (_properties, context) => {
       return await testWithdrawFromCollateral(context, i);
@@ -105,13 +143,13 @@ scenario(
 scenario(
   'Comet#withdraw > borrow base',
   {
-    tokenBalances: async (ctx) =>  (
+    tokenBalances: async (ctx) => (
       {
         albert: { $base: '== 0' },
         $comet: { $base: getConfigForScenario(ctx).withdrawBase }, // in units of asset, not wei
       }
     ),
-    cometBalances: async (ctx) =>  (
+    cometBalances: async (ctx) => (
       {
         albert: { $asset0: getConfigForScenario(ctx).withdrawAsset } // in units of asset, not wei
       }
@@ -168,13 +206,13 @@ scenario(
 scenario(
   'Comet#withdrawFrom > borrow base',
   {
-    tokenBalances: async (ctx) =>  (
+    tokenBalances: async (ctx) => (
       {
         albert: { $base: '== 0' },
         $comet: { $base: getConfigForScenario(ctx).withdrawBase }, // in units of asset, not wei
       }
     ),
-    cometBalances: async (ctx) =>  (
+    cometBalances: async (ctx) => (
       {
         albert: { $asset0: getConfigForScenario(ctx).withdrawAsset } // in units of asset, not wei
       }

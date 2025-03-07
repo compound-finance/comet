@@ -6,15 +6,45 @@ import { matchesDeployment } from './utils';
 import { exp } from '../test/helpers';
 import { ethers } from 'hardhat';
 
+const customConfig = {
+  linea: {
+    usdc: {
+      2: 10,
+    },
+    usdt: {
+      2: 10,
+    },
+    weth: {
+      2: 10,
+    },
+  }
+};
+
+function getValueOrDefault<T>(network: string, deployment: string, id: number, defaultValue: T): T {
+  try {
+    return customConfig[network][deployment][id] === undefined ? defaultValue : customConfig[network][deployment][id];
+  } catch (e) {
+    return defaultValue;
+  }
+}
+
 // XXX introduce a SupplyCapConstraint to separately test the happy path and revert path instead
 // of testing them conditionally
 async function testSupplyCollateral(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
+  const amount = BigInt(
+    getValueOrDefault(
+      context.world.deploymentManager.network,
+      context.world.deploymentManager.deployment,
+      assetNum,
+      100n
+    )
+  );
   const comet = await context.getComet();
   const { albert } = await context.actors;
   const { asset: assetAddress, scale: scaleBN, supplyCap } = await comet.getAssetInfo(assetNum);
   const collateralAsset = context.getAssetByAddress(assetAddress);
   const scale = scaleBN.toBigInt();
-  const toSupply = 100n * scale;
+  const toSupply = amount * scale;
 
   expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(toSupply);
 
@@ -25,7 +55,7 @@ async function testSupplyCollateral(context: CometContext, assetNum: number): Pr
     await expectRevertCustom(
       albert.supplyAsset({
         asset: collateralAsset.address,
-        amount: 100n * scale,
+        amount: amount * scale,
       }),
       'SupplyCapExceeded()'
     );
@@ -40,12 +70,20 @@ async function testSupplyCollateral(context: CometContext, assetNum: number): Pr
 }
 
 async function testSupplyFromCollateral(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
+  const amount = BigInt(
+    getValueOrDefault(
+      context.world.deploymentManager.network,
+      context.world.deploymentManager.deployment,
+      assetNum,
+      100n
+    )
+  );
   const comet = await context.getComet();
   const { albert, betty } = await context.actors;
   const { asset: assetAddress, scale: scaleBN, supplyCap } = await comet.getAssetInfo(assetNum);
   const collateralAsset = context.getAssetByAddress(assetAddress);
   const scale = scaleBN.toBigInt();
-  const toSupply = 100n * scale;
+  const toSupply = amount * scale;
 
   expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(toSupply);
   expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(0n);
@@ -84,9 +122,9 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       // hypothetical assets added during the migration/proposal constraint because those assets don't exist
       // yet
       filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToSupply),
-      tokenBalances: {
-        albert: { [`$asset${i}`]: amountToSupply },
-      },
+      tokenBalances: async (ctx) => ({
+        albert: { [`$asset${i}`]: getValueOrDefault(ctx.world.deploymentManager.network, ctx.world.deploymentManager.deployment, i, amountToSupply) },
+      }),
     },
     async (_properties, context) => {
       return await testSupplyCollateral(context, i);
@@ -100,9 +138,9 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     `Comet#supplyFrom > collateral asset ${i}`,
     {
       filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToSupply),
-      tokenBalances: {
-        albert: { [`$asset${i}`]: amountToSupply },
-      },
+      tokenBalances: async (ctx) => ({
+        albert: { [`$asset${i}`]: getValueOrDefault(ctx.world.deploymentManager.network, ctx.world.deploymentManager.deployment, i, amountToSupply) },
+      }),
     },
     async (_properties, context) => {
       return await testSupplyFromCollateral(context, i);
