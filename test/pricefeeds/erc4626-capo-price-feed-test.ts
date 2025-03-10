@@ -28,19 +28,17 @@ export async function makeCAPOPriceFeed({ priceA, priceB, decimalsA = 8, decimal
   const currentTimestamp = await ethers.provider.getBlock('latest').then(b => b.timestamp);
 
   const CapoPriceFeed = await ERC4626CorrelatedAssetsPriceOracleFactory.deploy(
+    signer.address,
+    PriceFeedA.address,
+    PriceFeedB.address,
+    'CAPO Price Feed',
+    decimalsB,
+    8,
+    3600,
     {
-      manager: signer.address,
-      baseAggregatorAddress: PriceFeedA.address,
-      ratioProviderAddress: PriceFeedB.address,
-      description: 'CAPO Price Feed',
-      ratioDecimals: decimalsB,
-      priceFeedDecimals: 8,
-      minimumSnapshotDelay: 0,
-      priceCapParams: {
-        snapshotRatio: priceB,
-        snapshotTimestamp: currentTimestamp - 3600,
-        maxYearlyRatioGrowthPercent: exp(0.01, 4)
-      }
+      snapshotRatio: priceB,
+      snapshotTimestamp: currentTimestamp - 3600,
+      maxYearlyRatioGrowthPercent: exp(0.01, 4)
     }
   );
 
@@ -138,20 +136,20 @@ describe.only('CAPO price feed', function() {
     )) as ERC4626CorrelatedAssetsPriceOracle__factory;
 
     await expect(
-      ERC4626CorrelatedAssetsPriceOracle.deploy({
-        manager: ethers.constants.AddressZero,
-        baseAggregatorAddress: PriceFeedA.address,
-        ratioProviderAddress: PriceFeedB.address,
-        description: 'CAPO Price Feed',
-        ratioDecimals: 18,
-        priceFeedDecimals: 8,
-        minimumSnapshotDelay: 0,
-        priceCapParams: {
+      ERC4626CorrelatedAssetsPriceOracle.deploy(
+        ethers.constants.AddressZero,
+        PriceFeedA.address,
+        PriceFeedB.address,
+        'CAPO Price Feed',
+        18,
+        8,
+        0,
+        {
           snapshotRatio: 0,
           snapshotTimestamp: 1,
           maxYearlyRatioGrowthPercent: 0
         }
-      })).to.be.revertedWith("custom error 'ManagerIsZeroAddress()'");
+      )).to.be.revertedWith("custom error 'ManagerIsZeroAddress()'");
   });
 
   it('reverts if set cap parameters not by manager', async () => {
@@ -162,7 +160,7 @@ describe.only('CAPO price feed', function() {
 
     const [,signer] = await ethers.getSigners();
 
-    await expect(CapoPriceFeed.connect(signer).setCapParameters({
+    await expect(CapoPriceFeed.connect(signer).updateSnapshot({
       snapshotRatio: 0,
       snapshotTimestamp: 0,
       maxYearlyRatioGrowthPercent: 0
@@ -231,6 +229,79 @@ describe.only('CAPO price feed', function() {
     });
   });
 
+  it('reverts if snapshot timestamp is invalid', async () => {
+    const { CapoPriceFeed } = await makeCAPOPriceFeed({
+      priceA: exp(1, 18),
+      priceB: exp(30_000, 18)
+    });
+
+    await expect(CapoPriceFeed.updateSnapshot({
+      snapshotRatio: 1,
+      snapshotTimestamp: 0,
+      maxYearlyRatioGrowthPercent: 0
+    })).to.be.revertedWithCustomError(CapoPriceFeed, 'InvalidRatioTimestamp').withArgs(0);
+  });
+
+  it('reverts if snapshot is updated too soon', async () => {
+    const { CapoPriceFeed } = await makeCAPOPriceFeed({
+      priceA: exp(1, 18),
+      priceB: exp(30_000, 18)
+    });
+
+    const currentTimestamp = await ethers.provider.getBlock('latest').then(b => b.timestamp);
+    await expect(CapoPriceFeed.updateSnapshot({
+      snapshotRatio: 1,
+      snapshotTimestamp: currentTimestamp,
+      maxYearlyRatioGrowthPercent: 0
+    })).to.be.revertedWithCustomError(CapoPriceFeed, 'InvalidRatioTimestamp').withArgs(currentTimestamp);
+  });
+
+  it('reverts if new snapshot ratio is 0', async () => {
+    const { CapoPriceFeed } = await makeCAPOPriceFeed({
+      priceA: exp(1, 18),
+      priceB: exp(30_000, 18)
+    });
+
+    const currentTimestamp = await ethers.provider.getBlock('latest').then(b => b.timestamp);
+
+    // advance time
+    await ethers.provider.send('evm_increaseTime', [3600]);
+
+    await expect(CapoPriceFeed.updateSnapshot({
+      snapshotRatio: 0,
+      snapshotTimestamp: currentTimestamp,
+      maxYearlyRatioGrowthPercent: 0
+    })).to.be.revertedWithCustomError(CapoPriceFeed, 'SnapshotRatioIsZero');
+  });
+
+  it('reverts if new snapshot ratio will overflow in 3 years', async () => {
+    const { CapoPriceFeed } = await makeCAPOPriceFeed({
+      priceA: exp(1, 18),
+      priceB: exp(30_000, 18)
+    });
+
+    const currentTimestamp = await ethers.provider.getBlock('latest').then(b => b.timestamp);
+
+    // advance time
+    await ethers.provider.send('evm_increaseTime', [3600]);
+
+    await expect(CapoPriceFeed.updateSnapshot({
+      snapshotRatio: exp(30_000, 26),
+      snapshotTimestamp: currentTimestamp,
+      maxYearlyRatioGrowthPercent: exp(10000, 2)
+    })).to.be.revertedWithCustomError(CapoPriceFeed, 'SnapshotCloseToOverflow');
+  });
+
+  it('reverts if non-manager tries to set new manager', async () => {
+    const { CapoPriceFeed } = await makeCAPOPriceFeed({
+      priceA: exp(1, 18),
+      priceB: exp(30_000, 18)
+    });
+    const [, newManager] = await ethers.getSigners();
+
+    await expect(CapoPriceFeed.connect(newManager).setManager(newManager.address)).to.be.revertedWithCustomError(CapoPriceFeed, 'OnlyManager');
+  });
+
   it('getters return correct values', async () => {
     const { CapoPriceFeed } = await makeCAPOPriceFeed({
       priceA: exp(1, 18),
@@ -239,11 +310,12 @@ describe.only('CAPO price feed', function() {
     const [signer] = await ethers.getSigners();
 
     expect(await CapoPriceFeed.description()).to.eq('CAPO Price Feed');
+    expect(await CapoPriceFeed.version()).to.eq(1);
     expect(await CapoPriceFeed.decimals()).to.eq(8);
     expect(await CapoPriceFeed.manager()).to.eq(signer.address);
-    expect(await CapoPriceFeed.getSnapshotRatio()).to.eq(exp(30_000, 18));
-    expect(await CapoPriceFeed.getMaxYearlyGrowthRatePercent()).to.eq(exp(0.01, 4));
-    expect(await CapoPriceFeed.getMaxRatioGrowthPerSecond()).to.eq(exp(30_000, 18) * exp(0.01, 4) / 31536000n / exp(1, 4));
+    expect(await CapoPriceFeed.snapshotRatio()).to.eq(exp(30_000, 18));
+    expect(await CapoPriceFeed.maxYearlyRatioGrowthPercent()).to.eq(exp(0.01, 4));
+    expect(await CapoPriceFeed.maxRatioGrowthPerSecond()).to.eq(exp(30_000, 18) * exp(0.01, 4) / 31536000n / exp(1, 4));
     expect(await CapoPriceFeed.getRatio()).to.eq(exp(30_000, 18));
     expect(await CapoPriceFeed.isCapped()).to.be.false;
   });
@@ -256,17 +328,20 @@ describe.only('CAPO price feed', function() {
 
     const currentTimestamp = await ethers.provider.getBlock('latest').then(b => b.timestamp);
 
-    await CapoPriceFeed.setCapParameters({
+    // advance time
+    await ethers.provider.send('evm_increaseTime', [3600]);
+
+    await CapoPriceFeed.updateSnapshot({
       snapshotRatio: exp(30_100, 18),
       snapshotTimestamp: currentTimestamp,
       maxYearlyRatioGrowthPercent: 100
     });
 
     expect(await CapoPriceFeed.getRatio()).to.eq(exp(30_000, 18));
-    expect(await CapoPriceFeed.getSnapshotRatio()).to.eq(exp(30_100, 18));
-    expect(await CapoPriceFeed.getSnapshotTimestamp()).to.eq(currentTimestamp);
-    expect(await CapoPriceFeed.getMaxYearlyGrowthRatePercent()).to.eq(exp(0.01, 4));
-    expect(await CapoPriceFeed.getMaxRatioGrowthPerSecond()).to.eq(exp(30_100, 18) * exp(0.01, 4) / 31536000n / exp(1, 4));
+    expect(await CapoPriceFeed.snapshotRatio()).to.eq(exp(30_100, 18));
+    expect(await CapoPriceFeed.snapshotTimestamp()).to.eq(currentTimestamp);
+    expect(await CapoPriceFeed.maxYearlyRatioGrowthPercent()).to.eq(exp(0.01, 4));
+    expect(await CapoPriceFeed.maxRatioGrowthPerSecond()).to.eq(exp(30_100, 18) * exp(0.01, 4) / 31536000n / exp(1, 4));
   });
 
   it('set new manager', async () => {
