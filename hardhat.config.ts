@@ -43,9 +43,6 @@ import optimismWethRelationConfigMap from './deployments/optimism/weth/relations
 import mantleRelationConfigMap from './deployments/mantle/usde/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
 import lineaRelationConfigMap from './deployments/linea/usdc/relations';
-import lineaUsdtRelationConfigMap from './deployments/linea/usdt/relations';
-import lineaWethRelationConfigMap from './deployments/linea/weth/relations';
-
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -369,9 +366,7 @@ const config: HardhatUserConfig = {
         usdc: scrollRelationConfigMap
       },
       linea: {
-        usdc: lineaRelationConfigMap,
-        usdt: lineaUsdtRelationConfigMap,
-        weth: lineaWethRelationConfigMap
+        usdc: lineaRelationConfigMap
       },
     },
   },
@@ -523,18 +518,6 @@ const config: HardhatUserConfig = {
         name: 'linea-usdc',
         network: 'linea',
         deployment: 'usdc',
-        auxiliaryBase: 'mainnet'
-      },
-      {
-        name: 'linea-usdt',
-        network: 'linea',
-        deployment: 'usdt',
-        auxiliaryBase: 'mainnet'
-      },
-      {
-        name: 'linea-weth',
-        network: 'linea',
-        deployment: 'weth',
         auxiliaryBase: 'mainnet'
       },
       {
