@@ -6,6 +6,7 @@ import {IERC165} from "../../IERC165.sol";
 import {IAny2EVMMessageReceiver, Any2EVMMessage} from "../../IAny2EVMMessageReceiver.sol";
 
 contract RoninBridgeReceiver is SweepableBridgeReceiver, IERC165, IAny2EVMMessageReceiver{
+    uint64 constant MAINNET_CHAIN_SELECTOR = 5009297550715157269;
 
     function supportsInterface(
         bytes4 interfaceId
@@ -16,6 +17,7 @@ contract RoninBridgeReceiver is SweepableBridgeReceiver, IERC165, IAny2EVMMessag
     }
 
     error InvalidRouter();
+    error InvalidChainSelector();
 
     address public l2Router;
 
@@ -25,6 +27,7 @@ contract RoninBridgeReceiver is SweepableBridgeReceiver, IERC165, IAny2EVMMessag
 
     function ccipReceive(Any2EVMMessage calldata message) external {
         if (msg.sender != l2Router) revert InvalidRouter();
+        if(message.sourceChainSelector != MAINNET_CHAIN_SELECTOR) revert InvalidChainSelector();
         processMessage(toAddress(message.sender), message.data);
     }
 
