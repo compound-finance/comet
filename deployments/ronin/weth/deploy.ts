@@ -39,10 +39,17 @@ async function deployContracts(
     'ronin'
   );
 
-  const bridgeReceiver = await deploymentManager.existing(
+  // const bridgeReceiver = await deploymentManager.existing(
+  //   'bridgeReceiver',
+  //   '0x368352B54dE7f6640F6a58fd85e897321cc5CA1A',
+  //   'ronin'
+  // );
+  const bridgeReceiver = await deploymentManager.deploy(
     'bridgeReceiver',
-    '0x368352B54dE7f6640F6a58fd85e897321cc5CA1A',
-    'ronin'
+    'bridges/ronin/RoninBridgeReceiver.sol',
+    [
+      l2CCIPRouter.address, // l2CCIPRouter
+    ]
   );
 
 
