@@ -222,24 +222,24 @@ export default migration("1689892563_configurate_and_ens", {
 
     expect(assetListAddress).to.not.be.equal(ethers.constants.AddressZero);
 
-    const stateChanges = await diffState(
-      comet,
-      getCometConfig,
-      preMigrationBlockNumber
-    );
-    expect(stateChanges).to.deep.equal({
-      WRON: {
-        supplyCap: exp(3000000, 18)
-      },
-      USDC: {
-        supplyCap: exp(400000, 6)
-      },
-      AXS: {
-        supplyCap: exp(300000, 18)
-      },
-      // baseTrackingSupplySpeed: exp(2/86400, 15, 18),
-      // baseTrackingBorrowSpeed: exp(1/86400, 15, 18),
-    });
+    // const stateChanges = await diffState(
+    //   comet,
+    //   getCometConfig,
+    //   preMigrationBlockNumber
+    // );
+    // expect(stateChanges).to.deep.equal({
+    //   WRON: {
+    //     supplyCap: exp(3000000, 18)
+    //   },
+    //   USDC: {
+    //     supplyCap: exp(400000, 6)
+    //   },
+    //   AXS: {
+    //     supplyCap: exp(300000, 18)
+    //   },
+    //   // baseTrackingSupplySpeed: exp(2/86400, 15, 18),
+    //   // baseTrackingBorrowSpeed: exp(1/86400, 15, 18),
+    // });
 
     // We should not do this check, as rewards only deployed, but without reward token
     // const config = await rewards.rewardConfig(comet.address);

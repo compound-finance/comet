@@ -41,7 +41,7 @@ async function deployContracts(
 
   const bridgeReceiver = await deploymentManager.existing(
     'bridgeReceiver',
-    '0x368352B54dE7f6640F6a58fd85e897321cc5CA1A',
+    '0x2c7EfA766338D33B9192dB1fB5D170Bdc03ef3F9',
     'ronin'
   );
 
