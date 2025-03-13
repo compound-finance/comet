@@ -39,18 +39,20 @@ async function deployContracts(
     'ronin'
   );
 
-  // const bridgeReceiver = await deploymentManager.existing(
-  //   'bridgeReceiver',
-  //   '0x368352B54dE7f6640F6a58fd85e897321cc5CA1A',
-  //   'ronin'
-  // );
-  const bridgeReceiver = await deploymentManager.deploy(
+  const bridgeReceiver = await deploymentManager.existing(
     'bridgeReceiver',
-    'bridges/ronin/RoninBridgeReceiver.sol',
-    [
-      l2CCIPRouter.address, // l2CCIPRouter
-    ]
+    '0x368352B54dE7f6640F6a58fd85e897321cc5CA1A',
+    'ronin'
   );
+
+
+  // const bridgeReceiver = await deploymentManager.deploy(
+  //   'bridgeReceiver',
+  //   'bridges/ronin/RoninBridgeReceiver.sol',
+  //   [
+  //     l2CCIPRouter.address, // l2CCIPRouter
+  //   ]
+  // );
 
 
   const WETH = await deploymentManager.existing(
@@ -100,47 +102,71 @@ async function deployContracts(
 
 
 
-  const WETHPriceFeed = await deploymentManager.deploy(
+  // const WETHPriceFeed = await deploymentManager.deploy(
+  //   'WETH:priceFeed',
+  //   'pricefeeds/ConstantPriceFeed.sol',
+  //   [
+  //     8,
+  //     exp(1, 8),
+  //   ]
+  // );
+
+  const WETHPriceFeed = await deploymentManager.existing(
     'WETH:priceFeed',
-    'pricefeeds/ConstantPriceFeed.sol',
-    [
-      8,
-      exp(1, 8),
-    ]
+    '0x8AC2b57d15c84755A3333aD68025d2496AE3BeBD',
+    'ronin'
   );
 
 
-  const WRONMultiplicativePriceFeed = await deploymentManager.deploy(
+  // const WRONMultiplicativePriceFeed = await deploymentManager.deploy(
+  //   'WRON:priceFeed',
+  //   'pricefeeds/ReverseMultiplicativePriceFeed.sol',
+  //   [
+  //     RON_USD_PRICE_FEED, // RON / USD price feed
+  //     ETH_USD_PRICE_FEED, // ETH / USD
+  //     8,                                            // decimals
+  //     'RON/ETH price feed'                       // description
+  //   ]
+  // );
+
+  const WRONMultiplicativePriceFeed = await deploymentManager.existing(
     'WRON:priceFeed',
-    'pricefeeds/ReverseMultiplicativePriceFeed.sol',
-    [
-      RON_USD_PRICE_FEED, // RON / USD price feed
-      ETH_USD_PRICE_FEED, // ETH / USD
-      8,                                            // decimals
-      'RON/ETH price feed'                       // description
-    ]
+    '0x692e4736f891CD940bA559d487845117e2c6b48D',
+    'ronin'
   );
 
-  const AXSMultiplicativePriceFeed = await deploymentManager.deploy(
-    'AXS:priceFeed',
-    'pricefeeds/ReverseMultiplicativePriceFeed.sol',
-    [
-      AXS_USD_PRICE_FEED, // AXS / USD price feed
-      ETH_USD_PRICE_FEED, // ETH / USD
-      8,                                            // decimals
-      'AXS/ETH price feed'                       // description
-    ]
-  )
+  // const AXSMultiplicativePriceFeed = await deploymentManager.deploy(
+  //   'AXS:priceFeed',
+  //   'pricefeeds/ReverseMultiplicativePriceFeed.sol',
+  //   [
+  //     AXS_USD_PRICE_FEED, // AXS / USD price feed
+  //     ETH_USD_PRICE_FEED, // ETH / USD
+  //     8,                                            // decimals
+  //     'AXS/ETH price feed'                       // description
+  //   ]
+  // )
 
-  const USDCMultiplicativePriceFeed = await deploymentManager.deploy(
+  const AXSMultiplicativePriceFeed = await deploymentManager.existing(
+    'AXS:priceFeed',
+    '0xB2237b8F0690f7F8c7D03FE70da62213714F8B5D',
+    'ronin'
+  );
+
+  // const USDCMultiplicativePriceFeed = await deploymentManager.deploy(
+  //   'USDC:priceFeed',
+  //   'pricefeeds/ReverseMultiplicativePriceFeed.sol',
+  //   [
+  //     USDC_USD_PRICE_FEED, // USDC / USD price feed
+  //     ETH_USD_PRICE_FEED, // ETH / USD
+  //     8,                                            // decimals
+  //     'USDC/ETH price feed'                       // description
+  //   ]
+  // );
+
+  const USDCMultiplicativePriceFeed = await deploymentManager.existing(
     'USDC:priceFeed',
-    'pricefeeds/ReverseMultiplicativePriceFeed.sol',
-    [
-      USDC_USD_PRICE_FEED, // USDC / USD price feed
-      ETH_USD_PRICE_FEED, // ETH / USD
-      8,                                            // decimals
-      'USDC/ETH price feed'                       // description
-    ]
+    '0xC41CdfAE648A76EF471160F62bf38a03Ad5B67DF',
+    'ronin'
   );
 
 
