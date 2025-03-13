@@ -508,8 +508,10 @@ scenario(
         /Dai\/insufficient-allowance/,
         symbol === 'WETH' ? /Transaction reverted without a reason string/ : /.^/,
         symbol === 'wstETH' ? /0xc2139725/ : /.^/,
+        symbol === 'LBTC' ? /0xfb8f41b2/ : /.^/,
         symbol === 'WMATIC' ? /Transaction reverted without a reason string/ : /.^/,
         symbol === 'WPOL' ? /Transaction reverted without a reason string/ : /.^/,
+        symbol === 'sUSDS' ? /SUsds\/insufficient-allowance/ : /.^/,
       ]
     );
   }
@@ -595,8 +597,10 @@ scenario(
         /Dai\/insufficient-balance/,
         symbol === 'WETH' ? /Transaction reverted without a reason string/ : /.^/,
         symbol === 'wstETH' ? /0x00b284f2/ : /.^/,
+        symbol === 'LBTC' ? /0xe450d38c/ : /.^/,
         symbol === 'WMATIC' ? /Transaction reverted without a reason string/ : /.^/,
         symbol === 'WPOL' ? /Transaction reverted without a reason string/ : /.^/,
+        symbol === 'sUSDS' ? /SUsds\/insufficient-balance/ : /.^/,
       ]
     );
   }
