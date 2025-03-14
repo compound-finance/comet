@@ -17,17 +17,17 @@ scenario(
   async ({ comet, actors }, context, world) => {
     const { albert, betty } = actors;
     const baseToken = await comet.baseToken();
-    const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
+    const baseScale = await comet.baseScale();
 
     await world.increaseTime(
       await timeUntilUnderwater({
         comet,
         actor: albert,
-        fudgeFactor: 60n * 10n // 10 minutes past when position is underwater
+        fudgeFactor: 6000n * 6000n // 1 hour past when position is underwater
       })
     );
 
-    await betty.withdrawAsset({ asset: baseToken, amount: baseBorrowMin }); // force accrue
+    await betty.withdrawAsset({ asset: baseToken, amount: 1000n * baseScale.toBigInt() }); // force accrue
 
     expect(await comet.isLiquidatable(albert.address)).to.be.true;
   }
@@ -193,6 +193,7 @@ scenario(
 scenario(
   'Comet#liquidation > user can end up with a minted supply',
   {
+    filter: async (ctx) => !matchesDeployment(ctx, [{ network: 'base', deployment: 'usds' }]),
     tokenBalances: {
       $comet: { $base: 1000 },
     },
