@@ -104,8 +104,7 @@ export const flashLoanPools = {
       tokenAddress: addresses.mainnet.WETH9,
       poolFee: 500
     },
-  }
-},
+  },
   polygon: {
     usdc: {
       tokenAddress: addresses.polygon.BOB,
