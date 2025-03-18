@@ -22,6 +22,8 @@ const config = {
   interestSeconds: 110,
   withdrawBase: 1000,
   withdrawAsset: 3000,
+  withdrawBase1: 1000,
+  withdrawAsset1: 1000,
 };
 
 export function getConfigForScenario(ctx: CometContext) {
@@ -37,7 +39,7 @@ export function getConfigForScenario(ctx: CometContext) {
     config.liquidationBase = 1000;
     config.liquidationBase1 = 500;
     config.liquidationAsset = 100;
-    config.rewardsAsset = 1000;
+    config.rewardsAsset = 10000;
     config.rewardsBase = 100;
     config.transferBase = 100;
     config.transferAsset = 500;
@@ -88,6 +90,27 @@ export function getConfigForScenario(ctx: CometContext) {
     config.liquidationBase = 100000;
     config.liquidationBase1 = 50000;
     config.liquidationAsset = 10000;
+  }
+
+  if (ctx.world.base.network === 'ronin' && ctx.world.base.deployment === 'weth') {
+    config.transferBase = 10;
+    config.transferAsset = 100000;
+    config.transferAsset1 = 100000;
+    config.rewardsAsset = 1000000;
+    config.rewardsBase = 200;
+    config.withdrawBase = 10;
+    config.withdrawBase1 = 10;
+    config.withdrawAsset = 100000;
+    config.withdrawAsset1 = 10000;
+    config.liquidationBase = 150;
+    config.liquidationBase1 = 50;
+    config.liquidationAsset = 5;
+    config.bulkerAsset = 100000;
+    config.bulkerAsset1 = 100000;
+    config.bulkerComet = 100;
+    config.bulkerBorrowBase = 10;
+    config.bulkerBorrowAsset = 10;
+    config.bulkerBase = 100;
   }
 
   if (ctx.world.base.network === 'polygon' && ctx.world.base.deployment === 'usdc') {

@@ -64,7 +64,11 @@ export async function nonForkedHreForBase(base: ForkSpec): Promise<HardhatRuntim
 function getBlockRollback(base: ForkSpec){
   if(base.blockNumber)
     return base.blockNumber;
-  else if(base.network === 'arbitrum'){
+  else if (base.network === 'ronin')
+    return 0;
+  else if (base.network === 'arbitrum') {
+    return undefined;
+  }else if (base.network === 'sepolia') {
     return undefined;
   }
   else if(base.network === 'base'){

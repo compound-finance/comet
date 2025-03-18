@@ -31,7 +31,9 @@ export async function importContract(
   retryDelay: number = DEFAULT_RETRY_DELAY
 ): Promise<BuildFile> {
   try {
-    console.log(`Importing ${address} from ${network} etherscan`);
+    if(network === 'ronin') {
+      return (await loadContract('ronin', network, address)) as BuildFile;
+    }
     return (await loadContract('etherscan', network, address)) as BuildFile;
   } catch (e) {
     if (retries === 0 || (e.message && e.message.includes('Contract source code not verified'))) {

@@ -332,8 +332,8 @@ export async function fetchLogs(
   }
 }
 
-async function redeployRenzoOracle(dm: DeploymentManager){
-  if(dm.network === 'mainnet') {
+async function redeployRenzoOracle(dm: DeploymentManager) {
+  if (dm.network === 'mainnet') {
     // renzo admin 	0xD1e6626310fD54Eceb5b9a51dA2eC329D6D4B68A
     const renzoOracle = new Contract(
       '0x5a12796f7e7EBbbc8a402667d266d2e65A814042',
@@ -342,7 +342,7 @@ async function redeployRenzoOracle(dm: DeploymentManager){
       ],
       dm.hre.ethers.provider
     );
-    
+
     const admin = await impersonateAddress(dm, '0xD1e6626310fD54Eceb5b9a51dA2eC329D6D4B68A');
     // set balance
     await dm.hre.ethers.provider.send('hardhat_setBalance', [
@@ -362,6 +362,171 @@ async function redeployRenzoOracle(dm: DeploymentManager){
   }
 }
 
+const tokens = new Map<string, string>([
+  ['WETH', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'],
+  ['LINK', '0x514910771AF9Ca656af840dff83E8264EcF986CA'],
+]);
+
+const dest = new Map<string, string>([
+  ['ronin', '6916147374840168594'],
+]);
+
+async function updateCCIPStats(dm: DeploymentManager) {
+  if (dm.network === 'mainnet') {
+    const commitStore = '0x2aa101bf99caef7fc1355d4c493a1fe187a007ce';
+
+    const priceRegistry = '0x8c9b2Efb7c64C394119270bfecE7f54763b958Ad';
+    const abi = [
+      {
+        'inputs': [
+          {
+            'components': [
+              {
+                'components': [
+                  {
+                    'internalType': 'address',
+                    'name': 'sourceToken',
+                    'type': 'address'
+                  },
+                  {
+                    'internalType': 'uint224',
+                    'name': 'usdPerToken',
+                    'type': 'uint224'
+                  }
+                ],
+                'internalType': 'struct TokenPriceUpdate[]',
+                'name': 'tokenPriceUpdates',
+                'type': 'tuple[]'
+              },
+              {
+                'components': [
+                  {
+                    'internalType': 'uint64',
+                    'name': 'destChainSelector',
+                    'type': 'uint64'
+                  },
+                  {
+                    'internalType': 'uint224',
+                    'name': 'usdPerUnitGas',
+                    'type': 'uint224'
+                  }
+                ],
+                'internalType': 'struct GasPriceUpdate[]',
+                'name': 'gasPriceUpdates',
+                'type': 'tuple[]'
+              }
+            ],
+            'internalType': 'struct PriceUpdates',
+            'name': 'priceUpdates',
+            'type': 'tuple'
+          }
+        ],
+        'name': 'updatePrices',
+        'outputs': [],
+        'stateMutability': 'nonpayable',
+        'type': 'function'
+      },
+      {
+        'inputs': [
+          {
+            'internalType': 'uint64',
+            'name': 'destChainSelector',
+            'type': 'uint64'
+          }
+        ],
+        'name': 'getDestinationChainGasPrice',
+        'outputs': [
+          {
+            'components': [
+              {
+                'internalType': 'uint224',
+                'name': 'value',
+                'type': 'uint224'
+              },
+              {
+                'internalType': 'uint32',
+                'name': 'timestamp',
+                'type': 'uint32'
+              }
+            ],
+            'internalType': 'struct TimestampedPackedUint224',
+            'name': '',
+            'type': 'tuple'
+          }
+        ],
+        'stateMutability': 'view',
+        'type': 'function'
+      },
+      {
+        'inputs': [
+          {
+            'internalType': 'address',
+            'name': 'token',
+            'type': 'address'
+          }
+        ],
+        'name': 'getTokenPrice',
+        'outputs': [
+          {
+            'components': [
+              {
+                'internalType': 'uint224',
+                'name': 'value',
+                'type': 'uint224'
+              },
+              {
+                'internalType': 'uint32',
+                'name': 'timestamp',
+                'type': 'uint32'
+              }
+            ],
+            'internalType': 'struct TimestampedPackedUint224',
+            'name': '',
+            'type': 'tuple'
+          }
+        ],
+        'stateMutability': 'view',
+        'type': 'function'
+      }
+    ];
+
+    await dm.hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [commitStore],
+    });
+
+    await dm.hre.network.provider.request({
+      method: 'hardhat_setBalance',
+      params: [commitStore, '0x56bc75e2d63100000'],
+    });
+    const commitStoreSigner = await dm.hre.ethers.getSigner(commitStore);
+
+    const registryContract = new Contract(priceRegistry, abi, dm.hre.ethers.provider);
+
+    const tokenPrices = [];
+    const gasPrices = [];
+    for (const [, address] of tokens) {
+      const price = await registryContract.getTokenPrice(address);
+      tokenPrices.push([address, price.value]);
+    }
+    for (const [, address] of dest) {
+      const price = await registryContract.getDestinationChainGasPrice(address);
+      gasPrices.push([address, price.value]);
+    }
+
+    const tx0 = await commitStoreSigner.sendTransaction({
+      to: priceRegistry,
+      data: registryContract.interface.encodeFunctionData('updatePrices', [{
+        tokenPriceUpdates: tokenPrices,
+        gasPriceUpdates: gasPrices
+      }]),
+    });
+
+    await tx0.wait();
+
+  }
+}
+
 const REDSTONE_FEEDS = {
   mantle: [
     '0x3DFA26B9A15D37190bB8e50aE093730DcA88973E', // USDe / USD
@@ -378,14 +543,14 @@ async function getProxyAdmin(dm: DeploymentManager, proxyAddress: string): Promi
   return adminAddress;
 }
 
-async function mockAllRedstoneOracles(dm: DeploymentManager){
+async function mockAllRedstoneOracles(dm: DeploymentManager) {
   const feeds = REDSTONE_FEEDS[dm.network];
   if (!Array.isArray(feeds)) {
     debug(`No redstone feeds found for network: ${dm.network}`);
     return;
   }
   for (const feed of feeds) {
-    try{
+    try {
       await dm.fromDep(`MockRedstoneOracle:${feed}`, dm.network, dm.deployment);
     }
     catch (_) {
@@ -394,7 +559,7 @@ async function mockAllRedstoneOracles(dm: DeploymentManager){
   }
 }
 
-async function mockRedstoneOracle(dm: DeploymentManager, feed: string){
+async function mockRedstoneOracle(dm: DeploymentManager, feed: string) {
   const feedContract = new Contract(
     feed,
     [
@@ -475,9 +640,10 @@ export async function executeOpenProposal(
   if (await governor.state(id) == ProposalState.Queued) {
     const block = await dm.hre.ethers.provider.getBlock('latest');
     const eta = await governor.proposalEta(id);
-    
+
     await setNextBlockTimestamp(dm, Math.max(block.timestamp, eta.toNumber()) + 1);
     await setNextBaseFeeToZero(dm);
+    await updateCCIPStats(dm);
     await governor.execute(id, { gasPrice: 0, gasLimit: 120000000 });
   }
   await redeployRenzoOracle(dm);
@@ -658,6 +824,33 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       values.push(exp(1, 18)); // XXX fees are paid via msg.value
       signatures.push('sendMessage(address,uint256,bytes,uint256)');
       calldata.push(sendMessageCalldata);
+      break;
+    }
+    case 'ronin': {
+      const l1CCIPRouter = await govDeploymentManager.getContractOrThrow(
+        'l1CCIPRouter'
+      );
+
+      targets.push(l1CCIPRouter.address);
+      values.push(utils.parseEther('0.5'));
+
+      const destinationChainSelector = '6916147374840168594';
+
+      const args = [
+        destinationChainSelector,
+        [
+          utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
+          l2ProposalData,
+          [],
+          constants.AddressZero,
+          '0x'
+        ]
+      ];
+
+      const data = utils.defaultAbiCoder.encode(['uint64', '(bytes,bytes,(address,uint256)[],address,bytes)'], args);
+
+      signatures.push('ccipSend(uint64,(bytes,bytes,(address,uint256)[],address,bytes))');
+      calldata.push(data);
       break;
     }
     default:
