@@ -57,7 +57,7 @@ async function deployContracts(
 
   const bridgeReceiver = await deploymentManager.deploy(
     'bridgeReceiver',
-    'bridges/sonic/SonicBridgeReceiver.sol',
+    'bridges/ronin/RoninBridgeReceiver.sol',
     [l2CCIPRouter.address]
   );
 
