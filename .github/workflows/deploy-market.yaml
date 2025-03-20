@@ -14,6 +14,7 @@ on:
           - base
           - optimism
           - mantle
+          - sonic
           - scroll
       deployment:
         description: Deployment Name (e.g. "usdc")

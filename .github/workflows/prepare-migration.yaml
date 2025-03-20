@@ -15,6 +15,7 @@ on:
           - optimism
           - mantle
           - scroll
+          - sonic
       deployment:
         description: Deployment Name (e.g. "usdc")
         required: true

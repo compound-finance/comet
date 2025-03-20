@@ -20,8 +20,8 @@ const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
 
 // const sonicCOMPAddress = '';
+// const COMPAmountToBridge = exp(1000, 18);
 const USDCAmountToSeed = exp(50_000, 6);
-const COMPAmountToBridge = exp(1000, 18);
 
 const destinationChainSelector = '1673871237479749969';
 
@@ -283,8 +283,8 @@ export default migration('1739783281_configurate_and_ens', {
 
     const {
       comet,
-      rewards,
-      COMP,
+      // rewards,
+      // COMP,
       l2SonicBridge,
     } = await deploymentManager.getContracts();
 
@@ -296,10 +296,10 @@ export default migration('1739783281_configurate_and_ens', {
     // );
     // expect(stateChanges).to.deep.equal({
     //   wS: {
-    //     supplyCap: exp(2_300_000, 18)
+    //     supplyCap: exp(20_000_000, 18)
     //   },
     //   stS: {
-    //     supplyCap: exp(2_200_000, 18)
+    //     supplyCap: exp(20_000_000, 18)
     //   },
     //   baseTrackingSupplySpeed: exp(3 / 86400, 15, 18), // 34722222222
     //   baseTrackingBorrowSpeed: exp(2 / 86400, 15, 18), // 23148148148
@@ -511,38 +511,3 @@ export default migration('1739783281_configurate_and_ens', {
     });
   },
 });
-
-
-// async function generateProof(depositId: number, govDeploymentManager: DeploymentManager): Promise<string> {
-//   // Generate storage slot for deposit
-//   const storageSlot = utils.keccak256(
-//     utils.defaultAbiCoder.encode(['uint256', 'uint8'], [depositId, 7])
-//   );
-
-//   // Get provider
-//   const { ANKR_KEY } = process.env;
-//   const providerMainnet = new providers.JsonRpcProvider(`https://rpc.ankr.com/eth/${ANKR_KEY}`);
-//   const { sonicL1GatewayBridge } = await govDeploymentManager.getContracts();
-
-//   const stateOracle = new Contract(
-//     await sonicL1GatewayBridge.stateOracle(),
-//     [
-//       'function lastBlockNum() view returns(uint256)',
-//     ],
-//     await govDeploymentManager.getSigner()
-//   );
-
-//   const block = await providerMainnet.send('eth_getBlockByNumber', [await stateOracle.lastBlockNum(), false]);
-//   // Get proof from Ethereum node
-//   const proof = await providerMainnet.send('eth_getProof', [
-//     sonicL1GatewayBridge.address,
-//     [storageSlot],
-//     block.hash
-//   ]);
-  
-//   // Encode proof in required format
-//   return utils.RLP.encode([
-//     utils.RLP.encode(proof.accountProof),
-//     utils.RLP.encode(proof.storageProof[0].proof)
-//   ]);
-// }
