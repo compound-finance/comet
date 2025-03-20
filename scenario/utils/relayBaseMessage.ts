@@ -63,9 +63,7 @@ export default async function relayBaseMessage(
     // there are two types:
     // 1. Bridging ERC20 token or ETH
     // 2. Cross-chain message passing
-    if (target === l2StandardBridge.address ||
-      (l2USDSBridge ? target === l2USDSBridge.address : target.toLowerCase() === '0xee44cdb68D618d58F75d9fe0818B640BD7B8A7B7'.toLowerCase())
-    ) {
+    if (target === l2StandardBridge.address || (l2USDSBridge && target === l2USDSBridge.address)) {
       // Bridging ERC20 token
       const messageWithoutPrefix = message.slice(2); // strip out the 0x prefix
       const messageWithoutSigHash = '0x' + messageWithoutPrefix.slice(8);

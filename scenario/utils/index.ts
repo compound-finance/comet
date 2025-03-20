@@ -670,9 +670,12 @@ export async function executeOpenProposal(
     
     await setNextBlockTimestamp(dm, Math.max(block.timestamp, eta.toNumber()) + 1);
     await updateSonicStateOracle(dm);
-    await updateCCIPStats(dm);
+    await updateCCIPStats(dm);    
+    await setNextBaseFeeToZero(dm);
     await governor.execute(id, { gasPrice: 0, gasLimit: 120000000 });
   }
+  await redeployRenzoOracle(dm);
+  await mockAllRedstoneOracles(dm);
   // mine a block
   await dm.hre.ethers.provider.send('evm_mine', []);
 }
