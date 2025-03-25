@@ -104,8 +104,7 @@ export const flashLoanPools = {
       tokenAddress: addresses.mainnet.WETH9,
       poolFee: 500
     },
-  }
-},
+  },
   polygon: {
     usdc: {
       tokenAddress: addresses.polygon.BOB,
@@ -431,15 +430,15 @@ async function attemptLiquidationViaOnChainLiquidator(
       number,
       number
     ] = [
-        comet.address,
-        targetAddresses,
-        assets,
-        poolConfigs,
-        maxAmountsToPurchase,
-        flashLoanPoolTokenAddress,
-        flashLoanPoolFee,
-        liquidationThreshold
-      ];
+      comet.address,
+      targetAddresses,
+      assets,
+      poolConfigs,
+      maxAmountsToPurchase,
+      flashLoanPoolTokenAddress,
+      flashLoanPoolFee,
+      liquidationThreshold
+    ];
 
     const txn = await liquidator.populateTransaction.absorbAndArbitrage(
       ...args,
