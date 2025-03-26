@@ -5,7 +5,6 @@ import { exp, proposal } from '../../../../src/deploy';
 import { Contract } from 'ethers';
 
 const STREAM_CONTROLLER = '0x3DF2AAEdE81D2F6b261F79047517713B8E844E04';
-
 const RECEIVER = '0xc10785fB7b1adD4fD521A27d0d55c5561EEf0940';
 
 const totalAmount = exp(127_426, 18);
@@ -67,7 +66,7 @@ export default migration('1742901113_create_sablier_stream', {
         args: [timelock.address, RECEIVER, amountPerSec, COMP.address, false, streamAmount],
       },
     ];
-    const description = 'DESCRIPTION';
+    const description = '# 2025 Compound Growth Program Renewal V4 [AlphaGrowth]\n\nThe Compound Growth Team is proud to present the fourth version of our Roadmap for the 2025 Growth Program The full scope of detailed work is here:\nhttps://www.comp.xyz/t/compound-growth-program-2025-renewal-alphagrowth-v4/6563\nWe are looking forward to supporting the DAO.\nWith your vote for the Compound Growth Program, we can strengthen the foundation of the Compound Protocol and drive its growth to new heights in 2025 and beyond.\n\nDue to the evolving legal landscape related to DAOs, the full Indemnification and Waiver language has been incorporated by reference here: https://www.comp.xyz/t/renewal-of-compound-growth-program-2025/6054/2#p-15239-entity-update-indemnification-6';
     const txn = await deploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
@@ -115,7 +114,7 @@ export default migration('1742901113_create_sablier_stream', {
 
     const tx = await streamController.connect(signer).withdraw((await streamController.nextStreamId()).toBigInt() - 1n, RECEIVER, streamAmount);
     await tx.wait();
-    // skip duration time
+
     expect((await COMP.balanceOf(RECEIVER)).sub(balanceBefore)).to.equal(upfrontAmount + streamAmount);
   },
 });
