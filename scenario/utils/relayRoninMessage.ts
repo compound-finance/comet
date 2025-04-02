@@ -96,50 +96,50 @@ export default async function relayRoninMessage(
     }
 
     console.log(`[CCIP L1->L2] Routed message to ${internalMsg.receiver}`);
-  }
 
 
-  for (const log of logsNativeBridge) {
-    console.log(`[Native L1->L2] Found DepositRequested`);
-    const parsedLog = l1NativeBridge.interface.parseLog(log);
-    const internalMsg = parsedLog.args.receipt;
-
-    await bridgeDeploymentManager.hre.network.provider.request({
-      method: 'hardhat_setBalance',
-      params: [l2NativeBridge.address, '0x1000000000000000000000']
-    });
-
-    await setNextBaseFeeToZero(bridgeDeploymentManager);
-
-    const bridgeSigner = await impersonateAddress(bridgeDeploymentManager, l2NativeBridge.address);
-
-    const transferSelector = ethers.utils.id('transfer(address,uint256)').slice(0, 10);
-    const encodedData = transferSelector + ethers.utils.defaultAbiCoder.encode(
-      ['address', 'uint256'],
-      [internalMsg.ronin.addr, internalMsg.info.quantity]
-    ).slice(2);
-
-    bridgeTx = await bridgeSigner.sendTransaction({
-      to: internalMsg.ronin.tokenAddr,
-      data: encodedData
-    });
-
-    console.log(`[Native L1->L2] Deposited ${internalMsg.info.quantity} to ${internalMsg.ronin.addr} of token ${internalMsg.ronin.tokenAddr}`);
-    await bridgeTx.wait();
-  }
-
-  const proposalCreatedEvent = routeReceipt.events?.find(
-    (ev) =>
-      ev.address.toLowerCase() === bridgeReceiver.address.toLowerCase() &&
-      ev.topics[0] === bridgeReceiver.interface.getEventTopic('ProposalCreated')
-  );
-
-  console.log(`[CCIP L2] Found proposalCreatedEvent: ${JSON.stringify(proposalCreatedEvent)}`);
-  if (proposalCreatedEvent) {
-    const decoded = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
-    const { id, eta } = decoded.args;
-    openBridgedProposals.push({ id, eta });
-    console.log(`[CCIP L2] Queued proposal: id=${id.toString()}, eta=${eta.toString()}`);
+    for (const log of logsNativeBridge) {
+      console.log(`[Native L1->L2] Found DepositRequested`);
+      const parsedLog = l1NativeBridge.interface.parseLog(log);
+      const internalMsg = parsedLog.args.receipt;
+  
+      await bridgeDeploymentManager.hre.network.provider.request({
+        method: 'hardhat_setBalance',
+        params: [l2NativeBridge.address, '0x1000000000000000000000']
+      });
+  
+      await setNextBaseFeeToZero(bridgeDeploymentManager);
+  
+      const bridgeSigner = await impersonateAddress(bridgeDeploymentManager, l2NativeBridge.address);
+  
+      const transferSelector = ethers.utils.id('transfer(address,uint256)').slice(0, 10);
+      const encodedData = transferSelector + ethers.utils.defaultAbiCoder.encode(
+        ['address', 'uint256'],
+        [internalMsg.ronin.addr, internalMsg.info.quantity]
+      ).slice(2);
+  
+      bridgeTx = await bridgeSigner.sendTransaction({
+        to: internalMsg.ronin.tokenAddr,
+        data: encodedData
+      });
+  
+      console.log(`[Native L1->L2] Deposited ${internalMsg.info.quantity} to ${internalMsg.ronin.addr} of token ${internalMsg.ronin.tokenAddr}`);
+      await bridgeTx.wait();
+    }
+  
+    const proposalCreatedEvents = routeReceipt.events?.filter(
+      (ev: ethers.Event) =>
+        ev.address.toLowerCase() === bridgeReceiver.address.toLowerCase() &&
+        ev.topics[0] === bridgeReceiver.interface.getEventTopic('ProposalCreated')
+    ) || [];
+  
+    console.log(`[CCIP L2] Found proposalCreatedEvents: ${JSON.stringify(proposalCreatedEvents)}`);
+    for (const proposalCreatedEvent of proposalCreatedEvents) {
+      const decoded = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
+      const { id, eta } = decoded.args;
+      openBridgedProposals.push({ id, eta });
+      console.log(`[CCIP L2] Queued proposal: id=${id.toString()}, eta=${eta.toString()}`);
+    }
   }
 
   for (const proposal of openBridgedProposals) {

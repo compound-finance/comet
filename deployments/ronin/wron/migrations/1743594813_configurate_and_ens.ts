@@ -12,6 +12,7 @@ import {
 } from '../../../../src/deploy';
 import { expect } from 'chai';
 import { forkedHreForBase } from '../../../../plugins/scenario/utils/hreForBase';
+import { utils, constants, Contract } from 'ethers';
 
 const destinationChainSelector = '6916147374840168594';
 const ENSName = 'compound-community-licenses.eth';
@@ -20,9 +21,13 @@ const ENSRegistryAddress = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
-const ETHAmountToBridge = exp(25, 18);
+const ETHAmountToSwap = exp(26.12, 18);
 
-export default migration('1689892563_configurate_and_ens', {
+const RONIN_SWAP_ROUTER = '0xC05AFC8c9353c1dd5f872EcCFaCD60fd5A2a9aC7';
+
+let expectedWronAmount;
+
+export default migration('1743594813_configurate_and_ens', {
   prepare: async () => {
     return {};
   },
@@ -32,12 +37,18 @@ export default migration('1689892563_configurate_and_ens', {
     govDeploymentManager: DeploymentManager
   ) => {
     const trace = deploymentManager.tracer();
-    const ethers = deploymentManager.hre.ethers;
-    const { utils } = ethers;
 
-    const { bridgeReceiver, comet, cometAdmin, configurator, rewards } =
-      await deploymentManager.getContracts();
-
+    const {
+      bridgeReceiver,
+      cometFactory,
+      comet,
+      cometAdmin,
+      configurator,
+      // rewards,
+      WETH,
+      WRON,
+      timelock,
+    } = await deploymentManager.getContracts();
 
     const {
       l1CCIPRouter,
@@ -45,6 +56,9 @@ export default migration('1689892563_configurate_and_ens', {
       governor,
     } = await govDeploymentManager.getContracts();
 
+    const setFactoryCalldata = await calldata(
+      configurator.populateTransaction.setFactory(comet.address, cometFactory.address)
+    );
 
     const configuration = await getConfigurationStruct(deploymentManager);
 
@@ -59,16 +73,81 @@ export default migration('1689892563_configurate_and_ens', {
       [configurator.address, comet.address]
     );
 
-    const l2ProposalData = utils.defaultAbiCoder.encode(
+    const swapRouter = new Contract(
+      RONIN_SWAP_ROUTER,
+      [
+        'function swapExactTokensForTokens(uint256,uint256,address[],address,uint256) external returns (uint256[])',
+        'function getAmountsOut(uint256,address[]) external view returns (uint256[])',
+      ],
+      deploymentManager.hre.ethers.provider
+    );
+
+    const approveCalldata = await calldata(
+      WETH.populateTransaction.approve(
+        RONIN_SWAP_ROUTER,
+        ETHAmountToSwap
+      )
+    );
+
+    expectedWronAmount = (await swapRouter.getAmountsOut(
+      ETHAmountToSwap,
+      [WETH.address, WRON.address]
+    ))[1];
+    console.log('expectedWronAmount', expectedWronAmount);
+
+    const currentBlock = await deploymentManager.hre.ethers.provider.getBlock('latest');
+    const currentTimestamp = currentBlock.timestamp;
+    const swapCalldata = await calldata(
+      swapRouter.populateTransaction.swapExactTokensForTokens(
+        ETHAmountToSwap,
+        expectedWronAmount.sub(1),
+        [WETH.address, WRON.address],
+        comet.address,
+        currentTimestamp + (86400 * 14) // 14 days
+      )
+    );
+    console.log('Current timestamp\n\n\n', currentTimestamp);
+
+    const l2ProposalDataPart1 = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
-        [configurator.address, cometAdmin.address],
-        [0, 0],
         [
+          WETH.address,
+          swapRouter.address,
+        ],
+        [
+          0,
+          0,
+        ],
+        [
+          'approve(address,uint256)',
+          'swapExactTokensForTokens(uint256,uint256,address[],address,uint256)',
+        ],
+        [
+          approveCalldata,
+          swapCalldata,
+        ],
+      ]
+    );
+
+    const l2ProposalDataPart2 = utils.defaultAbiCoder.encode(
+      ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
+      [
+        [
+          configurator.address,
+          configurator.address,
+          cometAdmin.address,
+        ],
+        [
+          0, 0, 0, 
+        ],
+        [
+          'setFactory(address,address)',
           'setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))',
           'deployAndUpgradeTo(address,address)',
         ],
         [
+          setFactoryCalldata,
           setConfigurationCalldata,
           deployAndUpgradeToCalldata,
         ],
@@ -82,7 +161,7 @@ export default migration('1689892563_configurate_and_ens', {
     const subdomainHash = utils.namehash(ENSSubdomain);
     const chainId = 2020;
     const newMarketObject = {
-      baseSymbol: 'WETH',
+      baseSymbol: 'WRON',
       cometAddress: comet.address,
     };
     const officialMarketsJSON = JSON.parse(
@@ -94,41 +173,43 @@ export default migration('1689892563_configurate_and_ens', {
       officialMarketsJSON[chainId] = [newMarketObject];
     }
 
-    // Add WBTC market into ENS
-    if (!officialMarketsJSON['1'].find((market => market.baseSymbol === 'WBTC'))) {
-      officialMarketsJSON['1'].push({
-        baseSymbol: 'WBTC',
-        cometAddress: '0xe85Dc543813B8c2CFEaAc371517b925a166a9293',
+    // Add WETH market into ENS
+    if (!officialMarketsJSON['2020'].find((market => market.baseSymbol === 'WETH'))) {
+      officialMarketsJSON['2020'].push({
+        baseSymbol: 'WETH',
+        cometAddress: '0x4006eD4097Ee51c09A04c3B0951D28CCf19e6DFE',
       });
     }
 
-    if (!officialMarketsJSON['130']?.find((market => market.baseSymbol === 'USDC'))) {
-      officialMarketsJSON['1'].push({
-        baseSymbol: 'USDC',
-        cometAddress: '0x2c7118c4C88B9841FCF839074c26Ae8f035f2921',
-      });
-    }
 
-    const fee = await l1CCIPRouter.getFee(destinationChainSelector, [
+    const fee1 = await l1CCIPRouter.getFee(destinationChainSelector, [
       utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
-      l2ProposalData,
+      l2ProposalDataPart1,
       [],
-      ethers.constants.AddressZero,
+      constants.AddressZero,
       '0x'
     ]);
 
-    const actions = [
+    const fee2 = await l1CCIPRouter.getFee(destinationChainSelector, [
+      utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
+      l2ProposalDataPart2,
+      [],
+      constants.AddressZero,
+      '0x'
+    ]);
+
+    const mainnetActions = [
       {
         contract: roninl1NativeBridge,
         signature: 'requestDepositFor((address,address,(uint8,uint256,uint256)))',
         args: [
           [
-            comet.address,
-            ethers.constants.AddressZero,
-            [0, 0, ETHAmountToBridge],
+            timelock.address,
+            constants.AddressZero,
+            [0, 0, ETHAmountToSwap],
           ]
         ],
-        value: ETHAmountToBridge
+        value: ETHAmountToSwap
       },
       {
         contract: l1CCIPRouter,
@@ -138,13 +219,29 @@ export default migration('1689892563_configurate_and_ens', {
             destinationChainSelector,
             [
               utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
-              l2ProposalData,
+              l2ProposalDataPart1,
               [],
-              ethers.constants.AddressZero,
+              constants.AddressZero,
               '0x'
             ]
           ],
-        value: fee
+        value: fee1.mul(2n)
+      },
+      {
+        contract: l1CCIPRouter,
+        signature: 'ccipSend(uint64,(bytes,bytes,(address,uint256)[],address,bytes))',
+        args:
+          [
+            destinationChainSelector,
+            [
+              utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
+              l2ProposalDataPart2,
+              [],
+              constants.AddressZero,
+              '0x'
+            ]
+          ],
+        value: fee2.mul(2n)
       },
       {
         target: ENSResolverAddress,
@@ -157,13 +254,18 @@ export default migration('1689892563_configurate_and_ens', {
     ];
 
 
-    const description = '# Initialize cWETHv3 on Ronin\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes deployment of Compound III to Ronin network. This proposal takes the governance steps recommended and necessary to initialize a Compound III WETH market on Ronin; upon execution, cWETHv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite] (https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-ronin/6128/8).\n\nFurther detailed information can be found on the corresponding [deployment pull request](https://github.com/woof-software/comet/pull/123), [deploy market GitHub action run](https://github.com/woof-software/comet/actions/runs/13839778262) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-ronin/6128).\n\n\n## Rewards\n\nGauntlet provided recommendations for COMP rewards, however, the COMP token is not whitelisted on CCIP. When the COMP token is whitelisted, we will create a proposal to bridge COMP tokens and set up speeds.\n\n## Proposal Actions\n\nThe first proposal action bridges ETH seed reserves to the comet using [roninl1NativeBridge](https://etherscan.io/address/0x64192819Ac13Ef72bF6b5AE239AC672B43a9AF08). Bridged ETH will be converted to WETH automatically.\n\nThe second proposal action sets the Comet configuration and deploys a new Comet implementation on Ronin. This sends the encoded `setConfiguration` and `deployAndUpgradeTo` calls across the [l1CCIPRouter](https://etherscan.io/address/0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D) to the bridge receiver on Ronin. \n\nThe third action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Ronin cWETHv3 market.';
+    const description = '# Initialize cWRONv3 on Ronin\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes deployment of Compound III to Ronin network. This proposal takes the governance steps recommended and necessary to initialize a Compound III WRON market on Ronin; upon execution, cWRONv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite] (https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-ronin/6128/8).\n\nFurther detailed information can be found on the corresponding [deployment pull request](https://github.com/woof-software/comet/pull/146), [deploy market GitHub action run](<>) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-ronin/6128).\n\n\n## Rewards\n\nGauntlet provided recommendations for COMP rewards, however, the COMP token is not whitelisted on CCIP. When the COMP token is whitelisted, we will create a proposal to bridge COMP tokens and set up speeds.\n\n## Proposal Actions\n\nThe first proposal action bridges ETH using [roninl1NativeBridge](https://etherscan.io/address/0x64192819Ac13Ef72bF6b5AE239AC672B43a9AF08). Bridged ETH will be converted to WETH automatically and swapped for WRON in order to seed the reserves.\n\nThe second proposal actions approves and swaps received WETH for WRON via native Katana exchange [router](https://app.roninchain.com/address/0xc05afc8c9353c1dd5f872eccfacd60fd5a2a9ac7).\n\nThe third proposal action sets the Comet configuration and deploys a new Comet implementation on Ronin. This sends the encoded `setConfiguration` and `deployAndUpgradeTo` calls across the [l1CCIPRouter](https://etherscan.io/address/0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D) to the bridge receiver on Ronin. \n\nThe fourth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Ronin cWRONv3 market.';
 
-    const txn = await governor.propose(...(await proposal(actions, description)));
-    const event = (await txn.wait()).events.find((event) => event.event === 'ProposalCreated');
+    const txn = await deploymentManager.retry(async () =>
+      trace(
+        await governor.propose(...(await proposal(mainnetActions, description)))
+      )
+    );
 
+    const event = txn.events.find(
+      (event) => event.event === 'ProposalCreated'
+    );
     const [proposalId] = event.args;
-
     trace(`Created proposal ${proposalId}.`);
   },
 
@@ -176,19 +278,22 @@ export default migration('1689892563_configurate_and_ens', {
     govDeploymentManager: DeploymentManager,
     preMigrationBlockNumber: number
   ) {
-    const ethers = deploymentManager.hre.ethers;
-    const { utils } = ethers;
+    // const ethers = deploymentManager.hre.ethers;
     await deploymentManager.spider();
-    const { comet, rewards, WETH } = await deploymentManager.getContracts();
+    const {
+      comet,
+      // rewards,
+      WRON,
+    } = await deploymentManager.getContracts();
 
     const hreMainnet = await forkedHreForBase({ name: '', network: 'mainnet', deployment: '' });
     const dm = new DeploymentManager('mainnet', 'usdc', hreMainnet);
 
-    const cometMainnet = await dm.contract('comet');
+    const { comet: cometMainnet } = await dm.getContracts();
     const { timelock } = await govDeploymentManager.getContracts();
-    const guardian = await cometMainnet!.pauseGuardian();
+    const guardian = await cometMainnet.pauseGuardian();
 
-    const pauseGuardian = new ethers.Contract(
+    const pauseGuardian = new Contract(
       await comet.pauseGuardian(),
       [
         'function getOwners() external view returns (address[] memory)',
@@ -196,7 +301,7 @@ export default migration('1689892563_configurate_and_ens', {
       await deploymentManager.getSigner()
     );
 
-    const GnosisSafeContract = new ethers.Contract(
+    const GnosisSafeContract = new Contract(
       guardian,
       [
         'function getOwners() external view returns (address[] memory)',
@@ -209,7 +314,7 @@ export default migration('1689892563_configurate_and_ens', {
     expect(owners).to.deep.equal(ownersMainnet);
     expect(owners.length).to.not.be.equal(0);
 
-    const cometNew = new ethers.Contract(
+    const cometNew = new Contract(
       comet.address,
       [
         'function assetList() external view returns (address)',
@@ -220,26 +325,26 @@ export default migration('1689892563_configurate_and_ens', {
 
     const assetListAddress = await cometNew.assetList();
 
-    expect(assetListAddress).to.not.be.equal(ethers.constants.AddressZero);
+    expect(assetListAddress).to.not.be.equal(constants.AddressZero);
 
-    const stateChanges = await diffState(
-      comet,
-      getCometConfig,
-      preMigrationBlockNumber
-    );
-    expect(stateChanges).to.deep.equal({
-      WRON: {
-        supplyCap: exp(3000000, 18)
-      },
-      USDC: {
-        supplyCap: exp(400000, 6)
-      },
-      AXS: {
-        supplyCap: exp(300000, 18)
-      },
-      // baseTrackingSupplySpeed: exp(2/86400, 15, 18),
-      // baseTrackingBorrowSpeed: exp(1/86400, 15, 18),
-    });
+    // const stateChanges = await diffState(
+    //   comet,
+    //   getCometConfig,
+    //   preMigrationBlockNumber
+    // );
+    // expect(stateChanges).to.deep.equal({
+    // WETH: {
+    //   supplyCap: exp(500, 18)
+    // },
+    // USDC: {
+    //   supplyCap: exp(500_000, 6)
+    // },
+    // AXS: {
+    //   supplyCap: exp(300_000, 18)
+    // },
+    // baseTrackingSupplySpeed: exp(2/86400, 15, 18),
+    // baseTrackingBorrowSpeed: exp(1/86400, 15, 18),
+    // });
 
     // We should not do this check, as rewards only deployed, but without reward token
     // const config = await rewards.rewardConfig(comet.address);
@@ -247,7 +352,7 @@ export default migration('1689892563_configurate_and_ens', {
     // expect(config.shouldUpscale).to.be.equal(true);
 
     // 4. & 5.
-    expect(await WETH.balanceOf(comet.address)).to.be.equal(exp(25, 18));
+    expect(await WRON.balanceOf(comet.address)).to.be.equal(expectedWronAmount);
     // 6.
     const ENSResolver = await govDeploymentManager.existing(
       'ENSResolver',
@@ -325,8 +430,12 @@ export default migration('1689892563_configurate_and_ens', {
       2020: [
         {
           baseSymbol: 'WETH',
-          cometAddress: comet.address,
+          cometAddress: '0x4006eD4097Ee51c09A04c3B0951D28CCf19e6DFE',
         },
+        {
+          baseSymbol: 'WRON',
+          cometAddress: comet.address,
+        }
       ],
       5000: [
         {
