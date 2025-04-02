@@ -12,7 +12,7 @@ abstract contract CometRewardsInterface {
         uint owed;
     }
 
-    function getRewardOwed(address comet, address account) virtual external returns (RewardOwed memory);
-    function claim(address comet, address src, bool shouldAccrue) virtual external;
-    function claimTo(address comet, address src, address to, bool shouldAccrue) virtual external;
+    function getRewardOwed(address comet, address account) external virtual returns (RewardOwed memory);
+    function claim(address comet, address src, bool shouldAccrue) external virtual;
+    function claimTo(address comet, address src, address to, bool shouldAccrue) external virtual;
 }

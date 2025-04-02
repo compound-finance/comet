@@ -149,12 +149,13 @@ contract CometRewardsV2 {
     );
 
     event NewCampaign(
-        address comet,
+        address indexed comet,
+        bytes32 startRoot,
         uint256 campaignId
     );
 
     event NewCampaignFinishRoot(
-        address comet,
+        address indexed comet,
         bytes32 finishRoot,
         uint256 campaignId
     );
@@ -179,7 +180,6 @@ contract CometRewardsV2 {
     error NotSupported(address, address);
     error NullGovernor();
     error InvalidProof();
-    error NotANewMember(address);
     error CampaignEnded(address, uint256);
 
     /**
@@ -195,8 +195,8 @@ contract CometRewardsV2 {
      * @notice Adds a new campaign to a Comet with custom multipliers for each token
      * @param comet Comet protocol address
      * @param startRoot The root of the Merkle tree for the startAccrued
-     * @param assets Reward tokens addresses
-     * @param duration The duration of the campaign
+     * @param assets Array of reward tokens and their respective multipliers
+     * @param duration The duration of the campaign in seconds, must not exceed MAX_CAMPAIGN_DURATION
      * @return campaignId Id of the created campaign
      */
     function setNewCampaignWithCustomTokenMultiplier(
@@ -204,7 +204,7 @@ contract CometRewardsV2 {
         bytes32 startRoot,
         TokenMultiplier[] memory assets,
         uint256 duration
-    ) public returns(uint256 campaignId) {
+    ) public returns(uint256) {
         if(msg.sender != governor) revert NotPermitted(msg.sender);
         if(startRoot == bytes32(0)) revert BadData();
         if(assets.length == 0) revert BadData();
@@ -212,7 +212,7 @@ contract CometRewardsV2 {
 
         uint64 accrualScale = CometInterface(comet).baseAccrualScale();
         Campaign storage $ = campaigns[comet].push();
-        campaignId = campaigns[comet].length - 1;
+        uint256 campaignId = campaigns[comet].length - 1;
         $.startRoot = startRoot;
         for (uint256 i = 0; i < assets.length; i++) {
             if(assets[i].multiplier == 0) revert BadData();
@@ -240,10 +240,11 @@ contract CometRewardsV2 {
 
         emit NewCampaign(
             comet,
+            startRoot,
             campaignId
         );
 
-        return(campaignId);
+        return campaignId;
     }
 
     /**
@@ -251,6 +252,7 @@ contract CometRewardsV2 {
      * @param comet The protocol instance
      * @param startRoot The root of the Merkle tree for the startAccrued
      * @param tokens The reward tokens addresses
+     * @param duration The duration of the campaign in seconds, must not exceed MAX_CAMPAIGN_DURATION
      * @return campaignId Id of the created campaign
      */
     function setNewCampaign(
@@ -271,28 +273,26 @@ contract CometRewardsV2 {
      * @param comet Comet protocol address
      * @param campaignId Id of the campaign
      * @param users The list of users to populate the data for
-     * @param tokens The list of tokens to populate the data with
      * @param claimedAmounts The list of amounts to populate the data with
      */
     function setRewardsClaimed(
         address comet,
         uint256 campaignId,
         address[] calldata users,
-        address[][] calldata tokens,
         uint256[][] calldata claimedAmounts
     ) external {
         if(msg.sender != governor) revert NotPermitted(msg.sender);
         if(users.length != claimedAmounts.length) revert BadData();
-        if(tokens.length != claimedAmounts.length) revert BadData();
 
         Campaign storage $ = campaigns[comet][campaignId];
+        address[] storage assets = $.assets;
 
         for (uint256 i = 0; i < claimedAmounts.length; i++) {
-            if($.assets.length != claimedAmounts[i].length) revert BadData();
-            if($.assets.length != tokens[i].length) revert BadData();
-            for(uint256 j = 0; j < claimedAmounts[i].length; j++){
-                emit RewardsClaimedSet(campaignId, users[i], comet, tokens[i][j], claimedAmounts[i][j]);
-                $.claimed[users[i]][tokens[i][j]] = claimedAmounts[i][j];
+            if(assets.length != claimedAmounts[i].length) revert BadData();
+
+            for(uint256 j = 0; j < assets.length; j++){
+                emit RewardsClaimedSet(campaignId, users[i], comet, assets[j], claimedAmounts[i][j]);
+                $.claimed[users[i]][assets[j]] = claimedAmounts[i][j];
             }
         }
     }
@@ -344,12 +344,15 @@ contract CometRewardsV2 {
 
     /**
      * @notice Calculates the amount of a reward token owed to an account
+     * @dev This function is used to calculate the rewards owed to an account for a specific token
      * @param comet Comet protocol address
      * @param campaignId Id of the campaign
      * @param token Reward token address
      * @param account The account to check rewards for
      * @param startAccrued Start accrued value
      * @param finishAccrued Finish accrued value if finishRoot is set
+     * @param shouldAccrue If true, accrues rewards before calculation if finishRoot is not set
+     * @return rewardOwed A struct containing the reward token address and the amount owed
      */
     function getRewardsOwed(
         address comet,
@@ -387,12 +390,14 @@ contract CometRewardsV2 {
 
     /**
      * @notice Calculates the amount of each reward token owed to an account in a batch
+     * @dev This function is used to calculate the rewards owed to an account for all tokens in a campaign
      * @param comet Comet protocol address
      * @param campaignId Id of the campaign
      * @param account The account to check rewards for
      * @param startAccrued Start accrued value
      * @param finishAccrued Finish accrued value if finishRoot is set
-     * @return owed List of RewardOwed
+     * @param shouldAccrue If true, accrues rewards before calculation if finishRoot is not set
+     * @return owed List of RewardOwed, where each entry contains a reward token address and the amount owed
      */
     function getRewardsOwedBatch(
         address comet,
@@ -436,6 +441,11 @@ contract CometRewardsV2 {
 
     /**
      * @notice Claim rewards with each token from a comet instance to owner address
+     *         This function is designed for users who are not included in the start Merkle root.
+     *         To prove their status as new members, users must provide Merkle proofs for the two closest addresses to their own address.
+     *         If the user's address is either lower than the first address or higher than the last address in the tree,
+     *         the Merkle Tree includes placeholders (e.g., zero and maximum address) for comparison, ensuring there are always at least two addresses available for validation.
+     *         Additionally, the Merkle Tree contains the index of each address, which serves as proof of membership for existing users.
      * @param comet Comet protocol address
      * @param campaignId Id of the campaign
      * @param src The owner to claim for
@@ -475,9 +485,14 @@ contract CometRewardsV2 {
     }
 
     /**
-     * @notice Claim rewards for all chosen campaigns for given comet instance
+     * @notice Claim rewards for all chosen campaigns for given comet instance.
+     *         This function is designed for users who are not included in the start Merkle root.
+     *         To prove their status as new members, users must provide Merkle proofs for the two closest addresses to their own address.
+     *         If the user's address is either lower than the first address or higher than the last address in the tree,
+     *         the Merkle Tree includes placeholders (e.g., zero and maximum address) for comparison, ensuring there are always at least two addresses available for validation.
+     *         Additionally, the Merkle Tree contains the index of each address, which serves as proof of membership for existing users.
      * @param comet Comet protocol address
-     * @param campaignIDs The list of campaigns to claim for
+     * @param campaignIds The list of campaigns to claim for
      * @param src The owner to claim for
      * @param shouldAccrue Whether or not to call accrue first
      * @param neighbors The neighbors of the account
@@ -486,27 +501,27 @@ contract CometRewardsV2 {
      */
     function claimBatchForNewMember(
         address comet,
-        uint256[] memory campaignIDs,
+        uint256[] calldata campaignIds,
         address src,
         bool shouldAccrue,
         address[2][] calldata neighbors,
         MultiProofs[] calldata multiProofs,
         FinishProof[] calldata finishProofs
     ) external {
-        if(campaignIDs.length != neighbors.length) revert BadData();
-        if(campaignIDs.length != multiProofs.length) revert BadData();
-        if(campaignIDs.length != finishProofs.length) revert BadData();
+        if(campaignIds.length != neighbors.length) revert BadData();
+        if(campaignIds.length != multiProofs.length) revert BadData();
+        if(campaignIds.length != finishProofs.length) revert BadData();
         if(campaigns[comet].length == 0) revert NotSupported(comet, address(0));
         if(shouldAccrue)
             CometInterface(comet).accrueAccount(src);
-        for (uint256 i; i < campaignIDs.length; i++) {
-            verifyNewMember(comet, src, campaignIDs[i], neighbors[i], multiProofs[i].proofs);
+        for (uint256 i; i < campaignIds.length; i++) {
+            verifyNewMember(comet, src, campaignIds[i], neighbors[i], multiProofs[i].proofs);
 
             claimInternalForNewMember(
                 comet,
                 src,
                 src,
-                campaignIDs[i],
+                campaignIds[i],
                 false,
                 finishProofs[i]
             );
@@ -514,7 +529,12 @@ contract CometRewardsV2 {
     }
 
     /**
-     * @notice Claim rewards with each token from a comet instance to a target address
+     * @notice Claim rewards with each token from a comet instance to a target address.
+     *         This function is designed for users who are not included in the start Merkle root.
+     *         To prove their status as new members, users must provide Merkle proofs for the two closest addresses to their own address.
+     *         If the user's address is either lower than the first address or higher than the last address in the tree,
+     *         the Merkle Tree includes placeholders (e.g., zero and maximum address) for comparison, ensuring there are always at least two addresses available for validation.
+     *         Additionally, the Merkle Tree contains the index of each address, which serves as proof of membership for existing users.
      * @param comet Comet protocol address
      * @param campaignId Id of the campaign
      * @param src The owner to claim for
@@ -551,9 +571,14 @@ contract CometRewardsV2 {
     }
 
     /**
-     * @notice Claim rewards for all chosen campaigns for given comet instance to a target address
+    * @notice Claim rewards for all selected campaigns for a given Comet instance to a specified target address.
+    *         This function is designed for users who are not included in the start Merkle root.
+    *         To prove their status as new members, users must provide Merkle proofs for the two closest addresses to their own address.
+    *         If the user's address is either lower than the first address or higher than the last address in the tree,
+    *         the Merkle Tree includes placeholders (e.g., zero and maximum address) for comparison, ensuring there are always at least two addresses available for validation.
+    *         Additionally, the Merkle Tree contains the index of each address, which serves as proof of membership for existing users.
      * @param comet Comet protocol address
-     * @param campaignIDs The list of campaigns to claim for
+     * @param campaignIds The list of campaigns to claim for
      * @param src The owner to claim for
      * @param to The address to receive the rewards
      * @param shouldAccrue Whether or not to call accrue first
@@ -563,7 +588,7 @@ contract CometRewardsV2 {
      */
     function claimToBatchForNewMember(
         address comet,
-        uint256[] memory campaignIDs,
+        uint256[] calldata campaignIds,
         address src,
         address to,
         bool shouldAccrue,
@@ -571,23 +596,22 @@ contract CometRewardsV2 {
         MultiProofs[] calldata multiProofs,
         FinishProof[] calldata finishProofs
     ) external {
-        if(campaignIDs.length != neighbors.length) revert BadData();
-        if(campaignIDs.length != multiProofs.length) revert BadData();
-        if(campaignIDs.length != finishProofs.length) revert BadData();
+        if(campaignIds.length != neighbors.length) revert BadData();
+        if(campaignIds.length != multiProofs.length) revert BadData();
+        if(campaignIds.length != finishProofs.length) revert BadData();
         if(campaigns[comet].length == 0) revert NotSupported(comet, address(0));
         if(shouldAccrue)
             CometInterface(comet).accrueAccount(src);
-        for (uint256 i; i < campaignIDs.length; i++) {
-            if(!CometInterface(comet).hasPermission(src, msg.sender))
-                revert NotPermitted(msg.sender);
-            
-            verifyNewMember(comet, src, campaignIDs[i], neighbors[i], multiProofs[i].proofs);
+        if(!CometInterface(comet).hasPermission(src, msg.sender))
+            revert NotPermitted(msg.sender);
+        for (uint256 i; i < campaignIds.length; i++) {
+            verifyNewMember(comet, src, campaignIds[i], neighbors[i], multiProofs[i].proofs);
 
             claimInternalForNewMember(
                 comet,
                 src,
                 to,
-                campaignIDs[i],
+                campaignIds[i],
                 false,
                 finishProofs[i]
             );
@@ -595,7 +619,10 @@ contract CometRewardsV2 {
     }
 
     /**
-     * @notice Claim rewards with each token from a comet instance to owner address
+     * @notice Claim rewards with each token from a comet instance to the owner's address.
+     *         This function allows users who are already included in the start Merkle root to claim their accumulated rewards.
+     *         The function verifies the provided Merkle proofs to ensure that the user's accrued rewards are valid.
+     *         If the campaign has a finishRoot set, an additional proof is required to validate the final accrued amount.
      * @param comet Comet protocol address
      * @param campaignId Id of the campaign
      * @param src The owner to claim for
@@ -609,11 +636,16 @@ contract CometRewardsV2 {
         bool shouldAccrue,
         Proofs calldata proofs
     ) external {
+        if(campaigns[comet].length == 0) revert NotSupported(comet, address(0));
+
         claimInternal(comet, src, src, campaignId, proofs, shouldAccrue);
     }
 
     /**
-     * @notice Claim rewards for all chosen campaigns for given comet instance
+     * @notice Claim rewards for all selected campaigns in a given comet instance.
+     *         This function enables users to batch multiple claims in a single transaction, reducing gas costs.
+     *         Each claim requires a valid Merkle proof for both the start accrued and, if applicable, the finish accrued value.
+     *         Users must ensure that they provide the correct proofs for each campaign they are claiming from.
      * @param comet Comet protocol address
      * @param campaignIds The list of campaigns to claim for
      * @param src The owner to claim for
@@ -622,7 +654,7 @@ contract CometRewardsV2 {
      */
     function claimBatch(
         address comet,
-        uint256[] memory campaignIds,
+        uint256[] calldata campaignIds,
         address src,
         bool shouldAccrue,
         Proofs[] calldata proofs
@@ -631,7 +663,10 @@ contract CometRewardsV2 {
     }
 
     /**
-     * @notice Claim rewards with each token from a comet instance to a target address
+     * @notice Claim rewards with each token from a comet instance and send them to a specified target address.
+     *         This function allows users to claim their rewards and direct them to a different address instead of their own.
+     *         The function requires the caller to have permission to act on behalf of the user (`src`).
+     *         As with standard claims, a valid Merkle proof must be provided to verify the rewards owed.
      * @param comet Comet protocol address
      * @param campaignId Id of the campaign
      * @param src The owner to claim for
@@ -649,6 +684,7 @@ contract CometRewardsV2 {
     ) external {
         if(!CometInterface(comet).hasPermission(src, msg.sender))
             revert NotPermitted(msg.sender);
+        if(campaigns[comet].length == 0) revert NotSupported(comet, address(0));
 
         claimInternal(comet, src, to, campaignId, proofs, shouldAccrue);
     }
@@ -674,7 +710,8 @@ contract CometRewardsV2 {
      * @notice Returns the reward configuration for all tokens in a specific campaign
      * @param comet Comet protocol address
      * @param campaignId Id of the campaign
-     * @return The reward configuration
+     * @return tokens List of reward token addresses in the campaign
+     * @return configs List of corresponding AssetConfig structs containing reward configurations for each token
      */
     function rewardConfig(
         address comet,
@@ -719,7 +756,7 @@ contract CometRewardsV2 {
     /**
      * @notice Returns true if the proof is valid
      * @param root The root of the Merkle tree
-     * @param proofs The Merkle proofs
+     * @param proof The Merkle proof
      * @param account The account to check for
      * @param index The index of the account
      * @param accrued The accrued value for the account
@@ -727,13 +764,13 @@ contract CometRewardsV2 {
      */
     function verifyProof(
         bytes32 root,
-        bytes32[] calldata proofs,
+        bytes32[] calldata proof,
         address account,
         uint256 index,
         uint256 accrued
     ) external pure returns(bool) {
         return MerkleProof.verifyCalldata(
-            proofs,
+            proof,
             root,
             keccak256(bytes.concat(keccak256(abi.encode(account, index, accrued))))
         );
@@ -766,7 +803,7 @@ contract CometRewardsV2 {
      */
     function claimToBatch(
         address comet,
-        uint256[] memory campaignIds,
+        uint256[] calldata campaignIds,
         address src,
         address to,
         bool shouldAccrue,
@@ -789,7 +826,6 @@ contract CometRewardsV2 {
         Proofs[2] calldata proofs
     ) internal view returns(bool) {
         // check if the account is in between the neighbors
-        if(campaigns[comet].length == 0) revert NotSupported(comet, address(0));
         if(campaignId >= campaigns[comet].length) revert BadData();
         if(!(neighbors[0] < account && account < neighbors[1])) revert BadData();
         // check if the neighbors are in the right order
@@ -875,7 +911,6 @@ contract CometRewardsV2 {
         Proofs calldata proofs,
         bool shouldAccrue
     ) internal {
-        if(campaigns[comet].length == 0) revert NotSupported(comet, address(0));
         if(campaignId >= campaigns[comet].length) revert BadData();
         Campaign storage $ = campaigns[comet][campaignId];
         
@@ -931,7 +966,7 @@ contract CometRewardsV2 {
         address comet,
         address src,
         address to,
-        uint256[] memory campaignIds,
+        uint256[] calldata campaignIds,
         Proofs[] calldata proofs,
         bool shouldAccrue
     ) internal {
@@ -940,7 +975,6 @@ contract CometRewardsV2 {
         if(shouldAccrue)
             CometInterface(comet).accrueAccount(src);
         for (uint256 i; i < campaignIds.length; i++) {
-            if(campaignIds[i] >= campaigns[comet].length) revert BadData();
             claimInternal(
                 comet,
                 src,
@@ -961,7 +995,8 @@ contract CometRewardsV2 {
         uint256 startAccrued, //if startAccrued = 0 => it is a new member
         uint256 finishAccrued,
         AssetConfig memory config
-    ) internal view returns (uint256 accrued) {
+    ) internal view returns (uint256) {
+        uint256 accrued;
         if(finishAccrued > 0) {
             accrued = finishAccrued - startAccrued;
         } else{
@@ -979,7 +1014,7 @@ contract CometRewardsV2 {
     /**
      * @dev Safe ERC20 transfer out
      */
-    function doTransferOut(address token, address to, uint256 amount) internal returns(uint256 amountOut) {
+    function doTransferOut(address token, address to, uint256 amount) internal returns(uint256) {
         if(amount == 0) return 0;
         IERC20NonStandard(token).transfer(to, amount);
         bool success;
@@ -996,7 +1031,10 @@ contract CometRewardsV2 {
                     revert(0, 0)
                 }
         }
-        if(!success) emit TransferOutFailed(token, to, amount);
+        if(!success){
+            emit TransferOutFailed(token, to, amount);
+            return 0;
+        }
         else return amount;
     }
 
