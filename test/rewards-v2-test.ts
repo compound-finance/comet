@@ -1809,10 +1809,6 @@ describe('CometRewardsV2', () => {
           0,
           [alice.address, bob.address],
           [
-            [COMP.address, USDC.address],
-            [COMP.address, USDC.address]
-          ],
-          [
             [exp(100, 18), exp(2, 18)],
             [exp(100, 18), exp(2, 18)]
           ]
@@ -2066,9 +2062,6 @@ describe('CometRewardsV2', () => {
           0,
           [alice.address],
           [
-            [COMP.address, USDC.address],
-          ],
-          [
             [toSubCOMP, toSubUSDC],
           ]
         )
@@ -2162,7 +2155,7 @@ describe('CometRewardsV2', () => {
         rewards.setRewardsClaimed(comet.address, [alice.address], [])
       ).to.be.revertedWith(`custom error 'BadData()'`);
       await expect(
-        rewardsV2.setRewardsClaimed(comet.address, 0, [alice.address], [[]], [[]])
+        rewardsV2.setRewardsClaimed(comet.address, 0, [alice.address], [[]])
       ).to.be.revertedWith(`custom error 'BadData()'`);
     });
 
@@ -2194,7 +2187,7 @@ describe('CometRewardsV2', () => {
       await expect(
         rewardsV2
           .connect(alice)
-          .setRewardsClaimed(comet.address, 0, [alice.address], [[COMP.address]], [[exp(100, 18)]])
+          .setRewardsClaimed(comet.address, 0, [alice.address], [[exp(100, 18)]])
         //).to.be.revertedWith(`custom error 'NotPermitted("${alice.address}")'`);
       ).to.be.revertedWithCustomError(rewardsV2, 'NotPermitted').withArgs(alice.address);
     });
@@ -2324,7 +2317,6 @@ describe('CometRewardsV2', () => {
         comet.address,
         0,
         [alice.address],
-        [[COMP.address]],
         [[exp(100, 18)]]
       )).to.be.revertedWithCustomError(rewardsV2, 'NotPermitted').withArgs(alice.address);
 
@@ -5303,28 +5295,24 @@ describe('CometRewardsV2', () => {
       await expect(rewardsV2.setRewardsClaimed(comet.address, 
         0,
         [alice.address],
-        [[COMP.address, USDC.address]],
         [[0, 0], [1, 1]]
       )).to.be.revertedWithCustomError(rewardsV2, 'BadData');
 
       await expect(rewardsV2.setRewardsClaimed(comet.address, 
         0,
         [alice.address, bob.address],
-        [[COMP.address, USDC.address]],
-        [[0, 0], [1, 1]]
+        [[0, 0]]
       )).to.be.revertedWithCustomError(rewardsV2, 'BadData');
       
       await expect(rewardsV2.setRewardsClaimed(comet.address, 
         0,
         [alice.address],
-        [[COMP.address]],
-        [[0, 1]]
+        [[0, 1, 1]]
       )).to.be.revertedWithCustomError(rewardsV2, 'BadData');
 
       await expect(rewardsV2.setRewardsClaimed(comet.address, 
         0,
         [alice.address],
-        [[COMP.address, USDC.address]],
         [[0]]
       )).to.be.revertedWithCustomError(rewardsV2, 'BadData');
     });
