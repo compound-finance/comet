@@ -305,9 +305,14 @@ scenario(
 scenario(
   'Comet#withdraw collateral reverts if position is undercollateralized',
   {
-    cometBalances: {
-      albert: { $base: -1000, $asset0: 1000 }, // in units of asset, not wei
-    },
+    cometBalances: async (ctx) => (
+      {
+        albert: { 
+          $base: -getConfigForScenario(ctx).withdrawBase1,
+          $asset0: getConfigForScenario(ctx).withdrawAsset1
+        }, // in units of asset, not wei
+      }
+    )
   },
   async ({ comet, actors }, context) => {
     const { albert } = actors;
@@ -318,7 +323,7 @@ scenario(
     await expectRevertCustom(
       albert.withdrawAsset({
         asset: collateralAsset.address,
-        amount: 1000n * scale
+        amount: BigInt(getConfigForScenario(context).withdrawAsset1) * scale
       }),
       'NotCollateralized()'
     );
