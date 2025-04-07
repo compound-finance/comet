@@ -43,6 +43,7 @@ import optimismWethRelationConfigMap from './deployments/optimism/weth/relations
 import mantleRelationConfigMap from './deployments/mantle/usde/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
 import roninRelationConfigMap from './deployments/ronin/weth/relations';
+import roninUsdcRelationConfigMap from './deployments/ronin/usdc/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -227,9 +228,18 @@ const config: HardhatUserConfig = {
         : { mnemonic: MNEMONIC, accountsBalance: (10n ** 36n).toString() },
       // this should only be relied upon for test harnesses and coverage (which does not use viaIR flag)
       allowUnlimitedContractSize: true,
-      hardfork: 'cancun',
+      //hardfork: 'london',
       chains: networkConfigs.reduce((acc, { chainId }) => {
         if (chainId === 1) return acc;
+        if (chainId === 2020) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+            }
+          };
+          return acc;
+        }
         acc[chainId] = {
           hardforkHistory: {
             berlin: 1,
@@ -367,7 +377,8 @@ const config: HardhatUserConfig = {
         usdc: scrollRelationConfigMap
       },
       'ronin': {
-        weth: roninRelationConfigMap
+        weth: roninRelationConfigMap,
+        usdc: roninUsdcRelationConfigMap
       }
     },
   },
@@ -526,7 +537,13 @@ const config: HardhatUserConfig = {
         network: 'ronin',
         deployment: 'weth',
         auxiliaryBase: 'mainnet'
-      }
+      },
+      {
+        name: 'ronin-usdc',
+        network: 'ronin',
+        deployment: 'usdc',
+        auxiliaryBase: 'mainnet'
+      },
     ],
   },
 

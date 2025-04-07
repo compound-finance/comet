@@ -62,7 +62,7 @@ jobs:
       - name: Get governance network
         run: |
           case ${{ github.event.inputs.network }} in
-            polygon | arbitrum | base | optimism | mantle | scroll | ronin)
+            polygon | arbitrum | base | optimism | mantle | scroll | linea | ronin)
                 echo "GOV_NETWORK=mainnet" >> $GITHUB_ENV ;;
             sepolia)
                 echo "GOV_NETWORK=sepolia" >> $GITHUB_ENV ;;

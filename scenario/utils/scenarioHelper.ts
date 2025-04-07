@@ -21,8 +21,8 @@ const config = {
   transferAsset1: 5000,
   interestSeconds: 110,
   withdrawBase: 1000,
-  withdrawBase1: 1000,
   withdrawAsset: 3000,
+  withdrawBase1: 1000,
   withdrawAsset1: 1000,
 };
 
