@@ -63,6 +63,13 @@ export type Proposal = [
   string[], // calldatas
   string // description
 ];
+export type TestnetProposal = [
+  string[], // targets
+  BigNumberish[], // values
+  string[], // signatures
+  string[], // calldatas
+  string // description
+];
 
 // Note: this list could change over time
 // Ideally these wouldn't be hardcoded, but other solutions are much more complex, and slower
@@ -93,6 +100,9 @@ export const WHALES = {
     '0x43594da5d6A03b2137a04DF5685805C676dEf7cB', // rsETH whale
     '0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b',
     '0x0B925eD163218f6662a35e0f0371Ac234f9E9371', // wstETH whale
+    '0x3b3501f6778Bfc56526cF2aC33b78b2fDBE4bc73', // solvBTC.BBN whale
+    '0x8bc93498b861fd98277c3b51d240e7E56E48F23c', // solvBTC.BBN whale
+    '0xD5cf704dC17403343965b4F9cd4D7B5e9b20CC52', // solvBTC.BBN whale
   ],
   polygon: [
     '0xF977814e90dA44bFA03b6295A0616a897441aceC', // USDT whale
@@ -152,6 +162,9 @@ export const WHALES = {
     '0x233493E9DC68e548AC27E4933A600A3A4682c0c3', // FBTC whale
     '0xCd83CbBFCE149d141A5171C3D6a0F0fCCeE225Ab', // COMP whale
   ],
+  'unichain': [
+    '0x4200000000000000000000000000000000000006', // WETH whale
+  ],
   ronin: [
     '0x41058bcc968f809e9dbb955f402de150a3e5d1b5',
     '0x68a57af44503da4223bb6f494de012410fda1ae0',
@@ -173,6 +186,28 @@ export async function calldata(req: Promise<PopulatedTransaction>): Promise<stri
   return '0x' + (await req).data.slice(2 + 8);
 }
 
+export async function testnetProposal(actions: ProposalAction[], description: string): Promise<TestnetProposal> {
+  const targets = [],
+    values = [],
+    calldatas = [];
+  for (const action of actions) {
+    if (action['contract']) {
+      const { contract, value, signature, args } = action as ContractAction;
+      targets.push(contract.address);
+      values.push(value ?? 0);
+      calldatas.push(utils.id(signature).slice(0, 10) + (await calldata(contract.populateTransaction[signature](...args))).slice(2));
+    } else {
+      const { target, value, signature, calldata } = action as TargetAction;
+      targets.push(target);
+      values.push(value ?? 0);
+      calldatas.push(utils.id(signature).slice(0, 10) + calldata.slice(2));
+    }
+  }
+
+  return [targets, values, signatures, calldatas, description];
+
+}
+
 export async function proposal(actions: ProposalAction[], description: string): Promise<Proposal> {
   const targets = [],
     values = [],
@@ -190,5 +225,6 @@ export async function proposal(actions: ProposalAction[], description: string): 
       calldatas.push(utils.id(signature).slice(0, 10) + calldata.slice(2));
     }
   }
+
   return [targets, values, calldatas, description];
 }
