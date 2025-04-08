@@ -75,6 +75,7 @@ export type TestnetProposal = [
 // Ideally these wouldn't be hardcoded, but other solutions are much more complex, and slower
 export const COMP_WHALES = {
   mainnet: [
+    '0x36cc7B13029B5DEe4034745FB4F24034f3F2ffc6',
     '0x9aa835bc7b8ce13b9b0c9764a52fbf71ac62ccf1',
     '0x683a4f9915d6216f73d6df50151725036bd26c02',
     '0x8169522c2C57883E8EF80C498aAB7820dA539806',
@@ -100,6 +101,7 @@ export const WHALES = {
     '0x43594da5d6A03b2137a04DF5685805C676dEf7cB', // rsETH whale
     '0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b',
     '0x0B925eD163218f6662a35e0f0371Ac234f9E9371', // wstETH whale
+    '0xf0bb20865277aBd641a307eCe5Ee04E79073416C', // tETH whale
     '0x3b3501f6778Bfc56526cF2aC33b78b2fDBE4bc73', // solvBTC.BBN whale
     '0x8bc93498b861fd98277c3b51d240e7E56E48F23c', // solvBTC.BBN whale
     '0xD5cf704dC17403343965b4F9cd4D7B5e9b20CC52', // solvBTC.BBN whale
@@ -156,6 +158,7 @@ export const WHALES = {
     '0x651C9D1F9da787688225f49d63ad1623ba89A8D5', // FBTC whale
     '0xC455fE28a76da80022d4C35A37eB08FF405Eb78f', // FBTC whale
     '0x524db930F0886CdE7B5FFFc920Aae85e98C2abfb', // FBTC whale
+    '0x651C9D1F9da787688225f49d63ad1623ba89A8D5', // FBTC whale
     '0x72c7d27320e042417506e594697324dB5Fbf334C', // FBTC whale
     '0x3880233e78966eb13a9c2881d5f162d646633178', // FBTC whale
     '0x233493E9DC68e548AC27E4933A600A3A4682c0c3', // FBTC whale
