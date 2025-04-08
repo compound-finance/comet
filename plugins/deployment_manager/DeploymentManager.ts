@@ -1,6 +1,6 @@
 import { diff } from 'jest-diff';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { Contract, providers } from 'ethers';
+import { Contract, providers, constants } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Alias, Address, BuildFile, TraceFn } from './Types';
 import { getAliases, storeAliases, putAlias } from './Aliases';
@@ -163,7 +163,7 @@ export class DeploymentManager {
     retries?: number
   ): Promise<C> {
     const maybeExisting: C = await this.contract(alias);
-    if (!maybeExisting || force) {
+    if (!maybeExisting || maybeExisting.address == constants.AddressZero || force) {
       const buildFile = await this.import(address, fromNetwork);
       const contract: C = await this._deployBuild(buildFile, deployArgs, retries);
       await this.putAlias(alias, contract);

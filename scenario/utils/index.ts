@@ -332,8 +332,8 @@ export async function fetchLogs(
   }
 }
 
-async function redeployRenzoOracle(dm: DeploymentManager){
-  if(dm.network === 'mainnet') {
+async function redeployRenzoOracle(dm: DeploymentManager) {
+  if (dm.network === 'mainnet') {
     // renzo admin 	0xD1e6626310fD54Eceb5b9a51dA2eC329D6D4B68A
     const renzoOracle = new Contract(
       '0x5a12796f7e7EBbbc8a402667d266d2e65A814042',
@@ -342,7 +342,7 @@ async function redeployRenzoOracle(dm: DeploymentManager){
       ],
       dm.hre.ethers.provider
     );
-    
+
     const admin = await impersonateAddress(dm, '0xD1e6626310fD54Eceb5b9a51dA2eC329D6D4B68A');
     // set balance
     await dm.hre.ethers.provider.send('hardhat_setBalance', [
@@ -368,6 +368,12 @@ const REDSTONE_FEEDS = {
     '0x9b2C948dbA5952A1f5Ab6fA16101c1392b8da1ab', // mETH / ETH
     '0xFc34806fbD673c21c1AEC26d69AA247F1e69a2C6', // ETH / USD
   ],
+  unichain: [
+    '0xe8D9FbC10e00ecc9f0694617075fDAF657a76FB2', // ETH / USD
+    '0xD15862FC3D5407A03B696548b6902D6464A69b8c', // USDC / ETH
+    '0xc44be6D00307c3565FDf753e852Fc003036cBc13', // BTC / USD
+    '0xf1454949C6dEdfb500ae63Aa6c784Aa1Dde08A6c', // UNI / USD
+  ],
 };
 
 async function getProxyAdmin(dm: DeploymentManager, proxyAddress: string): Promise<string> {
@@ -378,14 +384,14 @@ async function getProxyAdmin(dm: DeploymentManager, proxyAddress: string): Promi
   return adminAddress;
 }
 
-async function mockAllRedstoneOracles(dm: DeploymentManager){
+async function mockAllRedstoneOracles(dm: DeploymentManager) {
   const feeds = REDSTONE_FEEDS[dm.network];
   if (!Array.isArray(feeds)) {
     debug(`No redstone feeds found for network: ${dm.network}`);
     return;
   }
   for (const feed of feeds) {
-    try{
+    try {
       await dm.fromDep(`MockRedstoneOracle:${feed}`, dm.network, dm.deployment);
     }
     catch (_) {
@@ -394,7 +400,7 @@ async function mockAllRedstoneOracles(dm: DeploymentManager){
   }
 }
 
-async function mockRedstoneOracle(dm: DeploymentManager, feed: string){
+async function mockRedstoneOracle(dm: DeploymentManager, feed: string) {
   const feedContract = new Contract(
     feed,
     [
@@ -474,9 +480,15 @@ export async function executeOpenProposal(
   // Execute proposal (maybe, w/ gas limit so we see if exec reverts, not a gas estimation error)
   if (await governor.state(id) == ProposalState.Queued) {
     const block = await dm.hre.ethers.provider.getBlock('latest');
-    const eta = await governor.proposalEta(id);
-    
-    await setNextBlockTimestamp(dm, Math.max(block.timestamp, eta.toNumber()) + 1);
+
+    if (governor.address !== '0x309a862bbC1A00e45506cB8A802D1ff10004c8C0') {
+      const proposal = await governor.proposals(id);
+      await setNextBlockTimestamp(dm, Math.max(block.timestamp, proposal.eta.toNumber()) + 1);
+    }
+    else {
+      const eta = await governor.proposalEta(id);
+      await setNextBlockTimestamp(dm, Math.max(block.timestamp, eta.toNumber()) + 1);
+    }
     await setNextBaseFeeToZero(dm);
     await governor.execute(id, { gasPrice: 0, gasLimit: 120000000 });
   }
@@ -484,6 +496,34 @@ export async function executeOpenProposal(
   await mockAllRedstoneOracles(dm);
   // mine a block
   await dm.hre.ethers.provider.send('evm_mine', []);
+}
+
+async function testnetPropose(
+  dm: DeploymentManager,
+  proposer: SignerWithAddress,
+  targets: string[],
+  values: BigNumberish[],
+  signatures: string[],
+  calldatas: string[],
+  description: string,
+  gasPrice: BigNumberish
+) {
+  const governor = await dm.getContractOrThrow('governor');
+  const testnetGovernor = new Contract(
+    governor.address, [
+    'function propose(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) external returns (uint256 proposalId)',
+    'event ProposalCreated(uint256 proposalId, address proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 startBlock, uint256 endBlock, string description)'
+  ], governor.signer
+  );
+
+  return testnetGovernor.connect(proposer).propose(
+    targets,
+    values,
+    signatures,
+    calldatas,
+    description,
+    { gasPrice }
+  );
 }
 
 // Instantly executes some actions through the governance proposal process
@@ -499,7 +539,7 @@ export async function fastGovernanceExecute(
 
   await setNextBaseFeeToZero(dm);
 
-  const proposeTxn = await (
+  const proposeTxn = dm.network === 'mainnet' ? await (
     await governor.connect(proposer).propose(
       targets,
       values,
@@ -509,6 +549,8 @@ export async function fastGovernanceExecute(
       'FastExecuteProposal',
       { gasPrice: 0 }
     )
+  ).wait() : await (
+    await testnetPropose(dm, proposer, targets, values, signatures, calldatas, 'FastExecuteProposal', 0)
   ).wait();
   const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
   const [id, , , , , , startBlock, endBlock] = proposeEvent.args;
@@ -641,6 +683,20 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
         'mantleL1CrossDomainMessenger'
       );
       targets.push(mantleL1CrossDomainMessenger.address);
+      values.push(0);
+      signatures.push('sendMessage(address,bytes,uint32)');
+      calldata.push(sendMessageCalldata);
+      break;
+    }
+    case 'unichain': {
+      const sendMessageCalldata = utils.defaultAbiCoder.encode(
+        ['address', 'bytes', 'uint256'],
+        [bridgeReceiver.address, l2ProposalData, 2_500_000]
+      );
+      const unichainL1CrossDomainMessenger = await govDeploymentManager.getContractOrThrow(
+        'unichainL1CrossDomainMessenger'
+      );
+      targets.push(unichainL1CrossDomainMessenger.address);
       values.push(0);
       signatures.push('sendMessage(address,bytes,uint32)');
       calldata.push(sendMessageCalldata);

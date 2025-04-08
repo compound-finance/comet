@@ -1,0 +1,44 @@
+{
+    "name": "Compound USDC",
+    "symbol": "cUSDCv3",
+    "baseToken": "USDC",
+    "baseTokenAddress": "0x078D782b760474a361dDA0AF3839290b0EF57AD6",
+    "borrowMin": "1e6",
+    "storeFrontPriceFactor": 0.6,
+    "targetReserves": "20_000_000e6",
+    "pauseGuardian": "0x6784FC9e931D7d5B1075e665A4016c299ee6C31B",
+    "rates": {
+      "borrowBase": 0.015,
+      "borrowSlopeLow": 0.05,
+      "borrowKink": 0.9,
+      "borrowSlopeHigh": 3.4,
+      "supplyBase": 0,
+      "supplySlopeLow": 0.054,
+      "supplyKink": 0.9,
+      "supplySlopeHigh": 3.034
+    },
+    "tracking": {
+      "indexScale": "1e15",
+      "baseSupplySpeed": "11574074074e0",
+      "baseBorrowSpeed": "11574074074e0",
+      "baseMinForRewards": "10000e6"
+    },
+    "assets": {
+      "UNI": {
+        "address": "0x8f187aa05619a017077f5308904739877ce9ea21",
+        "decimals": "18",
+        "borrowCF": 0.68,
+        "liquidateCF": 0.74,
+        "liquidationFactor": 0.83,
+        "supplyCap": "7000e18"
+      },
+      "WETH": {
+        "address": "0x4200000000000000000000000000000000000006",
+        "decimals": "18",
+        "borrowCF": 0.83,
+        "liquidateCF": 0.90,
+        "liquidationFactor": 0.95,
+        "supplyCap": "50e18"
+      }
+    }
+}

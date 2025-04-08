@@ -516,12 +516,14 @@ scenario(
   'Comet#bulker > (WETH base) all actions in one txn',
   {
     filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && matchesDeployment(ctx, [{ deployment: 'weth' }]),
-    supplyCaps: {
-      $asset0: 10,
-    },
-    tokenBalances: async (ctx) =>  (
+    supplyCaps: async (ctx) => (
       {
-        albert: { $base: '== 10', $asset0: 10 },
+        $asset0: getConfigForScenario(ctx).bulkerAsset2,
+      }
+    ),
+    tokenBalances: async (ctx) => (
+      {
+        albert: { $base: `== ${getConfigForScenario(ctx).bulkerBase1}`, $asset0: getConfigForScenario(ctx).bulkerAsset2 },
         $comet: { $base: getConfigForScenario(ctx).bulkerComet },
       }
     ),
@@ -535,8 +537,8 @@ scenario(
     const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
     const collateralScale = scaleBN.toBigInt();
     const [rewardTokenAddress] = await rewards.rewardConfig(comet.address);
-    const toSupplyBase = 10n * baseScale;
-    const toSupplyCollateral = 10n * collateralScale;
+    const toSupplyBase = BigInt(getConfigForScenario(context).bulkerBase1) * baseScale;
+    const toSupplyCollateral = BigInt(getConfigForScenario(context).bulkerAsset2) * collateralScale;
     const toBorrowBase = 5n * baseScale;
     const toTransferBase = 2n * baseScale;
     const toSupplyEth = exp(0.01, 18);
