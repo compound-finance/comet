@@ -511,9 +511,9 @@ async function testnetPropose(
   const governor = await dm.getContractOrThrow('governor');
   const testnetGovernor = new Contract(
     governor.address, [
-    'function propose(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) external returns (uint256 proposalId)',
-    'event ProposalCreated(uint256 proposalId, address proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 startBlock, uint256 endBlock, string description)'
-  ], governor.signer
+      'function propose(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) external returns (uint256 proposalId)',
+      'event ProposalCreated(uint256 proposalId, address proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 startBlock, uint256 endBlock, string description)'
+    ], governor.signer
   );
 
   return testnetGovernor.connect(proposer).propose(
@@ -645,20 +645,20 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageToChildCalldata);
       break;
     }
-    // case 'linea-goerli': {
-    //   const sendMessageCalldata = utils.defaultAbiCoder.encode(
-    //     ['address', 'uint256', 'bytes'],
-    //     [bridgeReceiver.address, 0, l2ProposalData]
-    //   );
-    //   const lineaMessageService = await govDeploymentManager.getContractOrThrow(
-    //     'lineaMessageService'
-    //   );
-    //   targets.push(lineaMessageService.address);
-    //   values.push(0);
-    //   signatures.push('sendMessage(address,uint256,bytes)');
-    //   calldata.push(sendMessageCalldata);
-    //   break;
-    // }
+    case 'linea': {
+      const sendMessageCalldata = utils.defaultAbiCoder.encode(
+        ['address', 'uint256', 'bytes'],
+        [bridgeReceiver.address, 0, l2ProposalData]
+      );
+      const lineaMessageService = await govDeploymentManager.getContractOrThrow(
+        'lineaMessageService'
+      );
+      targets.push(lineaMessageService.address);
+      values.push(0);
+      signatures.push('sendMessage(address,uint256,bytes)');
+      calldata.push(sendMessageCalldata);
+      break;
+    }
     case 'optimism': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'bytes', 'uint32'],
