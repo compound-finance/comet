@@ -7,6 +7,7 @@ import relayOptimismMessage from './relayOptimismMessage';
 import relayMantleMessage from './relayMantleMessage';
 import { relayUnichainMessage, relayUnichainCCTPMint } from './relayUnichainMessage';
 import relayScrollMessage from './relayScrollMessage';
+import relayRoninMessage from './relayRoninMessage';
 
 export default async function relayMessage(
   governanceDeploymentManager: DeploymentManager,
@@ -76,6 +77,13 @@ export default async function relayMessage(
       break;
     case 'scroll':
       await relayScrollMessage(
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
+        startingBlockNumber
+      );
+      break;
+    case 'ronin':
+      await relayRoninMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber

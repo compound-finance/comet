@@ -2,17 +2,21 @@ import { scenario } from './context/CometContext';
 import { event, expect } from '../test/helpers';
 import { expectRevertCustom, timeUntilUnderwater } from './utils';
 import { matchesDeployment } from './utils';
+import { getConfigForScenario } from './utils/scenarioHelper';
 
 scenario(
   'Comet#liquidation > isLiquidatable=true for underwater position',
   {
-    tokenBalances: {
-      $comet: { $base: 1000 },
-    },
-    cometBalances: {
-      albert: { $base: -1000 },
-      betty: { $base: 1000 },
-    },
+    tokenBalances: async (ctx) => (
+      {
+        $comet: {
+          $base: getConfigForScenario(ctx).liquidationBase
+        }
+      }),
+    cometBalances: async (ctx) => ({
+      albert: { $base: -getConfigForScenario(ctx).liquidationBase },
+      betty: { $base: getConfigForScenario(ctx).liquidationBase }
+    }),
   },
   async ({ comet, actors }, context, world) => {
     const { albert, betty } = actors;
@@ -105,13 +109,16 @@ scenario(
 scenario(
   'Comet#liquidation > prevents liquidation when absorb is paused',
   {
-    tokenBalances: {
-      $comet: { $base: 1000 },
-    },
-    cometBalances: {
-      albert: { $base: -1000 },
-      betty: { $base: 1000 }
-    },
+    tokenBalances: async (ctx) => (
+      {
+        $comet: {
+          $base: getConfigForScenario(ctx).liquidationBase
+        }
+      }),
+    cometBalances: async (ctx) => ({
+      albert: { $base: -getConfigForScenario(ctx).liquidationBase },
+      betty: { $base: getConfigForScenario(ctx).liquidationBase }
+    }),
     pause: {
       absorbPaused: true,
     },
@@ -141,16 +148,19 @@ scenario(
 scenario(
   'Comet#liquidation > allows liquidation of underwater positions',
   {
-    tokenBalances: {
-      $comet: { $base: 1000 },
-    },
-    cometBalances: {
+    tokenBalances: async (ctx) => (
+      {
+        $comet: {
+          $base: getConfigForScenario(ctx).liquidationBase
+        }
+      }),
+    cometBalances: async (ctx) => ({
       albert: {
-        $base: -1000,
-        $asset0: .001
+        $base: -getConfigForScenario(ctx).liquidationBase,
+        $asset0: getConfigForScenario(ctx).liquidationAsset
       },
-      betty: { $base: 10 }
-    },
+      betty: { $base: getConfigForScenario(ctx).liquidationBase }
+    }),
   },
   async ({ comet, actors }, context, world) => {
     const { albert, betty } = actors;
@@ -197,12 +207,12 @@ scenario(
     tokenBalances: {
       $comet: { $base: 1000 },
     },
-    cometBalances: {
+    cometBalances: async (ctx) => ({
       albert: {
-        $base: -1000,
-        $asset0: 0.001
-      },
-    },
+        $base: -getConfigForScenario(ctx).liquidationBase,
+        $asset0: getConfigForScenario(ctx).liquidationAsset
+      }
+    }),
   },
   async ({ comet, actors }, context, world) => {
     const { albert, betty } = actors;

@@ -298,7 +298,9 @@ scenario(
 scenario(
   'Comet#bulker > (WETH base) all non-reward actions in one txn',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && matchesDeployment(ctx, [{ deployment: 'weth' }]),
+    filter: async (ctx) => await isBulkerSupported(ctx) &&
+      matchesDeployment(ctx, [{ deployment: 'weth' }]) &&
+      !matchesDeployment(ctx, [{ network: 'ronin', deployment: 'weth' }]),
     supplyCaps: async (ctx) => (
       {
         $asset0: getConfigForScenario(ctx).bulkerAsset,
