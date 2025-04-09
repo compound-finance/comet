@@ -26,6 +26,9 @@ const config = {
   withdrawAsset: 3000,
   withdrawBase1: 1000,
   withdrawAsset1: 3000,
+  withdrawCollateral: 100,
+  transferCollateral: 100,
+  supplyCollateral: 100,
 };
 
 export function getConfigForScenario(ctx: CometContext) {
@@ -112,6 +115,30 @@ export function getConfigForScenario(ctx: CometContext) {
 
   if (ctx.world.base.network === 'sepolia' && ctx.world.base.deployment === 'usdc') {
     config.bulkerAsset1 = 10;
+  }
+
+  if (ctx.world.base.network === 'linea' && ctx.world.base.deployment === 'usdc') {
+    config.bulkerAsset = 500;
+    config.bulkerAsset1 = 500;
+    config.supplyCollateral = 10;
+    config.transferCollateral = 10;
+    config.withdrawCollateral = 10;    
+  }
+
+  if (ctx.world.base.network === 'linea' && ctx.world.base.deployment === 'usdt') {
+    config.bulkerAsset = 500;
+    config.bulkerAsset1 = 500;
+    config.supplyCollateral = 10;
+    config.transferCollateral = 10;
+    config.withdrawCollateral = 10;    
+  }
+
+  if (ctx.world.base.network === 'linea' && ctx.world.base.deployment === 'weth') {
+    config.rewardsAsset = 1000;
+    config.rewardsBase = 100;
+    config.supplyCollateral = 10;
+    config.transferCollateral = 10;
+    config.withdrawCollateral = 10;    
   }
 
   return config;
