@@ -39,7 +39,7 @@
       "priceFeed": "0x81DfC7A054C8F60497e47579c5A5cEB37bc047e8",
       "decimals": "18",
       "borrowCF": 0.72,
-      "liquidateCF": 0.8,
+      "liquidateCF": 0.78,
       "liquidationFactor": 0.85,
       "supplyCap": "300_000e18"
     },
