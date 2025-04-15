@@ -41,6 +41,7 @@ import optimismRelationConfigMap from './deployments/optimism/usdc/relations';
 import optimismUsdtRelationConfigMap from './deployments/optimism/usdt/relations';
 import optimismWethRelationConfigMap from './deployments/optimism/weth/relations';
 import mantleRelationConfigMap from './deployments/mantle/usde/relations';
+import unichainRelationConfigMap from './deployments/unichain/usdc/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
 import roninRelationConfigMap from './deployments/ronin/weth/relations';
 import roninWronRelationConfigMap from './deployments/ronin/wron/relations';
@@ -68,6 +69,7 @@ const {
   NETWORK_PROVIDER = '',
   GOV_NETWORK_PROVIDER = '',
   GOV_NETWORK = '',
+  UNICHAIN_QUICKNODE_KEY = '',
   REMOTE_ACCOUNTS = ''
 } = process.env;
 
@@ -95,6 +97,7 @@ export function requireEnv(varName, msg?: string): string {
   'LINEASCAN_KEY',
   'OPTIMISMSCAN_KEY',
   'MANTLESCAN_KEY',
+  'UNICHAIN_QUICKNODE_KEY',
   'SCROLLSCAN_KEY'
 ].map((v) => requireEnv(v));
 
@@ -141,6 +144,11 @@ const networkConfigs: NetworkConfig[] = [
     url: `https://rpc.ankr.com/mantle/${ANKR_KEY}`,
     // link for deployment
     // url: `https://rpc.mantle.xyz`,
+  },
+  {
+    network: 'unichain',
+    chainId: 130,
+    url: `https://multi-boldest-patina.unichain-mainnet.quiknode.pro/${UNICHAIN_QUICKNODE_KEY}`,
   },
   {
     network: 'base',
@@ -274,6 +282,7 @@ const config: HardhatUserConfig = {
       optimisticEthereum: OPTIMISMSCAN_KEY,
       // Mantle
       mantle: MANTLESCAN_KEY,
+      unichain: ETHERSCAN_KEY,
       // Scroll
       'scroll': SCROLLSCAN_KEY,
     },
@@ -302,6 +311,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: 'https://api.scrollscan.com/api',
           browserURL: 'https://scrollscan.com/'
+        }
+      },
+      {
+        network: 'unichain',
+        chainId: 130,
+        urls: {
+          apiURL: 'https://unichain.blockscout.com/api',
+          browserURL: 'https://unichain.blockscout.com/'
         }
       },
       {
@@ -372,6 +389,9 @@ const config: HardhatUserConfig = {
       },
       'mantle': {
         'usde': mantleRelationConfigMap
+      },
+      'unichain': {
+        'usdc': unichainRelationConfigMap
       },
       'scroll': {
         usdc: scrollRelationConfigMap
@@ -524,6 +544,12 @@ const config: HardhatUserConfig = {
         name: 'mantle-usde',
         network: 'mantle',
         deployment: 'usde',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'unichain-usdc',
+        network: 'unichain',
+        deployment: 'usdc',
         auxiliaryBase: 'mainnet'
       },
       {

@@ -63,6 +63,13 @@ export type Proposal = [
   string[], // calldatas
   string // description
 ];
+export type TestnetProposal = [
+  string[], // targets
+  BigNumberish[], // values
+  string[], // signatures
+  string[], // calldatas
+  string // description
+];
 
 // Note: this list could change over time
 // Ideally these wouldn't be hardcoded, but other solutions are much more complex, and slower
@@ -155,6 +162,9 @@ export const WHALES = {
     '0x233493E9DC68e548AC27E4933A600A3A4682c0c3', // FBTC whale
     '0xCd83CbBFCE149d141A5171C3D6a0F0fCCeE225Ab', // COMP whale
   ],
+  'unichain': [
+    '0x4200000000000000000000000000000000000006', // WETH whale
+  ],
   ronin: [
     '0x41058bcc968f809e9dbb955f402de150a3e5d1b5',
     '0x68a57af44503da4223bb6f494de012410fda1ae0',
@@ -176,6 +186,31 @@ export async function calldata(req: Promise<PopulatedTransaction>): Promise<stri
   return '0x' + (await req).data.slice(2 + 8);
 }
 
+export async function testnetProposal(actions: ProposalAction[], description: string): Promise<TestnetProposal> {
+  const targets = [],
+    values = [],
+    signatures = [],
+    calldatas = [];
+  for (const action of actions) {
+    if (action['contract']) {
+      const { contract, value, signature, args } = action as ContractAction;
+      targets.push(contract.address);
+      values.push(value ?? 0);
+      signatures.push(signature);
+      calldatas.push(await calldata(contract.populateTransaction[signature](...args)));
+    } else {
+      const { target, value, signature, calldata } = action as TargetAction;
+      targets.push(target);
+      values.push(value ?? 0);
+      signatures.push(signature);
+      calldatas.push(calldata);
+    }
+  }
+
+  return [targets, values, signatures, calldatas, description];
+
+}
+
 export async function proposal(actions: ProposalAction[], description: string): Promise<Proposal> {
   const targets = [],
     values = [],
@@ -193,5 +228,6 @@ export async function proposal(actions: ProposalAction[], description: string): 
       calldatas.push(utils.id(signature).slice(0, 10) + calldata.slice(2));
     }
   }
+
   return [targets, values, calldatas, description];
 }

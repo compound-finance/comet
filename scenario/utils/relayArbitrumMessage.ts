@@ -138,7 +138,7 @@ export async function relayArbitrumMessage(
   }
 }
 
-export async function relayCCTPMint(
+export async function relayArbitrumCCTPMint(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
   startingBlockNumber: number

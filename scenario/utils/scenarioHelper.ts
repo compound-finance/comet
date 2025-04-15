@@ -2,8 +2,10 @@ import { CometContext } from '../context/CometContext';
 
 const config = {
   bulkerBase: 1000000,
+  bulkerBase1: 10,
   bulkerAsset: 5000,
   bulkerAsset1: 5000,
+  bulkerAsset2: 10,
   bulkerComet: 5000,
   bulkerBorrowBase: 1000,
   bulkerBorrowAsset: 500,
