@@ -168,7 +168,7 @@ export default migration('1689892563_configurate_and_ens', {
   },
 
   async enacted(): Promise<boolean> {
-    return false;
+    return true;
   },
 
   async verify(
