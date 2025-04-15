@@ -140,7 +140,7 @@ export default migration('1743594813_configurate_and_ens', {
           cometAdmin.address,
         ],
         [
-          0, 0, 0, 
+          0, 0, 0,
         ],
         [
           'setFactory(address,address)',
@@ -175,6 +175,7 @@ export default migration('1743594813_configurate_and_ens', {
     }
 
     // Add WETH market into ENS
+    // Optional
     if (!officialMarketsJSON['2020'].find((market => market.baseSymbol === 'WETH'))) {
       officialMarketsJSON['2020'].push({
         baseSymbol: 'WETH',
@@ -255,7 +256,7 @@ export default migration('1743594813_configurate_and_ens', {
     ];
 
 
-    const description = '# Initialize cWRONv3 on Ronin\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes deployment of Compound III to Ronin network. This proposal takes the governance steps recommended and necessary to initialize a Compound III WRON market on Ronin; upon execution, cWRONv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite] (https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-ronin/6128/8).\n\nFurther detailed information can be found on the corresponding [deployment pull request](https://github.com/woof-software/comet/pull/146), [deploy market GitHub action run](<>) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-ronin/6128).\n\n\n## Rewards\n\nGauntlet provided recommendations for COMP rewards, however, the COMP token is not whitelisted on CCIP. When the COMP token is whitelisted, we will create a proposal to bridge COMP tokens and set up speeds.\n\n## Proposal Actions\n\nThe first proposal action bridges ETH using [roninl1NativeBridge](https://etherscan.io/address/0x64192819Ac13Ef72bF6b5AE239AC672B43a9AF08). Bridged ETH will be converted to WETH automatically and swapped for WRON in order to seed the reserves.\n\nThe second proposal actions approves and swaps received WETH for WRON via native Katana exchange [router](https://app.roninchain.com/address/0xc05afc8c9353c1dd5f872eccfacd60fd5a2a9ac7).\n\nThe third proposal action sets the Comet configuration and deploys a new Comet implementation on Ronin. This sends the encoded `setConfiguration` and `deployAndUpgradeTo` calls across the [l1CCIPRouter](https://etherscan.io/address/0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D) to the bridge receiver on Ronin. \n\nThe fourth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Ronin cWRONv3 market.';
+    const description = '# Initialize cWRONv3 on Ronin\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes deployment of Compound III to Ronin network. This proposal takes the governance steps recommended and necessary to initialize a Compound III WRON market on Ronin; upon execution, cWRONv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite] (https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-ronin/6128/8).\n\nFurther detailed information can be found on the corresponding [deployment pull request](https://github.com/woof-software/comet/pull/146), [deploy market GitHub action run](https://github.com/woof-software/comet/actions/runs/14330759106/job/40166019433) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-ronin/6128).\n\n\n## Rewards\n\nGauntlet provided recommendations for COMP rewards, however, the COMP token is not whitelisted on CCIP. When the COMP token is whitelisted, we will create a proposal to bridge COMP tokens and set up speeds.\n\n## Proposal Actions\n\nThe first proposal action bridges ETH using [roninl1NativeBridge](https://etherscan.io/address/0x64192819Ac13Ef72bF6b5AE239AC672B43a9AF08). Bridged ETH will be converted to WETH automatically and swapped for WRON in order to seed the reserves.\n\nThe second proposal action approves and swaps received WETH for WRON via native Katana exchange [router](https://app.roninchain.com/address/0xc05afc8c9353c1dd5f872eccfacd60fd5a2a9ac7). We allocate 20% of the slippage due to WETH and RON volatility at the moment of proposal execution (in 8 days from the proposal published on-chain). Swap should not be snipped because MEV infrastructure has not been developed on Ronin yet. The dynamic mechanism to prevent such slippage will be cost inefficient due to development and audit resource allocation. \n\nThe third proposal action sets the Comet configuration and deploys a new Comet implementation on Ronin. This sends the encoded `setConfiguration` and `deployAndUpgradeTo` calls across the [l1CCIPRouter](https://etherscan.io/address/0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D) to the bridge receiver on Ronin. \n\nThe fourth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Ronin cWRONv3 market.';
 
     const txn = await deploymentManager.retry(async () =>
       trace(
@@ -343,8 +344,8 @@ export default migration('1743594813_configurate_and_ens', {
       AXS: {
         supplyCap: exp(300_000, 18)
       },
-    // baseTrackingSupplySpeed: exp(2/86400, 15, 18),
-    // baseTrackingBorrowSpeed: exp(1/86400, 15, 18),
+      // baseTrackingSupplySpeed: exp(2/86400, 15, 18),
+      // baseTrackingBorrowSpeed: exp(1/86400, 15, 18),
     });
 
     // We should not do this check, as rewards only deployed, but without reward token
