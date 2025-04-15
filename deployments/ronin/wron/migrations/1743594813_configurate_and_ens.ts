@@ -342,6 +342,7 @@ export default migration('1743594813_configurate_and_ens', {
         supplyCap: exp(500_000, 6)
       },
       AXS: {
+        liquidateCollateralFactor: exp(0.78, 18),
         supplyCap: exp(300_000, 18)
       },
       // baseTrackingSupplySpeed: exp(2/86400, 15, 18),
