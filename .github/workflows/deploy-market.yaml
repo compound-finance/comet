@@ -41,7 +41,7 @@ jobs:
       OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
       MANTLESCAN_KEY: ${{ secrets.MANTLESCAN_KEY }}
       SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
-      TENDERLY_KEY_RONIN: ${{ secrets.TENDERLY_KEY_RONIN }}
+      _TENDERLY_KEY_RONIN: ${{ secrets._TENDERLY_KEY_RONIN }}
       UNICHAIN_QUICKNODE_KEY: ${{ secrets.UNICHAIN_QUICKNODE_KEY }}
     steps:
       - name: Seacrest
