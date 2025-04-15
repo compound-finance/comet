@@ -21,7 +21,8 @@ const ENSRegistryAddress = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
-const ETHAmountToSwap = exp(26.12, 18);
+const ETHAmountToSwap = exp(31, 18);
+const SLIPPAGE = 20n; // 20%
 
 const RONIN_SWAP_ROUTER = '0xC05AFC8c9353c1dd5f872EcCFaCD60fd5A2a9aC7';
 
@@ -100,7 +101,7 @@ export default migration('1743594813_configurate_and_ens', {
     const swapCalldata = await calldata(
       swapRouter.populateTransaction.swapExactTokensForTokens(
         ETHAmountToSwap,
-        expectedWronAmount.sub(1),
+        expectedWronAmount.mul(100n - SLIPPAGE).div(100n),
         [WETH.address, WRON.address],
         comet.address,
         currentTimestamp + (86400 * 14) // 14 days
@@ -327,24 +328,24 @@ export default migration('1743594813_configurate_and_ens', {
 
     expect(assetListAddress).to.not.be.equal(constants.AddressZero);
 
-    // const stateChanges = await diffState(
-    //   comet,
-    //   getCometConfig,
-    //   preMigrationBlockNumber
-    // );
-    // expect(stateChanges).to.deep.equal({
-    // WETH: {
-    //   supplyCap: exp(500, 18)
-    // },
-    // USDC: {
-    //   supplyCap: exp(500_000, 6)
-    // },
-    // AXS: {
-    //   supplyCap: exp(300_000, 18)
-    // },
+    const stateChanges = await diffState(
+      comet,
+      getCometConfig,
+      preMigrationBlockNumber
+    );
+    expect(stateChanges).to.deep.equal({
+      WETH: {
+        supplyCap: exp(500, 18)
+      },
+      USDC: {
+        supplyCap: exp(500_000, 6)
+      },
+      AXS: {
+        supplyCap: exp(300_000, 18)
+      },
     // baseTrackingSupplySpeed: exp(2/86400, 15, 18),
     // baseTrackingBorrowSpeed: exp(1/86400, 15, 18),
-    // });
+    });
 
     // We should not do this check, as rewards only deployed, but without reward token
     // const config = await rewards.rewardConfig(comet.address);
