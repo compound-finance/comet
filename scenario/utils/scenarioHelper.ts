@@ -25,7 +25,7 @@ const config = {
   withdrawBase: 1000,
   withdrawAsset: 3000,
   withdrawBase1: 1000,
-  withdrawAsset1: 3000,
+  withdrawAsset1: 1000,
 };
 
 export function getConfigForScenario(ctx: CometContext) {

@@ -1,0 +1,56 @@
+{
+  "name": "Compound WRON",
+  "symbol": "cWRONv3",
+  "baseToken": "WRON",
+  "baseTokenAddress": "0xe514d9deb7966c8be0ca922de8a064264ea6bcd4",
+  "baseTokenPriceFeed": "0x0B6074F21488B95945989E513EFEA070096d931D",
+  "borrowMin": "1e18",
+  "storeFrontPriceFactor": 0.7,
+  "targetReserves": "20_000_000e18",
+  "pauseGuardian": "0x69daaf2fb26cb138d33466808de917d571151a68",
+  "rates": {
+    "borrowBase": 0.01,
+    "borrowSlopeLow": 0.017647,
+    "borrowKink": 0.85,
+    "borrowSlopeHigh": 1.5,
+    "supplyBase": 0,
+    "supplySlopeLow": 0.0225,
+    "supplyKink": 0.85,
+    "supplySlopeHigh": 1.339
+  },
+  "tracking": {
+    "indexScale": "1e15",
+    "baseSupplySpeed": "0e0",
+    "baseBorrowSpeed": "0e0",
+    "baseMinForRewards": "1000e18"
+  },
+  "assets": {
+    "USDC": {
+      "address": "0x0b7007c13325c48911f73a2dad5fa5dcbf808adc",
+      "priceFeed": "0x88f415c12d45d4C6DC018553BBE472A4558ff3f8",
+      "decimals": "6",
+      "borrowCF": 0.75,
+      "liquidateCF": 0.8,
+      "liquidationFactor": 0.88,
+      "supplyCap": "500_000e6"
+    },
+    "AXS": {
+      "address": "0x97a9107c1793bc407d6f527b77e7fff4d812bece",
+      "priceFeed": "0x81DfC7A054C8F60497e47579c5A5cEB37bc047e8",
+      "decimals": "18",
+      "borrowCF": 0.72,
+      "liquidateCF": 0.78,
+      "liquidationFactor": 0.85,
+      "supplyCap": "300_000e18"
+    },
+    "WETH": {
+      "address": "0xc99a6a985ed2cac1ef41640596c5a5f9f4e19ef5",
+      "priceFeed": "0x662Fdb0E7D95d89CD3458E4A3506296E48BB1F44",
+      "decimals": "18",
+      "borrowCF": 0.75,
+      "liquidateCF": 0.8,
+      "liquidationFactor": 0.9,
+      "supplyCap": "500e18"
+    }
+  }
+}
