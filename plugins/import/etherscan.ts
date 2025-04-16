@@ -19,6 +19,7 @@ export function getEtherscanApiUrl(network: string): string {
     base: 'api.basescan.org',
     optimism: 'api-optimistic.etherscan.io',
     mantle: 'api.mantlescan.xyz',
+    'ronin': 'explorer-kintsugi.roninchain.com/v2/2020',
     scroll: 'api.scrollscan.com'
   }[network];
 
@@ -42,6 +43,7 @@ export function getEtherscanUrl(network: string): string {
     base: 'basescan.org',
     optimism: 'optimistic.etherscan.io',
     mantle: 'mantlescan.xyz',
+    'ronin': 'explorer-kintsugi.roninchain.com/v2/2020',
     scroll: 'scrollscan.com'
   }[network];
 
@@ -77,5 +79,10 @@ export function getEtherscanApiKey(network: string): string {
 
 export async function get(url, data) {
   const res = (await axios.get(url, { params: data }))['data'];
+  return res;
+}
+
+export async function post(url, data) {
+  const res = (await axios.post(url, data))['data'];
   return res;
 }
