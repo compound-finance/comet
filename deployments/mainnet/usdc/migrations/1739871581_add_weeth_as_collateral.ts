@@ -9,7 +9,6 @@ const ETH_USD_PRICE_FEED_ADDRESS = '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419';
 
 export default migration('1739871581_add_weeth_as_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
-
     const weethRateBasedScalingPriceFeed = await deploymentManager.deploy(
       'weETH:priceRateOracle',
       'pricefeeds/RateBasedScalingPriceFeed.sol',
@@ -19,7 +18,7 @@ export default migration('1739871581_add_weeth_as_collateral', {
         18,
         'weETH / ETH price feed'
       ]
-    )
+    );
 
     const weethMultiplicativePriceFeed = await deploymentManager.deploy(
       'weETH:priceFeed',
@@ -97,7 +96,7 @@ export default migration('1739871581_add_weeth_as_collateral', {
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+  async enacted(): Promise<boolean> {
     return false;
   },
 
