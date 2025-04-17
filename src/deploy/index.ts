@@ -80,7 +80,7 @@ export const COMP_WHALES = {
     '0x8169522c2C57883E8EF80C498aAB7820dA539806',
     '0x8d07D225a769b7Af3A923481E1FdF49180e6A265',
     '0x7d1a02C0ebcF06E1A36231A54951E061673ab27f',
-    '0x54A37d93E57c5DA659F508069Cf65A381b61E189'
+    '0x54A37d93E57c5DA659F508069Cf65A381b61E189',
   ],
 
   testnet: ['0xbbfe34e868343e6f4f5e8b5308de980d7bd88c46']
@@ -156,6 +156,7 @@ export const WHALES = {
     '0x651C9D1F9da787688225f49d63ad1623ba89A8D5', // FBTC whale
     '0xC455fE28a76da80022d4C35A37eB08FF405Eb78f', // FBTC whale
     '0x524db930F0886CdE7B5FFFc920Aae85e98C2abfb', // FBTC whale
+    '0x651C9D1F9da787688225f49d63ad1623ba89A8D5', // FBTC whale
     '0x72c7d27320e042417506e594697324dB5Fbf334C', // FBTC whale
     '0x3880233e78966eb13a9c2881d5f162d646633178', // FBTC whale
     '0x233493E9DC68e548AC27E4933A600A3A4682c0c3', // FBTC whale
@@ -164,6 +165,20 @@ export const WHALES = {
   'unichain': [
     '0x4200000000000000000000000000000000000006', // WETH whale
   ],
+  ronin: [
+    '0x41058bcc968f809e9dbb955f402de150a3e5d1b5',
+    '0x68a57af44503da4223bb6f494de012410fda1ae0',
+    '0x66d13a86cb33d65731e199fb29e8270ecdc14424',
+    '0xb6ed66133816d117403bcc9f079c7e9ef8aa9562',
+    '0x02b60267bceeafdc45005e0fa0dd783efebc9f1b',
+    '0xc055492f9fa0585c4194eefd58986112d643720b',
+    '0xdebbff7bc4b51d722db968863409f4d1b0d52bd6',
+    '0xb66f05cc5ead3e15fe03115af4c306ed109773ae',
+    '0x5b714f5ce0a09ab2fec8362dc1c254c7b7d6e6bd',
+    '0x0cf8ff40a508bdbc39fbe1bb679dcba64e65c7df',
+    '0x2ecb08f87f075b5769fe543d0e52e40140575ea7',
+    '0x05b0bb3c1c320b280501b86706c3551995bc8571'
+  ]
 };
 
 export async function calldata(req: Promise<PopulatedTransaction>): Promise<string> {
@@ -191,6 +206,7 @@ export async function testnetProposal(actions: ProposalAction[], description: st
       calldatas.push(calldata);
     }
   }
+
   return [targets, values, signatures, calldatas, description];
 }
 
@@ -211,5 +227,6 @@ export async function proposal(actions: ProposalAction[], description: string): 
       calldatas.push(utils.id(signature).slice(0, 10) + calldata.slice(2));
     }
   }
+
   return [targets, values, calldatas, description];
 }

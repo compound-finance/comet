@@ -105,13 +105,13 @@ scenario(
 scenario(
   'Comet#withdraw > borrow base',
   {
-    tokenBalances: async (ctx) =>  (
+    tokenBalances: async (ctx) => (
       {
         albert: { $base: '== 0' },
         $comet: { $base: getConfigForScenario(ctx).withdrawBase }, // in units of asset, not wei
       }
     ),
-    cometBalances: async (ctx) =>  (
+    cometBalances: async (ctx) => (
       {
         albert: { $asset0: getConfigForScenario(ctx).withdrawAsset } // in units of asset, not wei
       }
@@ -168,13 +168,13 @@ scenario(
 scenario(
   'Comet#withdrawFrom > borrow base',
   {
-    tokenBalances: async (ctx) =>  (
+    tokenBalances: async (ctx) => (
       {
         albert: { $base: '== 0' },
         $comet: { $base: getConfigForScenario(ctx).withdrawBase }, // in units of asset, not wei
       }
     ),
-    cometBalances: async (ctx) =>  (
+    cometBalances: async (ctx) => (
       {
         albert: { $asset0: getConfigForScenario(ctx).withdrawAsset } // in units of asset, not wei
       }
@@ -305,11 +305,14 @@ scenario(
 scenario(
   'Comet#withdraw collateral reverts if position is undercollateralized',
   {
-    cometBalances: async (ctx) =>  (
+    cometBalances: async (ctx) => (
       {
-        albert: { $base: -getConfigForScenario(ctx).withdrawBase1, $asset0: getConfigForScenario(ctx).withdrawAsset1 }, // in units of asset, not wei
+        albert: {
+          $base: -getConfigForScenario(ctx).withdrawBase1,
+          $asset0: getConfigForScenario(ctx).withdrawAsset1
+        }, // in units of asset, not wei
       }
-    ),
+    )
   },
   async ({ comet, actors }, context) => {
     const { albert } = actors;

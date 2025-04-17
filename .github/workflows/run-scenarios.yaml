@@ -7,13 +7,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        bases: [ development, mainnet, mainnet-weth, mainnet-usdt, mainnet-wsteth, mainnet-usds, mainnet-wbtc, sepolia-usdc, sepolia-weth, fuji, polygon, polygon-usdt, arbitrum-usdc.e, arbitrum-usdc, arbitrum-weth, arbitrum-usdt, base-usdbc, base-weth, base-usdc, base-aero, base-usds, optimism-usdc, optimism-usdt, optimism-weth, mantle-usde, scroll-usdc, unichain-usdc]
+        bases: [ development, mainnet, mainnet-weth, mainnet-usdt, mainnet-wsteth, mainnet-usds, mainnet-wbtc, sepolia-usdc, sepolia-weth, fuji, polygon, polygon-usdt, arbitrum-usdc.e, arbitrum-usdc, arbitrum-weth, arbitrum-usdt, base-usdbc, base-weth, base-usdc, base-aero, optimism-usdc, optimism-usdt, optimism-weth, mantle-usde, scroll-usdc, ronin-weth, unichain-usdc, base-usds]
     name: Run scenarios
     env:
       ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
       SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
       ANKR_KEY: ${{ secrets.ANKR_KEY }}
+      TENDERLY_KEY_RONIN: ${{ secrets.TENDERLY_KEY_RONIN }}
       POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
       ARBISCAN_KEY: ${{ secrets.ARBISCAN_KEY }}
       BASESCAN_KEY: ${{ secrets.BASESCAN_KEY }}
