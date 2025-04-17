@@ -103,6 +103,7 @@ export const WHALES = {
     '0x3b3501f6778Bfc56526cF2aC33b78b2fDBE4bc73', // solvBTC.BBN whale
     '0x8bc93498b861fd98277c3b51d240e7E56E48F23c', // solvBTC.BBN whale
     '0xD5cf704dC17403343965b4F9cd4D7B5e9b20CC52', // solvBTC.BBN whale
+    '0x34C0bD5877A5Ee7099D0f5688D65F4bB9158BDE2', // sFRAX whale
   ],
   polygon: [
     '0xF977814e90dA44bFA03b6295A0616a897441aceC', // USDT whale
@@ -189,23 +190,25 @@ export async function calldata(req: Promise<PopulatedTransaction>): Promise<stri
 export async function testnetProposal(actions: ProposalAction[], description: string): Promise<TestnetProposal> {
   const targets = [],
     values = [],
+    signatures = [],
     calldatas = [];
   for (const action of actions) {
     if (action['contract']) {
       const { contract, value, signature, args } = action as ContractAction;
       targets.push(contract.address);
       values.push(value ?? 0);
-      calldatas.push(utils.id(signature).slice(0, 10) + (await calldata(contract.populateTransaction[signature](...args))).slice(2));
+      signatures.push(signature);
+      calldatas.push(await calldata(contract.populateTransaction[signature](...args)));
     } else {
       const { target, value, signature, calldata } = action as TargetAction;
       targets.push(target);
       values.push(value ?? 0);
-      calldatas.push(utils.id(signature).slice(0, 10) + calldata.slice(2));
+      signatures.push(signature);
+      calldatas.push(calldata);
     }
   }
 
   return [targets, values, signatures, calldatas, description];
-
 }
 
 export async function proposal(actions: ProposalAction[], description: string): Promise<Proposal> {
