@@ -62,7 +62,7 @@ const {
   MANTLESCAN_KEY,
   SCROLLSCAN_KEY,
   ANKR_KEY,
-  //TENDERLY_KEY_RONIN,
+  //_TENDERLY_KEY_RONIN,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
@@ -123,7 +123,7 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'ronin',
     chainId: 2020,
-    //url: `https://ronin.gateway.tenderly.co/${TENDERLY_KEY_RONIN}`,
+    //url: `https://ronin.gateway.tenderly.co/${_TENDERLY_KEY_RONIN}`,
     url: 'https://ronin.lgns.net/rpc',
   },
   {

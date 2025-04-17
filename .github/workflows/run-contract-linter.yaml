@@ -11,7 +11,7 @@ jobs:
       SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
       ANKR_KEY: ${{ secrets.ANKR_KEY }}
-      TENDERLY_KEY_RONIN: ${{ secrets.TENDERLY_KEY_RONIN }}
+      _TENDERLY_KEY_RONIN: ${{ secrets._TENDERLY_KEY_RONIN }}
       POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
       ARBISCAN_KEY: ${{ secrets.ARBISCAN_KEY }}
       LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
