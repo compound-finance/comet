@@ -430,15 +430,15 @@ async function attemptLiquidationViaOnChainLiquidator(
       number,
       number
     ] = [
-        comet.address,
-        targetAddresses,
-        assets,
-        poolConfigs,
-        maxAmountsToPurchase,
-        flashLoanPoolTokenAddress,
-        flashLoanPoolFee,
-        liquidationThreshold
-      ];
+      comet.address,
+      targetAddresses,
+      assets,
+      poolConfigs,
+      maxAmountsToPurchase,
+      flashLoanPoolTokenAddress,
+      flashLoanPoolFee,
+      liquidationThreshold
+    ];
 
     const txn = await liquidator.populateTransaction.absorbAndArbitrage(
       ...args,
@@ -471,7 +471,10 @@ async function attemptLiquidationViaOnChainLiquidator(
 }
 
 async function getUniqueAddresses(comet: CometInterface): Promise<Set<string>> {
-  const withdrawEvents = await comet.queryFilter(comet.filters.Withdraw());
+  const endBlock = await hre.ethers.provider.getBlockNumber();
+  const maxBlockRange = 90000; // Adjust based on provider limits
+  const startBlock = endBlock - maxBlockRange;
+  const withdrawEvents = await comet.queryFilter(comet.filters.Withdraw(), startBlock, endBlock);
   return new Set(withdrawEvents.map(event => event.args.src));
 }
 
