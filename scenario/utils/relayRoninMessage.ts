@@ -97,7 +97,6 @@ export default async function relayRoninMessage(
 
     console.log(`[CCIP L1->L2] Routed message to ${internalMsg.receiver}`);
 
-
     for (const log of logsNativeBridge) {
       console.log(`[Native L1->L2] Found DepositRequested`);
       const parsedLog = l1NativeBridge.interface.parseLog(log);

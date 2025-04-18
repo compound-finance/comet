@@ -2,8 +2,10 @@ import { CometContext } from '../context/CometContext';
 
 const config = {
   bulkerBase: 1000000,
+  bulkerBase1: 10,
   bulkerAsset: 5000,
   bulkerAsset1: 5000,
+  bulkerAsset2: 10,
   bulkerComet: 5000,
   bulkerBorrowBase: 1000,
   bulkerBorrowAsset: 500,
@@ -23,7 +25,7 @@ const config = {
   withdrawBase: 1000,
   withdrawAsset: 3000,
   withdrawBase1: 1000,
-  withdrawAsset1: 1000,
+  withdrawAsset1: 3000,
 };
 
 export function getConfigForScenario(ctx: CometContext) {
