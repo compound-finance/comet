@@ -49,6 +49,7 @@ interface IGovernorBravo {
     function MIN_VOTING_DELAY() external view returns (uint256);
     function MIN_PROPOSAL_THRESHOLD() external view returns (uint256);
 
+    function comp() external view returns (address); // for testnet only
     function token() external view returns (address);
     function proposalEta(uint256) external view returns (uint256);
     function proposalCount() external view returns (uint256);
@@ -65,10 +66,10 @@ interface IGovernorBravo {
     function queue(uint256 proposalId) external;
     function execute(uint256 proposalId) external;
     function castVote(uint256 proposalId, uint8 support) external returns (uint256 balance);
-    function getActions(uint proposalId) external view returns (
+    function proposalDetails(uint proposalId) external view returns (
         address[] memory targets,
         uint[] memory values,
-        string[] memory signatures,
-        bytes[] memory calldatas
+        bytes[] memory calldatas,
+        bytes32
     );
 }

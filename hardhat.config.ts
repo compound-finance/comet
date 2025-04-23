@@ -41,8 +41,10 @@ import optimismRelationConfigMap from './deployments/optimism/usdc/relations';
 import optimismUsdtRelationConfigMap from './deployments/optimism/usdt/relations';
 import optimismWethRelationConfigMap from './deployments/optimism/weth/relations';
 import mantleRelationConfigMap from './deployments/mantle/usde/relations';
+import unichainRelationConfigMap from './deployments/unichain/usdc/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
 import sonicRelationConfigMap from './deployments/sonic/usdc.e/relations';
+import roninRelationConfigMap from './deployments/ronin/weth/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -51,7 +53,7 @@ task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
 /* note: boolean environment variables are imported as strings */
 const {
   COINMARKETCAP_API_KEY,
-  ETH_PK = '',
+  ETH_PK,
   ETHERSCAN_KEY,
   SNOWTRACE_KEY,
   POLYGONSCAN_KEY,
@@ -61,6 +63,7 @@ const {
   MANTLESCAN_KEY,
   SCROLLSCAN_KEY,
   ANKR_KEY,
+  //_TENDERLY_KEY_RONIN,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
@@ -68,6 +71,7 @@ const {
   GOV_NETWORK = '',
   REMOTE_ACCOUNTS = '',
   SONICSCAN_KEY = '',
+  UNICHAIN_QUICKNODE_KEY = '',
 } = process.env;
 
 function* deriveAccounts(pk: string, n: number = 10) {
@@ -96,6 +100,8 @@ export function requireEnv(varName, msg?: string): string {
   'MANTLESCAN_KEY',
   'SCROLLSCAN_KEY',
   'SONICSCAN_KEY',
+  'UNICHAIN_QUICKNODE_KEY',
+  'SCROLLSCAN_KEY'
 ].map((v) => requireEnv(v));
 
 // Networks
@@ -119,6 +125,12 @@ const networkConfigs: NetworkConfig[] = [
     url: `https://rpc.ankr.com/eth_sepolia/${ANKR_KEY}`,
   },
   {
+    network: 'ronin',
+    chainId: 2020,
+    //url: `https://ronin.gateway.tenderly.co/${_TENDERLY_KEY_RONIN}`,
+    url: 'https://ronin.lgns.net/rpc',
+  },
+  {
     network: 'polygon',
     chainId: 137,
     url: `https://rpc.ankr.com/polygon/${ANKR_KEY}`,
@@ -140,6 +152,11 @@ const networkConfigs: NetworkConfig[] = [
     url: `https://rpc.ankr.com/mantle/${ANKR_KEY}`,
     // link for deployment
     // url: `https://rpc.mantle.xyz`,
+  },
+  {
+    network: 'unichain',
+    chainId: 130,
+    url: `https://multi-boldest-patina.unichain-mainnet.quiknode.pro/${UNICHAIN_QUICKNODE_KEY}`,
   },
   {
     network: 'base',
@@ -227,13 +244,24 @@ const config: HardhatUserConfig = {
         : { mnemonic: MNEMONIC, accountsBalance: (10n ** 36n).toString() },
       // this should only be relied upon for test harnesses and coverage (which does not use viaIR flag)
       allowUnlimitedContractSize: true,
-      hardfork: 'cancun',
+      //hardfork: 'london',
       chains: networkConfigs.reduce((acc, { chainId }) => {
         if (chainId === 1) return acc;
+        if (chainId === 2020) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+            }
+          };
+          return acc;
+        }
         acc[chainId] = {
           hardforkHistory: {
             berlin: 1,
             london: 2,
+            shanghai: 3,
+            cancun: 4,
           },
         };
         return acc;
@@ -262,6 +290,7 @@ const config: HardhatUserConfig = {
       optimisticEthereum: OPTIMISMSCAN_KEY,
       // Mantle
       mantle: MANTLESCAN_KEY,
+      unichain: ETHERSCAN_KEY,
       // Scroll
       'scroll': SCROLLSCAN_KEY,
       sonic: SONICSCAN_KEY,
@@ -294,6 +323,14 @@ const config: HardhatUserConfig = {
         }
       },
       {
+        network: 'unichain',
+        chainId: 130,
+        urls: {
+          apiURL: 'https://unichain.blockscout.com/api',
+          browserURL: 'https://unichain.blockscout.com/'
+        }
+      },
+      {
         network: 'mantle',
         chainId: 5000,
         urls: {
@@ -312,6 +349,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: 'https://api.sonicscan.org/api',
           browserURL: 'https://sonicscan.org/'
+        },
+      },
+      {
+        network: 'ronin',
+        chainId: 2020,
+        urls: {
+          apiURL: 'https://explorer-kintsugi.roninchain.com/v2/2020',
+          browserURL: 'https://app.roninchain.com'
         }
       }
     ]
@@ -362,11 +407,17 @@ const config: HardhatUserConfig = {
       'mantle': {
         'usde': mantleRelationConfigMap
       },
+      'unichain': {
+        'usdc': unichainRelationConfigMap
+      },
       'scroll': {
         usdc: scrollRelationConfigMap
       },
       'sonic': {
         'usdc.e': sonicRelationConfigMap
+      },
+      'ronin': {
+        weth: roninRelationConfigMap
       }
     },
   },
@@ -521,9 +572,21 @@ const config: HardhatUserConfig = {
         auxiliaryBase: 'mainnet'
       },
       {
+        name: 'unichain-usdc',
+        network: 'unichain',
+        deployment: 'usdc',
+        auxiliaryBase: 'mainnet'
+      },
+      {
         name: 'scroll-usdc',
         network: 'scroll',
         deployment: 'usdc',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'ronin-weth',
+        network: 'ronin',
+        deployment: 'weth',
         auxiliaryBase: 'mainnet'
       }
     ],

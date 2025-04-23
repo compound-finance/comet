@@ -21,6 +21,7 @@ export function getEtherscanApiUrl(network: string): string {
     mantle: 'api.mantlescan.xyz',
     scroll: 'api.scrollscan.com',
     sonic: 'api.sonicscan.org',
+    'ronin': 'explorer-kintsugi.roninchain.com/v2/2020',
   }[network];
 
   if (!host) {
@@ -45,6 +46,7 @@ export function getEtherscanUrl(network: string): string {
     mantle: 'mantlescan.xyz',
     scroll: 'scrollscan.com',
     sonic: 'sonicscan.org',
+    'ronin': 'explorer-kintsugi.roninchain.com/v2/2020',
   }[network];
 
   if (!host) {
@@ -80,5 +82,10 @@ export function getEtherscanApiKey(network: string): string {
 
 export async function get(url, data) {
   const res = (await axios.get(url, { params: data }))['data'];
+  return res;
+}
+
+export async function post(url, data) {
+  const res = (await axios.post(url, data))['data'];
   return res;
 }

@@ -1,12 +1,14 @@
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import relayPolygonMessage from './relayPolygonMessage';
-import { relayArbitrumMessage, relayCCTPMint } from './relayArbitrumMessage';
+import { relayArbitrumMessage, relayArbitrumCCTPMint } from './relayArbitrumMessage';
 import relayBaseMessage from './relayBaseMessage';
 import relayLineaMessage from './relayLineaMessage';
 import relayOptimismMessage from './relayOptimismMessage';
 import relayMantleMessage from './relayMantleMessage';
+import { relayUnichainMessage, relayUnichainCCTPMint } from './relayUnichainMessage';
 import relayScrollMessage from './relayScrollMessage';
 import relaySonicMessage from './relaySonicMessage';
+import relayRoninMessage from './relayRoninMessage';
 
 export default async function relayMessage(
   governanceDeploymentManager: DeploymentManager,
@@ -36,6 +38,18 @@ export default async function relayMessage(
         startingBlockNumber
       );
       break;
+    case 'unichain':
+      await relayUnichainMessage(
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
+        startingBlockNumber
+      );
+      await relayUnichainCCTPMint(
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
+        startingBlockNumber
+      );
+      break;
     case 'polygon':
       await relayPolygonMessage(
         governanceDeploymentManager,
@@ -49,7 +63,7 @@ export default async function relayMessage(
         bridgeDeploymentManager,
         startingBlockNumber
       );
-      await relayCCTPMint(
+      await relayArbitrumCCTPMint(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber
@@ -73,6 +87,13 @@ export default async function relayMessage(
       await relaySonicMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager
+      );
+      break;
+    case 'ronin':
+      await relayRoninMessage(
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
+        startingBlockNumber
       );
       break;
     default:

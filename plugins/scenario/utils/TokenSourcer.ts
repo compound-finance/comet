@@ -89,6 +89,15 @@ async function removeTokens(
   });
 }
 
+const mintableByBridgeConfig = {
+  unichain: [
+    '0x927b51f251480a681271180da4de28d44ec4afb8',
+    '0x8f187aa05619a017077f5308904739877ce9ea21',
+    '0x949d3A70722731d3bA8E0ca4061E12387c659E75',
+    '0xdf78e4F0A8279942ca68046476919A90f2288656'
+  ],
+};
+
 async function addTokens(
   dm: DeploymentManager,
   amount: BigNumber,
@@ -100,11 +109,27 @@ async function addTokens(
   MAX_SEARCH_BLOCKS = 40000,
   BLOCK_SPAN = 2048
 ) {
+
+  if(dm.network === 'ronin') {
+    MAX_SEARCH_BLOCKS = 500;
+  }
   // XXX we should really take min of current balance and amount and transfer that much
   let ethers = dm.hre.ethers;
   block = block ?? (await ethers.provider.getBlockNumber());
   let tokenContract = new ethers.Contract(asset, erc20, ethers.provider);
   let filter = tokenContract.filters.Transfer();
+  if (mintableByBridgeConfig[dm.network] && mintableByBridgeConfig[dm.network].map((addr: string) => addr.toLowerCase()).includes(asset.toLowerCase())) {
+    await dm.hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: ['0x4200000000000000000000000000000000000010'],
+    });
+    await dm.hre.network.provider.send('hardhat_setBalance',
+      ['0x4200000000000000000000000000000000000010', '0x1000000000000000']);
+    
+    const signer = await dm.getSigner('0x4200000000000000000000000000000000000010');
+    await tokenContract.connect(signer).mint(address, amount);
+    return;
+  }
   let { recentLogs, blocksDelta } = await fetchQuery(
     tokenContract,
     filter,

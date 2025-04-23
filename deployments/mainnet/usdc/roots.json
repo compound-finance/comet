@@ -16,9 +16,13 @@
     "opL1StandardBridge": "0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1",
     "mantleL1CrossDomainMessenger": "0x676A795fe6E43C17c668de16730c3F690FEB7120",
     "mantleL1StandardBridge": "0x95fC37A27a2f68e3A647CDc081F0A89bb47c3012",
-    "l1CCIPRouter": "0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D",
     "sonicl1CCIPOnRamp": "0x4fdAaDe22bd05537EeaB204cF7319589CE595D6a",
     "sonicL1GatewayBridge": "0xa1E2481a9CD0Cb0447EeB1cbc26F1b3fff3bec20",
+    "unichainL1CrossDomainMessenger": "0x9A3D64E386C18Cb1d6d5179a9596A4B5736e98A6",
+    "unichainL1StandardBridge": "0x81014F44b0a345033bB2b3B21C7a1A308B35fEeA",
     "scrollMessenger": "0x6774Bcbd5ceCeF1336b5300fb5186a12DDD8b367",
-    "scrollL1USDCGateway": "0xf1AF3b23DE0A5Ca3CAb7261cb0061C0D779A5c7B"
+    "scrollL1USDCGateway": "0xf1AF3b23DE0A5Ca3CAb7261cb0061C0D779A5c7B",
+    "l1CCIPRouter": "0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D",
+    "roninl1CCIPOnRamp": "0xdC5b578ff3AFcC4A4a6E149892b9472390b50844",
+    "roninl1NativeBridge": "0x64192819Ac13Ef72bF6b5AE239AC672B43a9AF08"
 }
