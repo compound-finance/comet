@@ -471,7 +471,10 @@ async function attemptLiquidationViaOnChainLiquidator(
 }
 
 async function getUniqueAddresses(comet: CometInterface): Promise<Set<string>> {
-  const withdrawEvents = await comet.queryFilter(comet.filters.Withdraw());
+  const endBlock = await hre.ethers.provider.getBlockNumber();
+  const maxBlockRange = 90000; // Adjust based on provider limits
+  const startBlock = endBlock - maxBlockRange;
+  const withdrawEvents = await comet.queryFilter(comet.filters.Withdraw(), startBlock, endBlock);
   return new Set(withdrawEvents.map(event => event.args.src));
 }
 

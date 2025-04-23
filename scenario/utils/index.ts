@@ -369,6 +369,7 @@ const tokens = new Map<string, string>([
 
 const dest = new Map<string, string>([
   ['ronin', '6916147374840168594'],
+  ['sonic', '1673871237479749969'],
 ]);
 
 async function updateCCIPStats(dm: DeploymentManager) {
@@ -677,9 +678,9 @@ export async function executeOpenProposal(
     const block = await dm.hre.ethers.provider.getBlock('latest');
     const eta = await governor.proposalEta(id);
 
-    await updateCCIPStats(dm);
     await setNextBlockTimestamp(dm, Math.max(block.timestamp, eta.toNumber()) + 1);
     await updateSonicStateOracle(dm);
+    await updateCCIPStats(dm);    
     await setNextBaseFeeToZero(dm);
     await governor.execute(id, { gasPrice: 0, gasLimit: 120000000 });
   }

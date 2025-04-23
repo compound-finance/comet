@@ -30,7 +30,7 @@ const uidUSDC = uidCOMP + 1;
 
 const delegatorAddress = process.env.DELEGATOR_ADDRESS || '';
 
-export default migration('1739783281_configurate_and_ens', {
+export default migration('1740578499_configurate_and_ens', {
   // prepare: async () => {
   //   return {};
   // },
@@ -98,7 +98,6 @@ export default migration('1739783281_configurate_and_ens', {
       officialMarketsJSON[sonicChainId] = [newMarketObject];
     }
 
-
     const _approveUSDCCalldata = await USDC_L1.populateTransaction.approve(sonicL1GatewayBridge.address, USDCAmountToSeed);
     const _depositUSDCCalldata = await sonicL1GatewayBridge.populateTransaction.deposit(uidUSDC, USDC_L1.address, USDCAmountToSeed);
     const depositUSDCCalldata = utils.defaultAbiCoder.encode(
@@ -128,7 +127,7 @@ export default migration('1739783281_configurate_and_ens', {
     //   ['address', 'address'],
     //   [comet.address, sonicCOMPAddress]
     // );
-    
+
     // const depositIdCOMP = await l2SonicBridge.userOperationId(delegatorAddress, uidCOMP);
     const depositIdUSDC = await l2SonicBridge.userOperationId(delegatorAddress, uidUSDC);
 
@@ -202,6 +201,14 @@ export default migration('1739783281_configurate_and_ens', {
       ]
     );
 
+    const fee = await l1CCIPRouter.getFee(destinationChainSelector, [
+      utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
+      l2ProposalData,
+      [],
+      constants.AddressZero,
+      '0x'
+    ]);
+
     const actions = [
       // // 1. Transfer COMP to Delegator
       // {
@@ -242,9 +249,9 @@ export default migration('1739783281_configurate_and_ens', {
               '0x'
             ]
           ],
-        value: utils.parseEther('0.05')
+        value: fee
       },
-      // 7. Update the list of official markets
+      // 6. Update the list of official markets
       {
         target: ENSResolverAddress,
         signature: 'setText(bytes32,string,string)',
@@ -286,6 +293,7 @@ export default migration('1739783281_configurate_and_ens', {
       // rewards,
       // COMP,
       l2SonicBridge,
+      timelock: l2Timelock
     } = await deploymentManager.getContracts();
 
     // 1.
@@ -304,7 +312,6 @@ export default migration('1739783281_configurate_and_ens', {
     //   baseTrackingSupplySpeed: exp(3 / 86400, 15, 18), // 34722222222
     //   baseTrackingBorrowSpeed: exp(2 / 86400, 15, 18), // 23148148148
     // });
-
 
     // const depositIdCOMP = await l2SonicBridge.userOperationId(delegatorAddress, uidCOMP);
     const depositIdUSDC = await l2SonicBridge.userOperationId(delegatorAddress, uidUSDC);
@@ -328,6 +335,18 @@ export default migration('1739783281_configurate_and_ens', {
     );
     expect(dataFromStorageUSDC).to.not.be.equal(constants.HashZero);
 
+    const delegatorContract = new Contract(
+      delegatorAddress,
+      [
+        'function setClaimData(uint256,address,uint256,address,address)',
+        'function initialize(address,address)',
+        'function bridge() external view returns (address)',
+        'function timelock() external view returns (address)',
+      ],
+      await deploymentManager.getSigner()
+    );
+    expect(await delegatorContract.bridge()).to.be.equal(l2SonicBridge.address);
+    expect(await delegatorContract.timelock()).to.be.equal(l2Timelock.address);
     // const config = await rewards.rewardConfig(comet.address);
     // expect(config.token.toLowerCase()).to.be.equal(COMP.address.toLowerCase());
     // expect(config.rescaleFactor).to.be.equal(exp(1, 12));
@@ -412,6 +431,10 @@ export default migration('1739783281_configurate_and_ens', {
         {
           baseSymbol: 'USDS',
           cometAddress: '0x5D409e56D886231aDAf00c8775665AD0f9897b56'
+        },
+        {
+          baseSymbol: 'WBTC',
+          cometAddress: '0xe85Dc543813B8c2CFEaAc371517b925a166a9293'
         }
       ],
       10: [
@@ -448,6 +471,12 @@ export default migration('1739783281_configurate_and_ens', {
         {
           baseSymbol: 'USDC.e',
           cometAddress: comet.address
+        }
+      ],
+      2020: [
+        {
+          baseSymbol: 'WETH',
+          cometAddress: '0x4006eD4097Ee51c09A04c3B0951D28CCf19e6DFE'
         }
       ],
       5000: [

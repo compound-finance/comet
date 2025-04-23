@@ -31,8 +31,8 @@ async function deployContracts(
     'stS:priceFeed',
     'pricefeeds/PriceFeedWith4626Support.sol',
     [
-      '0xE5DA20F15420aD15DE0fa650600aFc998bbE3955', // sUSDS / USD price feed
-      '0xc76dFb89fF298145b417d221B2c747d84952e01d', // USDS / USD price feed
+      '0xE5DA20F15420aD15DE0fa650600aFc998bbE3955', // stS / S price feed
+      '0xc76dFb89fF298145b417d221B2c747d84952e01d', // S / USD price feed
       8,                                            // decimals
       'stS / USD price feed',                       // description
     ],

@@ -10,13 +10,13 @@
     "pauseGuardian": "0xCfd9277402f19632330cBbB8Fa6CeaDE03e028B0",
     "rates": {
       "borrowBase": 0.015,
-      "borrowSlopeLow": 0.05,
+      "borrowSlopeLow": 0.04166,
       "borrowKink": 0.9,
-      "borrowSlopeHigh": 3.4,
+      "borrowSlopeHigh": 3.475,
       "supplyBase": 0,
-      "supplySlopeLow": 0.054,
+      "supplySlopeLow": 0.04725,
       "supplyKink": 0.9,
-      "supplySlopeHigh": 3.034
+      "supplySlopeHigh": 3.0947
     },
     "tracking": {
       "indexScale": "1e15",
