@@ -70,6 +70,8 @@ function getBlockRollback(base: ForkSpec) {
     return undefined;
   } else if (base.network === 'sepolia') {
     return undefined;
+  } else if (base.network === 'sonic') {
+    return 0;
   }
   else if (base.network === 'unichain') {
     return 0;
@@ -78,7 +80,7 @@ function getBlockRollback(base: ForkSpec) {
     return 200;
   }
   else
-    return 280;
+    return 50;
 }
 
 export async function forkedHreForBase(base: ForkSpec): Promise<HardhatRuntimeEnvironment> {

@@ -43,6 +43,7 @@ import optimismWethRelationConfigMap from './deployments/optimism/weth/relations
 import mantleRelationConfigMap from './deployments/mantle/usde/relations';
 import unichainRelationConfigMap from './deployments/unichain/usdc/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
+import sonicRelationConfigMap from './deployments/sonic/usdc.e/relations';
 import roninRelationConfigMap from './deployments/ronin/weth/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
@@ -62,14 +63,15 @@ const {
   MANTLESCAN_KEY,
   SCROLLSCAN_KEY,
   ANKR_KEY,
-  //TENDERLY_KEY_RONIN,
+  //_TENDERLY_KEY_RONIN,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
   GOV_NETWORK_PROVIDER = '',
   GOV_NETWORK = '',
+  REMOTE_ACCOUNTS = '',
+  SONICSCAN_KEY = '',
   UNICHAIN_QUICKNODE_KEY = '',
-  REMOTE_ACCOUNTS = ''
 } = process.env;
 
 function* deriveAccounts(pk: string, n: number = 10) {
@@ -96,6 +98,8 @@ export function requireEnv(varName, msg?: string): string {
   'LINEASCAN_KEY',
   'OPTIMISMSCAN_KEY',
   'MANTLESCAN_KEY',
+  'SCROLLSCAN_KEY',
+  'SONICSCAN_KEY',
   'UNICHAIN_QUICKNODE_KEY',
   'SCROLLSCAN_KEY'
 ].map((v) => requireEnv(v));
@@ -123,13 +127,18 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'ronin',
     chainId: 2020,
-    //url: `https://ronin.gateway.tenderly.co/${TENDERLY_KEY_RONIN}`,
+    //url: `https://ronin.gateway.tenderly.co/${_TENDERLY_KEY_RONIN}`,
     url: 'https://ronin.lgns.net/rpc',
   },
   {
     network: 'polygon',
     chainId: 137,
     url: `https://rpc.ankr.com/polygon/${ANKR_KEY}`,
+  },
+  {
+    network: 'sonic',
+    chainId: 146,
+    url: `https://rpc.ankr.com/sonic_mainnet/${ANKR_KEY}`,
   },
   {
     network: 'optimism',
@@ -191,7 +200,7 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
         getDefaultProviderURL(netConfig.network),
       gas: netConfig.gas || 'auto',
       gasPrice: netConfig.gasPrice || 'auto',
-      accounts: REMOTE_ACCOUNTS ? 'remote' : (ETH_PK ? [...deriveAccounts(ETH_PK)] : { mnemonic: MNEMONIC }),
+      accounts: REMOTE_ACCOUNTS ? 'remote' : (ETH_PK ? [ETH_PK] : { mnemonic: MNEMONIC }),
     };
   }
 }
@@ -284,6 +293,7 @@ const config: HardhatUserConfig = {
       unichain: ETHERSCAN_KEY,
       // Scroll
       'scroll': SCROLLSCAN_KEY,
+      sonic: SONICSCAN_KEY,
     },
     customChains: [
       {
@@ -332,6 +342,14 @@ const config: HardhatUserConfig = {
           // apiURL: 'https://api.mantlescan.xyz/api',
           // browserURL: 'https://mantlescan.xyz/'
         }
+      },
+      {
+        network: 'sonic',
+        chainId: 146,
+        urls: {
+          apiURL: 'https://api.sonicscan.org/api',
+          browserURL: 'https://sonicscan.org/'
+        },
       },
       {
         network: 'ronin',
@@ -394,6 +412,9 @@ const config: HardhatUserConfig = {
       },
       'scroll': {
         usdc: scrollRelationConfigMap
+      },
+      'sonic': {
+        'usdc.e': sonicRelationConfigMap
       },
       'ronin': {
         weth: roninRelationConfigMap
@@ -542,6 +563,12 @@ const config: HardhatUserConfig = {
         name: 'mantle-usde',
         network: 'mantle',
         deployment: 'usde',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'sonic-usdc.e',
+        network: 'sonic',
+        deployment: 'usdc.e',
         auxiliaryBase: 'mainnet'
       },
       {

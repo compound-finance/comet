@@ -28,6 +28,7 @@ export async function loadMigration(path: string): Promise<Migration<any>> {
 export async function loadMigrations(paths: string[]): Promise<Migration<any>[]> {
   const migrations = [];
   for (const path of paths) {
+    if (!path.endsWith('.ts')) continue;
     migrations.push(await loadMigration(path));
   }
   return migrations;

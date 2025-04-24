@@ -517,6 +517,7 @@ scenario(
         symbol === 'WMATIC' ? /Transaction reverted without a reason string/ : /.^/,
         symbol === 'WPOL' ? /Transaction reverted without a reason string/ : /.^/,
         symbol === 'sUSDS' ? /SUsds\/insufficient-allowance/ : /.^/,
+        symbol === 'wS' ? /0xfb8f41b2/ : /.^/,
       ]
     );
   }
@@ -607,6 +608,7 @@ scenario(
         symbol === 'WMATIC' ? /Transaction reverted without a reason string/ : /.^/,
         symbol === 'WPOL' ? /Transaction reverted without a reason string/ : /.^/,
         symbol === 'sUSDS' ? /SUsds\/insufficient-balance/ : /.^/,
+        symbol === 'wS' ? /0xe450d38c/ : /.^/,
       ]
     );
   }

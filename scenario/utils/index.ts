@@ -369,6 +369,7 @@ const tokens = new Map<string, string>([
 
 const dest = new Map<string, string>([
   ['ronin', '6916147374840168594'],
+  ['sonic', '1673871237479749969'],
 ]);
 
 async function updateCCIPStats(dm: DeploymentManager) {
@@ -598,6 +599,32 @@ async function mockRedstoneOracle(dm: DeploymentManager, feed: string) {
   await proxyAdmin.connect(owner).upgrade(feed, newImplementation.address);
 }
 
+async function updateSonicStateOracle(dm: DeploymentManager){
+  const stateOracleContract = new Contract(
+    '0xB7e8CC3F5FeA12443136f0cc13D81F109B2dEd7f',
+    [
+      'function update(uint256 blockNum, bytes32 stateRoot) external',      
+      'function lastBlockNum() external view returns(uint256)',
+      'function lastState() external view returns(bytes32)',
+      'function owner() external view returns(address)',
+    ],
+    dm.hre.ethers.provider
+  );
+  const blockNum = await dm.hre.ethers.provider.getBlockNumber();
+  const stateRoot = await stateOracleContract.lastState();
+
+  const ownerAddress = await stateOracleContract.owner();
+  const owner = await impersonateAddress(dm, ownerAddress);
+  // set balance
+  await dm.hre.ethers.provider.send('hardhat_setBalance', [
+    owner.address,
+    dm.hre.ethers.utils.hexStripZeros(dm.hre.ethers.utils.parseUnits('100', 'ether').toHexString()),
+  ]);
+
+  const tx = await stateOracleContract.connect(owner).update(blockNum, stateRoot);
+  await tx.wait();
+}
+
 export async function voteForOpenProposal(dm: DeploymentManager, { id, startBlock, endBlock }: OpenProposal) {
   const governor = await dm.getContractOrThrow('governor');
   const blockNow = await dm.hre.ethers.provider.getBlockNumber();
@@ -639,8 +666,12 @@ export async function executeOpenProposal(
   // Queue proposal (maybe)
   if (await governor.state(id) == ProposalState.Succeeded) {
     await setNextBaseFeeToZero(dm);
-    await governor.queue(id, { gasPrice: 0 });
+    const nonce = await dm.hre.ethers.provider.getTransactionCount(await governor.signer.getAddress());
+    await governor.queue(id, { gasPrice: 0, nonce: nonce });
   }
+  await dm.hre.ethers.provider.send('evm_mine', []);
+  await redeployRenzoOracle(dm);
+  await mockAllRedstoneOracles(dm);
 
   // Execute proposal (maybe, w/ gas limit so we see if exec reverts, not a gas estimation error)
   if (await governor.state(id) == ProposalState.Queued) {
@@ -648,12 +679,11 @@ export async function executeOpenProposal(
     const eta = await governor.proposalEta(id);
 
     await setNextBlockTimestamp(dm, Math.max(block.timestamp, eta.toNumber()) + 1);
+    await updateSonicStateOracle(dm);
+    await updateCCIPStats(dm);    
     await setNextBaseFeeToZero(dm);
-    await updateCCIPStats(dm);
     await governor.execute(id, { gasPrice: 0, gasLimit: 120000000 });
   }
-  await redeployRenzoOracle(dm);
-  await mockAllRedstoneOracles(dm);
   // mine a block
   await dm.hre.ethers.provider.send('evm_mine', []);
 }
@@ -671,9 +701,9 @@ async function testnetPropose(
   const governor = await dm.getContractOrThrow('governor');
   const testnetGovernor = new Contract(
     governor.address, [
-    'function propose(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) external returns (uint256 proposalId)',
-    'event ProposalCreated(uint256 proposalId, address proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 startBlock, uint256 endBlock, string description)'
-  ], governor.signer
+      'function propose(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) external returns (uint256 proposalId)',
+      'event ProposalCreated(uint256 proposalId, address proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 startBlock, uint256 endBlock, string description)'
+    ], governor.signer
   );
 
   return testnetGovernor.connect(proposer).propose(
@@ -846,6 +876,30 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       values.push(0);
       signatures.push('sendMessage(address,bytes,uint32)');
       calldata.push(sendMessageCalldata);
+      break;
+    }
+    case 'sonic': {
+      const destinationChainSelector = '1673871237479749969';
+      const ccipSendCalldata = utils.defaultAbiCoder.encode(
+        ['uint64','(bytes,bytes,(address,uint256)[],address,bytes)'],
+        [
+          destinationChainSelector, 
+          [
+            utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
+            l2ProposalData,
+            [],
+            constants.AddressZero,
+            '0x'
+          ]
+        ]
+      );
+      const l1CCIPRouter = await govDeploymentManager.getContractOrThrow(
+        'l1CCIPRouter'
+      );
+      targets.push(l1CCIPRouter.address);
+      values.push(utils.parseEther('0.5'));
+      signatures.push('ccipSend(uint64,(bytes,bytes,(address,uint256)[],address,bytes))');
+      calldata.push(ccipSendCalldata);
       break;
     }
     case 'unichain': {

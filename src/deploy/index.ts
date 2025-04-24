@@ -162,6 +162,9 @@ export const WHALES = {
     '0x233493E9DC68e548AC27E4933A600A3A4682c0c3', // FBTC whale
     '0xCd83CbBFCE149d141A5171C3D6a0F0fCCeE225Ab', // COMP whale
   ],
+  sonic: [
+    '0xA4E471dbfe8C95d4c44f520b19CEe436c01c3267', // S whale
+  ],
   'unichain': [
     '0x4200000000000000000000000000000000000006', // WETH whale
   ],
@@ -189,23 +192,25 @@ export async function calldata(req: Promise<PopulatedTransaction>): Promise<stri
 export async function testnetProposal(actions: ProposalAction[], description: string): Promise<TestnetProposal> {
   const targets = [],
     values = [],
+    signatures = [],
     calldatas = [];
   for (const action of actions) {
     if (action['contract']) {
       const { contract, value, signature, args } = action as ContractAction;
       targets.push(contract.address);
       values.push(value ?? 0);
-      calldatas.push(utils.id(signature).slice(0, 10) + (await calldata(contract.populateTransaction[signature](...args))).slice(2));
+      signatures.push(signature);
+      calldatas.push(await calldata(contract.populateTransaction[signature](...args)));
     } else {
       const { target, value, signature, calldata } = action as TargetAction;
       targets.push(target);
       values.push(value ?? 0);
-      calldatas.push(utils.id(signature).slice(0, 10) + calldata.slice(2));
+      signatures.push(signature);
+      calldatas.push(calldata);
     }
   }
 
   return [targets, values, signatures, calldatas, description];
-
 }
 
 export async function proposal(actions: ProposalAction[], description: string): Promise<Proposal> {
