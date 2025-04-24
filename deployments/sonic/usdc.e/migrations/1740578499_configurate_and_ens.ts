@@ -31,28 +31,8 @@ const uidUSDC = uidCOMP + 1;
 const delegatorAddress = process.env.DELEGATOR_ADDRESS || '';
 
 export default migration('1740578499_configurate_and_ens', {
-  // prepare: async () => {
-  //   return {};
-  // },
-
-  async prepare(deploymentManager: DeploymentManager) {
-    const { timelock, l2SonicBridge } = await deploymentManager.getContracts();
-    const signer = await deploymentManager.getSigner();
-
-    const initializeDelegatorData = utils.defaultAbiCoder.encode(
-      ['address', 'address'],
-      [timelock.address, l2SonicBridge.address]
-    );
-
-    console.log('timelock.address', timelock.address);
-    const txDelegator = await signer.sendTransaction({
-      to: delegatorAddress,
-      value: 0,
-      data: '0x485cc955' + initializeDelegatorData.substring(2)
-    });
-    await txDelegator.wait();
-
-    return { delegatorAddress: delegatorAddress };
+  prepare: async () => {
+    return {};
   },
 
   enact: async (
@@ -70,6 +50,7 @@ export default migration('1740578499_configurate_and_ens', {
       // COMP: COMP_L2,
       'USDC.e': USDC_L2,
       bridgeReceiver,
+      timelock: l2Timelock,
     } = await deploymentManager.getContracts();
 
     const {
@@ -135,6 +116,7 @@ export default migration('1740578499_configurate_and_ens', {
       delegatorAddress,
       [
         'function setClaimData(uint256,address,uint256,address,address)',
+        'function initialize(address,address)',
       ],
       await deploymentManager.getSigner()
     );
@@ -263,6 +245,12 @@ export default migration('1740578499_configurate_and_ens', {
     ];
 
     const description = 'DESCRIPTION';
+    await deploymentManager.retry(async () => {
+      return trace(await delegatorContract.initialize(
+        l2Timelock.address,
+        l2SonicBridge.address
+      ));
+    });
     const txn = await govDeploymentManager.retry(async () => {
       return trace(await governor.propose(...(await proposal(actions, description))));
     }

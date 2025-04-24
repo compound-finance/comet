@@ -17,6 +17,15 @@ contract Delegator {
         address to;
     }
 
+    /// @notice Emitted when contract is initialized
+    event  Initialized(address indexed timelock, address indexed bridge);
+    /// @notice Emitted when the claim data is set
+    event ClaimDataSet(uint256 id, address token, uint256 amount, address l2Token, address to);
+    /// @notice Emitted when the claim is executed
+    event ClaimExecuted(uint256 id, address token, uint256 amount, address l2Token, address to);
+    /// @notice Emitted when a call is executed
+    event CallExecuted(address target, bytes data, uint256 value);
+
     /// @notice Address of the timelock contract that this contract will receive messages from
     address public timelock;
     /// @notice Address of the bridge contract that this contract will send funds to
@@ -32,6 +41,7 @@ contract Delegator {
         require(timelock == address(0), "already initialized");
         timelock = _timelock;
         bridge = _bridge;
+        emit Initialized(timelock, bridge);
     }
 
     /// @notice Set the claim data for a given claim id
@@ -44,6 +54,7 @@ contract Delegator {
     function setClaimData(uint256 id, address token, uint256 amount, address l2Token, address to) external {
         require(msg.sender == address(this), "only delegator");
         claims[id] = ClaimData(id, token, amount, l2Token, to);
+        emit ClaimDataSet(id, token, amount, l2Token, to);
     }
 
     /// @notice Execute a batch of calls to the specified targets with the given call data and values
@@ -68,6 +79,7 @@ contract Delegator {
                     revert("Delegator: call failed");
                 }
             }
+            emit CallExecuted(targets[i], callDatas[i], values[i]);
         }
     }
 
@@ -79,5 +91,6 @@ contract Delegator {
         ClaimData memory claimData = claims[id];
         IBridge(bridge).claim(claimData.id, claimData.token, claimData.amount, proof);
         IERC20(claimData.l2Token).safeTransfer(claimData.to, claimData.amount);
+        emit ClaimExecuted(claimData.id, claimData.token, claimData.amount, claimData.l2Token, claimData.to);
     }
 }
