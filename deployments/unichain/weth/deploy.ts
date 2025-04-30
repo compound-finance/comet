@@ -100,17 +100,6 @@ async function deployContracts(
     ]
   );
 
-  const _USDCPriceFeed = await deploymentManager.deploy(
-    'USDC:priceFeed',
-    'pricefeeds/ReverseMultiplicativePriceFeed.sol',
-    [
-      '0xD15862FC3D5407A03B696548b6902D6464A69b8c', // USDC / USD price feed
-      ETH_TO_USD_PRICE_FEED,                        // ETH / USD price feed (reversed)
-      8,                                            // decimals
-      'WBTC / ETH price feed'                       // description
-    ]
-  );
-
   const _UNIPriceFeed = await deploymentManager.deploy(
     'UNI:priceFeed',
     'pricefeeds/ReverseMultiplicativePriceFeed.sol',
@@ -118,7 +107,7 @@ async function deployContracts(
       '0xf1454949C6dEdfb500ae63Aa6c784Aa1Dde08A6c', // UNI / USD price feed
       ETH_TO_USD_PRICE_FEED,                        // ETH / USD price feed (reversed)
       8,                                            // decimals
-      'WBTC / ETH price feed'                       // description
+      'UNI / ETH price feed'                        // description
     ]
   );
 
