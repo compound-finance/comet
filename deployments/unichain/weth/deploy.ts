@@ -24,9 +24,24 @@ async function deployContracts(
     '0x4200000000000000000000000000000000000006',
     'unichain'
   );
-  const _USDC = await deploymentManager.existing(
-    'USDC',
-    '0x078D782b760474a361dDA0AF3839290b0EF57AD6',
+  const _weETH = await deploymentManager.existing(
+    'weETH',
+    '0x7DCC39B4d1C53CB31e1aBc0e358b43987FEF80f7',
+    'unichain'
+  );
+  const _wstETH = await deploymentManager.existing(
+    'wstETH',
+    '0xc02fE7317D4eb8753a02c35fe019786854A92001',
+    'unichain'
+  );
+  const _WBTC = await deploymentManager.existing(
+    'WBTC',
+    '0x927B51f251480a681271180DA4de28D44EC4AfB8',
+    'unichain'
+  );
+  const _ezETH = await deploymentManager.existing(
+    'ezETH',
+    '0x2416092f143378750bb29b79eD961ab195CcEea5',
     'unichain'
   );
   const _UNI = await deploymentManager.existing(
@@ -46,6 +61,42 @@ async function deployContracts(
     [
       8,                                             // decimals
       exp(1, 8)                                      // constantPrice
+    ]
+  );
+
+  const _wbtcConstantPriceFeed = await deploymentManager.deploy(
+    'WBTC:priceFeed',
+    'pricefeeds/ConstantPriceFeed.sol',
+    [
+      8,                                             // decimals
+      exp(51.95, 8)                                  // constantPrice
+    ]
+  );
+
+  const _ezEthConstantPriceFeed = await deploymentManager.deploy(
+    'ezETH:priceFeed',
+    'pricefeeds/ConstantPriceFeed.sol',
+    [
+      8,                                             // decimals
+      exp(1.046, 8)                                  // constantPrice
+    ]
+  );
+
+  const _weEthConstantPriceFeed = await deploymentManager.deploy(
+    'weETH:priceFeed',
+    'pricefeeds/ConstantPriceFeed.sol',
+    [
+      8,                                             // decimals
+      exp(1.066, 8)                                  // constantPrice
+    ]
+  );
+
+  const _wstethConstantPriceFeed = await deploymentManager.deploy(
+    'wstETH:priceFeed',
+    'pricefeeds/ConstantPriceFeed.sol',
+    [
+      8,                                             // decimals
+      exp(1.199, 8)                                  // constantPrice
     ]
   );
 
@@ -70,30 +121,6 @@ async function deployContracts(
       'WBTC / ETH price feed'                       // description
     ]
   );
-
-  // const l2CrossDomainMessenger = await deploymentManager.existing(
-  //   'l2CrossDomainMessenger',
-  //   [
-  //     '0xC0d3c0d3c0D3c0D3C0d3C0D3C0D3c0d3c0d30007',
-  //     '0x4200000000000000000000000000000000000007',
-  //   ],
-  //   'unichain'
-  // );
-
-  // const l2StandardBridge = await deploymentManager.existing(
-  //   'l2StandardBridge',
-  //   [
-  //     '0xC0d3c0d3c0D3c0d3C0D3c0D3C0d3C0D3C0D30010',
-  //     '0x4200000000000000000000000000000000000010',
-  //   ],
-  //   'unichain'
-  // );
-
-  // const TokenMinter = await deploymentManager.existing(
-  //   'TokenMinter',
-  //   '0x726bFEF3cBb3f8AF7d8CB141E78F86Ae43C34163',
-  //   'unichain'
-  // );
 
   // Import shared contracts from cUSDCv3
   const l2CrossDomainMessenger = await deploymentManager.fromDep('l2CrossDomainMessenger', 'unichain', 'usdc');

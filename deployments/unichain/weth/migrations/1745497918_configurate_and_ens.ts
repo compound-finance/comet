@@ -187,14 +187,23 @@ export default migration('1745497918_configurate_and_ens', {
     // uncomment on on-chain proposal PR
     // const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
     // expect(stateChanges).to.deep.equal({
+    //   WBTC: {
+    //     supplyCap: exp(125, 8)
+    //   },
+    //   ezETH: {
+    //     supplyCap: exp(2200, 18)
+    //   },
+    //   wstETH: {
+    //     supplyCap: exp(5000, 18)
+    //   },
+    //   weETH: {
+    //     supplyCap: exp(5000, 18)
+    //   },
     //   UNI: {
-    //     supplyCap: exp(7000, 18)
+    //     supplyCap: exp(500_000, 18)
     //   },
-    //   USDC: {
-    //     supplyCap: exp(50, 18)
-    //   },
-    //   baseTrackingSupplySpeed: exp(1 / 86400, 15, 18), // 11574074074
-    //   baseTrackingBorrowSpeed: exp(1 / 86400, 15, 18), // 11574074074
+    //   baseTrackingSupplySpeed: exp(12 / 86400, 15, 18), // 138888888888
+    //   baseTrackingBorrowSpeed: exp(8 / 86400, 15, 18),  //  92592592592
     // });
 
     const config = await rewards.rewardConfig(comet.address);

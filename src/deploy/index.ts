@@ -164,6 +164,8 @@ export const WHALES = {
   ],
   'unichain': [
     '0x4200000000000000000000000000000000000006', // WETH whale
+    '0x7Ae0911198AD568E1FE4af3cf81e36A29983778f', // wstETH whale
+    '0x4B2cf5C94A88934870B523983B22e6d2dd1b6577', // wstETH whale
   ],
   ronin: [
     '0x41058bcc968f809e9dbb955f402de150a3e5d1b5',
