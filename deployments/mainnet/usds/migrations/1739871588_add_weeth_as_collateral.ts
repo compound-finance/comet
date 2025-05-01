@@ -97,7 +97,7 @@ export default migration('1739871588_add_weeth_as_collateral', {
   },
 
   async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return false;
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {
