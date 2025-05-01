@@ -53,8 +53,8 @@ export default migration('1743594813_configurate_and_ens', {
 
     const {
       l1CCIPRouter,
-      roninl1NativeBridge,
       governor,
+      WETH: WETHMainnet,
     } = await govDeploymentManager.getContracts();
 
     const setFactoryCalldata = await calldata(
@@ -81,6 +81,13 @@ export default migration('1743594813_configurate_and_ens', {
         'function getAmountsOut(uint256,address[]) external view returns (uint256[])',
       ],
       deploymentManager.hre.ethers.provider
+    );
+
+    const sweepTokenCalldata = await calldata(
+      bridgeReceiver.populateTransaction.sweepToken(
+        timelock.address,
+        WETH.address
+      )
     );
 
     const approveCalldata = await calldata(
@@ -113,18 +120,22 @@ export default migration('1743594813_configurate_and_ens', {
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
         [
+          bridgeReceiver.address,
           WETH.address,
           swapRouter.address,
         ],
         [
           0,
           0,
+          0,
         ],
         [
+          'sweepToken(address,address)',
           'approve(address,uint256)',
           'swapExactTokensForTokens(uint256,uint256,address[],address,uint256)',
         ],
         [
+          sweepTokenCalldata,
           approveCalldata,
           swapCalldata,
         ],
@@ -186,7 +197,7 @@ export default migration('1743594813_configurate_and_ens', {
 
     const fee1 = await l1CCIPRouter.getFee(destinationChainSelector, [
       utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
-      l2ProposalDataPart1,
+      l2ProposalDataPart1,      
       [],
       constants.AddressZero,
       '0x'
@@ -202,16 +213,15 @@ export default migration('1743594813_configurate_and_ens', {
 
     const mainnetActions = [
       {
-        contract: roninl1NativeBridge,
-        signature: 'requestDepositFor((address,address,(uint8,uint256,uint256)))',
-        args: [
-          [
-            timelock.address,
-            constants.AddressZero,
-            [0, 0, ETHAmountToSwap],
-          ]
-        ],
+        target: WETHMainnet.address,
+        signature: 'deposit()',
+        calldata: '0x',
         value: ETHAmountToSwap
+      },
+      {
+        contract: WETHMainnet,
+        signature: 'approve(address,uint256)',
+        args: [l1CCIPRouter.address, ETHAmountToSwap],
       },
       {
         contract: l1CCIPRouter,
@@ -222,7 +232,12 @@ export default migration('1743594813_configurate_and_ens', {
             [
               utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
               l2ProposalDataPart1,
-              [],
+              [
+                [
+                  WETHMainnet.address,
+                  ETHAmountToSwap
+                ],
+              ],
               constants.AddressZero,
               '0x'
             ]
