@@ -12,7 +12,13 @@ export default async function deploy(
   return deployed;
 }
 
+// ONLY REDSTONE PROVIDER IS USED
 const ETH_TO_USD_PRICE_FEED = '0xe8D9FbC10e00ecc9f0694617075fDAF657a76FB2';
+const WBTC_TO_USD_PRICE_FEED = '0xc44be6D00307c3565FDf753e852Fc003036cBc13';
+const wstETH_TO_ETH_MARKET_PRICE_FEED = '0x24c8964338Deb5204B096039147B8e8C3AEa42Cc';
+const weETH_TO_ETH_EXCHANGE_RATE_PRICE_FEED = '0xBf3bA2b090188B40eF83145Be0e9F30C6ca63689';
+const ezETH_TO_ETH_EXCHANGE_RATE_PRICE_FEED = '0xa0f2EF6ceC437a4e5F6127d6C51E1B0d3A746911';
+const UNI_TO_USD_PRICE_FEED = '0xf1454949C6dEdfb500ae63Aa6c784Aa1Dde08A6c';
 
 async function deployContracts(
   deploymentManager: DeploymentManager,
@@ -54,49 +60,52 @@ async function deployContracts(
     '0xdf78e4f0a8279942ca68046476919a90f2288656',
     'unichain'
   );
-  
+
   const _wethConstantPriceFeed = await deploymentManager.deploy(
     'WETH:priceFeed',
     'pricefeeds/ConstantPriceFeed.sol',
     [
       8,                                             // decimals
       exp(1, 8)                                      // constantPrice
-    ]
+    ],
+    true
   );
 
-  const _wbtcConstantPriceFeed = await deploymentManager.deploy(
+  const _wbtcPriceFeed = await deploymentManager.deploy(
     'WBTC:priceFeed',
-    'pricefeeds/ConstantPriceFeed.sol',
+    'pricefeeds/ReverseMultiplicativePriceFeed.sol',
     [
-      8,                                             // decimals
-      exp(51.95, 8)                                  // constantPrice
+      WBTC_TO_USD_PRICE_FEED, // WBTC / USD
+      ETH_TO_USD_PRICE_FEED, // ETH / USD -> reverse USD / ETH
+      8,
+      'WBTC / ETH price feed'
     ]
   );
 
-  const _ezEthConstantPriceFeed = await deploymentManager.deploy(
+  const _ezEthExchangeRatePriceFeed = await deploymentManager.deploy(
     'ezETH:priceFeed',
-    'pricefeeds/ConstantPriceFeed.sol',
+    'pricefeeds/ScalingPriceFeed.sol',
     [
-      8,                                             // decimals
-      exp(1.046, 8)                                  // constantPrice
+      ezETH_TO_ETH_EXCHANGE_RATE_PRICE_FEED, // address
+      8,                                     // decimals
     ]
   );
 
-  const _weEthConstantPriceFeed = await deploymentManager.deploy(
+  const _weEthExchangeRatePriceFeed = await deploymentManager.deploy(
     'weETH:priceFeed',
-    'pricefeeds/ConstantPriceFeed.sol',
+    'pricefeeds/ScalingPriceFeed.sol',
     [
-      8,                                             // decimals
-      exp(1.066, 8)                                  // constantPrice
+      weETH_TO_ETH_EXCHANGE_RATE_PRICE_FEED, // address
+      8,                                     // decimals
     ]
   );
 
-  const _wstethConstantPriceFeed = await deploymentManager.deploy(
+  const _wstEthMarketRatePriceFeed = await deploymentManager.deploy(
     'wstETH:priceFeed',
-    'pricefeeds/ConstantPriceFeed.sol',
+    'pricefeeds/ScalingPriceFeed.sol',
     [
-      8,                                             // decimals
-      exp(1.199, 8)                                  // constantPrice
+      wstETH_TO_ETH_MARKET_PRICE_FEED, // address
+      8,                               // decimals
     ]
   );
 
@@ -104,11 +113,12 @@ async function deployContracts(
     'UNI:priceFeed',
     'pricefeeds/ReverseMultiplicativePriceFeed.sol',
     [
-      '0xf1454949C6dEdfb500ae63Aa6c784Aa1Dde08A6c', // UNI / USD price feed
-      ETH_TO_USD_PRICE_FEED,                        // ETH / USD price feed (reversed)
-      8,                                            // decimals
-      'UNI / ETH price feed'                        // description
-    ]
+      UNI_TO_USD_PRICE_FEED, // UNI / USD price feed
+      ETH_TO_USD_PRICE_FEED, // ETH / USD price feed (reversed)
+      8,                     // decimals
+      'UNI / ETH price feed' // description
+    ],
+    true
   );
 
   // Import shared contracts from cUSDCv3
