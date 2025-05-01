@@ -19,7 +19,7 @@ export default migration('1739871588_add_weeth_as_collateral', {
         18,
         'weETH / ETH price feed'
       ]
-    )
+    );
 
     const weethMultiplicativePriceFeed = await deploymentManager.deploy(
       'weETH:priceFeed',
