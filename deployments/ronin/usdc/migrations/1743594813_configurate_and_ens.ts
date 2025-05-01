@@ -41,12 +41,12 @@ export default migration('1743594813_configurate_and_ens', {
       cometAdmin,
       configurator,
       // rewards,
+      USDC: l2_USDC
     } = await deploymentManager.getContracts();
 
     const {
       l1CCIPRouter,
-      roninl1NativeBridge,
-      governor,      
+      governor,
       USDC,
     } = await govDeploymentManager.getContracts();
 
@@ -67,6 +67,13 @@ export default migration('1743594813_configurate_and_ens', {
       [configurator.address, comet.address]
     );
 
+    const sweepTokenCalldata = await calldata(
+      bridgeReceiver.populateTransaction.sweepToken(
+        comet.address,
+        l2_USDC.address
+      )
+    );
+
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
@@ -74,19 +81,22 @@ export default migration('1743594813_configurate_and_ens', {
           configurator.address,
           configurator.address,
           cometAdmin.address,
+          bridgeReceiver.address,
         ],
         [
-          0, 0, 0, 
+          0, 0, 0, 0,
         ],
         [
           'setFactory(address,address)',
           'setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))',
           'deployAndUpgradeTo(address,address)',
+          'sweepToken(address,address)',
         ],
         [
           setFactoryCalldata,
           setConfigurationCalldata,
           deployAndUpgradeToCalldata,
+          sweepTokenCalldata,
         ],
       ]
     );
@@ -118,7 +128,6 @@ export default migration('1743594813_configurate_and_ens', {
       });
     }
 
-
     const fee = await l1CCIPRouter.getFee(destinationChainSelector, [
       utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
       l2ProposalData,
@@ -131,18 +140,7 @@ export default migration('1743594813_configurate_and_ens', {
       {
         contract: USDC,
         signature: 'approve(address,uint256)',
-        args: [roninl1NativeBridge.address, USDCAmountToSeed],
-      },
-      {
-        contract: roninl1NativeBridge,
-        signature: 'requestDepositFor((address,address,(uint8,uint256,uint256)))',
-        args: [
-          [
-            comet.address,
-            USDC.address,
-            [0, 0, USDCAmountToSeed],
-          ]
-        ]
+        args: [l1CCIPRouter.address, USDCAmountToSeed],
       },
       {
         contract: l1CCIPRouter,
@@ -153,7 +151,12 @@ export default migration('1743594813_configurate_and_ens', {
             [
               utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
               l2ProposalData,
-              [],
+              [
+                [
+                  USDC.address,
+                  USDCAmountToSeed
+                ],
+              ],
               constants.AddressZero,
               '0x'
             ]
@@ -169,7 +172,6 @@ export default migration('1743594813_configurate_and_ens', {
         ),
       },
     ];
-
 
     const description = '# Initialize cUSDCv3 on Ronin\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes deployment of Compound III to Ronin network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Ronin; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite] (https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-ronin/6128/8).\n\nFurther detailed information can be found on the corresponding [deployment pull request](https://github.com/compound-finance/comet/pull/980), [deploy market GitHub action run](<>) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-ronin/6128).\n\n\n## Rewards\n\nGauntlet provided recommendations for COMP rewards, however, the COMP token is not whitelisted on CCIP. When the COMP token is whitelisted, we will create a proposal to bridge COMP tokens and set up speeds.\n\n## Proposal Actions\n\nThe first proposal action approves [roninl1NativeBridge](https://etherscan.io/address/0x64192819Ac13Ef72bF6b5AE239AC672B43a9AF08) to take Timelock\'s USDC, in order to seed the market reserves on Ronin.\n\nThe second proposal action bridges USDC using [roninl1NativeBridge](https://etherscan.io/address/0x64192819Ac13Ef72bF6b5AE239AC672B43a9AF08).\n\nThe third proposal action sets the Comet configuration and deploys a new Comet implementation on Ronin. This sends the encoded `setConfiguration` and `deployAndUpgradeTo` calls across the [l1CCIPRouter](https://etherscan.io/address/0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D) to the bridge receiver on Ronin. \n\nThe fourth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Ronin cUSDCv3 market.';
 
@@ -201,6 +203,8 @@ export default migration('1743594813_configurate_and_ens', {
       comet,
       // rewards,
       USDC,
+      bridgeReceiver,
+      timelock: l2Timelock,
     } = await deploymentManager.getContracts();
 
     const hreMainnet = await forkedHreForBase({ name: '', network: 'mainnet', deployment: '' });
@@ -269,6 +273,9 @@ export default migration('1743594813_configurate_and_ens', {
     // expect(config.shouldUpscale).to.be.equal(true);
 
     // 4. & 5.
+    console.log(await USDC.balanceOf(comet.address));
+    console.log(await USDC.balanceOf(bridgeReceiver.address));
+    console.log(await USDC.balanceOf(l2Timelock.address));
     expect(await USDC.balanceOf(comet.address)).to.be.equal(USDCAmountToSeed);
     // 6.
     const ENSResolver = await govDeploymentManager.existing(

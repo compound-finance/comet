@@ -22,10 +22,9 @@ async function deployContracts(
     '0x46527571D5D1B68eE7Eb60B18A32e6C60DcEAf99',
     'ronin'
   );
-
-  const roninl2NativeBridge = await deploymentManager.existing(
-    'roninl2NativeBridge',
-    '0x0cf8ff40a508bdbc39fbe1bb679dcba64e65c7df',
+  const l2TokenAdminRegistry = await deploymentManager.existing(
+    'l2TokenAdminRegistry',
+    '0x90e83d532A4aD13940139c8ACE0B93b0DdbD323a',
     'ronin'
   );
   // const _cometFactory = await deploymentManager.existing(
@@ -87,7 +86,7 @@ async function deployContracts(
     bridgeReceiver,
     l2CCIPRouter,
     l2CCIPOffRamp,
-    roninl2NativeBridge,
+    l2TokenAdminRegistry,
     bulker
   };
 }
