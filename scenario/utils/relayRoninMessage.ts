@@ -12,6 +12,7 @@ export default async function relayRoninMessage(
   bridgeDeploymentManager: DeploymentManager,
   _: number
 ) {
+
   const l1CCIPOnRamp = await governanceDeploymentManager.getContractOrThrow('roninl1CCIPOnRamp');
   const l2Router = (await bridgeDeploymentManager.getContractOrThrow('l2CCIPRouter'));
   const l2CCIPOffRamp = (await bridgeDeploymentManager.getContractOrThrow('l2CCIPOffRamp'));
