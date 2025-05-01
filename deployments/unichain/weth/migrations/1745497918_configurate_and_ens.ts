@@ -48,7 +48,8 @@ export default migration('1745497918_configurate_and_ens', {
       unichainL1StandardBridge,
       governor,
       COMP: COMP_L1,
-      comptrollerV2
+      comptrollerV2,
+      timelock: timelockL1,
     } = await govDeploymentManager.getContracts();
 
     // ENS Setup
@@ -142,7 +143,7 @@ export default migration('1745497918_configurate_and_ens', {
       {
         contract: comptrollerV2,
         signature: '_grantComp(address,uint256)',
-        args: [timelock.address, exp(3_600, 18)],
+        args: [timelockL1.address, COMPAmountToBridge],
       },
       // 3. Approve L1StandardBridge to transfer COMP
       {
