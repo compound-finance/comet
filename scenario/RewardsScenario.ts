@@ -265,12 +265,13 @@ async function testScalingReward(properties: CometProperties, context: CometCont
     'CometRewards.sol',
     [albert.address]
   );
-  const COMPRewards = 10;
+  const COMPRewards = 100;
   await newRewards.connect(albert.signer).setRewardConfigWithMultiplier(comet.address, rewardTokenAddress, multiplier);
   await context.sourceTokens(exp(COMPRewards, rewardDecimals), rewardTokenAddress, newRewards.address);
 
+  const albertBaseBalance = await baseAsset.balanceOf(albert.address);
   await baseAsset.approve(albert, comet.address);
-  await albert.safeSupplyAsset({ asset: baseAssetAddress, amount: 100n * baseScale });
+  await albert.safeSupplyAsset({ asset: baseAssetAddress, amount: albertBaseBalance / 10n });
 
   expect(await rewardToken.balanceOf(albert.address)).to.be.equal(0n);
 

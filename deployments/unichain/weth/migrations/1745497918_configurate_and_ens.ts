@@ -184,7 +184,7 @@ export default migration('1745497918_configurate_and_ens', {
     ];
 
     // the description has speeds. speeds will be set up on on-chain proposal
-    const description = '# Initialize cWETHv3 on Unichain\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Unichain network. This proposal takes the governance steps recommended and necessary to initialize a Compound III WETH market on Unichain; upon execution, cWETHv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/alphagrowth-add-market-eth-on-unichain/6712/2).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/983), [deploy market GitHub action run](<>) and [forum discussion](https://www.comp.xyz/t/alphagrowth-add-market-eth-on-unichain/6712).\n\n\n## Price feeds\n\nFor wstETH deployment, uses market rate price feed whereas for ezETH and weETH, exchange price feeds are used. The price feed provider is Redstone as on the USDC Unichain market. \n\n## Proposal Actions\n\nThe first action bridges 100 ETH as seed reserves from Mainnet Timelock to Unichain L2 Timelock using UnichainL1StandardBridge\n\nThe second action transfers 3,600 COMP as rewards from the Comptroller to Timelock. \n\nThe third action approves 3,600 COMP to be bridged to Unichain via UnichainL1StandardBridge\n\nThe fourth action bridges 3,600 COMP to Unichain via UnichainL1StandardBridge\n\nThe fifth proposal action sets the Comet configuration and deploys a new Comet implementation on Unichain. This sends the encoded `setFactory`, `setConfiguration`, `deployAndUpgradeTo`and `setRewardConfig` calls across the bridge to the governance receiver on Unichain. Supply rewards are 12 COMP per day, and borrow rewards are 8 COMP per day. Finally, bridged ETH is wrapped to WETH and transferred to Comet as seed reserves.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Unichain cWETHv3 market.';
+    const description = '# Initialize cWETHv3 on Unichain\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Unichain network. This proposal takes the governance steps recommended and necessary to initialize a Compound III WETH market on Unichain; upon execution, cWETHv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/alphagrowth-add-market-eth-on-unichain/6712/2).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/983), [deploy market GitHub action run](https://github.com/woof-software/comet/actions/runs/14789485605) and [forum discussion](https://www.comp.xyz/t/alphagrowth-add-market-eth-on-unichain/6712).\n\n\n## Price feeds\n\nFor wstETH deployment, uses market rate price feed whereas for ezETH and weETH, exchange price feeds are used. The price feed provider is Redstone as on the USDC Unichain market.\n\n## Proposal Actions\n\nThe first action bridges 100 ETH as seed reserves from Mainnet Timelock to Unichain L2 Timelock using UnichainL1StandardBridge.\n\nThe second action transfers 3,600 COMP as rewards from the Comptroller to Timelock.\n\nThe third action approves 3,600 COMP to be bridged to Unichain via UnichainL1StandardBridge.\n\nThe fourth action bridges 3,600 COMP to Unichain via UnichainL1StandardBridge.\n\nThe fifth proposal action sets the Comet configuration and deploys a new Comet implementation on Unichain. This sends the encoded `setFactory`, `setConfiguration`, `deployAndUpgradeTo`and `setRewardConfig` calls across the bridge to the governance receiver on Unichain. Supply rewards are 12 COMP per day, and borrow rewards are 8 COMP per day. Finally, bridged ETH is wrapped to WETH and transferred to Comet as seed reserves.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Unichain cWETHv3 market.';
     const txn = await govDeploymentManager.retry(async () => {
       return trace(await governor.propose(...(await proposal(actions, description))));
     }
@@ -217,26 +217,26 @@ export default migration('1745497918_configurate_and_ens', {
 
     // 2.
     // uncomment on on-chain proposal PR
-    // const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
-    // expect(stateChanges).to.deep.equal({
-    //   WBTC: {
-    //     supplyCap: exp(125, 8)
-    //   },
-    //   ezETH: {
-    //     supplyCap: exp(2200, 18)
-    //   },
-    //   wstETH: {
-    //     supplyCap: exp(5000, 18)
-    //   },
-    //   weETH: {
-    //     supplyCap: exp(5000, 18)
-    //   },
-    //   UNI: {
-    //     supplyCap: exp(500_000, 18)
-    //   },
-    //   baseTrackingSupplySpeed: exp(12 / 86400, 15, 18), // 138888888888
-    //   baseTrackingBorrowSpeed: exp(8 / 86400, 15, 18),  //  92592592592
-    // });
+    const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
+    expect(stateChanges).to.deep.equal({
+      WBTC: {
+        supplyCap: exp(125, 8)
+      },
+      ezETH: {
+        supplyCap: exp(2200, 18)
+      },
+      wstETH: {
+        supplyCap: exp(5000, 18)
+      },
+      weETH: {
+        supplyCap: exp(5000, 18)
+      },
+      UNI: {
+        supplyCap: exp(500_000, 18)
+      },
+      baseTrackingSupplySpeed: exp(12 / 86400, 15, 18), // 138888888888
+      baseTrackingBorrowSpeed: exp(8 / 86400, 15, 18),  //  92592592592
+    });
 
     const cometNew = new Contract(
       comet.address,
