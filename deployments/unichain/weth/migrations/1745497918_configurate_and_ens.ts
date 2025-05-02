@@ -220,7 +220,7 @@ export default migration('1745497918_configurate_and_ens', {
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
     expect(stateChanges).to.deep.equal({
       WBTC: {
-        supplyCap: exp(125, 8)
+        supplyCap: exp(120, 8)
       },
       ezETH: {
         supplyCap: exp(2200, 18)
