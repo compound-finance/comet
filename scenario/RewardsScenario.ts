@@ -247,7 +247,6 @@ async function testScalingReward(properties: CometProperties, context: CometCont
   const { albert } = actors;
   const baseAssetAddress = await comet.baseToken();
   const baseAsset = context.getAssetByAddress(baseAssetAddress);
-  const baseScale = (await comet.baseScale()).toBigInt();
 
   const [rewardTokenAddress, rescaleFactorWithoutMultiplier] = await rewards.rewardConfig(comet.address);
   // XXX maybe try with a different reward token as well
