@@ -105,6 +105,16 @@ export async function relayArbitrumMessage(
           blacklist: [],
         });
         continue;
+      } else 
+      if(token == '0xdC035D45d973E3EC169d2276DDab16f1e407384F'){
+        await sourceTokens({
+          dm: bridgeDeploymentManager,
+          amount: amount,
+          asset: '0x6491c05A82219b8D1479057361ff1654749b876b',
+          address: to,
+          blacklist: [],
+        });
+        continue;
       }
     }
     const transactionRequest = await arbitrumSigner.populateTransaction({

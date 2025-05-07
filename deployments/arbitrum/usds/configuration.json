@@ -1,0 +1,37 @@
+{
+  "name": "Compound USDS",
+  "symbol": "cUSDSv3",
+  "baseToken": "USDS",
+  "baseTokenAddress": "0x6491c05A82219b8D1479057361ff1654749b876b",
+  "baseTokenPriceFeed": "0x37833E5b3fbbEd4D613a3e0C354eF91A42B81eeB",
+  "borrowMin": "0.1e18",
+  "pauseGuardian": "0x78E6317DD6D43DdbDa00Dce32C2CbaFc99361a9d",
+  "storeFrontPriceFactor": 0.6,
+  "targetReserves": "20_000_000e18",
+  "rates": {
+    "borrowBase": 0.015,
+    "borrowSlopeLow": 0.05,
+    "borrowKink": 0.9,
+    "borrowSlopeHigh": 3.4,
+    "supplyBase": 0,
+    "supplySlopeLow": 0.054,
+    "supplyKink": 0.9,
+    "supplySlopeHigh": 3.034
+  },
+  "tracking": {
+    "indexScale": "1e15",
+    "baseSupplySpeed": "0e0",
+    "baseBorrowSpeed": "0e0",
+    "baseMinForRewards": "100000e18"
+  },
+  "assets": {
+    "sUSDS": {
+      "address": "0xdDb46999F8891663a8F2828d25298f70416d7610",
+      "decimals": "18",
+      "borrowCF": 0.93,
+      "liquidateCF": 0.95,
+      "liquidationFactor": 0.96,
+      "supplyCap": "0e18"
+    }
+  }
+}
