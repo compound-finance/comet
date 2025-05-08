@@ -44,20 +44,28 @@ contract Streamer {
     /// @notice The amount of COMP tokens claimed by the receiver
     /// @dev This variable is used to keep track of the amount of COMP tokens claimed by the receiver
     uint256 public claimedCompAmount;
-    /// @notice The last timestamp when the receiver claimed the owed amount
-    uint256 public lastClaimTime;
 
     event Claimed(uint256 compAmount, uint256 usdcAmount);
     event Swept(uint256 amount);
     event Initialized();
 
+    error ZeroAmount();
+    error NotReceiver();
+    error ZeroAddress();
+    error InvalidPrice();
+    error OnlyTimelock();
+    error TransferFailed();
+    error NotInitialized();
+    error StreamNotFinished();
+    error NotEnoughBalance();
+
     modifier isInitialized() {
-        require(startTimestamp != 0, "Not initialized");
+        if(startTimestamp == 0) revert NotInitialized();
         _;
     }
 
     constructor(address _receiver) {
-        require(_receiver != address(0), "Receiver cannot be zero address");
+        if(_receiver == address(0)) revert ZeroAddress();
         compOracleDecimals = AggregatorV3Interface(COMP_ORACLE).decimals();
         usdcOracleDecimals = AggregatorV3Interface(USDC_ORACLE).decimals();
         receiver = _receiver;
@@ -65,33 +73,44 @@ contract Streamer {
 
     /// @notice Initializes the contract and sets the start timestamp
     function initialize() external {
-        require(msg.sender == COMPOUND_TIMELOCK, "Only timelock can initialize");
+        if(msg.sender != COMPOUND_TIMELOCK) revert OnlyTimelock();
         startTimestamp = block.timestamp;
-        lastClaimTime = block.timestamp;
+        // expect that comp balance is enough to cover the stream amount
+        uint256 compBalance = ERC20(COMP).balanceOf(address(this));
+        if(calculateUsdcAmount(compBalance) < STREAM_AMOUNT) revert NotEnoughBalance();
         emit Initialized();
     }
 
     /// @notice Claims the owed amount of COMP tokens and updates the supplied amount
     function claim() external isInitialized {
-        require(msg.sender == receiver, "Only receiver can claim");
+        if(msg.sender != receiver) revert NotReceiver();
         uint256 owed = getAmountOwed();
-        require(owed > 0, "No amount owed");
+        if(owed == 0) revert ZeroAmount();
         uint256 compAmount = calculateCompAmount(owed);
-        require(compAmount > 0, "No COMP amount needed");
-        require(ERC20(COMP).transfer(receiver, compAmount), "Transfer failed");
-        lastClaimTime = block.timestamp;
-        suppliedAmount += owed;
-        claimedCompAmount += compAmount;
-        emit Claimed(compAmount, owed);
+        if(compAmount == 0) revert ZeroAmount();
+        uint256 balance = ERC20(COMP).balanceOf(address(this));
+        if(balance < compAmount) {
+            if(!ERC20(COMP).transfer(receiver, balance)) revert TransferFailed();
+            owed = calculateUsdcAmount(balance);
+            suppliedAmount += owed;
+            claimedCompAmount += balance;
+            emit Claimed(balance, owed);
+        }
+        else {
+            if(!ERC20(COMP).transfer(receiver, compAmount)) revert TransferFailed();
+            suppliedAmount += owed;
+            claimedCompAmount += compAmount;
+            emit Claimed(compAmount, owed);
+        }
     }
 
     /// @notice Allows tokens to be swept from the contract after the stream has ended
     /// @dev This function can only be called after the stream has ended and the remaining balance is transferred to the Compound timelock
     function sweepRemaining() external isInitialized {
-        require(block.timestamp > startTimestamp + STREAM_DURATION + 10 days, "Stream not finished");
+        if(block.timestamp < startTimestamp + STREAM_DURATION + 10 days) revert StreamNotFinished();
         uint256 remainingBalance = ERC20(COMP).balanceOf(address(this));
         emit Swept(remainingBalance);
-        require(ERC20(COMP).transfer(COMPTROLLER, remainingBalance), "Transfer failed");
+        if(!ERC20(COMP).transfer(COMPTROLLER, remainingBalance)) revert TransferFailed();
     }
 
     /// @notice Calculates the amount owed to the receiver based on the elapsed time since the last claim
@@ -100,13 +119,12 @@ contract Streamer {
         if(suppliedAmount >= STREAM_AMOUNT) {
             return 0;
         }
-        uint256 elapsed = block.timestamp - lastClaimTime;
-        uint256 totalOwed = (STREAM_AMOUNT * elapsed) / STREAM_DURATION;
-
-        if (totalOwed > suppliedAmount) {
+        if(block.timestamp < startTimestamp + STREAM_DURATION) {
+            uint256 elapsed = block.timestamp - startTimestamp;
+            uint256 totalOwed = (STREAM_AMOUNT * elapsed) / STREAM_DURATION;
             return totalOwed - suppliedAmount;
         } else {
-            return 0;
+            return STREAM_AMOUNT - suppliedAmount;
         }
     }
 
@@ -116,16 +134,30 @@ contract Streamer {
     /// @dev This function uses Chainlink oracles to get the latest prices of COMP and USDC
     function calculateCompAmount(uint256 amount) public view returns (uint256) {
         (, int256 compPrice, , , ) = AggregatorV3Interface(COMP_ORACLE).latestRoundData();
-        require(compPrice > 0, "Invalid COMP price");
+        if (compPrice <= 0) revert InvalidPrice();
 
         (, int256 usdcPrice, , , ) = AggregatorV3Interface(USDC_ORACLE).latestRoundData();
-        require(usdcPrice > 0, "Invalid USDC price");
+        if (usdcPrice <= 0) revert InvalidPrice();
 
         uint256 compPriceScaled = scaleAmount(uint256(compPrice), compOracleDecimals, 18);
         uint256 usdcPriceScaled = scaleAmount(uint256(usdcPrice), usdcOracleDecimals, 18);
-        uint256 amountInUSD = (scaleAmount(amount, 6, 18) * 1e18) / usdcPriceScaled;
+        uint256 amountInUSD = (scaleAmount(amount, 6, 18) * usdcPriceScaled) / 1e18;
         uint256 amountInCOMP = (amountInUSD * 1e18) / compPriceScaled;
         return amountInCOMP;
+    }
+
+    function calculateUsdcAmount(uint256 amount) public view returns (uint256) {
+        (, int256 compPrice, , , ) = AggregatorV3Interface(COMP_ORACLE).latestRoundData();
+        if (compPrice <= 0) revert InvalidPrice();
+
+        (, int256 usdcPrice, , , ) = AggregatorV3Interface(USDC_ORACLE).latestRoundData();
+        if (usdcPrice <= 0) revert InvalidPrice();
+
+        uint256 compPriceScaled = scaleAmount(uint256(compPrice), compOracleDecimals, 18);
+        uint256 usdcPriceScaled = scaleAmount(uint256(usdcPrice), usdcOracleDecimals, 18);
+        uint256 amountInUSD = (amount * compPriceScaled) / 1e18;
+        uint256 amountInUSDC = (amountInUSD * 1e6) / usdcPriceScaled;
+        return amountInUSDC;
     }
 
     /// @notice Scales an amount from one decimal representation to another
