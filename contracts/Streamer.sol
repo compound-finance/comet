@@ -28,9 +28,15 @@ contract Streamer {
     uint256 public constant STREAM_AMOUNT = 2_000_000e6;
     /// @notice The duration of the stream in seconds
     uint256 public constant STREAM_DURATION = 365 days;
+    /// @notice The slippage for the COMP oracle price
+    uint256 public constant SLIPPAGE = 5e5; // 0.5%
+    /// @notice The slippage scale factor
+    uint256 public constant SLIPPAGE_SCALE = 1e8; // 100%
 
     /// @notice The beginning timestamp of the stream
     uint256 public startTimestamp;
+    /// @notice The timestamp of the last claim
+    uint256 public lastClaimTimestamp;
     /// @notice The number of decimals for the COMP oracle
     uint256 public immutable compOracleDecimals;
     /// @notice The number of decimals for the USDC oracle
@@ -75,6 +81,7 @@ contract Streamer {
     function initialize() external {
         if(msg.sender != COMPOUND_TIMELOCK) revert OnlyTimelock();
         startTimestamp = block.timestamp;
+        lastClaimTimestamp = block.timestamp;
         // expect that comp balance is enough to cover the stream amount
         uint256 compBalance = ERC20(COMP).balanceOf(address(this));
         if(calculateUsdcAmount(compBalance) < STREAM_AMOUNT) revert NotEnoughBalance();
@@ -83,7 +90,12 @@ contract Streamer {
 
     /// @notice Claims the owed amount of COMP tokens and updates the supplied amount
     function claim() external isInitialized {
-        if(msg.sender != receiver) revert NotReceiver();
+        // Check if the caller is the receiver
+        // and allow anyone to claim if the last claim was more than 7 days ago
+        if(
+            msg.sender != receiver && 
+            block.timestamp < lastClaimTimestamp + 7 days
+        ) revert NotReceiver();
         uint256 owed = getAmountOwed();
         if(owed == 0) revert ZeroAmount();
         uint256 compAmount = calculateCompAmount(owed);
@@ -102,6 +114,7 @@ contract Streamer {
             claimedCompAmount += compAmount;
             emit Claimed(compAmount, owed);
         }
+        lastClaimTimestamp = block.timestamp;
     }
 
     /// @notice Allows tokens to be swept from the contract after the stream has ended
@@ -139,7 +152,8 @@ contract Streamer {
         (, int256 usdcPrice, , , ) = AggregatorV3Interface(USDC_ORACLE).latestRoundData();
         if (usdcPrice <= 0) revert InvalidPrice();
 
-        uint256 compPriceScaled = scaleAmount(uint256(compPrice), compOracleDecimals, 18);
+        // COMP price is reduced by slippage to account for price fluctuations
+        uint256 compPriceScaled = scaleAmount(uint256(compPrice), compOracleDecimals, 18) * (SLIPPAGE_SCALE - SLIPPAGE) / SLIPPAGE_SCALE;
         uint256 usdcPriceScaled = scaleAmount(uint256(usdcPrice), usdcOracleDecimals, 18);
         uint256 amountInUSD = (scaleAmount(amount, 6, 18) * usdcPriceScaled) / 1e18;
         uint256 amountInCOMP = (amountInUSD * 1e18) / compPriceScaled;
@@ -153,7 +167,8 @@ contract Streamer {
         (, int256 usdcPrice, , , ) = AggregatorV3Interface(USDC_ORACLE).latestRoundData();
         if (usdcPrice <= 0) revert InvalidPrice();
 
-        uint256 compPriceScaled = scaleAmount(uint256(compPrice), compOracleDecimals, 18);
+        // COMP price is reduced by slippage to account for price fluctuations
+        uint256 compPriceScaled = scaleAmount(uint256(compPrice), compOracleDecimals, 18) * (SLIPPAGE_SCALE - SLIPPAGE) / SLIPPAGE_SCALE;
         uint256 usdcPriceScaled = scaleAmount(uint256(usdcPrice), usdcOracleDecimals, 18);
         uint256 amountInUSD = (amount * compPriceScaled) / 1e18;
         uint256 amountInUSDC = (amountInUSD * 1e6) / usdcPriceScaled;
