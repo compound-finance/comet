@@ -62,8 +62,9 @@ contract Streamer {
     error OnlyTimelock();
     error TransferFailed();
     error NotInitialized();
-    error StreamNotFinished();
     error NotEnoughBalance();
+    error StreamNotFinished();
+    error AlreadyInitialized();
 
     modifier isInitialized() {
         if(startTimestamp == 0) revert NotInitialized();
@@ -72,6 +73,7 @@ contract Streamer {
 
     constructor(address _receiver) {
         if(_receiver == address(0)) revert ZeroAddress();
+
         compOracleDecimals = AggregatorV3Interface(COMP_ORACLE).decimals();
         usdcOracleDecimals = AggregatorV3Interface(USDC_ORACLE).decimals();
         receiver = _receiver;
@@ -79,12 +81,15 @@ contract Streamer {
 
     /// @notice Initializes the contract and sets the start timestamp
     function initialize() external {
+        if(startTimestamp != 0) revert AlreadyInitialized();
         if(msg.sender != COMPOUND_TIMELOCK) revert OnlyTimelock();
         startTimestamp = block.timestamp;
         lastClaimTimestamp = block.timestamp;
+
         // expect that comp balance is enough to cover the stream amount
         uint256 compBalance = ERC20(COMP).balanceOf(address(this));
         if(calculateUsdcAmount(compBalance) < STREAM_AMOUNT) revert NotEnoughBalance();
+
         emit Initialized();
     }
 
@@ -96,25 +101,25 @@ contract Streamer {
             msg.sender != receiver && 
             block.timestamp < lastClaimTimestamp + 7 days
         ) revert NotReceiver();
+
         uint256 owed = getAmountOwed();
         if(owed == 0) revert ZeroAmount();
+
         uint256 compAmount = calculateCompAmount(owed);
         if(compAmount == 0) revert ZeroAmount();
+
         uint256 balance = ERC20(COMP).balanceOf(address(this));
         if(balance < compAmount) {
-            if(!ERC20(COMP).transfer(receiver, balance)) revert TransferFailed();
+            compAmount = balance;
             owed = calculateUsdcAmount(balance);
-            suppliedAmount += owed;
-            claimedCompAmount += balance;
-            emit Claimed(balance, owed);
         }
-        else {
-            if(!ERC20(COMP).transfer(receiver, compAmount)) revert TransferFailed();
-            suppliedAmount += owed;
-            claimedCompAmount += compAmount;
-            emit Claimed(compAmount, owed);
-        }
+
         lastClaimTimestamp = block.timestamp;
+        suppliedAmount += owed;
+        claimedCompAmount += compAmount;
+
+        emit Claimed(compAmount, owed);
+        if(!ERC20(COMP).transfer(receiver, compAmount)) revert TransferFailed();
     }
 
     /// @notice Allows tokens to be swept from the contract after the stream has ended
@@ -132,6 +137,7 @@ contract Streamer {
         if(suppliedAmount >= STREAM_AMOUNT) {
             return 0;
         }
+
         if(block.timestamp < startTimestamp + STREAM_DURATION) {
             uint256 elapsed = block.timestamp - startTimestamp;
             uint256 totalOwed = (STREAM_AMOUNT * elapsed) / STREAM_DURATION;
@@ -155,6 +161,7 @@ contract Streamer {
         // COMP price is reduced by slippage to account for price fluctuations
         uint256 compPriceScaled = scaleAmount(uint256(compPrice), compOracleDecimals, 18) * (SLIPPAGE_SCALE - SLIPPAGE) / SLIPPAGE_SCALE;
         uint256 usdcPriceScaled = scaleAmount(uint256(usdcPrice), usdcOracleDecimals, 18);
+
         uint256 amountInUSD = (scaleAmount(amount, 6, 18) * usdcPriceScaled) / 1e18;
         uint256 amountInCOMP = (amountInUSD * 1e18) / compPriceScaled;
         return amountInCOMP;
@@ -170,6 +177,7 @@ contract Streamer {
         // COMP price is reduced by slippage to account for price fluctuations
         uint256 compPriceScaled = scaleAmount(uint256(compPrice), compOracleDecimals, 18) * (SLIPPAGE_SCALE - SLIPPAGE) / SLIPPAGE_SCALE;
         uint256 usdcPriceScaled = scaleAmount(uint256(usdcPrice), usdcOracleDecimals, 18);
+
         uint256 amountInUSD = (amount * compPriceScaled) / 1e18;
         uint256 amountInUSDC = (amountInUSD * 1e6) / usdcPriceScaled;
         return amountInUSDC;
