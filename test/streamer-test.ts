@@ -266,6 +266,37 @@ describe.only('streamer', function () {
     expect(claimedCompAmount).to.be.closeTo(await streamer.calculateCompAmount(2_000_000e6), 30);
   });
 
+  
+  it('should not claim after all is claimed', async () => {
+    const { streamer, COMP, user } = await setup();
+    let balanceBefore = await COMP.balanceOf(user.address);
+    for (let i = 0; i < 12; i++) {
+      await network.provider.request({
+        method: 'evm_increaseTime',
+        params: [60 * 60 * 24 * 31],
+      });
+      await network.provider.request({
+        method: 'evm_mine',
+        params: [],
+      });
+      await streamer.connect(user).claim();
+      const balance = await COMP.balanceOf(user.address);
+      expect(balance).to.be.gt(balanceBefore);
+      balanceBefore = balance;
+    }
+    const owed = await streamer.getAmountOwed();
+    const suppliedAmount = await streamer.suppliedAmount();
+    const claimedCompAmount = await streamer.claimedCompAmount();
+    expect(owed).to.be.eq(0);
+    expect(suppliedAmount).to.be.eq(2_000_000e6);
+    expect(claimedCompAmount).to.be.closeTo(await streamer.calculateCompAmount(2_000_000e6), 30);
+
+    await expect(streamer.connect(user).claim()).to.be.revertedWithCustomError(
+      streamer,
+      'ZeroAmount'
+    );
+  });
+
   it('should sweep all after 1 year', async () => {
     const [,user] = await ethers.getSigners();
     const { streamer, COMP } = await setup();
