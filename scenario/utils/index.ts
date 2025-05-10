@@ -538,6 +538,9 @@ const REDSTONE_FEEDS = {
     '0xD15862FC3D5407A03B696548b6902D6464A69b8c', // USDC / ETH
     '0xc44be6D00307c3565FDf753e852Fc003036cBc13', // BTC / USD
     '0xf1454949C6dEdfb500ae63Aa6c784Aa1Dde08A6c', // UNI / USD
+    '0x24c8964338Deb5204B096039147B8e8C3AEa42Cc', // wstETH / ETH
+    '0xBf3bA2b090188B40eF83145Be0e9F30C6ca63689', // weETH / ETH
+    '0xa0f2EF6ceC437a4e5F6127d6C51E1B0d3A746911', // ezETH / ETH
   ],
 };
 
@@ -671,9 +674,9 @@ async function testnetPropose(
   const governor = await dm.getContractOrThrow('governor');
   const testnetGovernor = new Contract(
     governor.address, [
-    'function propose(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) external returns (uint256 proposalId)',
-    'event ProposalCreated(uint256 proposalId, address proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 startBlock, uint256 endBlock, string description)'
-  ], governor.signer
+      'function propose(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) external returns (uint256 proposalId)',
+      'event ProposalCreated(uint256 proposalId, address proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 startBlock, uint256 endBlock, string description)'
+    ], governor.signer
   );
 
   return testnetGovernor.connect(proposer).propose(

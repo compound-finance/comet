@@ -164,6 +164,8 @@ export const WHALES = {
   ],
   'unichain': [
     '0x4200000000000000000000000000000000000006', // WETH whale
+    '0x7Ae0911198AD568E1FE4af3cf81e36A29983778f', // wstETH whale
+    '0x4B2cf5C94A88934870B523983B22e6d2dd1b6577', // wstETH whale
   ],
   ronin: [
     '0x41058bcc968f809e9dbb955f402de150a3e5d1b5',
@@ -189,18 +191,21 @@ export async function calldata(req: Promise<PopulatedTransaction>): Promise<stri
 export async function testnetProposal(actions: ProposalAction[], description: string): Promise<TestnetProposal> {
   const targets = [],
     values = [],
+    signatures = [],
     calldatas = [];
   for (const action of actions) {
     if (action['contract']) {
       const { contract, value, signature, args } = action as ContractAction;
       targets.push(contract.address);
       values.push(value ?? 0);
-      calldatas.push(utils.id(signature).slice(0, 10) + (await calldata(contract.populateTransaction[signature](...args))).slice(2));
+      signatures.push(signature);
+      calldatas.push(await calldata(contract.populateTransaction[signature](...args)));
     } else {
       const { target, value, signature, calldata } = action as TargetAction;
       targets.push(target);
       values.push(value ?? 0);
-      calldatas.push(utils.id(signature).slice(0, 10) + calldata.slice(2));
+      signatures.push(signature);
+      calldatas.push(calldata);
     }
   }
 
