@@ -322,6 +322,16 @@ describe.only('streamer', function () {
     );
   });
 
+  it('should sweep all before stream is finished if called by timelock', async () => {
+    const { streamer, timelockSigner, COMP } = await setup();
+    expect(await COMP.balanceOf(streamer.address)).to.not.be.eq(0);
+    await expect(streamer.connect(timelockSigner).sweepRemaining()).to.not.be.revertedWithCustomError(
+      streamer,
+      'StreamNotFinished'
+    );
+    expect(await COMP.balanceOf(streamer.address)).to.be.eq(0);
+  });
+
   it('should sweep all after stream is finished', async () => {
     const [,user2] = await ethers.getSigners();
     const { streamer, COMP, user } = await setup();

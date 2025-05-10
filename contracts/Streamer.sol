@@ -125,7 +125,12 @@ contract Streamer {
     /// @notice Allows tokens to be swept from the contract after the stream has ended
     /// @dev This function can only be called after the stream has ended and the remaining balance is transferred to the Compound timelock
     function sweepRemaining() external isInitialized {
-        if(block.timestamp < startTimestamp + STREAM_DURATION + 10 days) revert StreamNotFinished();
+        // anyone can sweep the remaining balance after the stream has ended
+        // but only timelock can sweep before that
+        if(
+            msg.sender != COMPOUND_TIMELOCK &&
+            block.timestamp < startTimestamp + STREAM_DURATION + 10 days
+        ) revert StreamNotFinished();
         uint256 remainingBalance = ERC20(COMP).balanceOf(address(this));
         emit Swept(remainingBalance);
         if(!ERC20(COMP).transfer(COMPTROLLER, remainingBalance)) revert TransferFailed();
