@@ -114,7 +114,8 @@ export default migration('1743594813_configurate_and_ens', {
         currentTimestamp + (86400 * 14) // 14 days
       )
     );
-    console.log('Current timestamp\n\n\n', currentTimestamp);
+    console.log('Current timestamp', currentTimestamp);
+    console.log('Minimum WRON amount', expectedWronAmount.mul(100n - SLIPPAGE).div(100n));
 
     const l2ProposalDataPart1 = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
@@ -212,17 +213,20 @@ export default migration('1743594813_configurate_and_ens', {
     ]);
 
     const mainnetActions = [
+      // 1. Wrap ETH
       {
         target: WETHMainnet.address,
         signature: 'deposit()',
         calldata: '0x',
         value: ETHAmountToSwap
       },
+      // 2. Approve WETH for CCIP
       {
         contract: WETHMainnet,
         signature: 'approve(address,uint256)',
         args: [l1CCIPRouter.address, ETHAmountToSwap],
       },
+      // 3. Bridge WETH to Ronin and swap it for WRON
       {
         contract: l1CCIPRouter,
         signature: 'ccipSend(uint64,(bytes,bytes,(address,uint256)[],address,bytes))',
@@ -244,6 +248,7 @@ export default migration('1743594813_configurate_and_ens', {
           ],
         value: fee1.mul(2n)
       },
+      // 4. Initialize Comet
       {
         contract: l1CCIPRouter,
         signature: 'ccipSend(uint64,(bytes,bytes,(address,uint256)[],address,bytes))',
@@ -260,6 +265,7 @@ export default migration('1743594813_configurate_and_ens', {
           ],
         value: fee2.mul(2n)
       },
+      // 5. Set ENS TXT record
       {
         target: ENSResolverAddress,
         signature: 'setText(bytes32,string,string)',
@@ -270,8 +276,7 @@ export default migration('1743594813_configurate_and_ens', {
       },
     ];
 
-
-    const description = '# Initialize cWRONv3 on Ronin\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes deployment of Compound III to Ronin network. This proposal takes the governance steps recommended and necessary to initialize a Compound III WRON market on Ronin; upon execution, cWRONv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite] (https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-ronin/6128/8).\n\nFurther detailed information can be found on the corresponding [deployment pull request](https://github.com/woof-software/comet/pull/146), [deploy market GitHub action run](https://github.com/woof-software/comet/actions/runs/14330759106/job/40166019433) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-ronin/6128).\n\n\n## Rewards\n\nGauntlet provided recommendations for COMP rewards, however, the COMP token is not whitelisted on CCIP. When the COMP token is whitelisted, we will create a proposal to bridge COMP tokens and set up speeds.\n\n## Proposal Actions\n\nThe first proposal action wraps Ether so it can be transferred to the CCIP bridge.\n\nThe second proposal action approves CCIP [router](https://etherscan.io/address/0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D) to take Timelock\'s WETH.\n\nThe third proposal action bridges WETH token to Ronin and sends message which approves and swaps received WETH for WRON via native Katana exchange [router](https://app.roninchain.com/address/0xc05afc8c9353c1dd5f872eccfacd60fd5a2a9ac7). We allocate 20% of the slippage due to WETH and RON volatility at the moment of proposal execution (in 8 days from the proposal published on-chain). Swap should not be snipped because MEV infrastructure has not been developed on Ronin yet. The dynamic mechanism to prevent such slippage will be cost inefficient due to development and audit resource allocation. \n\nThe fourth proposal action sets the Comet configuration and deploys a new Comet implementation on Ronin. This sends the encoded `setConfiguration` and `deployAndUpgradeTo` calls across the [l1CCIPRouter](https://etherscan.io/address/0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D) to the bridge receiver on Ronin. \n\nThe fourth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Ronin cWRONv3 market.';
+    const description = '# Initialize cWRONv3 on Ronin\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes deployment of Compound III to Ronin network. This proposal takes the governance steps recommended and necessary to initialize a Compound III WRON market on Ronin; upon execution, cWRONv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite] (https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-ronin/6128/8).\n\nFurther detailed information can be found on the corresponding [deployment pull request](https://github.com/compound-finance/comet/pull/978), [deploy market GitHub action run](https://github.com/woof-software/comet/actions/runs/14330759106/job/40166019433) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-ronin/6128).\n\n\n## Rewards\n\nGauntlet provided recommendations for COMP rewards, however, the COMP token is not whitelisted on CCIP. When the COMP token is whitelisted, we will create a proposal to bridge COMP tokens and set up speeds.\n\n## Proposal Actions\n\nThe first proposal action wraps ETH.\n\nThe second proposal action approves [l1CCIPRouter](https://etherscan.io/address/0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D) to take Timelock\'s WETH in order to seed the reserves.\n\nThe third proposal action bridges WETH to Ronin and swaps received WETH for WRON via native Katana exchange [router](https://app.roninchain.com/address/0xc05afc8c9353c1dd5f872eccfacd60fd5a2a9ac7). We allocate 20% of the slippage due to WETH and RON volatility at the moment of proposal execution (in 8 days from the proposal published on-chain). Swap should not be snipped because MEV infrastructure has not been developed on Ronin yet. The dynamic mechanism to prevent such slippage will be cost inefficient due to development and audit resource allocation.\n\nThe fourth proposal action sets the Comet configuration and deploys a new Comet implementation on Ronin. This sends the encoded `setFactory`, `setConfiguration` and `deployAndUpgradeTo` calls across the [l1CCIPRouter](https://etherscan.io/address/0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D) to the bridge receiver on Ronin.\n\nThe fifth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Ronin cWRONv3 market.';
 
     const txn = await deploymentManager.retry(async () =>
       trace(
@@ -392,11 +397,11 @@ export default migration('1743594813_configurate_and_ens', {
       1: [
         {
           baseSymbol: 'USDC',
-          cometAddress: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+          cometAddress: '0xc3d688B66703497DAA19211EEdff47f25384cdc3'
         },
         {
           baseSymbol: 'WETH',
-          cometAddress: '0xA17581A9E3356d9A858b789D68B4d866e593aE94',
+          cometAddress: '0xA17581A9E3356d9A858b789D68B4d866e593aE94'
         },
         {
           baseSymbol: 'USDT',
@@ -404,7 +409,7 @@ export default migration('1743594813_configurate_and_ens', {
         },
         {
           baseSymbol: 'wstETH',
-          cometAddress: '0x3D0bb1ccaB520A66e607822fC55BC921738fAFE3',
+          cometAddress: '0x3D0bb1ccaB520A66e607822fC55BC921738fAFE3'
         },
         {
           baseSymbol: 'USDS',
@@ -418,11 +423,11 @@ export default migration('1743594813_configurate_and_ens', {
       10: [
         {
           baseSymbol: 'USDC',
-          cometAddress: '0x2e44e174f7D53F0212823acC11C01A11d58c5bCB',
+          cometAddress: '0x2e44e174f7D53F0212823acC11C01A11d58c5bCB'
         },
         {
           baseSymbol: 'USDT',
-          cometAddress: '0x995E394b8B2437aC8Ce61Ee0bC610D617962B214',
+          cometAddress: '0x995E394b8B2437aC8Ce61Ee0bC610D617962B214'
         },
         {
           baseSymbol: 'WETH',
@@ -433,46 +438,50 @@ export default migration('1743594813_configurate_and_ens', {
         {
           baseSymbol: 'USDC',
           cometAddress: '0x2c7118c4C88B9841FCF839074c26Ae8f035f2921'
+        },
+        {
+          baseSymbol: 'WETH',
+          cometAddress: '0x6C987dDE50dB1dcDd32Cd4175778C2a291978E2a'
         }
       ],
       137: [
         {
           baseSymbol: 'USDC',
-          cometAddress: '0xF25212E676D1F7F89Cd72fFEe66158f541246445',
+          cometAddress: '0xF25212E676D1F7F89Cd72fFEe66158f541246445'
         },
         {
           baseSymbol: 'USDT',
-          cometAddress: '0xaeB318360f27748Acb200CE616E389A6C9409a07',
-        },
+          cometAddress: '0xaeB318360f27748Acb200CE616E389A6C9409a07'
+        }
       ],
       2020: [
         {
           baseSymbol: 'WETH',
-          cometAddress: '0x4006eD4097Ee51c09A04c3B0951D28CCf19e6DFE',
+          cometAddress: '0x4006eD4097Ee51c09A04c3B0951D28CCf19e6DFE'
         },
         {
           baseSymbol: 'WRON',
-          cometAddress: comet.address,
+          cometAddress: comet.address
         }
       ],
       5000: [
         {
           baseSymbol: 'USDe',
           cometAddress: '0x606174f62cd968d8e684c645080fa694c1D7786E'
-        },
+        }
       ],
       8453: [
         {
           baseSymbol: 'USDbC',
-          cometAddress: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf',
+          cometAddress: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf'
         },
         {
           baseSymbol: 'WETH',
-          cometAddress: '0x46e6b214b524310239732D51387075E0e70970bf',
+          cometAddress: '0x46e6b214b524310239732D51387075E0e70970bf'
         },
         {
           baseSymbol: 'USDC',
-          cometAddress: '0xb125E6687d4313864e53df431d5425969c15Eb2F',
+          cometAddress: '0xb125E6687d4313864e53df431d5425969c15Eb2F'
         },
         {
           baseSymbol: 'AERO',
@@ -486,20 +495,20 @@ export default migration('1743594813_configurate_and_ens', {
       42161: [
         {
           baseSymbol: 'USDC.e',
-          cometAddress: '0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA',
+          cometAddress: '0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA'
         },
         {
           baseSymbol: 'USDC',
-          cometAddress: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf',
+          cometAddress: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf'
         },
         {
           baseSymbol: 'WETH',
-          cometAddress: '0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486',
+          cometAddress: '0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486'
         },
         {
           baseSymbol: 'USDT',
-          cometAddress: '0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07',
-        },
+          cometAddress: '0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07'
+        }
       ],
       59144: [
         {
@@ -510,8 +519,8 @@ export default migration('1743594813_configurate_and_ens', {
       534352: [
         {
           baseSymbol: 'USDC',
-          cometAddress: '0xB2f97c1Bd3bf02f5e74d13f02E3e26F93D77CE44',
-        },
+          cometAddress: '0xB2f97c1Bd3bf02f5e74d13f02E3e26F93D77CE44'
+        }
       ]
     });
   },
