@@ -189,6 +189,7 @@ export async function calldata(req: Promise<PopulatedTransaction>): Promise<stri
 export async function testnetProposal(actions: ProposalAction[], description: string): Promise<TestnetProposal> {
   const targets = [],
     values = [],
+    signatures = [],
     calldatas = [];
   for (const action of actions) {
     if (action['contract']) {
