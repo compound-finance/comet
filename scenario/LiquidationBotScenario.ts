@@ -77,6 +77,10 @@ async function canBeLiquidatedByBot(ctx: CometContext, assetNum: number): Promis
       network: 'polygon',
       deployments: ['usdc', 'usdt']
     },
+    sUSDS: {
+      network: 'arbitrum',
+      deployments: ['usds']
+    }
 
   };
   const comet = await ctx.getComet();
@@ -538,7 +542,8 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 scenario(
   `LiquidationBot > absorbs, but does not attempt to purchase collateral when value is beneath liquidationThreshold`,
   {
-    filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }, { network: 'polygon' }, { network: 'arbitrum' }]),
+    filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }, { network: 'polygon' }, { network: 'arbitrum' }])
+      && canBeLiquidatedByBot(ctx, 0),
     tokenBalances: async (ctx) =>  (
       {
         $comet: { $base: getConfigForScenario(ctx).liquidationBase },
@@ -653,7 +658,8 @@ scenario(
 scenario(
   `LiquidationBot > absorbs, but does not attempt to purchase collateral when maxAmountToPurchase=0`,
   {
-    filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }, { network: 'polygon' }, { network: 'arbitrum' }]),
+    filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }, { network: 'polygon' }, { network: 'arbitrum' }])
+      && canBeLiquidatedByBot(ctx, 0),
     tokenBalances: async (ctx) => (
       {
         $comet: { $base: getConfigForScenario(ctx).liquidationBase },

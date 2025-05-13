@@ -36,7 +36,6 @@ export default migration('1746540554_configurate_and_ens', {
       cometAdmin,
       configurator,
       rewards,
-      USDS,
       timelock: l2Timelock,
     } = await deploymentManager.getContracts();
 
@@ -216,7 +215,7 @@ export default migration('1746540554_configurate_and_ens', {
       },
     ];
 
-    const description = `DESCRIPTION`;
+    const description = `# Initialize cUSDSv3 on Arbitrum\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes deployment of Compound III to the Arbitrum network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDS market on Arbitrum; upon execution, cUSDSv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/add-market-usds-on-arbitrum/6384/4).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/986), [deploy market GitHub action run](<>) and [forum discussion](https://www.comp.xyz/t/add-market-usds-on-arbitrum/6384).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Arbitrum. This sends the encoded `setFactory`, `setConfiguration`, `deployAndUpgradeTo` calls across the bridge to the governance receiver on Arbitrum. It also calls `setRewardConfig` on the Arbitrum rewards contract, to establish Artitrum’s bridged version of COMP as the reward token for the deployment and set the initial supply speed to be 24 COMP/day and borrow speed to be 12 COMP/day.\n\nThe second action reduces Compound’s [cDAI](https://etherscan.io/address/0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643) reserves and transfers it to Timelock, in order to convert it to USDS to then bridge and seed the market reserves for the cUSDSv3 Comet.\n\nThe third action approves DAI to DAI-to-USDS native converter.\n\nThe fourth action converts DAI to USDS with 1:1 ratio and transfers USDS to cUSDSv3 Comet.\n\nThe fifth action approves (ArbitrumL1GatewayRouter) [TokenMessenger](https://etherscan.io/address/0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef) to take the Timelock's USDS on Mainnet, in order to seed the market reserves through the arbitrumL1GatewayRouter.\n\nThe sixth action bridges USDS from mainnet via ‘outboundTransfer’ function on ArbitrumL1GatewayRouter’s contract to mint native USDS to Comet on Arbitrum.\n\nThe seventh action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Arbitrum cUSDSv3 market.\n`;
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(actions, description))))
     );
@@ -241,36 +240,8 @@ export default migration('1746540554_configurate_and_ens', {
     } = await deploymentManager.getContracts();
 
     const {
-      timelock,
-      arbitrumL1GatewayRouter
+      timelock
     } = await govDeploymentManager.getContracts();
-
-    // impersonate timelock
-    // await deploymentManager.hre.network.provider.request({
-    //   method: 'hardhat_impersonateAccount',
-    //   params: [timelock.address]
-    // });
-    // await deploymentManager.hre.network.provider.request({
-    //   method: 'hardhat_setBalance',
-    //   params: [
-    //     timelock.address,
-    //     '0x1000000000000000000'
-    //   ]
-    // });
-    // const timelockSigner = await deploymentManager.hre.ethers.getSigner(timelock.address);
-
-    // const tx =await arbitrumL1GatewayRouter.connect(timelockSigner).outboundTransferCustomRefund(
-    //   USDS.address,                             // address _token,
-    //   l2Timelock.address,                       // address _refundTo
-    //   comet.address,                            // address _to,
-    //   USDSAmount,                               // uint256 _amount,
-    //   usdsGasParams.gasLimit,                   // uint256 _maxGas,
-    //   usdsGasParams.maxFeePerGas,               // uint256 _gasPriceBid,
-    //   utils.defaultAbiCoder.encode(
-    //     ['uint256', 'bytes'],
-    //     [usdsGasParams.maxSubmissionCost, '0x']
-    //   )
-    // );
 
     // 1.
     // const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
@@ -382,6 +353,10 @@ export default migration('1746540554_configurate_and_ens', {
         {
           baseSymbol: 'USDC',
           cometAddress: '0x2c7118c4C88B9841FCF839074c26Ae8f035f2921'
+        },
+        {
+          baseSymbol: 'WETH',
+          cometAddress: '0x6C987dDE50dB1dcDd32Cd4175778C2a291978E2a'
         }
       ],
       137: [
@@ -444,7 +419,7 @@ export default migration('1746540554_configurate_and_ens', {
         {
           baseSymbol: 'USDT',
           cometAddress: '0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07'
-        },        
+        },
         {
           baseSymbol: 'USDS',
           cometAddress: comet.address

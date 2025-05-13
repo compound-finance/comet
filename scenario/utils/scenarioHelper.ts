@@ -94,6 +94,18 @@ export function getConfigForScenario(ctx: CometContext) {
     config.liquidationAsset = 10000;
   }
 
+  if (ctx.world.base.network === 'arbitrum' && ctx.world.base.deployment === 'usds') {
+    config.withdrawAsset = 7000;
+    config.bulkerAsset = 10000;
+    config.bulkerAsset1 = 10000;
+    config.transferAsset = 10000;
+    config.transferAsset1 = 10000;
+    config.liquidationDenominator = 84;
+    config.liquidationBase = 100000;
+    config.liquidationBase1 = 50000;
+    config.liquidationAsset = 10000;
+  }
+
   if (ctx.world.base.network === 'ronin' && ctx.world.base.deployment === 'weth') {
     config.transferBase = 10;
     config.transferAsset = 100000;
