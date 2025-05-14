@@ -22,7 +22,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
 
   // Import shared contracts from cUSDCv3
   const _cometAdmin = await deploymentManager.fromDep('cometAdmin', 'arbitrum', 'usdc.e');
-  const _assetListFactory = await deploymentManager.fromDep('cometAdmin', 'arbitrum', 'usdc.e');
+  const _assetListFactory = await deploymentManager.fromDep('assetListFactory', 'arbitrum', 'usdc.e');
   const _cometFactory = await deploymentManager.fromDep('cometFactory', 'arbitrum', 'usdc.e');
   const _$configuratorImpl = await deploymentManager.fromDep('configurator:implementation', 'arbitrum', 'usdc.e');
   const _configurator = await deploymentManager.fromDep('configurator', 'arbitrum', 'usdc.e');

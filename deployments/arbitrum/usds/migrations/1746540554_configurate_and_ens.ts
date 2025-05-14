@@ -244,14 +244,14 @@ export default migration('1746540554_configurate_and_ens', {
     } = await govDeploymentManager.getContracts();
 
     // 1.
-    // const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
-    // expect(stateChanges).to.deep.equal({
-    //   sUSDS: {
-    //     supplyCap: exp(25_000_000, 18)
-    //   },
-    //   baseTrackingSupplySpeed: exp(24 / 86400, 15, 18), // 277777777777
-    //   baseTrackingBorrowSpeed: exp(12 / 86400, 15, 18), // 138888888888
-    // });
+    const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
+    expect(stateChanges).to.deep.equal({
+      sUSDS: {
+        supplyCap: exp(25_000_000, 18)
+      },
+      baseTrackingSupplySpeed: exp(24 / 86400, 15, 18), // 277777777777
+      baseTrackingBorrowSpeed: exp(12 / 86400, 15, 18), // 138888888888
+    });
 
     const cometNew = new Contract(
       comet.address,
