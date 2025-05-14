@@ -25,7 +25,7 @@ export async function cloneGov(
   const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
   const timelock = await deploymentManager.deploy('timelock', 'test/SimpleTimelock.sol', [admin.address]);
 
-  const COMP = await deploymentManager.clone('COMP', clone.comp, [admin.address]);
+  const COMP = await deploymentManager.deploy('COMP', 'test/Comp.sol', [admin.address]);
 
   const governorImpl = await deploymentManager.clone('governor:implementation', clone.governorBravoImpl, []);
   const governorProxy = await deploymentManager.clone('governor', clone.governorBravo, [
@@ -140,7 +140,7 @@ export async function deployNetworkComet(
       'assetListFactory',
       'AssetListFactory.sol',
       [],
-      maybeForce(deploySpec.cometExt)
+      maybeForce()
     );
     cometExt = await deploymentManager.deploy(
       'comet:implementation:implementation',
