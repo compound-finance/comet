@@ -1,4 +1,4 @@
-import { BigNumber, BigNumberish } from 'ethers';
+import { BigNumber, BigNumberish, Contract } from 'ethers';
 import { Loader, World, debug } from '../../plugins/scenario';
 import { Migration } from '../../plugins/deployment_manager';
 import {
@@ -76,7 +76,7 @@ export class CometContext {
   }
 
   async getCompWhales(): Promise<string[]> {
-    const useMainnetComp = ['mainnet', 'polygon', 'arbitrum', 'base', 'optimism', 'mantle'].includes(this.world.base.network);
+    const useMainnetComp = ['mainnet', 'polygon', 'arbitrum', 'base', 'optimism', 'scroll', 'mantle', 'ronin', 'unichain'].includes(this.world.base.network);
     return COMP_WHALES[useMainnetComp ? 'mainnet' : 'testnet'];
   }
 
@@ -148,7 +148,7 @@ export class CometContext {
     return configurator.getConfiguration(comet.address);
   }
 
-  async getRewardConfig(): Promise<{token: string, rescaleFactor: BigNumber, shouldUpscale: boolean}> {
+  async getRewardConfig(): Promise<{ token: string, rescaleFactor: BigNumber, shouldUpscale: boolean }> {
     const comet = await this.getComet();
     const rewards = await this.getRewards();
     return await rewards.rewardConfig(comet.address);
@@ -157,11 +157,25 @@ export class CometContext {
   async upgrade(configOverrides: ProtocolConfiguration): Promise<CometContext> {
     const { world } = this;
 
-    const oldComet = await this.getComet();
-    const admin = await world.impersonateAddress(await oldComet.governor(), { value: 20n ** 18n });
+    const currentComet = await this.getComet();
+    const admin = await world.impersonateAddress(await currentComet.governor(), { value: 20n ** 18n });
+    const oldComet = new Contract(currentComet.address,
+      [
+        'function governor() view returns (address)',
+        'function assetList() view returns (address)',
+        'function assetListFactory() view returns (address)'
+      ], admin);
 
     const deploySpec = { cometMain: true, cometExt: true };
-    const deployed = await deployComet(this.world.deploymentManager, deploySpec, configOverrides, admin);
+    let withAssetList = false;
+    try {
+      await oldComet.assetList();
+      withAssetList = true;
+    }
+    catch (e) {
+      withAssetList = false;
+    }
+    const deployed = await deployComet(this.world.deploymentManager, deploySpec, configOverrides, withAssetList, admin);
 
     await this.world.deploymentManager.spider(deployed);
     await this.setAssets();

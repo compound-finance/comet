@@ -31,14 +31,14 @@ const relationConfigMap: RelationConfigMap = {
             })
           );
         },
-        alias: async (token) =>{
-          try{
+        alias: async (token) => {
+          try {
             return token.symbol();
           }
-          catch(e){
-            throw new Error(`Error fetching symbol for token ${token.address}`);
+          catch (e) {
+            throw new Error(`Failed to get symbol for token ${token.address}`);
           }
-        }
+        },
       },
       assetPriceFeeds: {
         field: async (comet) => {
@@ -100,11 +100,16 @@ const relationConfigMap: RelationConfigMap = {
   governor: {
     artifact: 'contracts/IProxy.sol:IProxy',
     delegates: {
-      field: async (governor) => governor.implementation(),
+      field: {
+        slot: '0x10d6a54a4754c8869d6886b5f5d7fbfa5b4522237ea5c60d11bc4e7a1ff9390b',
+      }
     },
     relations: {
       COMP: {
-        field: async (governor) => governor.comp(),
+        field: async (governor) => {
+          if (governor.address === '0x309a862bbC1A00e45506cB8A802D1ff10004c8C0') return governor.token();
+          return governor.comp();
+        },
       }
     }
   },

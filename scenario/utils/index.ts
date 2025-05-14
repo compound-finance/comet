@@ -19,7 +19,7 @@ import { isBridgeProposal } from './isBridgeProposal';
 
 export { mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp };
 
-export const MAX_ASSETS = 15;
+export const MAX_ASSETS = 24;
 export const UINT256_MAX = 2n ** 256n - 1n;
 
 export interface ComparativeAmount {
@@ -299,10 +299,15 @@ export function matchesDeployment(ctx: CometContext, deploymentCriteria: Deploym
 export async function isRewardSupported(ctx: CometContext): Promise<boolean> {
   const rewards = await ctx.getRewards();
   const comet = await ctx.getComet();
+  const COMP = await ctx.getComp();
+
   if (rewards == null) return false;
 
   const [rewardTokenAddress] = await rewards.rewardConfig(comet.address);
   if (rewardTokenAddress === constants.AddressZero) return false;
+
+  const totalSupply = await COMP.totalSupply();
+  if (totalSupply.toBigInt() < exp(1, 18)) return false;
 
   return true;
 }
@@ -334,8 +339,8 @@ export async function fetchLogs(
   }
 }
 
-async function redeployRenzoOracle(dm: DeploymentManager){
-  if(dm.network === 'mainnet') {
+async function redeployRenzoOracle(dm: DeploymentManager) {
+  if (dm.network === 'mainnet') {
     // renzo admin 	0xD1e6626310fD54Eceb5b9a51dA2eC329D6D4B68A
     const renzoOracle = new Contract(
       '0x5a12796f7e7EBbbc8a402667d266d2e65A814042',
@@ -344,7 +349,7 @@ async function redeployRenzoOracle(dm: DeploymentManager){
       ],
       dm.hre.ethers.provider
     );
-    
+
     const admin = await impersonateAddress(dm, '0xD1e6626310fD54Eceb5b9a51dA2eC329D6D4B68A');
     // set balance
     await dm.hre.ethers.provider.send('hardhat_setBalance', [
@@ -364,11 +369,182 @@ async function redeployRenzoOracle(dm: DeploymentManager){
   }
 }
 
+const tokens = new Map<string, string>([
+  ['WETH', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'],
+  ['LINK', '0x514910771AF9Ca656af840dff83E8264EcF986CA'],
+]);
+
+const dest = new Map<string, string>([
+  ['ronin', '6916147374840168594'],
+]);
+
+async function updateCCIPStats(dm: DeploymentManager) {
+  if (dm.network === 'mainnet') {
+    const commitStore = '0x2aa101bf99caef7fc1355d4c493a1fe187a007ce';
+
+    const priceRegistry = '0x8c9b2Efb7c64C394119270bfecE7f54763b958Ad';
+    const abi = [
+      {
+        'inputs': [
+          {
+            'components': [
+              {
+                'components': [
+                  {
+                    'internalType': 'address',
+                    'name': 'sourceToken',
+                    'type': 'address'
+                  },
+                  {
+                    'internalType': 'uint224',
+                    'name': 'usdPerToken',
+                    'type': 'uint224'
+                  }
+                ],
+                'internalType': 'struct TokenPriceUpdate[]',
+                'name': 'tokenPriceUpdates',
+                'type': 'tuple[]'
+              },
+              {
+                'components': [
+                  {
+                    'internalType': 'uint64',
+                    'name': 'destChainSelector',
+                    'type': 'uint64'
+                  },
+                  {
+                    'internalType': 'uint224',
+                    'name': 'usdPerUnitGas',
+                    'type': 'uint224'
+                  }
+                ],
+                'internalType': 'struct GasPriceUpdate[]',
+                'name': 'gasPriceUpdates',
+                'type': 'tuple[]'
+              }
+            ],
+            'internalType': 'struct PriceUpdates',
+            'name': 'priceUpdates',
+            'type': 'tuple'
+          }
+        ],
+        'name': 'updatePrices',
+        'outputs': [],
+        'stateMutability': 'nonpayable',
+        'type': 'function'
+      },
+      {
+        'inputs': [
+          {
+            'internalType': 'uint64',
+            'name': 'destChainSelector',
+            'type': 'uint64'
+          }
+        ],
+        'name': 'getDestinationChainGasPrice',
+        'outputs': [
+          {
+            'components': [
+              {
+                'internalType': 'uint224',
+                'name': 'value',
+                'type': 'uint224'
+              },
+              {
+                'internalType': 'uint32',
+                'name': 'timestamp',
+                'type': 'uint32'
+              }
+            ],
+            'internalType': 'struct TimestampedPackedUint224',
+            'name': '',
+            'type': 'tuple'
+          }
+        ],
+        'stateMutability': 'view',
+        'type': 'function'
+      },
+      {
+        'inputs': [
+          {
+            'internalType': 'address',
+            'name': 'token',
+            'type': 'address'
+          }
+        ],
+        'name': 'getTokenPrice',
+        'outputs': [
+          {
+            'components': [
+              {
+                'internalType': 'uint224',
+                'name': 'value',
+                'type': 'uint224'
+              },
+              {
+                'internalType': 'uint32',
+                'name': 'timestamp',
+                'type': 'uint32'
+              }
+            ],
+            'internalType': 'struct TimestampedPackedUint224',
+            'name': '',
+            'type': 'tuple'
+          }
+        ],
+        'stateMutability': 'view',
+        'type': 'function'
+      }
+    ];
+
+    await dm.hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [commitStore],
+    });
+
+    await dm.hre.network.provider.request({
+      method: 'hardhat_setBalance',
+      params: [commitStore, '0x56bc75e2d63100000'],
+    });
+    const commitStoreSigner = await dm.hre.ethers.getSigner(commitStore);
+
+    const registryContract = new Contract(priceRegistry, abi, dm.hre.ethers.provider);
+
+    const tokenPrices = [];
+    const gasPrices = [];
+    for (const [, address] of tokens) {
+      const price = await registryContract.getTokenPrice(address);
+      tokenPrices.push([address, price.value]);
+    }
+    for (const [, address] of dest) {
+      const price = await registryContract.getDestinationChainGasPrice(address);
+      gasPrices.push([address, price.value]);
+    }
+
+    const tx0 = await commitStoreSigner.sendTransaction({
+      to: priceRegistry,
+      data: registryContract.interface.encodeFunctionData('updatePrices', [{
+        tokenPriceUpdates: tokenPrices,
+        gasPriceUpdates: gasPrices
+      }]),
+    });
+
+    await tx0.wait();
+
+  }
+}
+
 const REDSTONE_FEEDS = {
   mantle: [
     '0x3DFA26B9A15D37190bB8e50aE093730DcA88973E', // USDe / USD
     '0x9b2C948dbA5952A1f5Ab6fA16101c1392b8da1ab', // mETH / ETH
     '0xFc34806fbD673c21c1AEC26d69AA247F1e69a2C6', // ETH / USD
+  ],
+  unichain: [
+    '0xe8D9FbC10e00ecc9f0694617075fDAF657a76FB2', // ETH / USD
+    '0xD15862FC3D5407A03B696548b6902D6464A69b8c', // USDC / ETH
+    '0xc44be6D00307c3565FDf753e852Fc003036cBc13', // BTC / USD
+    '0xf1454949C6dEdfb500ae63Aa6c784Aa1Dde08A6c', // UNI / USD
   ],
 };
 
@@ -380,14 +556,14 @@ async function getProxyAdmin(dm: DeploymentManager, proxyAddress: string): Promi
   return adminAddress;
 }
 
-async function mockAllRedstoneOracles(dm: DeploymentManager){
+async function mockAllRedstoneOracles(dm: DeploymentManager) {
   const feeds = REDSTONE_FEEDS[dm.network];
   if (!Array.isArray(feeds)) {
     debug(`No redstone feeds found for network: ${dm.network}`);
     return;
   }
   for (const feed of feeds) {
-    try{
+    try {
       await dm.fromDep(`MockRedstoneOracle:${feed}`, dm.network, dm.deployment);
     }
     catch (_) {
@@ -396,7 +572,7 @@ async function mockAllRedstoneOracles(dm: DeploymentManager){
   }
 }
 
-async function mockRedstoneOracle(dm: DeploymentManager, feed: string){
+async function mockRedstoneOracle(dm: DeploymentManager, feed: string) {
   const feedContract = new Contract(
     feed,
     [
@@ -429,11 +605,7 @@ async function mockRedstoneOracle(dm: DeploymentManager, feed: string){
   await proxyAdmin.connect(owner).upgrade(feed, newImplementation.address);
 }
 
-
-export async function executeOpenProposal(
-  dm: DeploymentManager,
-  { id, startBlock, endBlock }: OpenProposal
-) {
+export async function voteForOpenProposal(dm: DeploymentManager, { id, startBlock, endBlock }: OpenProposal) {
   const governor = await dm.getContractOrThrow('governor');
   const blockNow = await dm.hre.ethers.provider.getBlockNumber();
   const blocksUntilStart = startBlock.toNumber() - blockNow;
@@ -456,6 +628,18 @@ export async function executeOpenProposal(
         debug(`Error while voting for ${whale}`, err.message);
       }
     }
+  }
+}
+
+export async function executeOpenProposal(
+  dm: DeploymentManager,
+  { id, startBlock, endBlock }: OpenProposal
+) {
+  const governor = await dm.getContractOrThrow('governor');
+  const blockNow = await dm.hre.ethers.provider.getBlockNumber();
+  const blocksUntilEnd = endBlock.toNumber() - Math.max(startBlock.toNumber(), blockNow) + 1;
+
+  if (blocksUntilEnd > 0) {
     await mineBlocks(dm, blocksUntilEnd);
   }
 
@@ -468,13 +652,45 @@ export async function executeOpenProposal(
   // Execute proposal (maybe, w/ gas limit so we see if exec reverts, not a gas estimation error)
   if (await governor.state(id) == ProposalState.Queued) {
     const block = await dm.hre.ethers.provider.getBlock('latest');
-    const proposal = await governor.proposals(id);
-    await setNextBlockTimestamp(dm, Math.max(block.timestamp, proposal.eta.toNumber()) + 1);
+    const eta = await governor.proposalEta(id);
+
+    await setNextBlockTimestamp(dm, Math.max(block.timestamp, eta.toNumber()) + 1);
     await setNextBaseFeeToZero(dm);
-    await governor.execute(id, { gasPrice: 0, gasLimit: 12000000 });
+    await updateCCIPStats(dm);
+    await governor.execute(id, { gasPrice: 0, gasLimit: 120000000 });
   }
   await redeployRenzoOracle(dm);
   await mockAllRedstoneOracles(dm);
+  // mine a block
+  await dm.hre.ethers.provider.send('evm_mine', []);
+}
+
+async function testnetPropose(
+  dm: DeploymentManager,
+  proposer: SignerWithAddress,
+  targets: string[],
+  values: BigNumberish[],
+  signatures: string[],
+  calldatas: string[],
+  description: string,
+  gasPrice: BigNumberish
+) {
+  const governor = await dm.getContractOrThrow('governor');
+  const testnetGovernor = new Contract(
+    governor.address, [
+    'function propose(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) external returns (uint256 proposalId)',
+    'event ProposalCreated(uint256 proposalId, address proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 startBlock, uint256 endBlock, string description)'
+  ], governor.signer
+  );
+
+  return testnetGovernor.connect(proposer).propose(
+    targets,
+    values,
+    signatures,
+    calldatas,
+    description,
+    { gasPrice }
+  );
 }
 
 // Instantly executes some actions through the governance proposal process
@@ -490,20 +706,24 @@ export async function fastGovernanceExecute(
 
   await setNextBaseFeeToZero(dm);
 
-  const proposeTxn = await (
+  const proposeTxn = dm.network === 'mainnet' ? await (
     await governor.connect(proposer).propose(
       targets,
       values,
-      signatures,
-      calldatas,
+      calldatas.map((calldata, i) => {
+        return utils.id(signatures[i]).slice(0, 10) + calldata.slice(2);
+      }),
       'FastExecuteProposal',
       { gasPrice: 0 }
     )
+  ).wait() : await (
+    await testnetPropose(dm, proposer, targets, values, signatures, calldatas, 'FastExecuteProposal', 0)
   ).wait();
   const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
   const [id, , , , , , startBlock, endBlock] = proposeEvent.args;
 
-  await executeOpenProposal(dm, { id, startBlock, endBlock });
+  await voteForOpenProposal(dm, { id, proposer: proposer.address, targets, values, signatures, calldatas, startBlock, endBlock });
+  await executeOpenProposal(dm, { id, proposer: proposer.address, targets, values, signatures, calldatas, startBlock, endBlock });
 }
 
 export async function fastL2GovernanceExecute(
@@ -540,8 +760,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
 
   // Create the chain-specific wrapper around the L2 proposal data
   switch (bridgeNetwork) {
-    case 'arbitrum':
-    case 'arbitrum-goerli': {
+    case 'arbitrum': {
       const inbox = await govDeploymentManager.getContractOrThrow('arbitrumInbox');
       const refundAddress = constants.AddressZero;
       const createRetryableTicketCalldata = utils.defaultAbiCoder.encode(
@@ -565,8 +784,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(createRetryableTicketCalldata);
       break;
     }
-    case 'base':
-    case 'base-goerli': {
+    case 'base': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'bytes', 'uint32'],
         [bridgeReceiver.address, l2ProposalData, 1_000_000] // XXX find a reliable way to estimate the gasLimit
@@ -581,7 +799,6 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageCalldata);
       break;
     }
-    case 'mumbai':
     case 'polygon': {
       const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(
         ['address', 'bytes'],
@@ -595,20 +812,20 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageToChildCalldata);
       break;
     }
-    case 'linea-goerli': {
-      const sendMessageCalldata = utils.defaultAbiCoder.encode(
-        ['address', 'uint256', 'bytes'],
-        [bridgeReceiver.address, 0, l2ProposalData]
-      );
-      const lineaMessageService = await govDeploymentManager.getContractOrThrow(
-        'lineaMessageService'
-      );
-      targets.push(lineaMessageService.address);
-      values.push(0);
-      signatures.push('sendMessage(address,uint256,bytes)');
-      calldata.push(sendMessageCalldata);
-      break;
-    }
+    // case 'linea-goerli': {
+    //   const sendMessageCalldata = utils.defaultAbiCoder.encode(
+    //     ['address', 'uint256', 'bytes'],
+    //     [bridgeReceiver.address, 0, l2ProposalData]
+    //   );
+    //   const lineaMessageService = await govDeploymentManager.getContractOrThrow(
+    //     'lineaMessageService'
+    //   );
+    //   targets.push(lineaMessageService.address);
+    //   values.push(0);
+    //   signatures.push('sendMessage(address,uint256,bytes)');
+    //   calldata.push(sendMessageCalldata);
+    //   break;
+    // }
     case 'optimism': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'bytes', 'uint32'],
@@ -638,8 +855,21 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageCalldata);
       break;
     }
-    case 'scroll': 
-    case 'scroll-goerli': {
+    case 'unichain': {
+      const sendMessageCalldata = utils.defaultAbiCoder.encode(
+        ['address', 'bytes', 'uint256'],
+        [bridgeReceiver.address, l2ProposalData, 2_500_000]
+      );
+      const unichainL1CrossDomainMessenger = await govDeploymentManager.getContractOrThrow(
+        'unichainL1CrossDomainMessenger'
+      );
+      targets.push(unichainL1CrossDomainMessenger.address);
+      values.push(0);
+      signatures.push('sendMessage(address,bytes,uint32)');
+      calldata.push(sendMessageCalldata);
+      break;
+    }
+    case 'scroll': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'uint256', 'bytes', 'uint256'],
         [bridgeReceiver.address, 0, l2ProposalData, 1_000_000] // XXX find a reliable way to estimate the gasLimit
@@ -651,6 +881,33 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       values.push(exp(1, 18)); // XXX fees are paid via msg.value
       signatures.push('sendMessage(address,uint256,bytes,uint256)');
       calldata.push(sendMessageCalldata);
+      break;
+    }
+    case 'ronin': {
+      const l1CCIPRouter = await govDeploymentManager.getContractOrThrow(
+        'l1CCIPRouter'
+      );
+
+      targets.push(l1CCIPRouter.address);
+      values.push(utils.parseEther('0.5'));
+
+      const destinationChainSelector = '6916147374840168594';
+
+      const args = [
+        destinationChainSelector,
+        [
+          utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
+          l2ProposalData,
+          [],
+          constants.AddressZero,
+          '0x'
+        ]
+      ];
+
+      const data = utils.defaultAbiCoder.encode(['uint64', '(bytes,bytes,(address,uint256)[],address,bytes)'], args);
+
+      signatures.push('ccipSend(uint64,(bytes,bytes,(address,uint256)[],address,bytes))');
+      calldata.push(data);
       break;
     }
     default:

@@ -8,7 +8,7 @@ import { putVerifyArgs } from './VerifyArgs';
 import { Cache } from './Cache';
 import { storeBuildFile } from './ContractMap';
 import { BuildFile, TraceFn } from './Types';
-import { debug, getPrimaryContract, stringifyJson } from './Utils';
+import { debug, getPrimaryContract, stringifyJson, asyncCallWithTimeout } from './Utils';
 import { VerifyArgs, verifyContract, VerificationStrategy } from './Verify';
 
 export interface DeployOpts {
@@ -19,6 +19,27 @@ export interface DeployOpts {
   raiseOnVerificationFailure?: boolean; // if verification is considered critical
   trace?: TraceFn; // the trace fn to use
   verificationStrategy?: VerificationStrategy; // strategy for verifying contracts on etherscan
+}
+/**
+ * Call an async function with a given amount of retries
+ * @param fn an async function that takes a signer as an argument. The function takes a signer
+ * because a new instance of a signer needs to be used on each retry
+ * @param retries the number of times to retry the function. Default is 7 retries
+ * @param timeLimit time limit before timeout in milliseconds
+ * @param wait time to wait between tries in milliseconds
+ */
+async function retry(fn: () => Promise<any>, retries: number = 7, timeLimit?: number, wait: number = 500) {
+  try {
+    return await asyncCallWithTimeout(fn(), timeLimit);
+  } catch (e) {
+    if (retries === 0) throw e;
+
+    console.warn(`Retrying with retries left: ${retries}, wait: ${wait}, error is: `, e);
+    await this.resetSignersPendingCounts();
+
+    await new Promise(ok => setTimeout(ok, wait));
+    return retry(fn, retries - 1, timeLimit, wait * 2);
+  }
 }
 
 async function doDeploy<C extends Contract>(
@@ -105,16 +126,19 @@ export async function deploy<C extends Contract>(
     address: contract.address,
     constructorArguments: deployArgs,
   };
-  if (deployOpts.verificationStrategy === 'lazy') {
-    // Cache params for verification
-    await putVerifyArgs(deployOpts.cache, contract.address, verifyArgs);
-  } else if (deployOpts.verificationStrategy === 'eager') {
-    await verifyContract(
-      verifyArgs,
-      hre,
-      deployOpts.raiseOnVerificationFailure
-    );
-  }
+
+  await retry(async () => {
+    if (deployOpts.verificationStrategy === 'lazy') {
+      // Cache params for verification
+      await putVerifyArgs(deployOpts.cache, contract.address, verifyArgs);
+    } else if (deployOpts.verificationStrategy === 'eager') {
+      await verifyContract(
+        verifyArgs,
+        hre,
+        deployOpts.raiseOnVerificationFailure
+      );
+    }
+  }, 3, undefined, 5000);
 
   await maybeStoreCache(deployOpts, contract, buildFile);
 

@@ -75,7 +75,7 @@ task('deploy', 'Deploys market')
       maybeForkEnv,
       {
         writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
-        verificationStrategy: 'lazy',
+        verificationStrategy: simulate? 'lazy' : 'eager',
       }
     );
 
@@ -216,6 +216,12 @@ task('migrate', 'Runs migration')
         governanceDm._signers.unshift(signer);
       }
 
+      if(simulate) {
+        console.log('Simulating migration without verification');
+        dm.setVerificationStrategy('lazy');
+        governanceDm.setVerificationStrategy('lazy');
+      }
+
       const migrationPath = `${__dirname}/../../deployments/${network}/${deployment}/migrations/${migrationName}.ts`;
       const [migration] = await loadMigrations([migrationPath]);
       if (!migration) {
@@ -256,7 +262,7 @@ task('deploy_and_migrate', 'Runs deploy and migration')
         maybeForkEnv,
         {
           writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
-          verificationStrategy: 'lazy',
+          verificationStrategy: simulate? 'lazy' : 'eager',
         }
       );
 
