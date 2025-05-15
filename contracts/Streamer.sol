@@ -172,6 +172,10 @@ contract Streamer {
         return amountInCOMP;
     }
 
+    /// @notice Calculates the amount of USDC needed to cover the owed amount in COMP
+    /// @param amount The amount in COMP to be converted to USDC
+    /// @return The amount of USDC needed to cover the owed amount in COMP
+    /// @dev This function uses Chainlink oracles to get the latest prices of COMP and USDC
     function calculateUsdcAmount(uint256 amount) public view returns (uint256) {
         (, int256 compPrice, , , ) = AggregatorV3Interface(COMP_ORACLE).latestRoundData();
         if (compPrice <= 0) revert InvalidPrice();
