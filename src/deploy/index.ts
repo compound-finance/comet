@@ -66,7 +66,7 @@ export type Proposal = [
 export type TestnetProposal = [
   string[], // targets
   BigNumberish[], // values
-  string[], // signatures
+  // string[], // signatures
   string[], // calldatas
   string // description
 ];
@@ -209,7 +209,7 @@ export async function testnetProposal(actions: ProposalAction[], description: st
     }
   }
 
-  return [targets, values, signatures, calldatas, description];
+  return [targets, values, calldatas, description];
 
 }
 
