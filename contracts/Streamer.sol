@@ -138,7 +138,7 @@ contract Streamer {
 
     /// @notice Calculates the amount owed to the receiver based on the elapsed time since the start of the stream minus the supplied amount
     /// @return owed The amount owed to the receiver in USDC
-    function getAmountOwed() public view returns(uint256 owed) {
+    function getAmountOwed() public view returns(uint256) {
         if(suppliedAmount >= STREAM_AMOUNT) {
             return 0;
         }
