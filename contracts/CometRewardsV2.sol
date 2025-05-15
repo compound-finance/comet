@@ -12,6 +12,8 @@ import "./MerkleProof.sol";
  */
 
 contract CometRewardsV2 {
+    uint256 public x;
+
     /**
      * @notice struct for token multiplier
      * @param token The token address
