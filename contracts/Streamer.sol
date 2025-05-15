@@ -44,7 +44,7 @@ contract Streamer {
     /// @notice The address of the receiver of the streamed USDC
     address public immutable receiver;
 
-    /// @notice The amount of USDC supplied to the contract
+    /// @notice The amount of USDC supplied to the receiver
     uint256 public suppliedAmount;
 
     /// @notice The amount of COMP tokens claimed by the receiver
@@ -122,8 +122,8 @@ contract Streamer {
         if(!ERC20(COMP).transfer(receiver, compAmount)) revert TransferFailed();
     }
 
-    /// @notice Allows tokens to be swept from the contract after the stream has ended
-    /// @dev This function can only be called after the stream has ended and the remaining balance is transferred to the Compound timelock
+    /// @notice Allows COMP tokens to be swept from the contract after the stream has ended
+    /// @dev This function can only be called after the stream has ended and the remaining balance is transferred to the Compound Comptroller
     function sweepRemaining() external isInitialized {
         // anyone can sweep the remaining balance after the stream has ended
         // but only timelock can sweep before that
@@ -136,7 +136,7 @@ contract Streamer {
         if(!ERC20(COMP).transfer(COMPTROLLER, remainingBalance)) revert TransferFailed();
     }
 
-    /// @notice Calculates the amount owed to the receiver based on the elapsed time since the last claim
+    /// @notice Calculates the amount owed to the receiver based on the elapsed time since the start of the stream minus the supplied amount
     /// @return owed The amount owed to the receiver in USDC
     function getAmountOwed() public view returns(uint256 owed) {
         if(suppliedAmount >= STREAM_AMOUNT) {
