@@ -76,7 +76,7 @@ function calculateRewardsOwedForExistingMember(
   else throw new Error('Error calculating rewards owed');
 }
 
-async function createNewCampaign(
+export async function createNewCampaign(
   comet: Contract,
   rewardsV2: CometRewardsV2,
   admin: Signer,
@@ -122,7 +122,7 @@ async function createNewCampaign(
   }
 }
 
-function getProof(address : string, tree: StandardMerkleTree<string[]>) {
+export function getProof(address : string, tree: StandardMerkleTree<string[]>) {
   for (const [i, v] of tree.entries()) {
     if (v[0].toLowerCase() === address.toLowerCase()) {
       const proof = tree.getProof(i);
@@ -199,7 +199,7 @@ function findNewUserWithFinishTree(
   throw new Error('No user found');
 }
 
-async function getRewardsAdminSigner(
+export async function getRewardsAdminSigner(
   ctx: CometContext
 ) : Promise<Signer> {
   const rewards = await ctx.world.deploymentManager.contract('rewardsV2');

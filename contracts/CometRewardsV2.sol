@@ -12,8 +12,6 @@ import "./MerkleProof.sol";
  */
 
 contract CometRewardsV2 {
-    uint256 public x;
-
     /**
      * @notice struct for token multiplier
      * @param token The token address
@@ -208,9 +206,9 @@ contract CometRewardsV2 {
         uint256 duration
     ) public returns(uint256) {
         if(msg.sender != governor) revert NotPermitted(msg.sender);
+        if(duration > MAX_CAMPAIGN_DURATION) revert BadData();
         if(startRoot == bytes32(0)) revert BadData();
         if(assets.length == 0) revert BadData();
-        if(duration > MAX_CAMPAIGN_DURATION) revert BadData();
 
         uint64 accrualScale = CometInterface(comet).baseAccrualScale();
         Campaign storage $ = campaigns[comet].push();
@@ -1001,7 +999,7 @@ contract CometRewardsV2 {
         uint256 accrued;
         if(finishAccrued > 0) {
             accrued = finishAccrued - startAccrued;
-        } else{
+        } else {
             accrued = CometInterface(comet).baseTrackingAccrued(account) -
                 startAccrued;
         }

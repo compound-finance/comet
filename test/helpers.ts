@@ -6,6 +6,8 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
   BaseBulker,
   BaseBulker__factory,
+  BaseBulkerWithRewardsV2Support,
+  BaseBulkerWithRewardsV2Support__factory,
   CometExt,
   CometExt__factory,
   CometExtAssetList__factory,
@@ -178,7 +180,12 @@ export type BulkerOpts = {
 
 export type BulkerInfo = {
   opts: BulkerOpts;
-  bulker: BaseBulker;
+  bulker: BaseBulker | BaseBulkerWithRewardsV2Support;
+};
+
+export type BulkerV2Info = {
+  opts: BulkerOpts;
+  bulker: BaseBulkerWithRewardsV2Support;
 };
 
 export function dfn<T>(x: T | undefined | null, dflt: T): T {
@@ -835,6 +842,24 @@ export async function makeBulker(opts: BulkerOpts): Promise<BulkerInfo> {
   const BulkerFactory = (await ethers.getContractFactory(
     'BaseBulker'
   )) as BaseBulker__factory;
+  const bulker = await BulkerFactory.deploy(admin.address, weth);
+  await bulker.deployed();
+
+  return {
+    opts,
+    bulker,
+  };
+}
+
+export async function makeBulkerWithRewardsV2Support(opts: BulkerOpts): Promise<BulkerV2Info> {
+  const signers = await ethers.getSigners();
+
+  const admin = opts.admin || signers[0];
+  const weth = opts.weth;
+
+  const BulkerFactory = (await ethers.getContractFactory(
+    'BaseBulkerWithRewardsV2Support'
+  )) as BaseBulkerWithRewardsV2Support__factory;
   const bulker = await BulkerFactory.deploy(admin.address, weth);
   await bulker.deployed();
 

@@ -95,8 +95,8 @@ export default migration('1747304744_deploy_test_rewards_v2', {
     await tx.wait();
   },
 
-  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return true;
+  async enacted(): Promise<boolean> {
+    return false;
   },
 
   async verify(deploymentManager: DeploymentManager) {
