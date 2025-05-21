@@ -21,6 +21,14 @@ export default {
       }
     }
   },
+  'UUPSProxy': {
+    artifact: 'contracts/ERC20.sol:ERC20',
+    delegates: {
+      field: {
+        slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+      }
+    }
+  },
   arbitrumInbox: {
     delegates: {
       field: {
@@ -96,6 +104,26 @@ export default {
     }
   },
   lineaL1USDCBridge: {
+    delegates: {
+      field: {
+        slot:
+          '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+      }
+    }
+  },
+  roninl1NativeBridge: {
+    delegates: {
+      field: {
+        slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+      }
+    }
+  },
+  unichainL1CrossDomainMessenger: {
+    delegates: {
+      field: async () => '0xD3494713A5cfaD3F5359379DfA074E2Ac8C6Fd65'
+    }
+  },
+  unichainL1StandardBridge: {
     delegates: {
       field: {
         slot:

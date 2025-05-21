@@ -23,6 +23,8 @@ export async function fetchAndCacheContract(
   return buildFile;
 }
 
+const blockScoutNetworks = ['unichain'];
+
 // Wrapper for pulling contract data from Etherscan
 export async function importContract(
   network: string,
@@ -30,8 +32,26 @@ export async function importContract(
   retries: number = DEFAULT_RETRIES,
   retryDelay: number = DEFAULT_RETRY_DELAY
 ): Promise<BuildFile> {
+  if(blockScoutNetworks.includes(network)) {
+    try {
+      console.log(`Importing ${address} from ${network} blockscout`);
+      return (await loadContract('blockscout', network, address)) as BuildFile;
+    } catch (e) {
+      if (retries === 0 || (e.message && e.message.includes('Contract source code not verified'))) {
+        throw e;
+      }
+  
+      console.warn(`Import failed for ${network}@${address} (${e.message}), retrying in ${retryDelay / 1000}s; ${retries} retries left`);
+  
+      await new Promise(ok => setTimeout(ok, retryDelay));
+      return importContract(network, address, retries - 1, retryDelay * 2);
+    }
+  }
+
   try {
-    console.log(`Importing ${address} from ${network} etherscan`);
+    if(network === 'ronin') {
+      return (await loadContract('ronin', network, address)) as BuildFile;
+    }
     return (await loadContract('etherscan', network, address)) as BuildFile;
   } catch (e) {
     if (retries === 0 || (e.message && e.message.includes('Contract source code not verified'))) {

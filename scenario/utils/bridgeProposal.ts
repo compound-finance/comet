@@ -8,7 +8,7 @@ export async function getOpenBridgedProposals(
 ): Promise<OpenBridgedProposal[]> {
   const receiver = await deploymentManager.contract('bridgeReceiver');
   if (receiver === undefined) return [];
-  const timelockBuf = 500_000; // XXX using a high value because Arbitrum has fast block times
+  const timelockBuf = deploymentManager.network === 'ronin' ? 500 : 500_000; // XXX using a high value because Arbitrum has fast block times
   const searchBlocks = timelockBuf;
   const block = await deploymentManager.hre.ethers.provider.getBlockNumber();
   const filter = receiver.filters.ProposalCreated();
