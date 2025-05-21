@@ -21,6 +21,7 @@ const relationConfigMap: RelationConfigMap = {
         field: async (comet) => comet.extensionDelegate(),
       },
       assetListFactory: {
+        field: async (cometExt) => {
           try {
             return cometExt.assetListFactory();
           }
