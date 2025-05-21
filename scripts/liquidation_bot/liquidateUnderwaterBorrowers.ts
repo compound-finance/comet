@@ -491,7 +491,7 @@ export async function hasPurchaseableCollateral(comet: CometInterface, assets: A
     const collateralReserves = await comet.getCollateralReserves(asset.address);
     const price = await comet.getPrice(asset.priceFeed);
     const priceScale = exp(1, 8);
-    const value = collateralReserves.toBigInt() * price.toBigInt() * baseScale / asset.scale / priceScale;
+    const value = collateralReserves.toBigInt() * price.toBigInt() * baseScale / BigInt(asset.scale) / priceScale;
     if (value >= minBaseValue) {
       return true;
     }

@@ -105,6 +105,9 @@ export const WHALES = {
     '0xD5cf704dC17403343965b4F9cd4D7B5e9b20CC52', // solvBTC.BBN whale
   ],
   polygon: [
+    '0x62ac55b745F9B08F1a81DCbbE630277095Cf4Be1', // WETH whale
+    '0x078f358208685046a11C85e8ad32895DED33A249', // WBTC whale
+    '0x9c2bd617b77961ee2c5e3038dFb0c822cb75d82a', // USDC whale
     '0xF977814e90dA44bFA03b6295A0616a897441aceC', // USDT whale
     '0x2093b4281990a568c9d588b8bce3bfd7a1557ebd', // WETH whale
     '0xe50fA9b3c56FfB159cB0FCA61F5c9D750e8128c8', // WETH whale

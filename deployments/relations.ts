@@ -17,10 +17,10 @@ const relationConfigMap: RelationConfigMap = {
       baseToken: {
         alias: async (token) => token.symbol(),
       },
-      'cometExt': {
+      cometExt: {
         field: async (comet) => comet.extensionDelegate(),
       },
-      'assetListFactory': {
+      assetListFactory: {
         field: async (cometExt) => {
           try {
             return cometExt.assetListFactory();

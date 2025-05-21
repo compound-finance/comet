@@ -173,7 +173,7 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'scroll',
     chainId: 534352,
-    url: 'https://rpc.scroll.io',
+    url: `https://rpc.ankr.com/scroll/${ANKR_KEY}`,
   }
 ];
 
@@ -238,6 +238,15 @@ const config: HardhatUserConfig = {
       allowUnlimitedContractSize: true,
       //hardfork: 'london',
       chains: networkConfigs.reduce((acc, { chainId }) => {
+        if (chainId === 1337) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+            }
+          };
+          return acc;
+        }
         if (chainId === 1) return acc;
         if (chainId === 2020) {
           acc[chainId] = {

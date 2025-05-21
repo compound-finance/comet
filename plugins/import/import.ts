@@ -312,8 +312,8 @@ async function scrapeContractCreationCodeFromEtherscan(network: string, address:
   return matches[0][1];
 }
 
-function paramString(params: { [k: string]: string | number }) {
-  return Object.entries(params).map(([k, v]) => `${k}=${v}`).join('&');
+export function paramString(params: { [k: string]: string | number }) {
+  return Object.entries(params).map(([k,v]) => `${k}=${v}`).join('&');
 }
 
 async function pullFirstTransactionForContractFromEtherscan(network: string, address: string) {

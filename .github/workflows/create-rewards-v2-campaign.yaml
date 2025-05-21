@@ -1,0 +1,73 @@
+name: Create RewardsV2 Campaign
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        type: choice
+        description: Network
+        options:
+          - fuji
+          - mainnet
+          - goerli
+          - sepolia
+          - mumbai
+          - polygon
+          - arbitrum
+          - arbitrum-goerli
+          - base
+          - base-goerli
+          - linea-goerli
+          - optimism
+          - scroll-goerli
+          - scroll
+      deployment:
+        description: Deployment Name (e.g. "usdc")
+        required: true
+      root_type:
+        type: choice
+        description: Root type
+        options:
+          - start
+          - finish
+      block_number:
+        description: Enter block number or current block will be used
+jobs:
+  create-rewards-v2-campaign:
+    name: Create RewardsV2 Campaign
+    runs-on: ubuntu-latest
+    env:
+      ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
+      SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
+      INFURA_KEY: ${{ secrets.INFURA_KEY }}
+      QUICKNODE_KEY: ${{ secrets.QUICKNODE_KEY }}
+      POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
+      ARBISCAN_KEY: ${{ secrets.ARBISCAN_KEY }}
+      BASESCAN_KEY: ${{ secrets.BASESCAN_KEY }}
+      LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
+      OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '16'
+
+      - name: Install packages
+        run: yarn install --non-interactive --frozen-lockfile
+
+      - name: Compile
+        run: yarn hardhat compile
+
+      - name: Check types
+        run: yarn tsc
+
+      - name: Run rewards-v2 script
+        run: yarn hardhat generateMerkleTree --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --type ${{ github.event.inputs.root_type }} --blocknumber ${{ github.event.inputs.block_number }}
+      - name: Commit changes
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+          git add campaigns/
+          git commit -m "Generated Merkle tree for ${{ github.event.inputs.root_type }} of campaign with deployment: ${{ github.event.inputs.network }}-${{ github.event.inputs.deployment }}" || echo "No changes to commit"
+          git push origin

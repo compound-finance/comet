@@ -1,0 +1,65 @@
+name: Calculate multiplier for RewardsV2 Campaign
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        type: choice
+        description: Network
+        options:
+          - fuji
+          - mainnet
+          - goerli
+          - sepolia
+          - mumbai
+          - polygon
+          - arbitrum
+          - arbitrum-goerli
+          - base
+          - base-goerli
+          - linea-goerli
+          - optimism
+          - scroll-goerli
+          - scroll
+        required: true
+      deployment:
+        description: Deployment Name (e.g. "usdc", "weth")
+        required: true
+      duration:
+        description: Duration in seconds
+        required: true
+      amount:
+        description: Amount in tokens (e.g. 1, 100, 1000)
+        required: true
+jobs:
+  calculate-multiplier-for-rewards-v2-campaign:
+    name: Calculate multiplier for RewardsV2 Campaign
+    runs-on: ubuntu-latest
+    env:
+      ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
+      SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
+      INFURA_KEY: ${{ secrets.INFURA_KEY }}
+      QUICKNODE_KEY: ${{ secrets.QUICKNODE_KEY }}
+      POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
+      ARBISCAN_KEY: ${{ secrets.ARBISCAN_KEY }}
+      BASESCAN_KEY: ${{ secrets.BASESCAN_KEY }}
+      LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
+      OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '16'
+
+      - name: Install packages
+        run: yarn install --non-interactive --frozen-lockfile
+
+      - name: Compile
+        run: yarn hardhat compile
+
+      - name: Check types
+        run: yarn tsc
+
+      - name: Run Calculate Multiplier for RewardsV2 Campaign
+        run: yarn hardhat calculateMultiplier --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --duration ${{ github.event.inputs.duration }} --amount ${{ github.event.inputs.amount }}
