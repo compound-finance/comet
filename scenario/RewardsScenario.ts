@@ -247,7 +247,6 @@ async function testScalingReward(properties: CometProperties, context: CometCont
   const { albert } = actors;
   const baseAssetAddress = await comet.baseToken();
   const baseAsset = context.getAssetByAddress(baseAssetAddress);
-  const baseScale = (await comet.baseScale()).toBigInt();
 
   const [rewardTokenAddress, rescaleFactorWithoutMultiplier] = await rewards.rewardConfig(comet.address);
   // XXX maybe try with a different reward token as well
@@ -269,8 +268,9 @@ async function testScalingReward(properties: CometProperties, context: CometCont
   await newRewards.connect(albert.signer).setRewardConfigWithMultiplier(comet.address, rewardTokenAddress, multiplier);
   await context.sourceTokens(exp(COMPRewards, rewardDecimals), rewardTokenAddress, newRewards.address);
 
+  const albertBaseBalance = await baseAsset.balanceOf(albert.address);
   await baseAsset.approve(albert, comet.address);
-  await albert.safeSupplyAsset({ asset: baseAssetAddress, amount: 10n * baseScale });
+  await albert.safeSupplyAsset({ asset: baseAssetAddress, amount: albertBaseBalance / 10n });
 
   expect(await rewardToken.balanceOf(albert.address)).to.be.equal(0n);
 

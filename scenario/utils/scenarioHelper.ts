@@ -141,5 +141,12 @@ export function getConfigForScenario(ctx: CometContext) {
     config.bulkerAsset1 = 10;
   }
 
+  if (ctx.world.base.network === 'unichain' && ctx.world.base.deployment === 'weth') {
+    config.liquidationBase = 1000;
+    config.liquidationBase1 = 350;
+    config.liquidationAsset = 100;
+    config.rewardsBase = 100;
+  }
+
   return config;
 }
