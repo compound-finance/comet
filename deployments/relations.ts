@@ -17,6 +17,19 @@ const relationConfigMap: RelationConfigMap = {
       baseToken: {
         alias: async (token) => token.symbol(),
       },
+      cometExt: {
+        field: async (comet) => comet.extensionDelegate(),
+      },
+      assetListFactory: {
+        field: async (cometExt) => {
+          try {
+            return cometExt.assetListFactory();
+          }
+          catch (e) {
+            return '0x0000000000000000000000000000000000000000';
+          }
+        },
+      },
       baseTokenPriceFeed: {
         field: async (comet) => comet.baseTokenPriceFeed(),
         alias: async (_, { baseToken }) => `${await baseToken[0].symbol()}:priceFeed`,

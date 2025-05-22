@@ -77,6 +77,7 @@ async function deployContracts(
 
   // Import shared contracts from cUSDCv3
   const _cometAdmin = await deploymentManager.fromDep('cometAdmin', 'linea', 'usdc');
+  const _assetListFactory = await deploymentManager.fromDep('assetListFactory', 'linea', 'usdc');
   const _cometFactory = await deploymentManager.fromDep('cometFactory', 'linea', 'usdc');
   const _$configuratorImpl = await deploymentManager.fromDep('configurator:implementation', 'linea', 'usdc');
   const _configurator = await deploymentManager.fromDep('configurator', 'linea', 'usdc');

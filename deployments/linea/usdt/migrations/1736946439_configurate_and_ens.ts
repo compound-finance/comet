@@ -241,6 +241,10 @@ export default migration('1736946439_configurate_and_ens', {
         {
           baseSymbol: 'USDC',
           cometAddress: '0x2c7118c4C88B9841FCF839074c26Ae8f035f2921'
+        },
+        {
+          baseSymbol: 'WETH',
+          cometAddress: '0x6C987dDE50dB1dcDd32Cd4175778C2a291978E2a'
         }
       ],
       137: [
@@ -257,6 +261,10 @@ export default migration('1736946439_configurate_and_ens', {
         {
           baseSymbol: 'WETH',
           cometAddress: '0x4006eD4097Ee51c09A04c3B0951D28CCf19e6DFE'
+        },
+        {
+          baseSymbol: 'WRON',
+          cometAddress: '0xc0Afdbd1cEB621Ef576BA969ce9D4ceF78Dbc0c0'
         }
       ],
       5000: [
@@ -308,7 +316,7 @@ export default migration('1736946439_configurate_and_ens', {
       59144: [
         {
           baseSymbol: 'USDC',
-          cometAddress: '0x8D38A3d6B3c3B7d96D6536DA7Eef94A9d7dbC991',
+          cometAddress: '0x8D38A3d6B3c3B7d96D6536DA7Eef94A9d7dbC991'
         },
         {
           baseSymbol: 'USDT',
