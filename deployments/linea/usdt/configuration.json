@@ -9,14 +9,14 @@
   "storeFrontPriceFactor": 0.6,
   "targetReserves": "20_000_000e6",
   "rates": {
-    "supplyKink": 0.9,
-    "supplySlopeLow": 0.054,
-    "supplySlopeHigh": 3.034,
-    "supplyBase": 0,
-    "borrowKink": 0.9,
+    "borrowBase": 0.015,
     "borrowSlopeLow": 0.05,
+    "borrowKink": 0.9,
     "borrowSlopeHigh": 3.4,
-    "borrowBase": 0.015
+    "supplyBase": 0,
+    "supplySlopeLow": 0.054,
+    "supplyKink": 0.9,
+    "supplySlopeHigh": 3.034
   },
   "tracking": {
     "indexScale": "1e15",
