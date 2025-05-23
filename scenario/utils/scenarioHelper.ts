@@ -158,7 +158,7 @@ export function getConfigForScenario(ctx: CometContext) {
   if (ctx.world.base.network === 'linea' && ctx.world.base.deployment === 'weth') {
     config.liquidationBase = 1000;
     config.rewardsAsset = 1000;
-    config.rewardsBase = 100;
+    config.rewardsBase = 50;
     config.supplyCollateral = 10;
     config.transferCollateral = 10;
     config.withdrawCollateral = 10;    

@@ -257,7 +257,7 @@ async function getEtherscanApiData(network: string, address: string, apiKey: str
   let s = <EtherscanSource>(<unknown>result.result[0]);
 
   if (s.ABI === 'Contract source code not verified') {
-    throw new Error('Contract source code not verified');
+    throw new Error('Contract source code not verified ' + address);
   }
 
   return {
