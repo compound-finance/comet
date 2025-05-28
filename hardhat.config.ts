@@ -64,6 +64,7 @@ const {
   SCROLLSCAN_KEY,
   ANKR_KEY,
   //_TENDERLY_KEY_RONIN,
+  _TENDERLY_KEY_BASE,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
@@ -153,7 +154,8 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'base',
     chainId: 8453,
-    url: `https://rpc.ankr.com/base/${ANKR_KEY}`,
+    // for rewards v2: https://base.gateway.tenderly.co/${_TENDERLY_KEY_BASE}
+    url: `https://base.gateway.tenderly.co/${_TENDERLY_KEY_BASE}`,
   },
   {
     network: 'arbitrum',
