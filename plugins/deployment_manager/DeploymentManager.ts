@@ -444,7 +444,7 @@ export class DeploymentManager {
       await this.resetSignersPendingCounts();
 
       await new Promise(ok => setTimeout(ok, wait));
-      return this.retry(fn, retries - 1, timeLimit, wait * 2);
+      return this.retry(fn, retries - 1, timeLimit, wait > 10000 ? wait : wait * 2);
     }
   }
 

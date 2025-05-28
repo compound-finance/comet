@@ -8,6 +8,7 @@ const config = {
   bulkerAsset2: 10,
   bulkerComet: 5000,
   bulkerBorrowBase: 1000,
+  bulkerTransferBase: 500,
   bulkerBorrowAsset: 500,
   liquidationBase: 100000,
   liquidationBase1: 1000,
@@ -17,11 +18,12 @@ const config = {
   liquidationDenominator: 90,
   liquidationNumerator: 90,
   rewardsAsset: 10000,
-  rewardsBase: 1000,
   transferBase: 1000,
   transferAsset: 5000,
   transferAsset1: 5000,
   interestSeconds: 110,
+  rewardsBase: 1000,
+  minAccrue: 1000,
   withdrawBase: 1000,
   withdrawAsset: 3000,
   withdrawBase1: 1000,
@@ -67,6 +69,10 @@ export function getConfigForScenario(ctx: CometContext) {
 
   if (ctx.world.base.network === 'base' && ctx.world.base.deployment === 'aero') {
     config.interestSeconds = 110;
+  }
+
+  if (ctx.world.base.network === 'sepolia' && ctx.world.base.deployment === 'usdc') {
+    config.rewardsBase = 100000;
   }
 
   if (ctx.world.base.network === 'base' && ctx.world.base.deployment === 'usds') {

@@ -2,7 +2,10 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumberish, Signature, ethers, ContractReceipt, Overrides, PayableOverrides } from 'ethers';
 import { CometContext } from './CometContext';
 import { AddressLike, resolveAddress } from './Address';
-import { ERC20__factory } from '../../build/types';
+import {
+  ERC20__factory,
+  BaseBulkerWithRewardsV2Support,
+} from '../../build/types';
 import { baseBalanceOf } from '../../test/helpers';
 
 const types = {
@@ -172,9 +175,9 @@ export default class CometActor {
       .allowBySig(owner, manager, isAllowed, nonce, expiry, signature.v, signature.r, signature.s)).wait();
   }
 
-  async invoke({ actions, calldata }, overrides?: PayableOverrides): Promise<ContractReceipt> {
-    const bulker = await this.context.getBulker();
-    return await (await bulker.connect(this.signer).invoke(actions, calldata, { ...overrides })).wait();
+  async invoke({ actions, calldata }, overrides?: PayableOverrides, bulker?: BaseBulkerWithRewardsV2Support): Promise<ContractReceipt> {
+    const bulkerContract = bulker || (await this.context.getBulker());
+    return await (await bulkerContract.connect(this.signer).invoke(actions, calldata, { ...overrides })).wait();
   }
 
   /* ===== Admin-only functions ===== */

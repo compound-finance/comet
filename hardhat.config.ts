@@ -64,6 +64,7 @@ const {
   SCROLLSCAN_KEY,
   ANKR_KEY,
   //_TENDERLY_KEY_RONIN,
+  _TENDERLY_KEY_BASE,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
@@ -153,7 +154,8 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'base',
     chainId: 8453,
-    url: `https://rpc.ankr.com/base/${ANKR_KEY}`,
+    // for rewards v2: https://base.gateway.tenderly.co/${_TENDERLY_KEY_BASE}
+    url: `https://base.gateway.tenderly.co/${_TENDERLY_KEY_BASE}`,
   },
   {
     network: 'arbitrum',
@@ -173,7 +175,7 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'scroll',
     chainId: 534352,
-    url: 'https://rpc.scroll.io',
+    url: `https://rpc.ankr.com/scroll/${ANKR_KEY}`,
   }
 ];
 
@@ -238,6 +240,15 @@ const config: HardhatUserConfig = {
       allowUnlimitedContractSize: true,
       //hardfork: 'london',
       chains: networkConfigs.reduce((acc, { chainId }) => {
+        if (chainId === 1337) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+            }
+          };
+          return acc;
+        }
         if (chainId === 1) return acc;
         if (chainId === 2020) {
           acc[chainId] = {

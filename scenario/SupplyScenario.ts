@@ -517,6 +517,7 @@ scenario(
         symbol === 'WMATIC' ? /Transaction reverted without a reason string/ : /.^/,
         symbol === 'WPOL' ? /Transaction reverted without a reason string/ : /.^/,
         symbol === 'sUSDS' ? /SUsds\/insufficient-allowance/ : /.^/,
+        symbol === 'GOLD' ? /Transaction reverted and Hardhat couldn't infer the reason./ : /.^/,
       ]
     );
   }
