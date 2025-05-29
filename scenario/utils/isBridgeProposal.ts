@@ -74,12 +74,45 @@ export async function isBridgeProposal(
       ];
       return targets.some(t => bridgeContracts.includes(t));
     }
+    case 'unichain': {
+      const unichainL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow(
+        'unichainL1CrossDomainMessenger'
+      );
+      const unichainL1StandardBridge = await governanceDeploymentManager.getContractOrThrow(
+        'unichainL1StandardBridge'
+      );
+      const targets = openProposal.targets;
+      const bridgeContracts = [
+        unichainL1CrossDomainMessenger.address,
+        unichainL1StandardBridge.address
+      ];
+      return targets.some(t => bridgeContracts.includes(t));
+    }
     case 'scroll': {
       const scrollMessenger = await governanceDeploymentManager.getContractOrThrow(
         'scrollMessenger'
       );
       const targets = openProposal.targets;
       return targets.includes(scrollMessenger.address);
+    }
+    case 'ronin': {
+      const governor = await governanceDeploymentManager.getContractOrThrow('governor');
+      const l1CCIPRouter = await governanceDeploymentManager.getContractOrThrow(
+        'l1CCIPRouter'
+      );
+      const roninl1NativeBridge = await governanceDeploymentManager.getContractOrThrow(
+        'roninl1NativeBridge'
+      );
+      const roninL1OnRamp = await governanceDeploymentManager.getContractOrThrow(
+        'roninl1CCIPOnRamp'
+      );
+      const { targets } = await governor.proposalDetails(openProposal.id);
+      const bridgeContracts = [
+        roninl1NativeBridge.address,
+        l1CCIPRouter.address,
+        roninL1OnRamp.address
+      ];
+      return targets.some(t => bridgeContracts.includes(t));
     }
     default: {
       const tag = `[${bridgeNetwork} -> ${governanceDeploymentManager.network}]`;
