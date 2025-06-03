@@ -9,12 +9,19 @@ import "../../vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interf
  * @notice Price adapter to cap the price of the underlying asset.
  */
 abstract contract PriceCapAdapterBase {
+  /// @notice Event emitted when a new price cap snapshot is set
   event NewPriceCapSnapshot(
     uint256 indexed snapshotRatio,
     uint256 snapshotTimestamp,
     uint256 indexed maxRatioGrowthPerSecond,
     uint32 indexed maxYearlyRatioGrowthPercent
   );
+
+  /// @notice Event emitted when the manager is updated
+  event NewManager(address indexed newManager);
+
+  /// @notice Event emitted when the minimum snapshot delay is updated
+  event NewMinimumSnapshotDelay(uint256 indexed newMinimumSnapshotDelay);
 
   /**
    * @notice Price cap snapshot
@@ -23,21 +30,22 @@ abstract contract PriceCapAdapterBase {
    * @param maxYearlyRatioGrowthPercent max yearly growth percent
    */
   struct PriceCapSnapshot {
-    uint104 snapshotRatio;
+    uint256 snapshotRatio;
     uint48 snapshotTimestamp;
     uint32 maxYearlyRatioGrowthPercent;
   }
   
   error ManagerIsZeroAddress();
   error SnapshotRatioIsZero();
-  error SnapshotCloseToOverflow(uint104 snapshotRatio, uint32 maxYearlyRatioGrowthPercent);
+  error SnapshotCloseToOverflow(uint256 snapshotRatio, uint32 maxYearlyRatioGrowthPercent);
   error InvalidRatioTimestamp(uint48 timestamp);
   error OnlyManager();
   error InvalidInt256();
+  error InvalidCheckpointDuration();
   error InvalidAddress();
 
   /// @notice Decimal factor for percentage
-  uint256 public constant PERCENTAGE_DECIMALS = 1e2;
+  uint256 public constant BASIS_POINTS = 1e4;
 
   /// @notice Number of seconds per year (365 days)
   uint256 public constant SECONDS_PER_YEAR = 365 days;
@@ -58,19 +66,22 @@ abstract contract PriceCapAdapterBase {
   uint8 public immutable ratioDecimals;
 
   /// @notice Minimum time (in seconds) that should have passed from the snapshot timestamp to the current block.timestamp
-  uint48 public immutable minimumSnapshotDelay;
+  uint48 public minimumSnapshotDelay;
 
   /// @notice Description of the pair
   string public description;
 
   /// @notice Ratio at the time of snapshot
-  uint104 public snapshotRatio;
+  uint256 public snapshotRatio;
 
   /// @notice Timestamp at the time of snapshot
   uint48 public snapshotTimestamp;
 
   /// @notice Ratio growth per second
-  uint104 public maxRatioGrowthPerSecond;
+  uint256 public maxRatioGrowthPerSecond;
+
+  /// @notice Growth ratio scale
+  uint256 constant public GROWTH_RATIO_SCALE = 1e10;
 
   /// @notice Max yearly growth percent
   uint32 public maxYearlyRatioGrowthPercent;
@@ -81,12 +92,14 @@ abstract contract PriceCapAdapterBase {
   /// @notice The amount to upscale or downscale the price by
   int256 internal immutable rescaleFactor;
 
+  /// @notice Timestamp of the last snapshot update
+  uint256 public lastSnapshotUpdateTimestamp;
+
   /**
    * @param _manager address of the manager
    * @param _baseAggregatorAddress address of the base aggregator
    * @param _ratioProviderAddress address of the ratio provider
    * @param _description description of the pair
-   * @param _ratioDecimals number of decimals for the ratio
    * @param _priceFeedDecimals number of decimals for the price feed
    * @param _minimumSnapshotDelay minimum time that should have passed from the snapshot timestamp to the current block.timestamp
    * @param _priceCapSnapshot parameters to set price cap
@@ -96,7 +109,6 @@ abstract contract PriceCapAdapterBase {
     address _baseAggregatorAddress,
     address _ratioProviderAddress,
     string memory _description,
-    uint8 _ratioDecimals,
     uint8 _priceFeedDecimals,
     uint48 _minimumSnapshotDelay,
     PriceCapSnapshot memory _priceCapSnapshot
@@ -118,7 +130,7 @@ abstract contract PriceCapAdapterBase {
             : signed256(10 ** (underlyingPriceFeedDecimals - _priceFeedDecimals))
         );
     decimals = _priceFeedDecimals;
-    ratioDecimals = _ratioDecimals;
+    ratioDecimals = AggregatorV3Interface(ratioProvider).decimals();
     minimumSnapshotDelay = _minimumSnapshotDelay;
 
     description = _description;
@@ -138,28 +150,50 @@ abstract contract PriceCapAdapterBase {
     _setSnapshot(priceCapParams);
   }
 
+  /**
+   * @notice Sets the manager address
+   * @param newManager address of the new manager
+   */
   function setManager(address newManager) external {
     if (msg.sender != manager) {
       revert OnlyManager();
     }
 
+    if(newManager == address(0)) {
+      revert ManagerIsZeroAddress();
+    }
+
     manager = newManager;
+    emit NewManager(newManager);
+  }
+
+  /**
+   * @notice Sets the minimum snapshot delay
+   * @param newMinimumSnapshotDelay minimum time that should have passed from the snapshot timestamp to the current block.timestamp
+   */
+  function setMinimumSnapshotDelay(uint48 newMinimumSnapshotDelay) external {
+    if (msg.sender != manager) {
+      revert OnlyManager();
+    }
+
+    minimumSnapshotDelay = newMinimumSnapshotDelay;
+    emit NewMinimumSnapshotDelay(newMinimumSnapshotDelay);
   }
 
   /**
      * @notice Price for the latest round
      * @return roundId Round id from the underlying price feed
-     * @return answer Latest price for the asset in terms of ETH
+     * @return answer Latest price for the asset in terms of the underlying asset
      * @return startedAt Timestamp when the round was started; passed on from underlying price feed
      * @return updatedAt Timestamp when the round was last updated; passed on from underlying price feed
      * @return answeredInRound Round id in which the answer was computed; passed on from underlying price feed
      **/
     function latestRoundData() external view returns (
-        uint80 roundId,
-        int256 answer,
-        uint256 startedAt,
-        uint256 updatedAt,
-        uint80 answeredInRound
+      uint80 roundId,
+      int256 answer,
+      uint256 startedAt,
+      uint256 updatedAt,
+      uint80 answeredInRound
     ) {
 
     int256 currentRatio = getRatio();
@@ -172,7 +206,7 @@ abstract contract PriceCapAdapterBase {
     ) = assetToBaseAggregator.latestRoundData();
 
     if (_price <= 0 || currentRatio <= 0) {
-        return (roundId_, 0, startedAt_, updatedAt_, answeredInRound_);
+      return (roundId_, 0, startedAt_, updatedAt_, answeredInRound_);
     }
 
     int256 maxRatio = _getMaxRatio();
@@ -183,17 +217,22 @@ abstract contract PriceCapAdapterBase {
 
     int256 price = (_price * currentRatio) / int256(10 ** ratioDecimals);
 
-    return (roundId_, scalePrice(price), startedAt_, updatedAt_, answeredInRound_);
+    return (roundId_, _scalePrice(price), startedAt_, updatedAt_, answeredInRound_);
   }
 
-  function scalePrice(int256 price) internal view returns (int256) {
-      int256 scaledPrice;
-      if (shouldUpscale) {
-          scaledPrice = price * rescaleFactor;
-      } else {
-          scaledPrice = price / rescaleFactor;
-      }
-      return scaledPrice;
+  /**
+   * @notice Scales the price based on the rescale factor
+   * @param price price to scale
+   * @return scaled price
+   */
+  function _scalePrice(int256 price) internal view returns (int256) {
+    int256 scaledPrice;
+    if (shouldUpscale) {
+      scaledPrice = price * rescaleFactor;
+    } else {
+      scaledPrice = price / rescaleFactor;
+    }
+    return scaledPrice;
   }
 
   /**
@@ -201,15 +240,17 @@ abstract contract PriceCapAdapterBase {
    * @param priceCapParams parameters to set price cap
    */
   function _setSnapshot(PriceCapSnapshot memory priceCapParams) internal {
+    if(msg.sender != manager && lastSnapshotUpdateTimestamp == block.timestamp) return;
+    lastSnapshotUpdateTimestamp = block.timestamp;
     // if snapshot ratio is 0 then growth will not work as expected
     if (priceCapParams.snapshotRatio == 0) {
       revert SnapshotRatioIsZero();
     }
 
-    // new snapshot timestamp should be gt then stored one, but not gt then timestamp of the current block
+    // new snapshot timestamp should be gt than stored one, but not gt than timestamp of the current block
     if (
-      snapshotTimestamp >= priceCapParams.snapshotTimestamp ||
-      priceCapParams.snapshotTimestamp > block.timestamp - minimumSnapshotDelay
+      snapshotTimestamp > priceCapParams.snapshotTimestamp ||
+      (msg.sender != manager && priceCapParams.snapshotTimestamp > block.timestamp - minimumSnapshotDelay)
     ) {
       revert InvalidRatioTimestamp(priceCapParams.snapshotTimestamp);
     }
@@ -217,17 +258,16 @@ abstract contract PriceCapAdapterBase {
     snapshotTimestamp = priceCapParams.snapshotTimestamp;
     maxYearlyRatioGrowthPercent = priceCapParams.maxYearlyRatioGrowthPercent;
 
-    maxRatioGrowthPerSecond = uint104(
-      (uint256(priceCapParams.snapshotRatio) * priceCapParams.maxYearlyRatioGrowthPercent) /
-        (100 * PERCENTAGE_DECIMALS) /
-        SECONDS_PER_YEAR
-    );
+    maxRatioGrowthPerSecond =
+      (uint256(priceCapParams.snapshotRatio) * priceCapParams.maxYearlyRatioGrowthPercent * GROWTH_RATIO_SCALE) /
+        BASIS_POINTS /
+        SECONDS_PER_YEAR;
 
-    // if the ratio on the current growth speed can overflow less then in a 3 years, revert
+    // if the ratio on the current growth speed can overflow less than in a 3 years, revert
     if (
       uint256(snapshotRatio) +
-        (maxRatioGrowthPerSecond * SECONDS_PER_YEAR * 3) >
-      type(uint104).max
+        uint256(maxRatioGrowthPerSecond * SECONDS_PER_YEAR * 3) / GROWTH_RATIO_SCALE >
+      type(uint128).max
     ) {
       revert SnapshotCloseToOverflow(
         priceCapParams.snapshotRatio,
@@ -251,13 +291,14 @@ abstract contract PriceCapAdapterBase {
     return getRatio() > _getMaxRatio();
   }
 
+  /// @notice Returns the maximum ratio that can be achieved at the current block.timestamp
   function _getMaxRatio() internal view returns (int256) {
     return
-      int256(snapshotRatio + maxRatioGrowthPerSecond * (block.timestamp - snapshotTimestamp));
+      int256(snapshotRatio + maxRatioGrowthPerSecond * (block.timestamp - snapshotTimestamp) / GROWTH_RATIO_SCALE);
   }
 
   function signed256(uint256 n) internal pure returns (int256) {
-      if (n > uint256(type(int256).max)) revert InvalidInt256();
-      return int256(n);
+    if (n > uint256(type(int256).max)) revert InvalidInt256();
+    return int256(n);
   }
 }
