@@ -373,6 +373,10 @@ export default migration('1746540554_configurate_and_ens', {
         {
           baseSymbol: 'WETH',
           cometAddress: '0x4006eD4097Ee51c09A04c3B0951D28CCf19e6DFE'
+        },
+        {
+          baseSymbol: 'WRON',
+          cometAddress: '0xc0Afdbd1cEB621Ef576BA969ce9D4ceF78Dbc0c0'
         }
       ],
       5000: [
