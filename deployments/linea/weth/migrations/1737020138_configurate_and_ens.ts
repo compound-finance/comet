@@ -156,22 +156,24 @@ export default migration('1737020138_configurate_and_ens', {
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
     expect(stateChanges).to.deep.equal({
       ezETH: {
-        supplyCap: exp(7200, 18)
+        borrowCollateralFactor: exp(0.90, 18),
+        liquidateCollateralFactor: exp(0.93, 18),
+        supplyCap: exp(4830, 18)
       },
       wstETH: {
-        supplyCap: exp(500, 18)
+        supplyCap: exp(260, 18)
       },
       WBTC: {
-        supplyCap: exp(22, 8)
+        supplyCap: exp(5, 8)
       },
       weETH: {
-        supplyCap: exp(4600, 18)
+        supplyCap: exp(3550, 18)
       },
       wrsETH: {
-        supplyCap: exp(1150, 18)
+        supplyCap: exp(500, 18)
       },
-      baseTrackingSupplySpeed: exp(10 / 86400, 15, 18), // 115740740740
-      baseTrackingBorrowSpeed: exp(4 / 86400, 15, 18),  // 46296296296
+      baseTrackingSupplySpeed: exp(6 / 86400, 15, 18), // 69444444444
+      baseTrackingBorrowSpeed: exp(4 / 86400, 15, 18), // 46296296296
     });
 
     const config = await rewards.rewardConfig(comet.address);

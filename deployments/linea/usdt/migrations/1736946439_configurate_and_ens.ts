@@ -170,18 +170,23 @@ export default migration('1736946439_configurate_and_ens', {
     // 1.
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
     console.log('State changes:', stateChanges);
+    const secondsPerYear = 31_536_000; // 365 * 24 * 60 * 60
     expect(stateChanges).to.deep.equal({
       WETH: {
-        supplyCap: exp(520, 18)
+        supplyCap: exp(270, 18)
       },
       wstETH: {
-        supplyCap: exp(340, 18)
+        supplyCap: exp(60, 18)
       },
       WBTC: {
-        supplyCap: exp(15, 8)
+        supplyCap: exp(4, 8)
       },
-      baseTrackingSupplySpeed: exp(4 / 86400, 15, 18), // 46296296296
-      baseTrackingBorrowSpeed: exp(3 / 86400, 15, 18), // 34722222222
+      baseTrackingSupplySpeed: exp(2 / 86400, 15, 18), // 23148148148
+      baseTrackingBorrowSpeed: exp(1 / 86400, 15, 18), // 11574074074
+      supplyPerSecondRateSlopeLow: exp(0.36 / secondsPerYear, 18, 18),  // 11415525114
+      supplyPerSecondInterestRateSlopeHigh: exp(3.196 / secondsPerYear, 18, 18),  // 101344495180
+      borrowPerSecondInterestRateSlopeLow: exp(0.02778 / secondsPerYear, 18, 18),  // 880898021
+      borrowPerSecondInterestRateSlopeHigh: exp(3.6 / secondsPerYear, 18, 18),  // 114155251141
     });
 
     const config = await rewards.rewardConfig(comet.address);
