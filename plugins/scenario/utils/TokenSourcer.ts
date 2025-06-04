@@ -90,6 +90,9 @@ async function removeTokens(
 }
 
 const mintableByBridgeConfig = {
+  optimism: [
+    '0x7e7d4467112689329f7E06571eD0E8CbAd4910eE'
+  ],
   unichain: [
     '0x927b51f251480a681271180da4de28d44ec4afb8',
     '0x8f187aa05619a017077f5308904739877ce9ea21',
