@@ -10,6 +10,7 @@ import 'hardhat-change-network';
 import 'hardhat-contract-sizer';
 import 'hardhat-cover';
 import 'hardhat-gas-reporter';
+import 'solidity-coverage';
 
 // Hardhat tasks
 import './tasks/deployment_manager/task.ts';
@@ -249,6 +250,15 @@ const config: HardhatUserConfig = {
       chains: networkConfigs.reduce((acc, { chainId }) => {
         if (chainId === 1) return acc;
         if (chainId === 2020) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+            }
+          };
+          return acc;
+        }
+        if (chainId === 59144) {
           acc[chainId] = {
             hardforkHistory: {
               berlin: 1,

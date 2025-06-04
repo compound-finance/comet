@@ -169,7 +169,7 @@ export default migration('1736946439_configurate_and_ens', {
 
     // 1.
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
-    console.log('State changes:', stateChanges);
+
     const secondsPerYear = 31_536_000; // 365 * 24 * 60 * 60
     expect(stateChanges).to.deep.equal({
       WETH: {

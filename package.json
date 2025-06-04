@@ -52,13 +52,14 @@
     "chai-as-promised": "^7.1.1",
     "deep-object-diff": "^1.1.9",
     "jest-diff": "^27.4.2",
+    "solidity-coverage": "^0.8.16",
     "undici": "^5.21.2"
   },
   "devDependencies": {
-    "@nomicfoundation/ethereumjs-rlp": "^5.0.4",
     "@arbitrum/sdk": "^3.1.2",
     "@compound-finance/hardhat-import": "^1.0.3",
     "@ethersproject/experimental": "^5.7.0",
+    "@nomicfoundation/ethereumjs-rlp": "^5.0.4",
     "@nomiclabs/hardhat-ethers": "^2.0.4",
     "@nomiclabs/hardhat-etherscan": "3.1.7",
     "@safe-global/safe-core-sdk": "^3.3.2",
