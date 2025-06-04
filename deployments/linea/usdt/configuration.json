@@ -14,7 +14,7 @@
     "borrowKink": 0.9,
     "borrowSlopeHigh": 3.6,
     "supplyBase": 0,
-    "supplySlopeLow": 0.36,
+    "supplySlopeLow": 0.036,
     "supplyKink": 0.9,
     "supplySlopeHigh": 3.196
   },

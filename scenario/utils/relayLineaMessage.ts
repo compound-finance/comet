@@ -54,7 +54,7 @@ export default async function relayLineaMessage(
     const {
       args: { _from, _to, _fee, _value, _nonce, _calldata, _messageHash }
     } = lineaMessageService.interface.parseLog(messageSentEvent);
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 150));
     const {
       args: {
         messageNumber,
