@@ -25,9 +25,9 @@ abstract contract PriceCapAdapterBase {
 
   /**
    * @notice Price cap snapshot
-   * @param snapshotRatio ratio at the time of snapshot
-   * @param snapshotTimestamp timestamp at the time of snapshot
-   * @param maxYearlyRatioGrowthPercent max yearly growth percent
+   * @param snapshotRatio Ratio at the time of snapshot
+   * @param snapshotTimestamp Timestamp at the time of snapshot
+   * @param maxYearlyRatioGrowthPercent Max yearly growth percent
    */
   struct PriceCapSnapshot {
     uint256 snapshotRatio;
@@ -96,13 +96,13 @@ abstract contract PriceCapAdapterBase {
   uint256 public lastSnapshotUpdateTimestamp;
 
   /**
-   * @param _manager address of the manager
-   * @param _baseAggregatorAddress address of the base aggregator
-   * @param _ratioProviderAddress address of the ratio provider
-   * @param _description description of the pair
-   * @param _priceFeedDecimals number of decimals for the price feed
-   * @param _minimumSnapshotDelay minimum time that should have passed from the snapshot timestamp to the current block.timestamp
-   * @param _priceCapSnapshot parameters to set price cap
+   * @param _manager Address of the manager
+   * @param _baseAggregatorAddress Address of the base aggregator
+   * @param _ratioProviderAddress Address of the ratio provider
+   * @param _description Description of the pair
+   * @param _priceFeedDecimals Number of decimals for the price feed
+   * @param _minimumSnapshotDelay Minimum time that should have passed from the snapshot timestamp to the current block.timestamp
+   * @param _priceCapSnapshot Parameters to set price cap
    */
   constructor(
     address _manager,
@@ -140,7 +140,7 @@ abstract contract PriceCapAdapterBase {
 
   /**
    * @notice Updates price cap parameters
-   * @param priceCapParams parameters to set price cap
+   * @param priceCapParams Parameters to set price cap
    */
   function updateSnapshot(PriceCapSnapshot memory priceCapParams) external {
     if (msg.sender != manager) {
@@ -152,7 +152,7 @@ abstract contract PriceCapAdapterBase {
 
   /**
    * @notice Sets the manager address
-   * @param newManager address of the new manager
+   * @param newManager Address of the new manager
    */
   function setManager(address newManager) external {
     if (msg.sender != manager) {
@@ -169,7 +169,7 @@ abstract contract PriceCapAdapterBase {
 
   /**
    * @notice Sets the minimum snapshot delay
-   * @param newMinimumSnapshotDelay minimum time that should have passed from the snapshot timestamp to the current block.timestamp
+   * @param newMinimumSnapshotDelay Minimum time that should have passed from the snapshot timestamp to the current block.timestamp
    */
   function setMinimumSnapshotDelay(uint48 newMinimumSnapshotDelay) external {
     if (msg.sender != manager) {
@@ -222,8 +222,8 @@ abstract contract PriceCapAdapterBase {
 
   /**
    * @notice Scales the price based on the rescale factor
-   * @param price price to scale
-   * @return scaled price
+   * @param price Price to scale
+   * @return scaled Price
    */
   function _scalePrice(int256 price) internal view returns (int256) {
     int256 scaledPrice;
@@ -237,7 +237,7 @@ abstract contract PriceCapAdapterBase {
 
   /**
    * @notice Updates price cap parameters from recent snapshot
-   * @param priceCapParams parameters to set price cap
+   * @param priceCapParams Parameters to set price cap
    */
   function _setSnapshot(PriceCapSnapshot memory priceCapParams) internal {
     if(msg.sender != manager && lastSnapshotUpdateTimestamp == block.timestamp) return;

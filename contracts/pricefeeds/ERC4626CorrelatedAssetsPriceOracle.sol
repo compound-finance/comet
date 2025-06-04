@@ -49,7 +49,7 @@ contract ERC4626CorrelatedAssetsPriceOracle is PriceCapAdapterBase {
   }
   
   /**
-   * @notice Price for the latest round
+   * @notice Version of the price feed contract
    * @return The version of the price feed contract
    **/
   function version() external pure returns (uint256) {
