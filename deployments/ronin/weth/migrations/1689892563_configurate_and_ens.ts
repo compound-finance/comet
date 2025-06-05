@@ -1,19 +1,19 @@
-import { DeploymentManager } from "../../../../plugins/deployment_manager/DeploymentManager";
-import { migration } from "../../../../plugins/deployment_manager/Migration";
+import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
+import { migration } from '../../../../plugins/deployment_manager/Migration';
 import {
   diffState,
   getCometConfig,
-} from "../../../../plugins/deployment_manager/DiffState";
+} from '../../../../plugins/deployment_manager/DiffState';
 import {
   calldata,
   exp,
   getConfigurationStruct,
   proposal,
-} from "../../../../src/deploy";
-import { expect } from "chai";
+} from '../../../../src/deploy';
+import { expect } from 'chai';
 import { forkedHreForBase } from '../../../../plugins/scenario/utils/hreForBase';
 
-const destinationChainSelector = "6916147374840168594";
+const destinationChainSelector = '6916147374840168594';
 const ENSName = 'compound-community-licenses.eth';
 const ENSResolverAddress = '0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41';
 const ENSRegistryAddress = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
@@ -22,7 +22,7 @@ const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
 const ETHAmountToBridge = exp(25, 18);
 
-export default migration("1689892563_configurate_and_ens", {
+export default migration('1689892563_configurate_and_ens', {
   prepare: async () => {
     return {};
   },
@@ -55,18 +55,18 @@ export default migration("1689892563_configurate_and_ens", {
       )
     );
     const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(
-      ["address", "address"],
+      ['address', 'address'],
       [configurator.address, comet.address]
     );
 
     const l2ProposalData = utils.defaultAbiCoder.encode(
-      ["address[]", "uint256[]", "string[]", "bytes[]"],
+      ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
         [configurator.address, cometAdmin.address],
         [0, 0],
         [
-          "setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))",
-          "deployAndUpgradeTo(address,address)",
+          'setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))',
+          'deployAndUpgradeTo(address,address)',
         ],
         [
           setConfigurationCalldata,
@@ -114,13 +114,13 @@ export default migration("1689892563_configurate_and_ens", {
       l2ProposalData,
       [],
       ethers.constants.AddressZero,
-      "0x"
+      '0x'
     ]);
 
     const actions = [
       {
         contract: roninl1NativeBridge,
-        signature: "requestDepositFor((address,address,(uint8,uint256,uint256)))",
+        signature: 'requestDepositFor((address,address,(uint8,uint256,uint256)))',
         args: [
           [
             comet.address,
@@ -132,7 +132,7 @@ export default migration("1689892563_configurate_and_ens", {
       },
       {
         contract: l1CCIPRouter,
-        signature: "ccipSend(uint64,(bytes,bytes,(address,uint256)[],address,bytes))",
+        signature: 'ccipSend(uint64,(bytes,bytes,(address,uint256)[],address,bytes))',
         args:
           [
             destinationChainSelector,
@@ -141,7 +141,7 @@ export default migration("1689892563_configurate_and_ens", {
               l2ProposalData,
               [],
               ethers.constants.AddressZero,
-              "0x"
+              '0x'
             ]
           ],
         value: fee
@@ -157,17 +157,17 @@ export default migration("1689892563_configurate_and_ens", {
     ];
 
 
-    const description = "# Initialize cWETHv3 on Ronin\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes deployment of Compound III to Ronin network. This proposal takes the governance steps recommended and necessary to initialize a Compound III WETH market on Ronin; upon execution, cWETHv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite] (https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-ronin/6128/8).\n\nFurther detailed information can be found on the corresponding [deployment pull request](https://github.com/woof-software/comet/pull/123), [deploy market GitHub action run](https://github.com/woof-software/comet/actions/runs/13839778262) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-ronin/6128).\n\n\n## Rewards\n\nGauntlet provided recommendations for COMP rewards, however, the COMP token is not whitelisted on CCIP. When the COMP token is whitelisted, we will create a proposal to bridge COMP tokens and set up speeds.\n\n## Proposal Actions\n\nThe first proposal action bridges ETH seed reserves to the comet using [roninl1NativeBridge](https://etherscan.io/address/0x64192819Ac13Ef72bF6b5AE239AC672B43a9AF08). Bridged ETH will be converted to WETH automatically.\n\nThe second proposal action sets the Comet configuration and deploys a new Comet implementation on Ronin. This sends the encoded `setConfiguration` and `deployAndUpgradeTo` calls across the [l1CCIPRouter](https://etherscan.io/address/0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D) to the bridge receiver on Ronin. \n\nThe third action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Ronin cWETHv3 market.";
+    const description = '# Initialize cWETHv3 on Ronin\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes deployment of Compound III to Ronin network. This proposal takes the governance steps recommended and necessary to initialize a Compound III WETH market on Ronin; upon execution, cWETHv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite] (https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-ronin/6128/8).\n\nFurther detailed information can be found on the corresponding [deployment pull request](https://github.com/woof-software/comet/pull/123), [deploy market GitHub action run](https://github.com/woof-software/comet/actions/runs/13839778262) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-ronin/6128).\n\n\n## Rewards\n\nGauntlet provided recommendations for COMP rewards, however, the COMP token is not whitelisted on CCIP. When the COMP token is whitelisted, we will create a proposal to bridge COMP tokens and set up speeds.\n\n## Proposal Actions\n\nThe first proposal action bridges ETH seed reserves to the comet using [roninl1NativeBridge](https://etherscan.io/address/0x64192819Ac13Ef72bF6b5AE239AC672B43a9AF08). Bridged ETH will be converted to WETH automatically.\n\nThe second proposal action sets the Comet configuration and deploys a new Comet implementation on Ronin. This sends the encoded `setConfiguration` and `deployAndUpgradeTo` calls across the [l1CCIPRouter](https://etherscan.io/address/0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D) to the bridge receiver on Ronin. \n\nThe third action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Ronin cWETHv3 market.';
 
-    const txn = await governor.propose(...(await proposal(actions, description)))
-    const event = (await txn.wait()).events.find((event) => event.event === "ProposalCreated");
+    const txn = await governor.propose(...(await proposal(actions, description)));
+    const event = (await txn.wait()).events.find((event) => event.event === 'ProposalCreated');
 
     const [proposalId] = event.args;
 
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+  async enacted(): Promise<boolean> {
     return true;
   },
 
@@ -331,7 +331,7 @@ export default migration("1689892563_configurate_and_ens", {
       5000: [
         {
           baseSymbol: 'USDe',
-          cometAddress: "0x606174f62cd968d8e684c645080fa694c1D7786E"
+          cometAddress: '0x606174f62cd968d8e684c645080fa694c1D7786E'
         },
       ],
       8453: [
