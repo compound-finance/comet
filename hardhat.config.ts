@@ -42,6 +42,7 @@ import optimismUsdtRelationConfigMap from './deployments/optimism/usdt/relations
 import optimismWethRelationConfigMap from './deployments/optimism/weth/relations';
 import mantleRelationConfigMap from './deployments/mantle/usde/relations';
 import unichainRelationConfigMap from './deployments/unichain/usdc/relations';
+import unichainWETHRelationConfigMap from './deployments/unichain/weth/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
 import roninRelationConfigMap from './deployments/ronin/weth/relations';
 import roninWronRelationConfigMap from './deployments/ronin/wron/relations';
@@ -391,7 +392,8 @@ const config: HardhatUserConfig = {
         'usde': mantleRelationConfigMap
       },
       'unichain': {
-        'usdc': unichainRelationConfigMap
+        'usdc': unichainRelationConfigMap,
+        'weth': unichainWETHRelationConfigMap
       },
       'scroll': {
         usdc: scrollRelationConfigMap
@@ -550,6 +552,12 @@ const config: HardhatUserConfig = {
         name: 'unichain-usdc',
         network: 'unichain',
         deployment: 'usdc',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'unichain-weth',
+        network: 'unichain',
+        deployment: 'weth',
         auxiliaryBase: 'mainnet'
       },
       {
