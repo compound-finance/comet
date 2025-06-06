@@ -25,9 +25,9 @@ contract Streamer {
     address public constant COMPOUND_TIMELOCK = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925;
 
     /// @notice The amount of USDC to be streamed
-    uint256 public constant STREAM_AMOUNT = 2_000_000e6;
+    uint256 public constant STREAM_AMOUNT = 700_000e6;
     /// @notice The duration of the stream in seconds
-    uint256 public constant STREAM_DURATION = 365 days;
+    uint256 public constant STREAM_DURATION = 60 days;
     /// @notice The slippage for the COMP oracle price
     uint256 public constant SLIPPAGE = 5e5; // 0.5%
     /// @notice The slippage scale factor
