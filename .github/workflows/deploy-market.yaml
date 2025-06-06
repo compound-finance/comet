@@ -44,10 +44,6 @@ jobs:
       TENDERLY_KEY_RONIN: ${{ secrets.TENDERLY_KEY_RONIN }}
       UNICHAIN_QUICKNODE_KEY: ${{ secrets.UNICHAIN_QUICKNODE_KEY }}
     steps:
-      - name: Mask ETH_PK
-        if: github.event.inputs.eth_pk != ''
-        run: echo "::add-mask::${{ github.event.inputs.eth_pk }}"
-
       - name: Seacrest
         uses: hayesgm/seacrest@af229b0a00b73cb6fa9940a836a62fa3b918fd77
         with:
@@ -78,7 +74,7 @@ jobs:
           yarn hardhat deploy --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }}
         env: 
           DEBUG: true
-          ETH_PK: "${{ github.event.inputs.eth_pk }}"
+          ETH_PK: "${{ secrets[github.event.inputs.eth_pk] }}"
           NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
           REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
 
