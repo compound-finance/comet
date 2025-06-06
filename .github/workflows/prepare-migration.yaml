@@ -47,9 +47,13 @@ jobs:
       SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
       UNICHAIN_QUICKNODE_KEY: ${{ secrets.UNICHAIN_QUICKNODE_KEY }}
     steps:
-      - name: Mask ETH_PK
-        if: github.event.inputs.eth_pk != ''
-        run: echo "::add-mask::${{ github.event.inputs.eth_pk }}"
+      # - name: Mask eth_pk input
+      #   shell: bash
+      #   run: |
+      #     echo "::add-mask::$ETH_PK"
+      #   env:
+      #     ETH_PK: ${{ github.event.inputs.eth_pk }}
+
 
       - name: Seacrest
         uses: hayesgm/seacrest@af229b0a00b73cb6fa9940a836a62fa3b918fd77
