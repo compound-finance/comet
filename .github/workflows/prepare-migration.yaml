@@ -50,7 +50,7 @@ jobs:
       - name: Mask eth_pk input
         shell: bash
         run: |
-          echo "::add-mask::$ETH_PK"
+          echo "::add-mask::${{ github.event.inputs.eth_pk }}"
 
 
       - name: Seacrest
