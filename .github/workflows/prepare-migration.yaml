@@ -51,8 +51,6 @@ jobs:
         shell: bash
         run: |
           echo "::add-mask::$ETH_PK"
-        env:
-          ETH_PK: ${{ github.event.inputs.eth_pk }}
 
 
       - name: Seacrest
