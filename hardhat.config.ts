@@ -64,7 +64,7 @@ const {
   SCROLLSCAN_KEY,
   ANKR_KEY,
   //_TENDERLY_KEY_RONIN,
-  MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
+  MNEMONIC = 'myth like woof scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
   GOV_NETWORK_PROVIDER = '',
