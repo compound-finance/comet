@@ -15,7 +15,7 @@ export default migration('1749463101_add_woeth_as_collaterals', {
         WOETH_ADDRESS,            // wOETH / OETH price feed
         wethPricefeed.address,    // oETH / ETH price feed (1:1)
         8,                        // decimals
-        'sUSDS / USD price feed', // description
+        'wOETH / ETH price feed', // description
       ],
       true
     );
