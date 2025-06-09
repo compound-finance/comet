@@ -49,10 +49,10 @@ export default migration('1749463101_add_woeth_as_collaterals', {
       asset: wOETH.address,
       priceFeed: wOETHPricefeed.address,
       decimals: await wOETH.decimals(),
-      borrowCollateralFactor: exp(0.85, 18),
+      borrowCollateralFactor: exp(0.88, 18),
       liquidateCollateralFactor: exp(0.90, 18),
       liquidationFactor: exp(0.95, 18),
-      supplyCap: exp(2_100, 18),
+      supplyCap: exp(5_000, 18),
     };
 
     const mainnetActions = [
@@ -103,10 +103,10 @@ export default migration('1749463101_add_woeth_as_collaterals', {
       asset: wOETH.address,
       priceFeed: '',
       decimals: await wOETH.decimals(),
-      borrowCollateralFactor: exp(0.85, 18),
+      borrowCollateralFactor: exp(0.88, 18),
       liquidateCollateralFactor: exp(0.90, 18),
       liquidationFactor: exp(0.95, 18),
-      supplyCap: exp(2_100, 18),
+      supplyCap: exp(5_000, 18),
     };
 
     // 1. Compare wOETH asset config with Comet and Configurator asset info
