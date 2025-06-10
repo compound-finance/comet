@@ -10,6 +10,7 @@ import 'hardhat-change-network';
 import 'hardhat-contract-sizer';
 import 'hardhat-cover';
 import 'hardhat-gas-reporter';
+import 'solidity-coverage';
 
 // Hardhat tasks
 import './tasks/deployment_manager/task.ts';
@@ -228,6 +229,9 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       chainId: 1337,
+      forking: {
+        url: `https://rpc.ankr.com/eth/${ANKR_KEY}`,
+      },
       loggingEnabled: !!process.env['LOGGING'],
       gas: 120000000,
       gasPrice: 'auto',
