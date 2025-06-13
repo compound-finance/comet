@@ -103,6 +103,7 @@ export const WHALES = {
     '0x3b3501f6778Bfc56526cF2aC33b78b2fDBE4bc73', // solvBTC.BBN whale
     '0x8bc93498b861fd98277c3b51d240e7E56E48F23c', // solvBTC.BBN whale
     '0xD5cf704dC17403343965b4F9cd4D7B5e9b20CC52', // solvBTC.BBN whale
+    '0x3154Cf16ccdb4C6d922629664174b904d80F2C35', // cbETH whale
   ],
   polygon: [
     '0xF977814e90dA44bFA03b6295A0616a897441aceC', // USDT whale

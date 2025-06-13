@@ -7,7 +7,7 @@ const PUFETH_ADDRESS = '0xD9A442856C234a39a81a089C06451EBAa4306a72';
 
 let newPriceFeedAddress: string;
 
-export default migration('1729600359_add_pufeth_collateral', {
+export default migration('1749822568_add_pufeth_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
     const wethPriceFeed = await deploymentManager.fromDep('WETH:priceFeed', 'mainnet', 'weth');
     const pufETHPriceFeed = await deploymentManager.deploy(
@@ -74,7 +74,7 @@ export default migration('1729600359_add_pufeth_collateral', {
       },
     ];
 
-    const description = '# Add pufETH as collateral into cWETHv3 on Mainnet\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to add pufETH into cWETHv3 on Ethereum network. This proposal takes the governance steps recommended and necessary to update a Compound III WETH market on Ethereum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based on the [recommendations from Gauntlet](https://www.comp.xyz/t/compound-listing-proposal-for-pufeth-from-puffer-finance/5725/2).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/943) and [forum discussion](https://www.comp.xyz/t/compound-listing-proposal-for-pufeth-from-puffer-finance/5725).\n\n\n## Proposal Actions\n\nThe first action adds pufETH asset as collateral with corresponding configurations.\n\nThe second action deploys and upgrades Comet to a new version.';
+    const description = '# Add pufETH as collateral into cWETHv3 on Mainnet\n\n## Proposal summary\n\nWOOF! proposes to add pufETH into cWETHv3 on Ethereum network. This proposal takes the governance steps recommended and necessary to update a Compound III WETH market on Ethereum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based on the [recommendations from Gauntlet](https://www.comp.xyz/t/compound-listing-proposal-for-pufeth-from-puffer-finance/5725/2).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/943) and [forum discussion](https://www.comp.xyz/t/compound-listing-proposal-for-pufeth-from-puffer-finance/5725).\n\n\n## Proposal Actions\n\nThe first action adds pufETH asset as collateral with corresponding configurations.\n\nThe second action deploys and upgrades Comet to a new version.';
     const txn = await deploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
@@ -106,7 +106,7 @@ export default migration('1729600359_add_pufeth_collateral', {
     const pufETHAssetConfig = {
       asset: pufETH.address,
       priceFeed: newPriceFeedAddress,
-      decimals: await pufETH.decimals(),
+      decimals: 18n,
       borrowCollateralFactor: exp(0.88, 18),
       liquidateCollateralFactor: exp(0.91, 18),
       liquidationFactor: exp(0.95, 18),
