@@ -777,7 +777,7 @@ scenario(
   const assetAmounts = {
     mainnet: {
       usdc: ' == 5000', // COMP
-      weth: ' == 7000', // CB_ETH
+      weth: ' == 3400', // CB_ETH
       usdt: ' == 5000', // COMP
       usds: ' == 850',   // WETH
     },
@@ -789,7 +789,7 @@ scenario(
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }]) && !matchesDeployment(ctx, [{deployment: 'wsteth'}, {deployment: 'usds'}]),
+      filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }]) && !matchesDeployment(ctx, [{deployment: 'wsteth'}, {deployment: 'usds'}, {deployment: 'wbtc'}]),
       tokenBalances: async (ctx) => (
         {
           $comet: {
@@ -840,7 +840,7 @@ scenario(
       const [initialNumAbsorbs, initialNumAbsorbed] = await comet.liquidatorPoints(betty.address);
 
       const borrowCapacity = await borrowCapacityForAsset(comet, albert, 0);
-      const borrowAmount = (borrowCapacity.mul(BigInt(getConfigForScenario(_context).liquidationNumerator))).div(100n);
+      const borrowAmount = (borrowCapacity.mul(getConfigForScenario(_context).liquidationNumerator)).div(100n);
 
       await albert.withdrawAsset({
         asset: baseToken,

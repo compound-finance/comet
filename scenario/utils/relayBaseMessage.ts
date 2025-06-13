@@ -4,14 +4,13 @@ import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
 import { BigNumber, ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { OpenBridgedProposal } from '../context/Gov';
-
 /*
 The Base relayer applies an offset to the message sender.
 
 applyL1ToL2Alias mimics the AddressAliasHelper.applyL1ToL2Alias fn that converts
 an L1 address to its offset, L2 equivalent.
 
-https://goerli.basescan.org/address/0x4200000000000000000000000000000000000007#code
+https://sepolia.basescan.org/address/0x4200000000000000000000000000000000000007#code
 */
 function applyL1ToL2Alias(address: string) {
   const offset = BigInt('0x1111000000000000000000000000000000001111');
@@ -27,6 +26,7 @@ export default async function relayBaseMessage(
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
   const l2CrossDomainMessenger = await bridgeDeploymentManager.getContractOrThrow('l2CrossDomainMessenger');
   const l2StandardBridge = await bridgeDeploymentManager.getContractOrThrow('l2StandardBridge');
+  const l2USDSBridge = await bridgeDeploymentManager.contract('l2USDSBridge');
 
   const openBridgedProposals: OpenBridgedProposal[] = [];
 
@@ -63,14 +63,14 @@ export default async function relayBaseMessage(
     // there are two types:
     // 1. Bridging ERC20 token or ETH
     // 2. Cross-chain message passing
-    if (target === l2StandardBridge.address) {
+    if (target === l2StandardBridge.address || (l2USDSBridge && target === l2USDSBridge.address)) {
       // Bridging ERC20 token
       const messageWithoutPrefix = message.slice(2); // strip out the 0x prefix
       const messageWithoutSigHash = '0x' + messageWithoutPrefix.slice(8);
       try {
         // 1a. Bridging ERC20 token
-        const { l1Token, _l2Token, _from, to, amount, _data } = ethers.utils.defaultAbiCoder.decode(
-          ['address l1Token', 'address l2Token', 'address from', 'address to', 'uint256 amount', 'bytes data'],
+        const { _l2Token, l1Token, _from, to, amount, _data } = ethers.utils.defaultAbiCoder.decode(
+          ['address l2Token', 'address l1Token', 'address from', 'address to', 'uint256 amount', 'bytes data'],
           messageWithoutSigHash
         );
 

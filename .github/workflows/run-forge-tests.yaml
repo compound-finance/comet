@@ -21,7 +21,7 @@ jobs:
         run: forge install
 
       - name: Run tests
-        run: forge test -vvv --via-ir
+        run: forge test -vvv --via-ir --optimizer-runs 1
         env:
           ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
           SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
@@ -30,7 +30,10 @@ jobs:
           ARBISCAN_KEY: ${{ secrets.ARBISCAN_KEY }}
           LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
           OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
+          MANTLESCAN_KEY: ${{ secrets.MANTLESCAN_KEY }}
+          SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
+          UNICHAIN_QUICKNODE_KEY: ${{ secrets.UNICHAIN_QUICKNODE_KEY }}
 
       - name: Build Comet with older solc versions
         run: |
-          forge build --contracts contracts/Comet.sol --use solc:0.8.15 --via-ir
+          forge build --contracts contracts/Comet.sol --use solc:0.8.15 --via-ir --optimizer-runs 1

@@ -1,4 +1,4 @@
-import type { ethers } from 'ethers';
+import { ethers } from 'ethers';
 import type { HardhatEthersHelpers } from '@nomiclabs/hardhat-ethers/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { HardhatContext } from 'hardhat/internal/context';
@@ -36,7 +36,7 @@ declare module 'hardhat/internal/core/runtime-environment' {
   }
 }
 
-export function nonForkedHreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
+export async function nonForkedHreForBase(base: ForkSpec): Promise<HardhatRuntimeEnvironment> {
   const ctx: HardhatContext = HardhatContext.getHardhatContext();
 
   const hardhatArguments = getEnvHardhatArguments(
@@ -55,13 +55,33 @@ export function nonForkedHreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
       }
     },
     ctx.tasksDSL.getTaskDefinitions(),
-    ctx.extendersManager.getExtenders(),
-    ctx.experimentalHardhatNetworkMessageTraceHooks,
+    ctx.environment.scopes,
+    ctx.environmentExtenders,
     userConfig
   );
 }
 
-export function forkedHreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
+function getBlockRollback(base: ForkSpec) {
+  if (base.blockNumber)
+    return base.blockNumber;
+  else if (base.network === 'ronin')
+    return 0;
+  else if (base.network === 'arbitrum') {
+    return undefined;
+  } else if (base.network === 'sepolia') {
+    return undefined;
+  }
+  else if (base.network === 'unichain') {
+    return 0;
+  }
+  else if (base.network === 'base') {
+    return 200;
+  }
+  else
+    return 280;
+}
+
+export async function forkedHreForBase(base: ForkSpec): Promise<HardhatRuntimeEnvironment> {
   const ctx: HardhatContext = HardhatContext.getHardhatContext();
 
   const hardhatArguments = getEnvHardhatArguments(HARDHAT_PARAM_DEFINITIONS, process.env);
@@ -72,6 +92,18 @@ export function forkedHreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
   const { hardhat: defaultNetwork, localhost } = networks;
 
   const baseNetwork = networks[base.network] as HttpNetworkUserConfig;
+
+  const provider = new ethers.providers.JsonRpcProvider(baseNetwork.url);
+
+  // noNetwork otherwise
+  if (!base.blockNumber && baseNetwork.url && getBlockRollback(base) !== undefined)
+    base.blockNumber = await provider.getBlockNumber() - getBlockRollback(base); // arbitrary number of blocks to go back
+
+  if (getBlockRollback(base) === 0) {
+    const provider = new ethers.providers.JsonRpcProvider(baseNetwork.url);
+    const block = await provider.getBlockNumber();
+    base.blockNumber = block - 1;
+  }
 
   if (!baseNetwork) {
     throw new Error(`cannot find network config for network: ${base.network}`);
@@ -96,22 +128,21 @@ export function forkedHreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
       defaultNetwork: 'hardhat',
       networks: {
         hardhat: forkedNetwork,
-        localhost
+        localhost: localhost
       },
     },
   };
-
   return new Environment(
     forkedConfig,
     hardhatArguments,
     ctx.tasksDSL.getTaskDefinitions(),
-    ctx.extendersManager.getExtenders(),
-    ctx.experimentalHardhatNetworkMessageTraceHooks,
+    ctx.environment.scopes,
+    ctx.environmentExtenders,
     userConfig
   );
 }
 
-export default function hreForBase(base: ForkSpec, fork = true): HardhatRuntimeEnvironment {
+export default async function hreForBase(base: ForkSpec, fork = true): Promise<HardhatRuntimeEnvironment> {
   if (fork) {
     return forkedHreForBase(base);
   } else {

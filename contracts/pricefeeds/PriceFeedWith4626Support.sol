@@ -25,10 +25,10 @@ contract PriceFeedWith4626Support is IPriceFeed {
     uint8 public immutable override decimals;
 
     /// @notice Number of decimals for the 4626 rate provider
-    uint8 rateProviderDecimals;
+    uint8 internal immutable rateProviderDecimals;
 
     /// @notice Number of decimals for the underlying asset
-    uint8 underlyingDecimals;
+    uint8 internal immutable underlyingDecimals;
 
     /// @notice 4626 rate provider
     address public immutable rateProvider;
@@ -47,6 +47,7 @@ contract PriceFeedWith4626Support is IPriceFeed {
      * @param rateProvider_ The address of the 4626 rate provider
      * @param underlyingPriceFeed_ The address of the underlying asset price feed to fetch prices from
      * @param decimals_ The number of decimals for the returned prices
+     * @param description_ The description of the price feed
      **/
     constructor(address rateProvider_, address underlyingPriceFeed_, uint8 decimals_, string memory description_) {
         rateProvider = rateProvider_;
