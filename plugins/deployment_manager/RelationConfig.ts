@@ -1,6 +1,7 @@
 import { Contract, utils } from 'ethers';
 import { DeploymentManagerConfig } from './type-extensions';
 import { Address, Alias } from './Types';
+import { getSymbol } from '../../scenario/utils/symbolGetter';
 
 export type Ctx = { [aliasTemplate: string]: Contract[] };
 
@@ -104,6 +105,7 @@ export async function readAlias(
   aliasRender: AliasRender,
   context: Ctx,
   path: Contract[],
+  network: string,
 ): Promise<Alias> {
   const { template: aliasTemplate, i } = aliasRender;
   if (typeof aliasTemplate === 'string') {
@@ -113,7 +115,20 @@ export async function readAlias(
       return aliasTemplate;
     }
   } else if (typeof aliasTemplate === 'function') {
-    return await aliasTemplate(contract, context, i, path);
+    try {
+      return await aliasTemplate(contract, context, i, path);
+    } catch (e) {
+      if(e == 'Error TypeError: token.symbol is not a function'){
+        throw new Error(`Error calling alias function: ${e}`);
+      }
+      if(`${aliasTemplate}` == 'async (token) => token.symbol()'){
+        return await getSymbol(contract.address, network);
+      }
+      else if(`${aliasTemplate}` == 'async (_, { assets }, i) => `${await assets[i].symbol()}:priceFeed`'){
+        return await getSymbol(context.assets[i].address, network) + ':priceFeed';
+      }
+      throw new Error(`Invalid` + aliasTemplate);
+    }
   } else {
     throw new Error(`Invalid alias template: ${JSON.stringify(aliasTemplate)}`);
   }
