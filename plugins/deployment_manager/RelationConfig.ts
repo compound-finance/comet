@@ -103,7 +103,7 @@ export async function readAlias(
   contract: Contract,
   aliasRender: AliasRender,
   context: Ctx,
-  path: Contract[]
+  path: Contract[],
 ): Promise<Alias> {
   const { template: aliasTemplate, i } = aliasRender;
   if (typeof aliasTemplate === 'string') {
@@ -113,14 +113,7 @@ export async function readAlias(
       return aliasTemplate;
     }
   } else if (typeof aliasTemplate === 'function') {
-    try {
-      return await aliasTemplate(contract, context, i, path);
-    } catch (e) {
-      if(e == 'Error TypeError: token.symbol is not a function'){
-        throw new Error(`Error calling alias function: ${e}`);
-      }
-      throw new Error(`Invalid` + aliasTemplate);
-    }
+    return await aliasTemplate(contract, context, i, path);
   } else {
     throw new Error(`Invalid alias template: ${JSON.stringify(aliasTemplate)}`);
   }
