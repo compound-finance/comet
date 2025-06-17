@@ -39,9 +39,9 @@ export default migration('1750088604_add_deusd_collateral', {
       priceFeed: deUSDPriceFeed.address,
       decimals: await deUSD.decimals(),
       borrowCollateralFactor: exp(0.88, 18),
-      liquidateCollateralFactor: exp(0.91, 18),
-      liquidationFactor: exp(0.95, 18),
-      supplyCap: exp(4500, 18),
+      liquidateCollateralFactor: exp(0.90, 18),
+      liquidationFactor: exp(0.96, 18),
+      supplyCap: exp(8_000_000, 18),
     };
 
     const mainnetActions = [
@@ -93,9 +93,9 @@ export default migration('1750088604_add_deusd_collateral', {
       priceFeed: DEUSD_TO_USD_ADDRESS,
       decimals: 18n,
       borrowCollateralFactor: exp(0.88, 18),
-      liquidateCollateralFactor: exp(0.91, 18),
-      liquidationFactor: exp(0.95, 18),
-      supplyCap: exp(4500, 18),
+      liquidateCollateralFactor: exp(0.90, 18),
+      liquidationFactor: exp(0.96, 18),
+      supplyCap: exp(8_000_000, 18),
     };
 
     // 1. Compare deUSD asset config with Comet and Configurator asset info
