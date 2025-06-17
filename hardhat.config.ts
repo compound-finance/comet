@@ -45,6 +45,7 @@ import unichainRelationConfigMap from './deployments/unichain/usdc/relations';
 import unichainWETHRelationConfigMap from './deployments/unichain/weth/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
 import roninRelationConfigMap from './deployments/ronin/weth/relations';
+import roninWronRelationConfigMap from './deployments/ronin/wron/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -124,8 +125,8 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'ronin',
     chainId: 2020,
-    //url: `https://ronin.gateway.tenderly.co/${_TENDERLY_KEY_RONIN}`,
-    url: 'https://ronin.lgns.net/rpc',
+    url: `https://ronin.gateway.tenderly.co/${_TENDERLY_KEY_RONIN}`,
+    // url: 'https://ronin.lgns.net/rpc',
   },
   {
     network: 'polygon',
@@ -398,7 +399,8 @@ const config: HardhatUserConfig = {
         usdc: scrollRelationConfigMap
       },
       'ronin': {
-        weth: roninRelationConfigMap
+        weth: roninRelationConfigMap,
+        wron: roninWronRelationConfigMap
       }
     },
   },
@@ -569,7 +571,13 @@ const config: HardhatUserConfig = {
         network: 'ronin',
         deployment: 'weth',
         auxiliaryBase: 'mainnet'
-      }
+      },
+      {
+        name: 'ronin-wron',
+        network: 'ronin',
+        deployment: 'wron',
+        auxiliaryBase: 'mainnet'
+      },
     ],
   },
 
