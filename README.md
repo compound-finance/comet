@@ -215,8 +215,6 @@ The same script that is used for testing can then be executed for real through t
 
 Once a proposal that's been made through a pull request has been executed by governance, the pull request should be merged into the `main` branch.
 The PR should include any necessary tests, which will remain in the repository.
-The migration script itself can be deleted in a separate commit, after the PR has been merged and recorded on the `main` branch, for good hygiene.
-It's important to remove migrations once they've been executed, to avoid exploding the cost of running scenarios beyond what's necessary for testing.
 
 For more information, seee [MIGRATIONS.md](./MIGRATIONS.md).
 
