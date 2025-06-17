@@ -8,7 +8,7 @@ const DEUSD_TO_USD_ADDRESS = '0x471a6299C027Bd81ed4D66069dc510Bd0569f4F8';
 
 export default migration('1750088604_add_deusd_collateral', {
   async prepare() {
-    return;
+    return {};
   },
 
   async enact(deploymentManager: DeploymentManager) {
