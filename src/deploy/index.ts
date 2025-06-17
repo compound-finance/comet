@@ -164,6 +164,8 @@ export const WHALES = {
   ],
   'unichain': [
     '0x4200000000000000000000000000000000000006', // WETH whale
+    '0x7Ae0911198AD568E1FE4af3cf81e36A29983778f', // wstETH whale
+    '0x4B2cf5C94A88934870B523983B22e6d2dd1b6577', // wstETH whale
   ],
   linea: [
     '0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f', // ETH whale

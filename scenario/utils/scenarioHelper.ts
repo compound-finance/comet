@@ -28,7 +28,7 @@ const config = {
   withdrawAsset1: 3000,
   withdrawCollateral: 100,
   transferCollateral: 100,
-  supplyCollateral: 100,
+  supplyCollateral: 100
 };
 
 export function getConfigForScenario(ctx: CometContext) {
@@ -161,7 +161,14 @@ export function getConfigForScenario(ctx: CometContext) {
     config.rewardsBase = 50;
     config.supplyCollateral = 10;
     config.transferCollateral = 10;
-    config.withdrawCollateral = 10;    
+    config.withdrawCollateral = 10;
+  }
+
+  if (ctx.world.base.network === 'unichain' && ctx.world.base.deployment === 'weth') {
+    config.liquidationBase = 1000;
+    config.liquidationBase1 = 350;
+    config.liquidationAsset = 100;
+    config.rewardsBase = 100;
   }
 
   return config;

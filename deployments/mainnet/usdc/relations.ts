@@ -21,7 +21,7 @@ export default {
       }
     }
   },
-  'UUPSProxy': {
+  UUPSProxy: {
     artifact: 'contracts/ERC20.sol:ERC20',
     delegates: {
       field: {

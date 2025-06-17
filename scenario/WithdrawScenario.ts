@@ -311,7 +311,7 @@ scenario(
   {
     cometBalances: async (ctx) => (
       {
-        albert: {
+        albert: { 
           $base: -getConfigForScenario(ctx).withdrawBase1,
           $asset0: getConfigForScenario(ctx).withdrawAsset1
         }, // in units of asset, not wei
