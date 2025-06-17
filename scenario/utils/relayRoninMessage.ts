@@ -5,25 +5,25 @@ import { BigNumber, ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { OpenBridgedProposal } from '../context/Gov';
 
-const MINTER = '0xA6F175104fAAa5C1b034fB82c98bd674e3C6E7d7';
+const roninChainSelector = '6916147374840168594';
 
 export default async function relayRoninMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
-  _
+  _: number
 ) {
+
   const l1CCIPOnRamp = await governanceDeploymentManager.getContractOrThrow('roninl1CCIPOnRamp');
   const l2Router = (await bridgeDeploymentManager.getContractOrThrow('l2CCIPRouter'));
   const l2CCIPOffRamp = (await bridgeDeploymentManager.getContractOrThrow('l2CCIPOffRamp'));
   const bridgeReceiver = (await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver'));
-  const l1NativeBridge = (await governanceDeploymentManager.getContractOrThrow('roninl1NativeBridge'));
-  const l2NativeBridge = (await bridgeDeploymentManager.getContractOrThrow('roninl2NativeBridge'));
+  const l1TokenAdminRegistry = await governanceDeploymentManager.getContractOrThrow('l1TokenAdminRegistry');
+  const l2TokenAdminRegistry = await bridgeDeploymentManager.getContractOrThrow('l2TokenAdminRegistry');
   const offRampSigner = await impersonateAddress(bridgeDeploymentManager, l2CCIPOffRamp.address);
 
   const openBridgedProposals: OpenBridgedProposal[] = [];
 
   const filterCCIP = l1CCIPOnRamp.filters.CCIPSendRequested();
-  const filterNative = l1NativeBridge.filters.DepositRequested();
   const latestBlock = (await governanceDeploymentManager.hre.ethers.provider.getBlock('latest')).number;
   const logsCCIP: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: latestBlock - 500,
@@ -31,16 +31,9 @@ export default async function relayRoninMessage(
     address: l1CCIPOnRamp.address,
     topics: filterCCIP.topics || []
   });
-  const logsNativeBridge: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
-    fromBlock: latestBlock - 500,
-    toBlock: 'latest',
-    address: l1NativeBridge.address,
-    topics: filterNative.topics || []
-  });
 
-  let routeReceipt;
-  let routeTx;
-  let bridgeTx;
+  let routeReceipt: { events: any[] };
+  let routeTx: { wait: () => any };
   for (const log of logsCCIP) {
     const parsedLog = l1CCIPOnRamp.interface.parseLog(log);
     const internalMsg = parsedLog.args.message;
@@ -64,82 +57,81 @@ export default async function relayRoninMessage(
       })),
     };
 
-    routeTx = await l2Router
-      .connect(offRampSigner)
-      .routeMessage(
-        any2EVMMessage,
-        25_000,
-        2_000_000,
-        internalMsg.receiver,
-      );
+    routeTx = await l2Router.connect(offRampSigner).routeMessage(
+      any2EVMMessage,
+      25_000,
+      2_000_000,
+      internalMsg.receiver,
+    );
 
     routeReceipt = await routeTx.wait();
 
-    await bridgeDeploymentManager.hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [MINTER]
-    });
-
-    await impersonateAddress(bridgeDeploymentManager, MINTER);
-
     if (internalMsg.tokenAmounts.length) {
-      const mintSigner = await bridgeDeploymentManager.getSigner(MINTER);
-      const mintSelector = ethers.utils.id('mint(address,uint256)').slice(0, 10);
       for (const tokenTransferData of internalMsg.tokenAmounts) {
-        const encodedData = mintSelector + tokenTransferData.token.slice(2).padStart(64, '0') + tokenTransferData.amount.toHexString().slice(2).padStart(64, '0');
-        const mintTx = await mintSigner.sendTransaction({
-          to: tokenTransferData.token,
-          data: encodedData
+        const l1TokenPoolAddress = await l1TokenAdminRegistry.getPool(tokenTransferData.token);
+        const l1TokenPool = new ethers.Contract(
+          l1TokenPoolAddress,
+          [
+            'function getRemoteToken(uint64) external view returns (bytes)'
+          ],
+          governanceDeploymentManager.hre.ethers.provider
+        );
+        const l2Token64 = await l1TokenPool.getRemoteToken(roninChainSelector);
+        // parse the address from the bytes
+        const l2TokenAddress = ethers.utils.defaultAbiCoder.decode(['address'], l2Token64)[0];
+        const l2TokenPool = await l2TokenAdminRegistry.getPool(l2TokenAddress);
+        const l2Token = new ethers.Contract(
+          l2TokenAddress,
+          [
+            'function balanceOf(address) external view returns (uint256)',
+            'function mint(address, uint256) external',
+            'function transfer(address, uint256) external'
+          ],
+          bridgeDeploymentManager.hre.ethers.provider
+        );
+
+        await bridgeDeploymentManager.hre.network.provider.request({
+          method: 'hardhat_impersonateAccount',
+          params: [l2TokenPool]
         });
-        await mintTx.wait();
+
+        const signer = await impersonateAddress(bridgeDeploymentManager, l2TokenPool);
+        await bridgeDeploymentManager.hre.network.provider.request({
+          method: 'hardhat_setBalance',
+          params: [l2TokenPool, '0x1000000000000000000000']
+        });
+
+        const poolBalance = await l2Token.balanceOf(l2TokenPool);
+        const mintAmount = tokenTransferData.amount.sub(poolBalance);
+        if (mintAmount.lte(0)) {
+          console.log(`[CCIP L1->L2] No mint needed for ${l2TokenAddress}`);
+          const transferTx = await l2Token.connect(signer).transfer(internalMsg.receiver, tokenTransferData.amount);
+          await transferTx.wait();
+          console.log(`[CCIP L1->L2] Transferred ${tokenTransferData.amount.toString()} of ${l2TokenAddress} to ${internalMsg.receiver}`);
+        } else {
+          console.log(`[CCIP L1->L2] Minting ${mintAmount.toString()} of ${l2TokenAddress} to ${internalMsg.receiver}`);
+          const mintTx = await l2Token.connect(signer).mint(internalMsg.receiver, mintAmount);
+          await mintTx.wait();
+          console.log(`[CCIP L1->L2] Minted ${mintAmount.toString()} of ${l2TokenAddress} to ${internalMsg.receiver}`);
+        }
       }
     }
 
     console.log(`[CCIP L1->L2] Routed message to ${internalMsg.receiver}`);
-  }
-
-
-  for (const log of logsNativeBridge) {
-    console.log(`[Native L1->L2] Found DepositRequested`);
-    const parsedLog = l1NativeBridge.interface.parseLog(log);
-    const internalMsg = parsedLog.args.receipt;
-
-    await bridgeDeploymentManager.hre.network.provider.request({
-      method: 'hardhat_setBalance',
-      params: [l2NativeBridge.address, '0x1000000000000000000000']
-    });
-
-    await setNextBaseFeeToZero(bridgeDeploymentManager);
-
-    const bridgeSigner = await impersonateAddress(bridgeDeploymentManager, l2NativeBridge.address);
-
-    const transferSelector = ethers.utils.id('transfer(address,uint256)').slice(0, 10);
-    const encodedData = transferSelector + ethers.utils.defaultAbiCoder.encode(
-      ['address', 'uint256'],
-      [internalMsg.ronin.addr, internalMsg.info.quantity]
-    ).slice(2);
-
-    bridgeTx = await bridgeSigner.sendTransaction({
-      to: internalMsg.ronin.tokenAddr,
-      data: encodedData
-    });
-
-    console.log(`[Native L1->L2] Deposited ${internalMsg.info.quantity} to ${internalMsg.ronin.addr} of token ${internalMsg.ronin.tokenAddr}`);
-    await bridgeTx.wait();
-  }
-
-  const proposalCreatedEvent = routeReceipt.events?.find(
-    (ev) =>
-      ev.address.toLowerCase() === bridgeReceiver.address.toLowerCase() &&
-      ev.topics[0] === bridgeReceiver.interface.getEventTopic('ProposalCreated')
-  );
-
-  console.log(`[CCIP L2] Found proposalCreatedEvent: ${JSON.stringify(proposalCreatedEvent)}`);
-  if (proposalCreatedEvent) {
-    const decoded = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
-    const { id, eta } = decoded.args;
-    openBridgedProposals.push({ id, eta });
-    console.log(`[CCIP L2] Queued proposal: id=${id.toString()}, eta=${eta.toString()}`);
+  
+    const proposalCreatedEvents = routeReceipt.events?.filter(
+      (ev: ethers.Event) =>
+        ev.address.toLowerCase() === bridgeReceiver.address.toLowerCase() &&
+        ev.topics[0] === bridgeReceiver.interface.getEventTopic('ProposalCreated')
+    ) || [];
+  
+    console.log(`[CCIP L2] Found proposalCreatedEvents: ${JSON.stringify(proposalCreatedEvents)}`);
+    for (const proposalCreatedEvent of proposalCreatedEvents) {
+      const decoded = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
+      const { id, eta } = decoded.args;
+      openBridgedProposals.push({ id, eta });
+      console.log(`[CCIP L2] Queued proposal: id=${id.toString()}, eta=${eta.toString()}`);
+    }
   }
 
   for (const proposal of openBridgedProposals) {
