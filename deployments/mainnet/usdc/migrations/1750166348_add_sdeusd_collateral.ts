@@ -94,7 +94,7 @@ export default migration('1750166348_add_sdeusd_collateral', {
   async verify(deploymentManager: DeploymentManager) {
     const { comet, configurator } = await deploymentManager.getContracts();
 
-    const deUSDAssetIndex = Number(await comet.numAssets()) - 1;
+    const sdeUSDAssetIndex = Number(await comet.numAssets()) - 1;
 
     const sdeUSD = await deploymentManager.existing(
       'sdeUSD',
@@ -113,23 +113,23 @@ export default migration('1750166348_add_sdeusd_collateral', {
     };
 
     // 1. Compare sdeUSD asset config with Comet and Configurator asset info
-    const cometDeUSDAssetInfo = await comet.getAssetInfoByAddress(SDEUSD_ADDRESS);
-    expect(deUSDAssetIndex).to.be.equal(cometDeUSDAssetInfo.offset);
-    expect(deUSDAssetConfig.asset).to.be.equal(cometDeUSDAssetInfo.asset);
-    expect(deUSDAssetConfig.priceFeed).to.be.equal(cometDeUSDAssetInfo.priceFeed);
-    expect(exp(1, deUSDAssetConfig.decimals)).to.be.equal(cometDeUSDAssetInfo.scale);
-    expect(deUSDAssetConfig.borrowCollateralFactor).to.be.equal(cometDeUSDAssetInfo.borrowCollateralFactor);
-    expect(deUSDAssetConfig.liquidateCollateralFactor).to.be.equal(cometDeUSDAssetInfo.liquidateCollateralFactor);
-    expect(deUSDAssetConfig.liquidationFactor).to.be.equal(cometDeUSDAssetInfo.liquidationFactor);
-    expect(deUSDAssetConfig.supplyCap).to.be.equal(cometDeUSDAssetInfo.supplyCap);
+    const cometSdeUSDAssetInfo = await comet.getAssetInfoByAddress(SDEUSD_ADDRESS);
+    expect(sdeUSDAssetIndex).to.be.equal(cometSdeUSDAssetInfo.offset);
+    expect(deUSDAssetConfig.asset).to.be.equal(cometSdeUSDAssetInfo.asset);
+    expect(deUSDAssetConfig.priceFeed).to.be.equal(cometSdeUSDAssetInfo.priceFeed);
+    expect(exp(1, deUSDAssetConfig.decimals)).to.be.equal(cometSdeUSDAssetInfo.scale);
+    expect(deUSDAssetConfig.borrowCollateralFactor).to.be.equal(cometSdeUSDAssetInfo.borrowCollateralFactor);
+    expect(deUSDAssetConfig.liquidateCollateralFactor).to.be.equal(cometSdeUSDAssetInfo.liquidateCollateralFactor);
+    expect(deUSDAssetConfig.liquidationFactor).to.be.equal(cometSdeUSDAssetInfo.liquidationFactor);
+    expect(deUSDAssetConfig.supplyCap).to.be.equal(cometSdeUSDAssetInfo.supplyCap);
 
-    const configuratorDeUSDAssetConfig = (await configurator.getConfiguration(comet.address)).assetConfigs[deUSDAssetIndex];
-    expect(deUSDAssetConfig.asset).to.be.equal(configuratorDeUSDAssetConfig.asset);
-    expect(deUSDAssetConfig.priceFeed).to.be.equal(configuratorDeUSDAssetConfig.priceFeed);
-    expect(deUSDAssetConfig.decimals).to.be.equal(configuratorDeUSDAssetConfig.decimals);
-    expect(deUSDAssetConfig.borrowCollateralFactor).to.be.equal(configuratorDeUSDAssetConfig.borrowCollateralFactor);
-    expect(deUSDAssetConfig.liquidateCollateralFactor).to.be.equal(configuratorDeUSDAssetConfig.liquidateCollateralFactor);
-    expect(deUSDAssetConfig.liquidationFactor).to.be.equal(configuratorDeUSDAssetConfig.liquidationFactor);
-    expect(deUSDAssetConfig.supplyCap).to.be.equal(configuratorDeUSDAssetConfig.supplyCap);
+    const configuratorSdeUSDAssetConfig = (await configurator.getConfiguration(comet.address)).assetConfigs[sdeUSDAssetIndex];
+    expect(deUSDAssetConfig.asset).to.be.equal(configuratorSdeUSDAssetConfig.asset);
+    expect(deUSDAssetConfig.priceFeed).to.be.equal(configuratorSdeUSDAssetConfig.priceFeed);
+    expect(deUSDAssetConfig.decimals).to.be.equal(configuratorSdeUSDAssetConfig.decimals);
+    expect(deUSDAssetConfig.borrowCollateralFactor).to.be.equal(configuratorSdeUSDAssetConfig.borrowCollateralFactor);
+    expect(deUSDAssetConfig.liquidateCollateralFactor).to.be.equal(configuratorSdeUSDAssetConfig.liquidateCollateralFactor);
+    expect(deUSDAssetConfig.liquidationFactor).to.be.equal(configuratorSdeUSDAssetConfig.liquidationFactor);
+    expect(deUSDAssetConfig.supplyCap).to.be.equal(configuratorSdeUSDAssetConfig.supplyCap);
   },
 });
