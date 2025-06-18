@@ -56,10 +56,10 @@
     "undici": "^5.21.2"
   },
   "devDependencies": {
+    "@nomicfoundation/ethereumjs-rlp": "^5.0.4",
     "@arbitrum/sdk": "^3.1.2",
     "@compound-finance/hardhat-import": "^1.0.3",
     "@ethersproject/experimental": "^5.7.0",
-    "@nomicfoundation/ethereumjs-rlp": "^5.0.4",
     "@nomiclabs/hardhat-ethers": "^2.0.4",
     "@nomiclabs/hardhat-etherscan": "3.1.7",
     "@safe-global/safe-core-sdk": "^3.3.2",
@@ -96,5 +96,6 @@
   "repository": "git@github.com:compound-finance/comet.git",
   "resolutions": {
     "mocha": "^9.1.3"
-  }
+  },
+  "packageManager": "yarn@1.22.22"
 }
