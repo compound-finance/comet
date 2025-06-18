@@ -19,6 +19,23 @@ async function hasNativeAsCollateralOrBase(ctx: CometContext): Promise<boolean> 
   }
 }
 
+async function getNativeCollateralIndex(ctx: CometContext): Promise<number> {
+  if(!(await hasNativeAsCollateralOrBase(ctx)))
+    throw new Error('No native token collateral found');
+  const comet = await ctx.getComet();
+  const bulker = await ctx.getBulker();
+  const wrappedNativeToken = await bulker.wrappedNativeToken();
+  if ((await comet.baseToken()).toLowerCase() === wrappedNativeToken.toLowerCase())
+    throw new Error('Native token is base token, not collateral');
+  const numAssets = await comet.numAssets();
+  for (let i = 0; i < numAssets; i++) {
+    const { asset } = await comet.getAssetInfo(i);
+    if (asset.toLowerCase() === wrappedNativeToken.toLowerCase()) {
+      return i;
+    }
+  }
+}
+
 scenario(
   'Comet#bulker > (non-WETH base) all non-reward actions in one txn for single asset',
   {
@@ -100,8 +117,12 @@ scenario(
     const baseIndexScale = (await comet.baseIndexScale()).toBigInt();
     const baseSupplyIndex = (await comet.totalsBasic()).baseSupplyIndex.toBigInt();
     const baseTransferred = getExpectedBaseBalance(toTransferBase, baseIndexScale, baseSupplyIndex);
-    expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(toSupplyCollateral);
-    if (await hasNativeAsCollateralOrBase(context)) expect(await comet.collateralBalanceOf(albert.address, wrappedNativeToken)).to.be.equal(toSupplyEth - toWithdrawEth);
+    if(await getNativeCollateralIndex(context) === 0)
+      expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(toSupplyCollateral + toSupplyEth - toWithdrawEth);
+    else{
+      expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(toSupplyCollateral);
+      if (await hasNativeAsCollateralOrBase(context)) expect(await comet.collateralBalanceOf(albert.address, wrappedNativeToken)).to.be.equal(toSupplyEth - toWithdrawEth);
+    }
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(toBorrowBase);
     expectBase((await comet.balanceOf(betty.address)).toBigInt(), baseTransferred);
     expectBase((await comet.borrowBalanceOf(albert.address)).toBigInt(), toBorrowBase + toTransferBase);
@@ -386,9 +407,13 @@ scenario(
     const baseIndexScale = (await comet.baseIndexScale()).toBigInt();
     const baseSupplyIndex = (await comet.totalsBasic()).baseSupplyIndex.toBigInt();
     const baseTransferred = getExpectedBaseBalance(toTransferBase, baseIndexScale, baseSupplyIndex);
-    expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(toSupplyCollateral);
+    if(await getNativeCollateralIndex(context) === 0)
+      expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(toSupplyCollateral + toSupplyEth - toWithdrawEth);
+    else{
+      expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(toSupplyCollateral);
+      if (await hasNativeAsCollateralOrBase(context)) expect(await comet.collateralBalanceOf(albert.address, wrappedNativeToken)).to.be.equal(toSupplyEth - toWithdrawEth);
+    }
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(toBorrowBase);
-    if (await hasNativeAsCollateralOrBase(context)) expect(await comet.collateralBalanceOf(albert.address, wrappedNativeToken)).to.be.equal(toSupplyEth - toWithdrawEth);
     expect(await albert.getErc20Balance(rewardTokenAddress)).to.be.equal(expectedFinalRewardBalance);
     expectBase((await comet.balanceOf(betty.address)).toBigInt(), baseTransferred);
     expectBase((await comet.borrowBalanceOf(albert.address)).toBigInt(), toBorrowBase + toTransferBase);
