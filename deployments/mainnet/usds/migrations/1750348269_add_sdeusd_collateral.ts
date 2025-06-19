@@ -4,29 +4,15 @@ import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { exp, proposal } from '../../../../src/deploy';
 
 const SDEUSD_ADDRESS = '0x5C5b196aBE0d54485975D1Ec29617D42D9198326';
-const DEUSD_TO_USD_PRICE_FEED = '0x471a6299C027Bd81ed4D66069dc510Bd0569f4F8';
-
-let newPriceFeedAddress: string;
+const SDEUSD_TO_USD_PRICE_FEED = '0xE4829421ae79f2F44716cCbbb40751cd6Be3d483';
 
 export default migration('1750348269_add_sdeusd_collateral', {
-  async prepare(deploymentManager: DeploymentManager) {
-    const sdeUSDMultiplicativePriceFeed = await deploymentManager.deploy(
-      'sdeUSD:priceFeed',
-      'pricefeeds/PriceFeedWith4626Support.sol',
-      [
-        SDEUSD_ADDRESS,            // sdeUSD / deUSD price feed
-        DEUSD_TO_USD_PRICE_FEED,   // deUSD / USD price feed
-        8,                         // decimals
-        'sdeUSD / USD price feed', // description
-      ],
-      true
-    );
-    return { sdeUSDPriceFeedAddress: sdeUSDMultiplicativePriceFeed.address };
+  async prepare() {
+    return {};
   },
 
-  async enact(deploymentManager: DeploymentManager, _, { sdeUSDPriceFeedAddress }) {
+  async enact(deploymentManager: DeploymentManager) {
     const trace = deploymentManager.tracer();
-    newPriceFeedAddress = sdeUSDPriceFeedAddress;
 
     const sdeUSD = await deploymentManager.existing(
       'sdeUSD',
@@ -37,7 +23,7 @@ export default migration('1750348269_add_sdeusd_collateral', {
 
     const sdeUSDPriceFeed = await deploymentManager.existing(
       'sdeUSD:priceFeed',
-      sdeUSDPriceFeedAddress,
+      SDEUSD_TO_USD_PRICE_FEED,
       'mainnet'
     );
 
@@ -104,7 +90,7 @@ export default migration('1750348269_add_sdeusd_collateral', {
     );
     const deUSDAssetConfig = {
       asset: sdeUSD.address,
-      priceFeed: newPriceFeedAddress,
+      priceFeed: SDEUSD_TO_USD_PRICE_FEED,
       decimals: 18n,
       borrowCollateralFactor: exp(0.88, 18),
       liquidateCollateralFactor: exp(0.90, 18),
