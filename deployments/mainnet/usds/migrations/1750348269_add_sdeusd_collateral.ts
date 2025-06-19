@@ -54,7 +54,7 @@ export default migration('1750348269_add_sdeusd_collateral', {
       decimals: await sdeUSD.decimals(),
       borrowCollateralFactor: exp(0.88, 18),
       liquidateCollateralFactor: exp(0.90, 18),
-      liquidationFactor: exp(0.96, 18),
+      liquidationFactor: exp(0.94, 18),
       supplyCap: exp(5_000_000, 18),
     };
 
@@ -108,7 +108,7 @@ export default migration('1750348269_add_sdeusd_collateral', {
       decimals: 18n,
       borrowCollateralFactor: exp(0.88, 18),
       liquidateCollateralFactor: exp(0.90, 18),
-      liquidationFactor: exp(0.96, 18),
+      liquidationFactor: exp(0.94, 18),
       supplyCap: exp(5_000_000, 18),
     };
 
