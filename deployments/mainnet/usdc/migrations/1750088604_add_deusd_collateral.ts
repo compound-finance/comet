@@ -73,8 +73,8 @@ export default migration('1750088604_add_deusd_collateral', {
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(): Promise<boolean> {
-    return false;
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {
