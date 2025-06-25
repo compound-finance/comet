@@ -2,8 +2,9 @@ import 'dotenv/config';
 
 import { HardhatUserConfig, task } from 'hardhat/config';
 import '@compound-finance/hardhat-import';
-import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-etherscan';
+import "@tenderly/hardhat-tenderly";
+import '@nomiclabs/hardhat-ethers';
 import '@typechain/hardhat';
 import 'hardhat-chai-matchers';
 import 'hardhat-change-network';
@@ -65,7 +66,7 @@ const {
   SCROLLSCAN_KEY,
   ANKR_KEY,
   _TENDERLY_KEY_RONIN,
-  MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
+  MNEMONIC = 'myth like woof scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
   GOV_NETWORK_PROVIDER = '',
@@ -110,6 +111,7 @@ interface NetworkConfig {
   gas?: number | 'auto';
   gasPrice?: number | 'auto';
 }
+
 
 const networkConfigs: NetworkConfig[] = [
   {
@@ -579,6 +581,13 @@ const config: HardhatUserConfig = {
         auxiliaryBase: 'mainnet'
       },
     ],
+  },
+
+  tenderly: {
+    project: process.env.TENDERLY_PROJECT_SLUG || "",
+    username: process.env.TENDERLY_USERNAME || "",
+    accessKey: process.env.TENDERLY_ACCESS_KEY || "",
+    privateVerification: false,
   },
 
   mocha: {
