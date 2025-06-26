@@ -139,6 +139,8 @@ export const WHALES = {
     '0x3bf93770f2d4a794c3d9EBEfBAeBAE2a8f09A5E5', // cbETH whale
     '0xcf3D55c10DB69f28fD1A75Bd73f3D8A2d9c595ad', // cbETH whale
     '0xb125E6687d4313864e53df431d5425969c15Eb2F', // cbETH whale
+    '0x1539A4611f16a139891c14365Cab86599F3A8AFC', // tBTC whale
+    '0x138aceE5573fA09e7F215965ff60898cc33c6330', // tBTC whale
   ],
   scroll: [
     '0xaaaaAAAACB71BF2C8CaE522EA5fa455571A74106', // USDC whale
