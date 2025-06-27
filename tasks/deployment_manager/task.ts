@@ -179,6 +179,7 @@ async function runMigration<T>(
 
     //   // await tenderlySimulateProposal(deploymentManager, governor, COMP, proposals[-1], (lastEvent[-1] as any).description);
     // }
+    }
 
     console.log("Enactment complete");
   }
