@@ -25,13 +25,14 @@ export default migration("1750958707_add_eigen_collateral", {
         ]
       );
 
-
+      console.log(`EIGENToETHScalingPriceFeed deployed at ${EIGENToETHScalingPriceFeed.address}`);
       return {
         EIGENPriceFeedAddress: EIGENToETHScalingPriceFeed.address,
       };
     },
 
   async enact(deploymentManager: DeploymentManager, _, {EIGENPriceFeedAddress}, tenderly) {
+    console.log(`Adding EIGEN collateral to cWETHv3 on Mainnet with price feed`);
     const trace = deploymentManager.tracer();
     const signer = await deploymentManager.getSigner();
     const fromAddr = await signer.getAddress();
@@ -48,6 +49,7 @@ export default migration("1750958707_add_eigen_collateral", {
     );
 
     newPiceFeedAddress = EIGENPriceFeedAddress;
+    console.log(`EIGEN price feed address: ${newPiceFeedAddress}`);
 
     const {
       governor,
