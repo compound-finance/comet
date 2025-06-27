@@ -61,7 +61,8 @@ export type Proposal = [
   string[], // targets
   BigNumberish[], // values
   string[], // calldatas
-  string // description
+  string, // description
+  string[] // signatures
 ];
 export type TestnetProposal = [
   string[], // targets
@@ -216,20 +217,23 @@ export async function testnetProposal(actions: ProposalAction[], description: st
 export async function proposal(actions: ProposalAction[], description: string): Promise<Proposal> {
   const targets = [],
     values = [],
-    calldatas = [];
+    calldatas = [],
+    signatures = [];
   for (const action of actions) {
     if (action['contract']) {
       const { contract, value, signature, args } = action as ContractAction;
       targets.push(contract.address);
       values.push(value ?? 0);
       calldatas.push(utils.id(signature).slice(0, 10) + (await calldata(contract.populateTransaction[signature](...args))).slice(2));
+      signatures.push('');
     } else {
       const { target, value, signature, calldata } = action as TargetAction;
       targets.push(target);
       values.push(value ?? 0);
       calldatas.push(utils.id(signature).slice(0, 10) + calldata.slice(2));
+      signatures.push('');
     }
   }
-
-  return [targets, values, calldatas, description];
+  
+  return [targets, values, calldatas, description, signatures];
 }

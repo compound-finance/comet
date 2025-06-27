@@ -12,6 +12,11 @@ import {
 import { impersonateAddress } from "../../plugins/scenario/utils";
 import axios from "axios";
 import hreForBase from "../../plugins/scenario/utils/hreForBase";
+import { deriveAccounts } from "../../hardhat.config";
+import { tenderly } from "hardhat";
+import { executeOpenProposal, tenderlySimulateProposal } from "../../scenario/utils";
+import { IGovernorBravo } from "../../build/types";
+import { getOpenProposals } from "../../scenario/constraints/ProposalConstraint";
 
 // TODO: Don't depend on scenario's hreForBase
 async function getForkEnv(
@@ -72,20 +77,41 @@ export async function getTenderlyEnv(
   const { username, project, accessKey } = hre.config.tenderly;
 
   const { id, rpc } = await createTenderlyVNet(username, project, accessKey);
+  const MNEMONIC =
+    "myth like woof scare over problem client lizard pioneer submit female collect";
+  function parseKeys(env = "") {
+    return env
+      .split(/[,\s]+/)
+      .filter(Boolean)
+      .map((k) => (k.startsWith("0x") ? k : `0x${k}`));
+  }
+
+  const envKeys = process.env.ETH_PK ? parseKeys(process.env.ETH_PK) : [];
+
+  const freshWallet = hre.ethers.Wallet.createRandom();
+  const freshPk = freshWallet.privateKey;
+
+  const allPks = [...envKeys, freshPk];
 
   hre.config.networks[parentNet] = {
     url: rpc,
     chainId: hre.config.networks[parentNet].chainId,
-    accounts: Array.isArray(hre.network.config.accounts)
-      ? (hre.network.config.accounts as string[])
-      : [],
+    accounts: process.env.ETH_PK
+      ? allPks
+      : {
+          mnemonic: MNEMONIC,
+          initialIndex: 0,
+          count: 10,
+          path: "m/44'/60'/0'/0",
+          passphrase: "",
+        },
     gas: "auto",
     gasPrice: "auto",
     gasMultiplier: 1,
     timeout: 20_000,
     httpHeaders: {},
   };
-  
+
   hre.network.name = parentNet;
 
   await hre.changeNetwork(parentNet);
@@ -133,8 +159,27 @@ async function runMigration<T>(
       deploymentManager,
       govDeploymentManager,
       artifact,
-      tenderly
+      tenderly,
     );
+
+    const {
+      governor,
+      COMP,
+    } = await deploymentManager.getContracts()
+
+    if (tenderly) {
+    //   const proposals = await getOpenProposals(govDeploymentManager, governor as any);   
+      
+    //   // const lastEvent = await governor.queryFilter(
+    //   //   governor.filters.ProposalCreated(),
+    //   //   -1
+    //   // );
+
+    //   // console.log(lastEvent);
+
+    //   // await tenderlySimulateProposal(deploymentManager, governor, COMP, proposals[-1], (lastEvent[-1] as any).description);
+    // }
+
     console.log("Enactment complete");
   }
 }
@@ -283,14 +328,20 @@ task("migrate", "Runs migration")
       }
 
       const network = origNetwork;
-      const dm = new DeploymentManager(network, deployment, maybeForkEnv, {
-        writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
-        verificationStrategy: "eager", // We use eager here to verify contracts right after they are deployed
-      });
+      const dm = new DeploymentManager(
+        network,
+        deployment,
+        maybeForkEnv,
+        {
+          writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
+          verificationStrategy: "eager", // We use eager here to verify contracts right after they are deployed
+        },
+        tenderly
+      );
       await dm.spider();
 
-      let governanceDm: DeploymentManager; 
-  
+      let governanceDm: DeploymentManager;
+
       const base = env.config.scenario.bases.find(
         (b) => b.network === network && b.deployment === deployment
       );
@@ -325,6 +376,7 @@ task("migrate", "Runs migration")
           impersonate,
           10n ** 18n
         );
+        console.log("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
         governanceDm._signers.unshift(signer);
       }
 

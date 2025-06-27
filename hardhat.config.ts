@@ -75,7 +75,7 @@ const {
   REMOTE_ACCOUNTS = ''
 } = process.env;
 
-function* deriveAccounts(pk: string, n: number = 10) {
+export function* deriveAccounts(pk: string, n: number = 10) {
   for (let i = 0; i < n; i++)
     yield (BigInt('0x' + pk) + BigInt(i)).toString(16);
 }
@@ -113,7 +113,7 @@ interface NetworkConfig {
 }
 
 
-const networkConfigs: NetworkConfig[] = [
+export const networkConfigs: NetworkConfig[] = [
   {
     network: 'mainnet',
     chainId: 1,

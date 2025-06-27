@@ -5,6 +5,10 @@ import { proposal } from "../../../../src/deploy";
 import { ethers, Contract } from "ethers";
 import { Interface } from "ethers/lib/utils";
 import { Tenderly, Network } from "@tenderly/sdk";
+import {
+  tenderlyExecute,
+  tenderlySimulateProposal,
+} from "../../../../scenario/utils";
 
 const USDS_COMET = "0x5D409e56D886231aDAf00c8775665AD0f9897b56";
 const USDS_EXT = "0x95DeDD64b551F05E9f59a101a519B024b6b116E7";
@@ -113,18 +117,27 @@ export default migration(
       },
       tenderly = false
     ) {
+
+      console.log( "gggggggggggg", {
+        cometFactoryWithExtendedAssetList,
+        newCometExtUSDC,
+        newCometExtUSDS,
+        newCometExtUSDT,
+      });
+
+      console.log(tenderly);
       const { hre } = dm;
       const {
         governor,
         comet,
         cometAdmin,
         configurator,
+        COMP,
       } = await dm.getContracts();
       const signer = await dm.getSigner();
       const fromAddr = await signer.getAddress();
 
-      
-
+      console.log("1") 
       newCometExtAddressUSDC = newCometExtUSDC;
       newCometExtAddressUSDS = newCometExtUSDS;
       newCometExtAddressUSDT = newCometExtUSDT;
@@ -178,61 +191,54 @@ export default migration(
           args: [configurator.address, USDT_COMET],
         },
       ];
-
+      console.log("2") 
       const desc = "Update USDC, USDS, USDT Comets to support 24 collaterals";
       const trace = dm.tracer();
 
+
+
       if (tenderly) {
-        const [targets, values, calldatas, description] = await proposal(
-          actions,
-          desc
-        );
-
-        const govIf = new Interface(governor.interface.fragments);
-        const signer = await dm.getSigner();
-        const fromAddr = await signer.getAddress();
-
-        const proposeData = govIf.encodeFunctionData("propose", [
-          targets,
-          values,
-          calldatas,
-          description,
-        ]);
-
-        const bundle = [
-          {
-            from: fromAddr,
-            to: governor.address,
-            gas: "0x0",
-            value: "0x0",
-            data: proposeData,
-          },
-        ];
-
-        const sim = await hre.ethers.provider.send("tenderly_simulateBundle", [
-          bundle,
-          "latest",
-        ]);
-
-        console.dir(sim, { depth: null });
-
+        await tenderlySimulateProposal(dm, governor, COMP, actions, desc);
       }
 
-      const tx = await dm.retry(async () => {
-        return await trace(
-          governor.propose(...(await proposal(actions, desc)))
-        );
+
+      console.log("3")
+      const _proposal = await proposal(actions, desc);
+      const txn = await dm.retry(async () => {
+        _proposal.pop();
+        if (!_proposal) {
+          throw new Error("Proposal arguments are undefined");
+        }
+        return trace(await governor.propose(..._proposal));
       });
+
+      const proposeEvent = txn.events.find(
+        (event) => event.event === "ProposalCreated"
+      );
+      const [id, , , , , , startBlock, endBlock] = proposeEvent.args;
+
       trace(
         `Created proposal ${
-          tx.events.find((e) => e.event === "ProposalCreated").args[0]
+          txn.events.find((e) => e.event === "ProposalCreated").args[0]
         }`
       );
+
+      if (tenderly) {
+        await tenderlyExecute(
+          dm,
+          COMP,
+          _proposal,
+          id,
+          fromAddr,
+          startBlock,
+          endBlock
+        );
+      }
     },
 
-    async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-      return false;
-    },
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
+  },
 
     async verify(dm: DeploymentManager) {
       const { comet } = await dm.getContracts();
