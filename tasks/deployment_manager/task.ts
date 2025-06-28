@@ -174,17 +174,17 @@ async function runMigration<T>(
     } = await deploymentManager.getContracts()
 
     if (tenderly) {
-    //   const proposals = await getOpenProposals(govDeploymentManager, governor as any);   
+      //const proposals = await getOpenProposals(govDeploymentManager, governor as any);   
       
-    //   // const lastEvent = await governor.queryFilter(
-    //   //   governor.filters.ProposalCreated(),
-    //   //   -1
-    //   // );
+      // const lastEvent = await governor.queryFilter(
+      //   governor.filters.ProposalCreated(),
+      //   -1
+      // );
 
-    //   // console.log(lastEvent);
+      // console.log(lastEvent);
 
-    //   // await tenderlySimulateProposal(deploymentManager, governor, COMP, proposals[-1], (lastEvent[-1] as any).description);
-    // }
+      // await tenderlySimulateProposal(deploymentManager, governor, COMP, proposals[-1], (lastEvent[-1] as any).description);
+    
     }
 
     console.log("Enactment complete");
@@ -336,7 +336,7 @@ task("migrate", "Runs migration")
 
       const network = origNetwork;
       const dm = new DeploymentManager(
-        maybeForkEnv.network.name,
+        network,
         deployment,
         maybeForkEnv,
         {
