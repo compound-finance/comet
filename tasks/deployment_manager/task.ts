@@ -18,7 +18,14 @@ import { executeOpenProposal, tenderlySimulateProposal } from "../../scenario/ut
 import { IGovernorBravo } from "../../build/types";
 import { getOpenProposals } from "../../scenario/constraints/ProposalConstraint";
 
-// TODO: Don't depend on scenario's hreForBase
+function getDefaultDeployment(config: HardhatConfig, network: string): string {
+  const base = config.scenario.bases.find(b => b.name == network);
+  if (!base) {
+    throw new Error(`No bases for ${network}`);
+  }
+  return base.deployment;
+}
+
 async function getForkEnv(
   env: HardhatRuntimeEnvironment,
   deployment: string
@@ -52,7 +59,6 @@ export async function createTenderlyVNet(
       verification_visibility: "bytecode",
     },
   };
-  console.log("BODY", JSON.stringify(body, null, 2));
   const url = `https://api.tenderly.co/api/v1/account/${username}/project/${project}/vnets`;
   let resp;
   try {
@@ -330,7 +336,7 @@ task("migrate", "Runs migration")
 
       const network = origNetwork;
       const dm = new DeploymentManager(
-        network,
+        maybeForkEnv.network.name,
         deployment,
         maybeForkEnv,
         {
@@ -371,13 +377,12 @@ task("migrate", "Runs migration")
         throw new Error(
           "Cannot impersonate an address if not simulating a migration. Please specify --simulate to simulate."
         );
-      } else if (impersonate && simulate) {
+      } else if (impersonate && simulate && !tenderly) {
         const signer = await impersonateAddress(
           governanceDm,
           impersonate,
           10n ** 18n
         );
-        console.log("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
         governanceDm._signers.unshift(signer);
       }
 

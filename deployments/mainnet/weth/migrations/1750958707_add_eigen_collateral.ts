@@ -88,17 +88,19 @@ export default migration("1750958707_add_eigen_collateral", {
     const description =
       "# Add EIGEN as collateral into cWETHv3 on Mainnet\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to add EIGEN into cWETHv3 on Ethereum network. This proposal takes the governance steps recommended and necessary to update a Compound III WETH market on Ethereum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based on the [recommendations from Gauntlet](https://www.comp.xyz/t/add-collateral-eigen-to-usdc-market-on-mainnet/5866/3).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/<>) and [forum discussion](https://www.comp.xyz/t/add-collateral-eigen-to-usdc-market-on-mainnet/5866).\n\n\n## Proposal Actions\n\nThe first action adds EIGEN asset as collateral with corresponding configurations.\n\nThe second action deploys and upgrades Comet to a new version.";
 
+
+    const _proposal = await proposal(mainnetActions, description);
+
+
     if (tenderly) {
       await tenderlySimulateProposal(
         deploymentManager,
         governor,
         COMP,
-        mainnetActions,
-        description
+        _proposal,
+        description,
       );
     }
-
-    const _proposal = await proposal(mainnetActions, description);
     const txn = await deploymentManager.retry(async () => {
       _proposal.pop();
       if (!_proposal) {

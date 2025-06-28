@@ -707,14 +707,12 @@ export async function tenderlySimulateProposal(
   dm: DeploymentManager,
   governor: Contract,
   COMP: Contract,
-  proposal: OpenProposal,
+  proposal: any,
   description: string
 ) {
   await fundVoters(dm, COMP);
   const { hre } = dm;
-  const targets = proposal.targets;
-  const values = proposal.values;
-  const calldatas = proposal.calldatas;
+  const [targets, values, calldatas,,,] = proposal;
 
   const govIf = new Interface(governor.interface.fragments);
   const signer = await dm.getSigner();
@@ -752,7 +750,7 @@ const tenderlySimulateExecution = async (
 ) => {
   const signer = await dm.getSigner();
   const fromAddr = await signer.getAddress();
-  console.log(fromAddr);
+
   const govIf = new Interface(governor.interface.fragments);
 
   const bundle = [
@@ -831,7 +829,7 @@ export async function fundVoters(dm: DeploymentManager, COMP: Contract) {
 
   for (const signer of signers) {
     const from = await signer.getAddress();
-
+    
     await dm.hre.ethers.provider.send("tenderly_setErc20Balance", [
       COMP.address,
       [from],
@@ -860,12 +858,9 @@ export async function voteForOpenProposal(
   const blocksUntilEnd =
     endBlock.toNumber() - Math.max(startBlock.toNumber(), blockNow);
 
-  console.log("Current block number:", blockNow);
   if (blocksUntilStart > 0) {
     await mineBlocks(dm, blocksUntilStart + 1);
   }
-
-  console.log("Blocks now  ", await dm.hre.ethers.provider.getBlockNumber());
 
   const compWhales =
     dm.network === "mainnet" ? COMP_WHALES.mainnet : COMP_WHALES.testnet;
@@ -919,7 +914,6 @@ export async function executeOpenProposal(
   if ((await governor.state(id)) == ProposalState.Queued) {
     const block = await dm.hre.ethers.provider.getBlock("latest");
     const eta = await governor.proposalEta(id);
-    console.log("ETA", eta.toNumber(), "BLOCK TIMESTAMP", block.timestamp);
     await setNextBlockTimestamp(
       dm,
       Math.max(block.timestamp, eta.toNumber()) + 1
