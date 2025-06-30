@@ -23,7 +23,6 @@ on:
       migration:
         description: Migration Name
         required: true
-      
       simulate:
         type: boolean
         description: Simulate
