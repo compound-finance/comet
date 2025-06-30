@@ -706,11 +706,9 @@ async function mockRedstoneOracle(dm: DeploymentManager, feed: string) {
 export async function tenderlySimulateProposal(
   dm: DeploymentManager,
   governor: Contract,
-  COMP: Contract,
   proposal: any,
   description: string
 ) {
-  await fundVoters(dm, COMP);
   const { hre } = dm;
   const [targets, values, calldatas,,,] = proposal;
 
@@ -783,15 +781,12 @@ const tenderlySimulateExecution = async (
 
 export async function tenderlyExecute(
   dm: DeploymentManager,
-  COMP: Contract,
-  _proposal: any,
-  id: any,
-  proposer: string,
-  startBlock: BigNumber,
-  endBlock: BigNumber
+  prop: OpenProposal,
 ) {
-  await fundVoters(dm, COMP);
-  const [targets, values, calldatas, _, signatures] = _proposal;
+  console.log(prop);
+  const { id, targets, values, calldatas, signatures, startBlock, endBlock } = prop;
+  const proposer = (await dm.getSigner()).address;
+
   await voteForOpenProposal(
     dm,
     {

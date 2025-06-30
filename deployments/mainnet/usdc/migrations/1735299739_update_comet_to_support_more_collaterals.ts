@@ -3,12 +3,6 @@ import { DeploymentManager } from "../../../../plugins/deployment_manager/Deploy
 import { migration } from "../../../../plugins/deployment_manager/Migration";
 import { proposal } from "../../../../src/deploy";
 import { ethers, Contract } from "ethers";
-import { Interface } from "ethers/lib/utils";
-import { Tenderly, Network } from "@tenderly/sdk";
-import {
-  tenderlyExecute,
-  tenderlySimulateProposal,
-} from "../../../../scenario/utils";
 
 const USDS_COMET = "0x5D409e56D886231aDAf00c8775665AD0f9897b56";
 const USDS_EXT = "0x95DeDD64b551F05E9f59a101a519B024b6b116E7";
@@ -114,18 +108,9 @@ export default migration(
         newCometExtUSDC,
         newCometExtUSDS,
         newCometExtUSDT,
-      },
-      tenderly = false
+      }
     ) {
 
-      console.log( "gggggggggggg", {
-        cometFactoryWithExtendedAssetList,
-        newCometExtUSDC,
-        newCometExtUSDS,
-        newCometExtUSDT,
-      });
-
-      console.log(tenderly);
       const { hre } = dm;
       const {
         governor,
@@ -136,8 +121,6 @@ export default migration(
       } = await dm.getContracts();
       const signer = await dm.getSigner();
       const fromAddr = await signer.getAddress();
-
-      console.log("1") 
       newCometExtAddressUSDC = newCometExtUSDC;
       newCometExtAddressUSDS = newCometExtUSDS;
       newCometExtAddressUSDT = newCometExtUSDT;
@@ -191,18 +174,11 @@ export default migration(
           args: [configurator.address, USDT_COMET],
         },
       ];
-      console.log("2") 
       const desc = "Update USDC, USDS, USDT Comets to support 24 collaterals";
       const trace = dm.tracer();
 
 
 
-      if (tenderly) {
-        await tenderlySimulateProposal(dm, governor, COMP, actions, desc);
-      }
-
-
-      console.log("3")
       const _proposal = await proposal(actions, desc);
       const txn = await dm.retry(async () => {
         _proposal.pop();
@@ -212,28 +188,11 @@ export default migration(
         return trace(await governor.propose(..._proposal));
       });
 
-      const proposeEvent = txn.events.find(
-        (event) => event.event === "ProposalCreated"
-      );
-      const [id, , , , , , startBlock, endBlock] = proposeEvent.args;
-
       trace(
         `Created proposal ${
           txn.events.find((e) => e.event === "ProposalCreated").args[0]
         }`
       );
-
-      if (tenderly) {
-        await tenderlyExecute(
-          dm,
-          COMP,
-          _proposal,
-          id,
-          fromAddr,
-          startBlock,
-          endBlock
-        );
-      }
     },
 
   async enacted(deploymentManager: DeploymentManager): Promise<boolean> {

@@ -12,11 +12,8 @@ import {
 import { impersonateAddress } from "../../plugins/scenario/utils";
 import axios from "axios";
 import hreForBase from "../../plugins/scenario/utils/hreForBase";
-import { deriveAccounts } from "../../hardhat.config";
-import { tenderly } from "hardhat";
-import { executeOpenProposal, tenderlySimulateProposal } from "../../scenario/utils";
-import { IGovernorBravo } from "../../build/types";
-import { getOpenProposals } from "../../scenario/constraints/ProposalConstraint";
+import { OpenProposal } from "scenario/context/Gov";
+
 
 function getDefaultDeployment(config: HardhatConfig, network: string): string {
   const base = config.scenario.bases.find(b => b.name == network);
@@ -160,31 +157,52 @@ async function runMigration<T>(
   }
 
   if (enact) {
-    console.log("Running enactment step with artifact...", artifact);
-    await migration.actions.enact(
-      deploymentManager,
-      govDeploymentManager,
-      artifact,
-      tenderly,
-    );
+    const {
+      tenderlyExecute,
+      fundVoters
+    } = await import("../../scenario/utils"); 
 
     const {
       governor,
       COMP,
     } = await deploymentManager.getContracts()
 
-    if (tenderly) {
-      //const proposals = await getOpenProposals(govDeploymentManager, governor as any);   
-      
-      // const lastEvent = await governor.queryFilter(
-      //   governor.filters.ProposalCreated(),
-      //   -1
-      // );
-
-      // console.log(lastEvent);
-
-      // await tenderlySimulateProposal(deploymentManager, governor, COMP, proposals[-1], (lastEvent[-1] as any).description);
     
+    
+    if(tenderly){
+      await fundVoters(deploymentManager, COMP);
+    }
+    
+    await migration.actions.enact(
+      deploymentManager,
+      govDeploymentManager,
+      artifact
+    );
+
+    if (tenderly) {
+      const lastEvents = await governor.queryFilter(
+        governor.filters.ProposalCreated(),
+        -1
+      );
+
+      if (lastEvents.length === 0) {
+        throw new Error("No ProposalCreated events found");
+      }
+
+      const lastEvent = lastEvents[lastEvents.length - 1];
+      console.log(lastEvent);
+      let proposal: OpenProposal = {
+        id: lastEvent.args.proposalId,
+        proposer: lastEvent.args.proposer,
+        targets: lastEvent.args.targets,
+        signatures: lastEvent.args.signatures,
+        calldatas: lastEvent.args.calldatas,
+        values: Array.from(lastEvent.args.values()),
+        startBlock: lastEvent.args.startBlock,
+        endBlock: lastEvent.args.endBlock,
+      };
+
+      await tenderlyExecute(deploymentManager, proposal);  
     }
 
     console.log("Enactment complete");
