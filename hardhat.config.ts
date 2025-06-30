@@ -75,7 +75,7 @@ const {
   REMOTE_ACCOUNTS = ''
 } = process.env;
 
-export function* deriveAccounts(pk: string, n: number = 10) {
+function* deriveAccounts(pk: string, n: number = 10) {
   for (let i = 0; i < n; i++)
     yield (BigInt('0x' + pk) + BigInt(i)).toString(16);
 }
