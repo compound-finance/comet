@@ -234,6 +234,6 @@ export async function proposal(actions: ProposalAction[], description: string): 
       signatures.push('');
     }
   }
-  
+
   return [targets, values, calldatas, description, signatures];
 }

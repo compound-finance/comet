@@ -12,7 +12,6 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   // Mainnet -> Polygon bridge contract
   const fxRoot = await deploymentManager.existing('fxRoot', '0xfe5e5D361b2ad62c541bAb87C45a0B9B018389a2');
 
-
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);
   const { comet } = deployed;

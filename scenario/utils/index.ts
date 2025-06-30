@@ -783,7 +783,6 @@ export async function tenderlyExecute(
   dm: DeploymentManager,
   prop: OpenProposal,
 ) {
-  console.log(prop);
   const { id, targets, values, calldatas, signatures, startBlock, endBlock } = prop;
   const proposer = (await dm.getSigner()).address;
 
