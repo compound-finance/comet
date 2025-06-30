@@ -749,7 +749,6 @@ export async function executeOpenProposal(
   { id, startBlock, endBlock }: OpenProposal,
   tenderly?: boolean
 ) {
-  const signer = await dm.getSigner();
   const governor = await dm.getContractOrThrow("governor");
   const blockNow = await dm.hre.ethers.provider.getBlockNumber();
   const blocksUntilEnd =

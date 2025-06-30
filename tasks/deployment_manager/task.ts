@@ -83,12 +83,12 @@ export async function getTenderlyEnv(
     accounts: process.env.ETH_PK
       ? allPks
       : {
-          mnemonic: MNEMONIC,
-          initialIndex: 0,
-          count: 10,
-          path: "m/44'/60'/0'/0",
-          passphrase: "",
-        },
+        mnemonic: MNEMONIC,
+        initialIndex: 0,
+        count: 10,
+        path: "m/44'/60'/0'/0",
+        passphrase: "",
+      },
     gas: "auto",
     gasPrice: "auto",
     gasMultiplier: 1,
@@ -149,7 +149,7 @@ async function runMigration<T>(
     const {
       governor,
       COMP,
-    } = await deploymentManager.getContracts()
+    } = await deploymentManager.getContracts();
 
     if(tenderly){
       await fundVoters(deploymentManager, COMP);

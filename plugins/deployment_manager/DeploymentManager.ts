@@ -17,7 +17,6 @@ import { ExtendedNonceManager } from './NonceManager';
 import { asyncCallWithTimeout, debug, getEthersContract, mergeIntoProxyContract, txCost } from './Utils';
 import { deleteVerifyArgs, getVerifyArgs } from './VerifyArgs';
 import { verifyContract, VerifyArgs, VerificationStrategy } from './Verify';
-import { tenderlyNetwork } from 'hardhat';
 
 interface DeploymentDelta {
   old: { start: Date, count: number, spider: Spider };

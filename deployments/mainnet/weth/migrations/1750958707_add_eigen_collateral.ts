@@ -3,7 +3,7 @@ import { DeploymentManager } from "../../../../plugins/deployment_manager/Deploy
 import { migration } from "../../../../plugins/deployment_manager/Migration";
 import { exp, proposal } from "../../../../src/deploy";
 
-const EIGEN_ADDRESS = "0xec53bf9167f50cdeb3ae105f56099aaab9061f83";
+const EIGEN_ADDRESS = "0xec53bF9167f50cDEB3Ae105f56099aaaB9061F83";
 const EIGEN_TO_USD_PRICE_FEED = "0xf2917e602C2dCa458937fad715bb1E465305A4A1";
 const USD_TO_ETH_PRICE_FEED = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419";
 
