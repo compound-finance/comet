@@ -107,7 +107,7 @@ export default migration("1750958707_add_eigen_collateral", {
   },
 
   async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return true;
+    return false;
   },
 
   async verify(deploymentManager: DeploymentManager) {
