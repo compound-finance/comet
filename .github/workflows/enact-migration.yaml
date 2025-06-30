@@ -78,6 +78,17 @@ jobs:
             *)
                 echo "No governance network for selected network" ;;
           esac
+          
+      - name: Export Tenderly secrets
+        if: github.event.inputs.tenderly == 'true'
+        env:
+          TENDERLY_USERNAME:     ${{ secrets.TENDERLY_USERNAME }}
+          TENDERLY_PROJECT_SLUG: ${{ secrets.TENDERLY_PROJECT_SLUG }}
+          TENDERLY_ACCESS_KEY:   ${{ secrets.TENDERLY_ACCESS_KEY }}
+        run: |
+          echo "TENDERLY_USERNAME=$TENDERLY_USERNAME"       >> "$GITHUB_ENV"
+          echo "TENDERLY_PROJECT_SLUG=$TENDERLY_PROJECT_SLUG" >> "$GITHUB_ENV"
+          echo "TENDERLY_ACCESS_KEY=$TENDERLY_ACCESS_KEY"   >> "$GITHUB_ENV"
 
       - name: Seacrest
         uses: hayesgm/seacrest@af229b0a00b73cb6fa9940a836a62fa3b918fd77
