@@ -618,25 +618,25 @@ const tenderlySimulateExecution = async (
     {
       from: fromAddr,
       to: governor.address,
-      gas: "0x0",
-      value: "0x0",
-      data: govIf.encodeFunctionData("queue", [id]),
+      gas: '0x0',
+      value: '0x0',
+      data: govIf.encodeFunctionData('queue', [id]),
     },
     {
       from: fromAddr,
       to: governor.address,
-      gas: "0x0",
-      value: "0x0",
+      gas: '0x0',
+      value: '0x0',
       header: {
         timestamp: Math.max(block.timestamp, eta.toNumber()) + 2,
       },
-      data: govIf.encodeFunctionData("execute", [id]),
+      data: govIf.encodeFunctionData('execute', [id]),
     },
   ];
 
-  const sim = await dm.hre.ethers.provider.send("tenderly_simulateBundle", [
+  const sim = await dm.hre.ethers.provider.send('tenderly_simulateBundle', [
     bundle,
-    "latest",
+    'latest',
   ]);
 
   return sim;
@@ -687,21 +687,21 @@ export async function fundVoters(dm: DeploymentManager, COMP: Contract) {
   for (const signer of signers) {
     const from = await signer.getAddress();
     
-    await dm.hre.ethers.provider.send("tenderly_setErc20Balance", [
+    await dm.hre.ethers.provider.send('tenderly_setErc20Balance', [
       COMP.address,
       [from],
-      "0x3635C9ADC5DEA00000000",
+      '0x3635C9ADC5DEA00000000',
     ]);
 
-    await dm.hre.ethers.provider.send("tenderly_setBalance", [
+    await dm.hre.ethers.provider.send('tenderly_setBalance', [
       [from],
-      "0x3635C9ADC5DEA00000000",
+      '0x3635C9ADC5DEA00000000',
     ]);
 
     await COMP.connect(signer).delegate(from);
   }
 
-  await dm.hre.network.provider.send("evm_mine");
+  await dm.hre.network.provider.send('evm_mine');
 }
 
 export async function voteForOpenProposal(
@@ -709,7 +709,7 @@ export async function voteForOpenProposal(
   { id, startBlock, endBlock }: OpenProposal,
   tenderly?: boolean
 ) {
-  const governor = await dm.getContractOrThrow("governor");
+  const governor = await dm.getContractOrThrow('governor');
   const blockNow = await dm.hre.ethers.provider.getBlockNumber();
   const blocksUntilStart = startBlock.toNumber() - blockNow;
   const blocksUntilEnd =
@@ -720,7 +720,7 @@ export async function voteForOpenProposal(
   }
 
   const compWhales =
-    dm.network === "mainnet" ? COMP_WHALES.mainnet : COMP_WHALES.testnet;
+    dm.network === 'mainnet' ? COMP_WHALES.mainnet : COMP_WHALES.testnet;
 
   if (blocksUntilEnd > 0) {
     if (tenderly) {
@@ -749,7 +749,7 @@ export async function executeOpenProposal(
   { id, startBlock, endBlock }: OpenProposal,
   tenderly?: boolean
 ) {
-  const governor = await dm.getContractOrThrow("governor");
+  const governor = await dm.getContractOrThrow('governor');
   const blockNow = await dm.hre.ethers.provider.getBlockNumber();
   const blocksUntilEnd =
     endBlock.toNumber() - Math.max(startBlock.toNumber(), blockNow) + 1;
@@ -767,7 +767,7 @@ export async function executeOpenProposal(
 
   // Execute proposal (maybe, w/ gas limit so we see if exec reverts, not a gas estimation error)
   if ((await governor.state(id)) == ProposalState.Queued) {
-    const block = await dm.hre.ethers.provider.getBlock("latest");
+    const block = await dm.hre.ethers.provider.getBlock('latest');
     const eta = await governor.proposalEta(id);
     await setNextBlockTimestamp(
       dm,
@@ -788,7 +788,7 @@ export async function executeOpenProposal(
     await mockAllRedstoneOracles(dm);
   }
   // mine a block
-  await dm.hre.ethers.provider.send("evm_mine", []);
+  await dm.hre.ethers.provider.send('evm_mine', []);
 }
 
 

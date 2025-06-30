@@ -100,5 +100,6 @@
     "mocha": "^9.1.3",
     "@tenderly/hardhat-tenderly/ethers": "^6.7.0",
     "@tenderly/hardhat-tenderly/@nomicfoundation/hardhat-ethers": "3.0.9"
-  }
+  },
+  "packageManager": "yarn@1.22.22"
 }

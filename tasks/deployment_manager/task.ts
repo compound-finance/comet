@@ -5,7 +5,7 @@ import { HardhatRuntimeEnvironment, HardhatConfig } from 'hardhat/types';
 import { DeploymentManager, VerifyArgs } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import hreForBase from '../../plugins/scenario/utils/hreForBase';
-import { OpenProposal } from "scenario/context/Gov";
+import { OpenProposal } from 'scenario/context/Gov';
 import axios from 'axios';
 
 // TODO: Don't depend on scenario's hreForBase
@@ -22,7 +22,7 @@ export async function createTenderlyVNet(
   project: string,
   accessKey: string,
   blockNumber = 0,
-  parentId = "1"
+  parentId = '1'
 ) {
   const slug = `vnet-${Date.now().toString(36)}`;
 
@@ -34,40 +34,40 @@ export async function createTenderlyVNet(
     sync_state_config: { enabled: false },
     explorer_page_config: {
       enabled: false,
-      verification_visibility: "bytecode",
+      verification_visibility: 'bytecode',
     },
   };
   const url = `https://api.tenderly.co/api/v1/account/${username}/project/${project}/vnets`;
   let resp;
   try {
     resp = await axios.post(url, body, {
-      headers: { "X-Access-Key": accessKey },
+      headers: { 'X-Access-Key': accessKey },
     });
   } catch (e) {
-    console.error("Tenderly error:", JSON.stringify(e.response?.data, null, 2));
+    console.error('Tenderly error:', JSON.stringify(e.response?.data, null, 2));
     throw e;
   }
 
   const { data } = resp;
   const adminRpc = data.rpcs.find((r: any) => /admin/i.test(r.name))?.url;
-  if (!adminRpc) throw new Error("VNet created but admin RPC not returned");
+  if (!adminRpc) throw new Error('VNet created but admin RPC not returned');
   return { id: data.id as string, rpc: adminRpc };
 }
 
 export async function getTenderlyEnv(
   hre: HardhatRuntimeEnvironment,
-  parentNet = "mainnet"
+  parentNet = 'mainnet'
 ) {
   const { username, project, accessKey } = hre.config.tenderly;
 
   const { id, rpc } = await createTenderlyVNet(username, project, accessKey);
   const MNEMONIC =
-    "myth like woof scare over problem client lizard pioneer submit female collect";
-  function parseKeys(env = "") {
+    'myth like woof scare over problem client lizard pioneer submit female collect';
+  function parseKeys(env = '') {
     return env
       .split(/[,\s]+/)
       .filter(Boolean)
-      .map((k) => (k.startsWith("0x") ? k : `0x${k}`));
+      .map((k) => (k.startsWith('0x') ? k : `0x${k}`));
   }
 
   const envKeys = process.env.ETH_PK ? parseKeys(process.env.ETH_PK) : [];
@@ -87,10 +87,10 @@ export async function getTenderlyEnv(
         initialIndex: 0,
         count: 10,
         path: "m/44'/60'/0'/0",
-        passphrase: "",
+        passphrase: '',
       },
-    gas: "auto",
-    gasPrice: "auto",
+    gas: 'auto',
+    gasPrice: 'auto',
     gasMultiplier: 1,
     timeout: 20_000,
     httpHeaders: {},
@@ -144,7 +144,7 @@ async function runMigration<T>(
     const {
       tenderlyExecute,
       fundVoters
-    } = await import("../../scenario/utils"); 
+    } = await import('../../scenario/utils'); 
 
     const {
       governor,
@@ -167,7 +167,7 @@ async function runMigration<T>(
         -1
       );
       if (lastEvents.length === 0) {
-        throw new Error("No ProposalCreated events found");
+        throw new Error('No ProposalCreated events found');
       }
 
       const lastEvent = lastEvents[lastEvents.length - 1];
@@ -302,8 +302,8 @@ task('migrate', 'Runs migration')
   .addFlag('enact', 'enacts migration [implies prepare]')
   .addFlag('noEnacted', 'do not write enacted to the migration script')
   .addFlag('simulate', 'only simulates the blockchain effects')
-  .addFlag("tenderly", "use tenderly to simulate the migration")
-  .addFlag("overwrite", "overwrites artifact if exists, fails otherwise")
+  .addFlag('tenderly', 'use tenderly to simulate the migration')
+  .addFlag('overwrite', 'overwrites artifact if exists, fails otherwise')
   .setAction(
     async (
       {
@@ -509,4 +509,4 @@ task('deploy_and_migrate', 'Runs deploy and migration')
       if (enact && !noEnacted) {
         await writeEnacted(migration, dm, true);
       }
-  });
+    });
