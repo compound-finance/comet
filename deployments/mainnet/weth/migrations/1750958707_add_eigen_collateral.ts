@@ -2,7 +2,6 @@ import { expect } from "chai";
 import { DeploymentManager } from "../../../../plugins/deployment_manager/DeploymentManager";
 import { migration } from "../../../../plugins/deployment_manager/Migration";
 import { exp, proposal } from "../../../../src/deploy";
-import { tenderlySimulateProposal } from "../../../../scenario/utils";
 
 const EIGEN_ADDRESS = "0xec53bf9167f50cdeb3ae105f56099aaab9061f83";
 const EIGEN_TO_USD_PRICE_FEED = "0xf2917e602C2dCa458937fad715bb1E465305A4A1";
