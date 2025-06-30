@@ -55,7 +55,7 @@ export class MigrationConstraint<T extends CometContext> implements StaticConstr
           } else {
             migrationData.preMigrationBlockNumber = await ctx.world.deploymentManager.hre.ethers.provider.getBlockNumber();
             const lastProposalBefore = await governor.proposalCount();
-            await migration.actions.enact(ctx.world.deploymentManager, govDeploymentManager, artifact, ctx.world.deploymentManager.tenderly);
+            await migration.actions.enact(ctx.world.deploymentManager, govDeploymentManager, artifact);
             const lastProposalAfter = await governor.proposalCount();
             // Store the latest proposal id if one was created by this migration
             if (lastProposalAfter > lastProposalBefore) {
