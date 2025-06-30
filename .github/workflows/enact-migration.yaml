@@ -23,6 +23,7 @@ on:
       migration:
         description: Migration Name
         required: true
+      
       simulate:
         type: boolean
         description: Simulate
@@ -40,6 +41,11 @@ on:
       with_deploy:
         type: boolean
         description: Deploy Market
+        required: false
+        default: false
+      tenderly:
+        type: boolean
+        description: Use Tenderly for simulation
         required: false
         default: false
 jobs:
@@ -128,7 +134,7 @@ jobs:
         if: github.event.inputs.impersonateAccount != '' && github.event.inputs.with_deploy == 'true'
       - name: Run Enact Migration
         run: |
-          yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true'] }} ${{ github.event.inputs.migration }}
+          yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true']  ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--tenderly"]')[github.event.inputs.tenderly == 'true'] }}      ${{ github.event.inputs.migration }}
         env:
           DEBUG: true
           ETH_PK: "${{ inputs.eth_pk }}"
