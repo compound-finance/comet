@@ -35,6 +35,10 @@ export function getEtherscanApiUrl(network: string): string {
     throw new Error(`Unknown etherscan API host for network ${network}`);
   }
 
+  if (chainId === 443) {
+    return `https://api.snowtrace.io/api`;
+  }
+
   return `https://api.etherscan.io/v2/api?chainid=${chainId}`;
 }
 
