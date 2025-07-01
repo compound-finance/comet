@@ -328,8 +328,8 @@ async function pullFirstTransactionForContractFromEtherscan(network: string, add
     sort: 'asc',
     apikey: getEtherscanApiKey(network)
   };
-  const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
-  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({ ...params, ...{ apikey: '[API_KEY]' } })}`;
+  const url = `${getEtherscanApiUrl(network)}&${paramString(params)}`;
+  const debugUrl = `${getEtherscanApiUrl(network)}&${paramString({ ...params, ...{ apikey: '[API_KEY]' } })}`;
 
   debug(`Attempting to pull Contract Creation code from first tx at ${debugUrl}`);
   const result = await get(url, {});
