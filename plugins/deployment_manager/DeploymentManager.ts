@@ -48,13 +48,12 @@ export class DeploymentManager {
   cache: Cache; // TODO: kind of a misnomer since its handling *all* path stuff
   contractsCache: ContractMap | null;
   _signers: SignerWithAddress[];
-  tenderly?: boolean;
+
   constructor(
     network: string,
     deployment: string,
     hre: HardhatRuntimeEnvironment,
-    config: DeploymentManagerConfig = {},
-    tenderly: boolean = false
+    config: DeploymentManagerConfig = {}
   ) {
     this.network = network;
     this.deployment = deployment;
@@ -62,7 +61,6 @@ export class DeploymentManager {
     this.config = config;
     this.counter = 0;
     this.spent = 0;
-    this.tenderly = tenderly;
     this.cache = new Cache(
       this.network,
       this.deployment,

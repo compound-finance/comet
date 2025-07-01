@@ -9,29 +9,40 @@ const USD_TO_ETH_PRICE_FEED = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419";
 
 let newPiceFeedAddress: string;
 
-
 export default migration("1750958707_add_eigen_collateral", {
-  
   async prepare(deploymentManager: DeploymentManager) {
-      const EIGENToETHScalingPriceFeed = await deploymentManager.deploy(
-        'EIGEN:priceFeed',
-        'pricefeeds/ReverseMultiplicativePriceFeed.sol',
-        [
-          EIGEN_TO_USD_PRICE_FEED, // EIGEN / USD price feed
-          USD_TO_ETH_PRICE_FEED,    // ETH / USD price feed (reversed)
-          8,                               // decimals
-          'EIGEN / ETH price feed'        // description
-        ]
+    const currentNonce =
+      await deploymentManager.hre.ethers.provider.getTransactionCount(
+        (await deploymentManager.getSigner()).getAddress()
       );
+    console.log(`Current nonce of the deployer: ${currentNonce}`);
+    const EIGENToETHScalingPriceFeed = await deploymentManager.deploy(
+      "EIGEN:priceFeed",
+      "pricefeeds/ReverseMultiplicativePriceFeed.sol",
+      [
+        EIGEN_TO_USD_PRICE_FEED, // EIGEN / USD price feed
+        USD_TO_ETH_PRICE_FEED, // ETH / USD price feed (reversed)
+        8, // decimals
+        "EIGEN / ETH price feed", // description
+      ]
+    );
 
-      console.log(`EIGENToETHScalingPriceFeed deployed at ${EIGENToETHScalingPriceFeed.address}`);
-      return {
-        EIGENPriceFeedAddress: EIGENToETHScalingPriceFeed.address,
-      };
-    },
+    console.log(
+      `EIGENToETHScalingPriceFeed deployed at ${EIGENToETHScalingPriceFeed.address}`
+    );
+    return {
+      EIGENPriceFeedAddress: EIGENToETHScalingPriceFeed.address,
+    };
+  },
 
-  async enact(deploymentManager: DeploymentManager, _, {EIGENPriceFeedAddress}) {
-    console.log(`Adding EIGEN collateral to cWETHv3 on Mainnet with price feed`);
+  async enact(
+    deploymentManager: DeploymentManager,
+    _,
+    { EIGENPriceFeedAddress }
+  ) {
+    console.log(
+      `Adding EIGEN collateral to cWETHv3 on Mainnet with price feed`
+    );
     const trace = deploymentManager.tracer();
     const signer = await deploymentManager.getSigner();
     const fromAddr = await signer.getAddress();
@@ -50,13 +61,8 @@ export default migration("1750958707_add_eigen_collateral", {
     newPiceFeedAddress = EIGENPriceFeedAddress;
     console.log(`EIGEN price feed address: ${newPiceFeedAddress}`);
 
-    const {
-      governor,
-      comet,
-      cometAdmin,
-      configurator,
-      COMP
-    } = await deploymentManager.getContracts();
+    const { governor, comet, cometAdmin, configurator, COMP } =
+      await deploymentManager.getContracts();
 
     const EIGENAssetConfig = {
       asset: EIGEN.address,
@@ -69,14 +75,12 @@ export default migration("1750958707_add_eigen_collateral", {
     };
 
     const mainnetActions = [
-      // 1. Add EIGEN as asset
       {
         contract: configurator,
         signature:
           "addAsset(address,(address,address,uint8,uint64,uint64,uint64,uint128))",
         args: [comet.address, EIGENAssetConfig],
       },
-      // 2. Deploy and upgrade to a new version of Comet
       {
         contract: cometAdmin,
         signature: "deployAndUpgradeTo(address,address)",
@@ -90,13 +94,10 @@ export default migration("1750958707_add_eigen_collateral", {
     const _proposal = await proposal(mainnetActions, description);
 
     const txn = await deploymentManager.retry(async () => {
-      _proposal.pop();
       if (!_proposal) {
         throw new Error("Proposal arguments are undefined");
       }
-      return trace(
-        await governor.propose(..._proposal)
-      );
+      return trace(await governor.propose(..._proposal));
     });
 
     trace(
@@ -107,7 +108,7 @@ export default migration("1750958707_add_eigen_collateral", {
   },
 
   async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return false;
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {

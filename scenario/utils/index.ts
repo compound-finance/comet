@@ -1,6 +1,16 @@
 import { expect } from 'chai';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumber, BigNumberish, Contract, ContractReceipt, ContractTransaction, Event, EventFilter, constants, utils } from 'ethers';
+import {
+  BigNumber,
+  BigNumberish,
+  Contract,
+  ContractReceipt,
+  ContractTransaction,
+  Event,
+  EventFilter,
+  constants,
+  utils,
+} from 'ethers';
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { CometContext } from '../context/CometContext';
@@ -12,13 +22,19 @@ import { ProposalState, OpenProposal } from '../context/Gov';
 import { debug } from '../../plugins/deployment_manager/Utils';
 import { COMP_WHALES } from '../../src/deploy';
 import relayMessage from './relayMessage';
-import { mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
+import {
+  mineBlocks,
+  setNextBaseFeeToZero,
+  setNextBlockTimestamp,
+} from './hreUtils';
 import { BaseBridgeReceiver, CometInterface } from '../../build/types';
 import CometActor from './../context/CometActor';
 import { isBridgeProposal } from './isBridgeProposal';
 import { Interface } from 'ethers/lib/utils';
-
+import axios from 'axios';
 export { mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp };
+import { readFileSync } from 'fs';
+import path from 'path';
 
 export const MAX_ASSETS = 24;
 export const UINT256_MAX = 2n ** 256n - 1n;
@@ -33,49 +49,74 @@ export enum ComparisonOp {
   GT,
   LTE,
   LT,
-  EQ
+  EQ,
 }
 
-export const max = (...args) => args.reduce((m, e) => e > m ? e : m);
-export const min = (...args) => args.reduce((m, e) => e < m ? e : m);
+export const max = (...args) => args.reduce((m, e) => (e > m ? e : m));
+export const min = (...args) => args.reduce((m, e) => (e < m ? e : m));
 
 export function abs(x: bigint): bigint {
   return x < 0n ? -x : x;
 }
 
-export function expectApproximately(expected: bigint, actual: bigint, precision = 0n) {
-  expect(BigNumber.from(abs(expected - actual))).to.be.lte(BigNumber.from(precision));
+export function expectApproximately(
+  expected: bigint,
+  actual: bigint,
+  precision = 0n
+) {
+  expect(BigNumber.from(abs(expected - actual))).to.be.lte(
+    BigNumber.from(precision)
+  );
 }
 
 export function expectBase(expected: bigint, actual: bigint, precision = 2n) {
   expectApproximately(expected, actual, precision);
 }
 
-export function expectRevertCustom(tx: Promise<ContractReceipt | ContractTransaction>, custom: string) {
+export function expectRevertCustom(
+  tx: Promise<ContractReceipt | ContractTransaction>,
+  custom: string
+) {
   return tx
-    .then(_ => { throw new Error('Expected transaction to be reverted'); })
-    .catch(e => {
-      const selector = utils.keccak256(custom.split('').reduce((a, s) => a + s.charCodeAt(0).toString(16), '0x')).slice(2, 2 + 8);
+    .then((_) => {
+      throw new Error('Expected transaction to be reverted');
+    })
+    .catch((e) => {
+      const selector = utils
+        .keccak256(
+          custom
+            .split('')
+            .reduce((a, s) => a + s.charCodeAt(0).toString(16), '0x')
+        )
+        .slice(2, 2 + 8);
       const patterns = [
         new RegExp(`custom error '${custom.replace(/[()]/g, '\\$&')}'`),
         new RegExp(`unrecognized custom error with selector ${selector}`),
-        new RegExp(`unrecognized custom error \\(return data: 0x${selector}\\)`)
+        new RegExp(
+          `unrecognized custom error \\(return data: 0x${selector}\\)`
+        ),
       ];
       for (const pattern of patterns)
-        if (pattern.test(e.message) || pattern.test(e.reason))
-          return;
-      throw new Error(`Expected revert message in one of [${patterns}], but reverted with: ${e.message}`);
+        if (pattern.test(e.message) || pattern.test(e.reason)) return;
+      throw new Error(
+        `Expected revert message in one of [${patterns}], but reverted with: ${e.message}`
+      );
     });
 }
 
-export function expectRevertMatches(tx: Promise<ContractReceipt>, patterns: RegExp[]) {
+export function expectRevertMatches(
+  tx: Promise<ContractReceipt>,
+  patterns: RegExp[]
+) {
   return tx
-    .then(_ => { throw new Error('Expected transaction to be reverted'); })
-    .catch(e => {
-      for (const pattern of patterns)
-        if (pattern.test(e.message))
-          return;
-      throw new Error(`Expected revert message in one of ${patterns}, but reverted with: ${e.message}`);
+    .then((_) => {
+      throw new Error('Expected transaction to be reverted');
+    })
+    .catch((e) => {
+      for (const pattern of patterns) if (pattern.test(e.message)) return;
+      throw new Error(
+        `Expected revert message in one of ${patterns}, but reverted with: ${e.message}`
+      );
     });
 }
 
@@ -134,17 +175,24 @@ export function* subsets<T>(array: T[], offset = 0): Generator<T[]> {
   yield [];
 }
 
-export function getExpectedBaseBalance(balance: bigint, baseIndexScale: bigint, borrowOrSupplyIndex: bigint): bigint {
-  const principalValue = balance * baseIndexScale / borrowOrSupplyIndex;
-  const baseBalanceOf = principalValue * borrowOrSupplyIndex / baseIndexScale;
+export function getExpectedBaseBalance(
+  balance: bigint,
+  baseIndexScale: bigint,
+  borrowOrSupplyIndex: bigint
+): bigint {
+  const principalValue = (balance * baseIndexScale) / borrowOrSupplyIndex;
+  const baseBalanceOf = (principalValue * borrowOrSupplyIndex) / baseIndexScale;
   return baseBalanceOf;
 }
 
 export function getInterest(balance: bigint, rate: bigint, seconds: bigint) {
-  return balance * rate * seconds / (10n ** 18n);
+  return (balance * rate * seconds) / 10n ** 18n;
 }
 
-export async function getActorAddressFromName(name: string, context: CometContext): Promise<string> {
+export async function getActorAddressFromName(
+  name: string,
+  context: CometContext
+): Promise<string> {
   if (name.startsWith('$')) {
     const cometRegex = /comet/;
     let actorAddress: string;
@@ -160,7 +208,10 @@ export async function getActorAddressFromName(name: string, context: CometContex
   }
 }
 
-export async function getAssetFromName(name: string, context: CometContext): Promise<CometAsset> {
+export async function getAssetFromName(
+  name: string,
+  context: CometContext
+): Promise<CometAsset> {
   let comet = await context.getComet(); // TODO: can optimize by taking this as an arg instead
   if (name.startsWith('$')) {
     const collateralAssetRegex = /asset[0-9]+/;
@@ -184,7 +235,11 @@ export async function getAssetFromName(name: string, context: CometContext): Pro
 }
 
 // Returns the amount that needs to be transferred to satisfy a constraint
-export function getToTransferAmount(amount: ComparativeAmount, existingBalance: bigint, decimals: number): bigint {
+export function getToTransferAmount(
+  amount: ComparativeAmount,
+  existingBalance: bigint,
+  decimals: number
+): bigint {
   let toTransfer = 0n;
   switch (amount.op) {
     case ComparisonOp.EQ:
@@ -214,16 +269,20 @@ export function getToTransferAmount(amount: ComparativeAmount, existingBalance: 
 export function parseAmount(amount): ComparativeAmount {
   switch (typeof amount) {
     case 'bigint':
-      return amount >= 0n ? { val: Number(amount), op: ComparisonOp.GTE } : { val: Number(amount), op: ComparisonOp.LTE };
+      return amount >= 0n
+        ? { val: Number(amount), op: ComparisonOp.GTE }
+        : { val: Number(amount), op: ComparisonOp.LTE };
     case 'number':
-      return amount >= 0 ? { val: amount, op: ComparisonOp.GTE } : { val: amount, op: ComparisonOp.LTE };
+      return amount >= 0
+        ? { val: amount, op: ComparisonOp.GTE }
+        : { val: amount, op: ComparisonOp.LTE };
     case 'string':
       return matchGroup(amount, {
-        'GTE': />=\s*(-?\d+)/,
-        'GT': />\s*(-?\d+)/,
-        'LTE': /<=\s*(-?\d+)/,
-        'LT': /<\s*(-?\d+)/,
-        'EQ': /==\s*(-?\d+)/,
+        GTE: />=\s*(-?\d+)/,
+        GT: />\s*(-?\d+)/,
+        LTE: /<=\s*(-?\d+)/,
+        LT: /<\s*(-?\d+)/,
+        EQ: /==\s*(-?\d+)/,
       });
     case 'object':
       return amount;
@@ -240,19 +299,34 @@ function matchGroup(str, patterns): ComparativeAmount {
   throw new Error(`No match for ${str} in ${patterns}`);
 }
 
-export async function modifiedPaths(pattern: RegExp, against: string = 'origin/main'): Promise<string[]> {
-  const output = execSync(`git diff --numstat $(git merge-base ${against} HEAD)`);
-  const paths = output.toString().split('\n').map(l => l.split(/\s+/)[2]);
-  const modified = paths.filter(p => pattern.test(p) && existsSync(p));
+export async function modifiedPaths(
+  pattern: RegExp,
+  against: string = 'origin/main'
+): Promise<string[]> {
+  const output = execSync(
+    `git diff --numstat $(git merge-base ${against} HEAD)`
+  );
+  const paths = output
+    .toString()
+    .split('\n')
+    .map((l) => l.split(/\s+/)[2]);
+  const modified = paths.filter((p) => pattern.test(p) && existsSync(p));
   return modified;
 }
 
-export async function isValidAssetIndex(ctx: CometContext, assetNum: number): Promise<boolean> {
+export async function isValidAssetIndex(
+  ctx: CometContext,
+  assetNum: number
+): Promise<boolean> {
   const comet = await ctx.getComet();
-  return assetNum < await comet.numAssets();
+  return assetNum < (await comet.numAssets());
 }
 
-export async function isTriviallySourceable(ctx: CometContext, assetNum: number, amount: number): Promise<boolean> {
+export async function isTriviallySourceable(
+  ctx: CometContext,
+  assetNum: number,
+  amount: number
+): Promise<boolean> {
   const fauceteer = await ctx.getFauceteer();
   // If fauceteer does not exist (e.g. mainnet), then token is likely sourceable from events
   if (fauceteer == null) return true;
@@ -262,7 +336,7 @@ export async function isTriviallySourceable(ctx: CometContext, assetNum: number,
   const asset = ctx.getAssetByAddress(assetInfo.asset);
   const amountInWei = BigInt(amount) * assetInfo.scale.toBigInt();
   // Fauceteer should have greater than the expected amount of the asset
-  return await asset.balanceOf(fauceteer.address) > amountInWei;
+  return (await asset.balanceOf(fauceteer.address)) > amountInWei;
 }
 
 export async function isBulkerSupported(ctx: CometContext): Promise<boolean> {
@@ -270,7 +344,9 @@ export async function isBulkerSupported(ctx: CometContext): Promise<boolean> {
   return bulker == null ? false : true;
 }
 
-export async function hasMinBorrowGreaterThanOne(ctx: CometContext): Promise<boolean> {
+export async function hasMinBorrowGreaterThanOne(
+  ctx: CometContext
+): Promise<boolean> {
   const comet = await ctx.getComet();
   const minBorrow = (await comet.baseBorrowMin()).toBigInt();
   return minBorrow > 1n;
@@ -279,12 +355,15 @@ export async function hasMinBorrowGreaterThanOne(ctx: CometContext): Promise<boo
 type DeploymentCriterion = {
   network?: string;
   deployment?: string;
-}
+};
 
-export function matchesDeployment(ctx: CometContext, deploymentCriteria: DeploymentCriterion[]): boolean {
+export function matchesDeployment(
+  ctx: CometContext,
+  deploymentCriteria: DeploymentCriterion[]
+): boolean {
   const currentDeployment = {
     network: ctx.world.base.network,
-    deployment: ctx.world.base.deployment
+    deployment: ctx.world.base.deployment,
   };
 
   function matchesCurrentDeployment(deploymentCriterion: DeploymentCriterion) {
@@ -327,7 +406,9 @@ export async function fetchLogs(
   if (toBlock - fromBlock > BLOCK_SPAN) {
     const midBlock = fromBlock + BLOCK_SPAN;
     const logs = await contract.queryFilter(filter, fromBlock, midBlock);
-    return logs.concat(await fetchLogs(contract, filter, midBlock + 1, toBlock));
+    return logs.concat(
+      await fetchLogs(contract, filter, midBlock + 1, toBlock)
+    );
   } else {
     return contract.queryFilter(filter, fromBlock, toBlock);
   }
@@ -344,22 +425,32 @@ async function redeployRenzoOracle(dm: DeploymentManager) {
       dm.hre.ethers.provider
     );
 
-    const admin = await impersonateAddress(dm, '0xD1e6626310fD54Eceb5b9a51dA2eC329D6D4B68A');
+    const admin = await impersonateAddress(
+      dm,
+      '0xD1e6626310fD54Eceb5b9a51dA2eC329D6D4B68A'
+    );
     // set balance
     await dm.hre.ethers.provider.send('hardhat_setBalance', [
       admin.address,
-      dm.hre.ethers.utils.hexStripZeros(dm.hre.ethers.utils.parseUnits('100', 'ether').toHexString()),
+      dm.hre.ethers.utils.hexStripZeros(
+        dm.hre.ethers.utils.parseUnits('100', 'ether').toHexString()
+      ),
     ]);
 
     const newOracle = await dm.deploy(
       'renzo:Oracle',
       'test/MockRenzoOracle.sol',
       [
-        '0x86392dC19c0b719886221c78AB11eb8Cf5c52812',    // stETH / ETH oracle address
+        '0x86392dC19c0b719886221c78AB11eb8Cf5c52812', // stETH / ETH oracle address
       ]
     );
 
-    await renzoOracle.connect(admin).setOracleAddress('0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84', newOracle.address);
+    await renzoOracle
+      .connect(admin)
+      .setOracleAddress(
+        '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',
+        newOracle.address
+      );
   }
 }
 
@@ -368,9 +459,7 @@ const tokens = new Map<string, string>([
   ['LINK', '0x514910771AF9Ca656af840dff83E8264EcF986CA'],
 ]);
 
-const dest = new Map<string, string>([
-  ['ronin', '6916147374840168594'],
-]);
+const dest = new Map<string, string>([['ronin', '6916147374840168594']]);
 
 async function updateCCIPStats(dm: DeploymentManager) {
   if (dm.network === 'mainnet') {
@@ -379,116 +468,116 @@ async function updateCCIPStats(dm: DeploymentManager) {
     const priceRegistry = '0x8c9b2Efb7c64C394119270bfecE7f54763b958Ad';
     const abi = [
       {
-        'inputs': [
+        inputs: [
           {
-            'components': [
+            components: [
               {
-                'components': [
+                components: [
                   {
-                    'internalType': 'address',
-                    'name': 'sourceToken',
-                    'type': 'address'
+                    internalType: 'address',
+                    name: 'sourceToken',
+                    type: 'address',
                   },
                   {
-                    'internalType': 'uint224',
-                    'name': 'usdPerToken',
-                    'type': 'uint224'
-                  }
+                    internalType: 'uint224',
+                    name: 'usdPerToken',
+                    type: 'uint224',
+                  },
                 ],
-                'internalType': 'struct TokenPriceUpdate[]',
-                'name': 'tokenPriceUpdates',
-                'type': 'tuple[]'
+                internalType: 'struct TokenPriceUpdate[]',
+                name: 'tokenPriceUpdates',
+                type: 'tuple[]',
               },
               {
-                'components': [
+                components: [
                   {
-                    'internalType': 'uint64',
-                    'name': 'destChainSelector',
-                    'type': 'uint64'
+                    internalType: 'uint64',
+                    name: 'destChainSelector',
+                    type: 'uint64',
                   },
                   {
-                    'internalType': 'uint224',
-                    'name': 'usdPerUnitGas',
-                    'type': 'uint224'
-                  }
+                    internalType: 'uint224',
+                    name: 'usdPerUnitGas',
+                    type: 'uint224',
+                  },
                 ],
-                'internalType': 'struct GasPriceUpdate[]',
-                'name': 'gasPriceUpdates',
-                'type': 'tuple[]'
-              }
+                internalType: 'struct GasPriceUpdate[]',
+                name: 'gasPriceUpdates',
+                type: 'tuple[]',
+              },
             ],
-            'internalType': 'struct PriceUpdates',
-            'name': 'priceUpdates',
-            'type': 'tuple'
-          }
+            internalType: 'struct PriceUpdates',
+            name: 'priceUpdates',
+            type: 'tuple',
+          },
         ],
-        'name': 'updatePrices',
-        'outputs': [],
-        'stateMutability': 'nonpayable',
-        'type': 'function'
+        name: 'updatePrices',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
       },
       {
-        'inputs': [
+        inputs: [
           {
-            'internalType': 'uint64',
-            'name': 'destChainSelector',
-            'type': 'uint64'
-          }
+            internalType: 'uint64',
+            name: 'destChainSelector',
+            type: 'uint64',
+          },
         ],
-        'name': 'getDestinationChainGasPrice',
-        'outputs': [
+        name: 'getDestinationChainGasPrice',
+        outputs: [
           {
-            'components': [
+            components: [
               {
-                'internalType': 'uint224',
-                'name': 'value',
-                'type': 'uint224'
+                internalType: 'uint224',
+                name: 'value',
+                type: 'uint224',
               },
               {
-                'internalType': 'uint32',
-                'name': 'timestamp',
-                'type': 'uint32'
-              }
+                internalType: 'uint32',
+                name: 'timestamp',
+                type: 'uint32',
+              },
             ],
-            'internalType': 'struct TimestampedPackedUint224',
-            'name': '',
-            'type': 'tuple'
-          }
+            internalType: 'struct TimestampedPackedUint224',
+            name: '',
+            type: 'tuple',
+          },
         ],
-        'stateMutability': 'view',
-        'type': 'function'
+        stateMutability: 'view',
+        type: 'function',
       },
       {
-        'inputs': [
+        inputs: [
           {
-            'internalType': 'address',
-            'name': 'token',
-            'type': 'address'
-          }
+            internalType: 'address',
+            name: 'token',
+            type: 'address',
+          },
         ],
-        'name': 'getTokenPrice',
-        'outputs': [
+        name: 'getTokenPrice',
+        outputs: [
           {
-            'components': [
+            components: [
               {
-                'internalType': 'uint224',
-                'name': 'value',
-                'type': 'uint224'
+                internalType: 'uint224',
+                name: 'value',
+                type: 'uint224',
               },
               {
-                'internalType': 'uint32',
-                'name': 'timestamp',
-                'type': 'uint32'
-              }
+                internalType: 'uint32',
+                name: 'timestamp',
+                type: 'uint32',
+              },
             ],
-            'internalType': 'struct TimestampedPackedUint224',
-            'name': '',
-            'type': 'tuple'
-          }
+            internalType: 'struct TimestampedPackedUint224',
+            name: '',
+            type: 'tuple',
+          },
         ],
-        'stateMutability': 'view',
-        'type': 'function'
-      }
+        stateMutability: 'view',
+        type: 'function',
+      },
     ];
 
     await dm.hre.network.provider.request({
@@ -502,7 +591,11 @@ async function updateCCIPStats(dm: DeploymentManager) {
     });
     const commitStoreSigner = await dm.hre.ethers.getSigner(commitStore);
 
-    const registryContract = new Contract(priceRegistry, abi, dm.hre.ethers.provider);
+    const registryContract = new Contract(
+      priceRegistry,
+      abi,
+      dm.hre.ethers.provider
+    );
 
     const tokenPrices = [];
     const gasPrices = [];
@@ -517,14 +610,15 @@ async function updateCCIPStats(dm: DeploymentManager) {
 
     const tx0 = await commitStoreSigner.sendTransaction({
       to: priceRegistry,
-      data: registryContract.interface.encodeFunctionData('updatePrices', [{
-        tokenPriceUpdates: tokenPrices,
-        gasPriceUpdates: gasPrices
-      }]),
+      data: registryContract.interface.encodeFunctionData('updatePrices', [
+        {
+          tokenPriceUpdates: tokenPrices,
+          gasPriceUpdates: gasPrices,
+        },
+      ]),
     });
 
     await tx0.wait();
-
   }
 }
 
@@ -545,11 +639,19 @@ const REDSTONE_FEEDS = {
   ],
 };
 
-async function getProxyAdmin(dm: DeploymentManager, proxyAddress: string): Promise<string> {
+async function getProxyAdmin(
+  dm: DeploymentManager,
+  proxyAddress: string
+): Promise<string> {
   // Retrieve the proxy admin address
-  const admin = await dm.hre.ethers.provider.getStorageAt(proxyAddress, '0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103');
+  const admin = await dm.hre.ethers.provider.getStorageAt(
+    proxyAddress,
+    '0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103'
+  );
   // Convert the admin address to a checksum address
-  const adminAddress = dm.hre.ethers.utils.getAddress('0x' + admin.substring(26));
+  const adminAddress = dm.hre.ethers.utils.getAddress(
+    '0x' + admin.substring(26)
+  );
   return adminAddress;
 }
 
@@ -562,8 +664,7 @@ async function mockAllRedstoneOracles(dm: DeploymentManager) {
   for (const feed of feeds) {
     try {
       await dm.fromDep(`MockRedstoneOracle:${feed}`, dm.network, dm.deployment);
-    }
-    catch (_) {
+    } catch (_) {
       await mockRedstoneOracle(dm, feed);
     }
   }
@@ -591,7 +692,9 @@ async function mockRedstoneOracle(dm: DeploymentManager, feed: string) {
   // set balance
   await dm.hre.ethers.provider.send('hardhat_setBalance', [
     owner.address,
-    dm.hre.ethers.utils.hexStripZeros(dm.hre.ethers.utils.parseUnits('100', 'ether').toHexString()),
+    dm.hre.ethers.utils.hexStripZeros(
+      dm.hre.ethers.utils.parseUnits('100', 'ether').toHexString()
+    ),
   ]);
   const price = (await feedContract.latestRoundData()).answer;
   const newImplementation = await dm.deploy(
@@ -602,106 +705,146 @@ async function mockRedstoneOracle(dm: DeploymentManager, feed: string) {
   await proxyAdmin.connect(owner).upgrade(feed, newImplementation.address);
 }
 
-const tenderlySimulateExecution = async (
+export async function tenderlyExecute(
   dm: DeploymentManager,
   governor: Contract,
-  id: any,
-  block: any,
-  eta: BigNumber
-) => {
+  timelock: Contract
+) {
+ 
+  const latest = await dm.hre.ethers.provider.getBlock('latest');
+  const B0 = BigInt(latest.number); 
+  const T0 = BigInt(latest.timestamp);
+  
+  const blockStart = B0 + 1n;
+  const blockEnd = blockStart + 1n;
+  const blockCast = blockEnd;
+  const blockQueue = blockCast   + 1n;
+  const blockExec = blockQueue + 3n;
+
+  const tsShift = (t: bigint, dBlocks: bigint) => t + dBlocks * 12n; 
+  const timestampCast = tsShift(T0, blockCast  - B0);
+  const timestampQueue = tsShift(T0, blockQueue - B0);
+  const timestampExec = tsShift(T0, blockExec  - B0);
+
+  const proposalArgs = loadCachedProposal(); proposalArgs.pop();
+  const id = BigInt(await governor.proposalCount());
+  const govIF = new Interface(governor.interface.fragments);
   const signer = await dm.getSigner();
   const fromAddr = await signer.getAddress();
 
-  const govIf = new Interface(governor.interface.fragments);
+  const patchTL = { '0x2': '0x' + '00'.repeat(64) };
 
-  const bundle = [
+  const packed = (1n << 48n) | 1n;
+  const rawGS = dm.hre.ethers.utils.hexZeroPad(
+    dm.hre.ethers.BigNumber.from(packed).toHexString(), 32);
+  const keyGS = '0x00d7616c8fe29c6c2fbe1d0c5bc8f2faa4c35b43746e70b24b4d532752affd01';
+
+  const basePLQ = BigInt(
+    '0x042f525fd47e44d02e065dd7bb464f47b4f926fbd05b5e087891ebd756adf100');
+  const slotVoteExt = '0x' + basePLQ.toString(16).padStart(64, '0');
+  const slotMapRoot = '0x' + (basePLQ + 1n).toString(16).padStart(64, '0');
+  const slotExtDead = dm.hre.ethers.utils.keccak256(
+    dm.hre.ethers.utils.defaultAbiCoder.encode(['uint256','bytes32'], [id, slotMapRoot])
+  );
+
+  const patchGov = {
+    [keyGS]: rawGS,
+    [slotVoteExt]: '0x' + '00'.repeat(64),
+    [slotExtDead]: '0x' + '00'.repeat(64)
+  };
+
+  const statePatch = {
+    [timelock.address]: { storage: patchTL },
+    [governor.address]: { storage: patchGov }
+  };
+
+  const whales = dm.network === 'mainnet'
+    ? COMP_WHALES.mainnet
+    : COMP_WHALES.testnet;
+
+
+  const art  = await dm.hre.artifacts.readArtifact('ConstantPriceFeed');
+
+  const iface = new Interface(art.abi);
+  const bytecodeWithArgs =
+          art.bytecode +
+          iface.encodeDeploy([
+            8,                                             
+            exp(1, 8)
+          ]).slice(2);
+
+  const sims = [
     {
-      from: fromAddr,
-      to: governor.address,
-      gas: '0x0',
-      value: '0x0',
-      data: govIf.encodeFunctionData('queue', [id]),
+      network_id: '1', from: fromAddr, to: '',
+      block_number: Number(B0),
+      block_header: { timestamp: dm.hre.ethers.utils.hexlify(T0) },
+      input: dm.hre.ethers.utils.hexlify(bytecodeWithArgs),
+      state_objects: statePatch, save: true, gas_price: 0, 
     },
     {
-      from: fromAddr,
-      to: governor.address,
-      gas: '0x0',
-      value: '0x0',
-      header: {
-        timestamp: Math.max(block.timestamp, eta.toNumber()) + 2,
-      },
-      data: govIf.encodeFunctionData('execute', [id]),
+      network_id: '1', from: fromAddr, to: governor.address,
+      block_number: Number(B0),
+      block_header: { timestamp: dm.hre.ethers.utils.hexlify(T0) },
+      input: govIF.encodeFunctionData('propose', proposalArgs),
+      state_objects: statePatch, save: true, gas_price: 0,
     },
+    ...whales.map((w) => ({
+      network_id: '1', from: w, to: governor.address,
+      block_number: Number(blockCast),
+      block_header: { timestamp: dm.hre.ethers.utils.hexlify(timestampCast) },
+      input: govIF.encodeFunctionData('castVote', [id, 1]),
+      state_objects: statePatch, save: true, save_if_fails: true,  gas_price: 0
+    })),
+    {
+      network_id: '1', from: fromAddr, to: governor.address,
+      block_number: Number(blockQueue),
+      block_header: { timestamp: dm.hre.ethers.utils.hexlify(timestampQueue) },
+      input: govIF.encodeFunctionData('queue', [id]),
+      state_objects: statePatch, save: true, save_if_fails: true, gas_price: 0
+    },
+    {
+      network_id: '1', from: fromAddr, to: governor.address,
+      block_number: Number(blockExec),
+      block_header: { timestamp: dm.hre.ethers.utils.hexlify(timestampExec) },
+      input: govIF.encodeFunctionData('execute', [id]),
+      state_objects: statePatch, save: true, save_if_fails: true, gas_price: 0
+    }
   ];
 
-  const sim = await dm.hre.ethers.provider.send('tenderly_simulateBundle', [
-    bundle,
-    'latest',
-  ]);
+  const body = {
+    simulations: sims,
+    block_number: Number(B0),
+    simulation_type: 'full',
+    save: true
+  };
 
-  return sim;
-};
-
-export async function tenderlyExecute(
-  dm: DeploymentManager,
-  prop: OpenProposal,
-) {
-  const { id, targets, values, calldatas, signatures, startBlock, endBlock } = prop;
-  const proposer = (await dm.getSigner()).address;
-
-  await voteForOpenProposal(
-    dm,
-    {
-      id,
-      proposer,
-      targets,
-      values,
-      signatures,
-      calldatas,
-      startBlock,
-      endBlock,
-    },
-    true
+  const { username, project, accessKey } = dm.hre.config.tenderly;
+  const res = await axios.post(
+    `https://api.tenderly.co/api/v1/account/${username}/project/${project}/simulate-bundle`,
+    body,
+    { headers: { 'X-Access-Key': accessKey, 'Content-Type': 'application/json' } }
   );
 
-  await executeOpenProposal(
-    dm,
+  await axios.post(
+    `https://api.tenderly.co/api/v1/account/${username}/project/${project}/simulations/${res.data.simulation_results[0].simulation.id}/share`,
+    {},
     {
-      id,
-      proposer,
-      targets,
-      values,
-      signatures,
-      calldatas,
-      startBlock,
-      endBlock,
-    },
-    true
+      headers: { 'X-Access-Key': accessKey, 'Content-Type': 'application/json' },
+    }
   );
-}
 
-export async function fundVoters(dm: DeploymentManager, COMP: Contract) {
-  const signers = await dm.getSigners();
+  await axios.post(
+    `https://api.tenderly.co/api/v1/account/${username}/project/${project}/simulations/${res.data.simulation_results[res.data.simulation_results.length - 1].simulation.id}/share`,
+    {},
+    {
+      headers: { 'X-Access-Key': accessKey, 'Content-Type': 'application/json' },
+    }
+  );
 
+  console.log('https://www.tdly.co/shared/simulation/'+res.data.simulation_results[0].simulation.id);
+  console.log('https://www.tdly.co/shared/simulation/'+res.data.simulation_results[res.data.simulation_results.length - 1].simulation.id);
 
-  for (const signer of signers) {
-    const from = await signer.getAddress();
-    
-    await dm.hre.ethers.provider.send('tenderly_setErc20Balance', [
-      COMP.address,
-      [from],
-      '0x3635C9ADC5DEA00000000',
-    ]);
-
-    await dm.hre.ethers.provider.send('tenderly_setBalance', [
-      [from],
-      '0x3635C9ADC5DEA00000000',
-    ]);
-
-    await COMP.connect(signer).delegate(from);
-  }
-
-  await dm.hre.network.provider.send('evm_mine');
+  return res.data;
 }
 
 export async function voteForOpenProposal(
@@ -744,10 +887,21 @@ export async function voteForOpenProposal(
   }
 }
 
+function loadCachedProposal() {
+  const file = path.resolve(
+    __dirname,
+    '../..',
+    'cache',
+    'currentProposal.json'
+  );
+  const json = JSON.parse(readFileSync(file, 'utf8'));
+
+  return json;
+}
+
 export async function executeOpenProposal(
   dm: DeploymentManager,
-  { id, startBlock, endBlock }: OpenProposal,
-  tenderly?: boolean
+  { id, startBlock, endBlock }: OpenProposal
 ) {
   const governor = await dm.getContractOrThrow('governor');
   const blockNow = await dm.hre.ethers.provider.getBlockNumber();
@@ -759,10 +913,8 @@ export async function executeOpenProposal(
   }
 
   if ((await governor.state(id)) == ProposalState.Succeeded) {
-    if (!tenderly) {
-      await setNextBaseFeeToZero(dm);
-      await governor.queue(id, { gasPrice: 0 });
-    } else await governor.queue(id);
+    await setNextBaseFeeToZero(dm);
+    await governor.queue(id, { gasPrice: 0 });
   }
 
   // Execute proposal (maybe, w/ gas limit so we see if exec reverts, not a gas estimation error)
@@ -773,24 +925,19 @@ export async function executeOpenProposal(
       dm,
       Math.max(block.timestamp, eta.toNumber()) + 1
     );
-    if (tenderly) {
-      await tenderlySimulateExecution(dm, governor, id, block, eta);
-    } else {
-      await setNextBaseFeeToZero(dm);
-      await updateCCIPStats(dm);
-    }
+
+    await setNextBaseFeeToZero(dm);
+    await updateCCIPStats(dm);
 
     await governor.execute(id, { gasPrice: 0, gasLimit: 120000000 });
   }
 
-  if (!tenderly) {
-    await redeployRenzoOracle(dm);
-    await mockAllRedstoneOracles(dm);
-  }
+  await redeployRenzoOracle(dm);
+  await mockAllRedstoneOracles(dm);
+
   // mine a block
   await dm.hre.ethers.provider.send('evm_mine', []);
 }
-
 
 async function testnetPropose(
   dm: DeploymentManager,
@@ -804,20 +951,17 @@ async function testnetPropose(
 ) {
   const governor = await dm.getContractOrThrow('governor');
   const testnetGovernor = new Contract(
-    governor.address, [
+    governor.address,
+    [
       'function propose(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) external returns (uint256 proposalId)',
-      'event ProposalCreated(uint256 proposalId, address proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 startBlock, uint256 endBlock, string description)'
-    ], governor.signer
+      'event ProposalCreated(uint256 proposalId, address proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 startBlock, uint256 endBlock, string description)',
+    ],
+    governor.signer
   );
 
-  return testnetGovernor.connect(proposer).propose(
-    targets,
-    values,
-    signatures,
-    calldatas,
-    description,
-    { gasPrice }
-  );
+  return testnetGovernor
+    .connect(proposer)
+    .propose(targets, values, signatures, calldatas, description, { gasPrice });
 }
 
 // Instantly executes some actions through the governance proposal process
@@ -833,24 +977,56 @@ export async function fastGovernanceExecute(
 
   await setNextBaseFeeToZero(dm);
 
-  const proposeTxn = dm.network === 'mainnet' ? await (
-    await governor.connect(proposer).propose(
-      targets,
-      values,
-      calldatas.map((calldata, i) => {
-        return utils.id(signatures[i]).slice(0, 10) + calldata.slice(2);
-      }),
-      'FastExecuteProposal',
-      { gasPrice: 0 }
-    )
-  ).wait() : await (
-    await testnetPropose(dm, proposer, targets, values, signatures, calldatas, 'FastExecuteProposal', 0)
-  ).wait();
-  const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
+  const proposeTxn =
+    dm.network === 'mainnet'
+      ? await (
+        await governor.connect(proposer).propose(
+          targets,
+          values,
+          calldatas.map((calldata, i) => {
+            return utils.id(signatures[i]).slice(0, 10) + calldata.slice(2);
+          }),
+          'FastExecuteProposal',
+          { gasPrice: 0 }
+        )
+      ).wait()
+      : await (
+        await testnetPropose(
+          dm,
+          proposer,
+          targets,
+          values,
+          signatures,
+          calldatas,
+          'FastExecuteProposal',
+          0
+        )
+      ).wait();
+  const proposeEvent = proposeTxn.events.find(
+    (event) => event.event === 'ProposalCreated'
+  );
   const [id, , , , , , startBlock, endBlock] = proposeEvent.args;
 
-  await voteForOpenProposal(dm, { id, proposer: proposer.address, targets, values, signatures, calldatas, startBlock, endBlock });
-  await executeOpenProposal(dm, { id, proposer: proposer.address, targets, values, signatures, calldatas, startBlock, endBlock });
+  await voteForOpenProposal(dm, {
+    id,
+    proposer: proposer.address,
+    targets,
+    values,
+    signatures,
+    calldatas,
+    startBlock,
+    endBlock,
+  });
+  await executeOpenProposal(dm, {
+    id,
+    proposer: proposer.address,
+    targets,
+    values,
+    signatures,
+    calldatas,
+    startBlock,
+    endBlock,
+  });
 }
 
 export async function fastL2GovernanceExecute(
@@ -862,7 +1038,8 @@ export async function fastL2GovernanceExecute(
   signatures: string[],
   calldatas: string[]
 ) {
-  const startingBlockNumber = await governanceDeploymentManager.hre.ethers.provider.getBlockNumber();
+  const startingBlockNumber =
+    await governanceDeploymentManager.hre.ethers.provider.getBlockNumber();
   await fastGovernanceExecute(
     governanceDeploymentManager,
     proposer,
@@ -872,10 +1049,18 @@ export async function fastL2GovernanceExecute(
     calldatas
   );
 
-  await relayMessage(governanceDeploymentManager, bridgeDeploymentManager, startingBlockNumber);
+  await relayMessage(
+    governanceDeploymentManager,
+    bridgeDeploymentManager,
+    startingBlockNumber
+  );
 }
 
-export async function createCrossChainProposal(context: CometContext, l2ProposalData: string, bridgeReceiver: BaseBridgeReceiver) {
+export async function createCrossChainProposal(
+  context: CometContext,
+  l2ProposalData: string,
+  bridgeReceiver: BaseBridgeReceiver
+) {
   const govDeploymentManager = context.world.auxiliaryDeploymentManager!;
   const bridgeDeploymentManager = context.world.deploymentManager!;
   const proposer = await context.getProposer();
@@ -888,26 +1073,37 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
   // Create the chain-specific wrapper around the L2 proposal data
   switch (bridgeNetwork) {
     case 'arbitrum': {
-      const inbox = await govDeploymentManager.getContractOrThrow('arbitrumInbox');
+      const inbox = await govDeploymentManager.getContractOrThrow(
+        'arbitrumInbox'
+      );
       const refundAddress = constants.AddressZero;
       const createRetryableTicketCalldata = utils.defaultAbiCoder.encode(
         [
-          'address', 'uint256', 'uint256', 'address', 'address', 'uint256', 'uint256', 'bytes'
+          'address',
+          'uint256',
+          'uint256',
+          'address',
+          'address',
+          'uint256',
+          'uint256',
+          'bytes',
         ],
         [
           bridgeReceiver.address, // address to,
-          0,                      // uint256 l2CallValue,
-          0,                      // uint256 maxSubmissionCost,
-          refundAddress,          // address excessFeeRefundAddress,
-          refundAddress,          // address callValueRefundAddress,
-          0,                      // uint256 gasLimit,
-          0,                      // uint256 maxFeePerGas,
-          l2ProposalData,         // bytes calldata data
+          0, // uint256 l2CallValue,
+          0, // uint256 maxSubmissionCost,
+          refundAddress, // address excessFeeRefundAddress,
+          refundAddress, // address callValueRefundAddress,
+          0, // uint256 gasLimit,
+          0, // uint256 maxFeePerGas,
+          l2ProposalData, // bytes calldata data
         ]
       );
       targets.push(inbox.address);
       values.push(0);
-      signatures.push('createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,bytes)');
+      signatures.push(
+        'createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,bytes)'
+      );
       calldata.push(createRetryableTicketCalldata);
       break;
     }
@@ -916,9 +1112,10 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
         ['address', 'bytes', 'uint32'],
         [bridgeReceiver.address, l2ProposalData, 1_000_000] // XXX find a reliable way to estimate the gasLimit
       );
-      const baseL1CrossDomainMessenger = await govDeploymentManager.getContractOrThrow(
-        'baseL1CrossDomainMessenger'
-      );
+      const baseL1CrossDomainMessenger =
+        await govDeploymentManager.getContractOrThrow(
+          'baseL1CrossDomainMessenger'
+        );
 
       targets.push(baseL1CrossDomainMessenger.address);
       values.push(0);
@@ -958,9 +1155,10 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
         ['address', 'bytes', 'uint32'],
         [bridgeReceiver.address, l2ProposalData, 2_500_000]
       );
-      const opL1CrossDomainMessenger = await govDeploymentManager.getContractOrThrow(
-        'opL1CrossDomainMessenger'
-      );
+      const opL1CrossDomainMessenger =
+        await govDeploymentManager.getContractOrThrow(
+          'opL1CrossDomainMessenger'
+        );
 
       targets.push(opL1CrossDomainMessenger.address);
       values.push(0);
@@ -973,9 +1171,10 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
         ['address', 'bytes', 'uint256'],
         [bridgeReceiver.address, l2ProposalData, 2_500_000]
       );
-      const mantleL1CrossDomainMessenger = await govDeploymentManager.getContractOrThrow(
-        'mantleL1CrossDomainMessenger'
-      );
+      const mantleL1CrossDomainMessenger =
+        await govDeploymentManager.getContractOrThrow(
+          'mantleL1CrossDomainMessenger'
+        );
       targets.push(mantleL1CrossDomainMessenger.address);
       values.push(0);
       signatures.push('sendMessage(address,bytes,uint32)');
@@ -987,9 +1186,10 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
         ['address', 'bytes', 'uint256'],
         [bridgeReceiver.address, l2ProposalData, 2_500_000]
       );
-      const unichainL1CrossDomainMessenger = await govDeploymentManager.getContractOrThrow(
-        'unichainL1CrossDomainMessenger'
-      );
+      const unichainL1CrossDomainMessenger =
+        await govDeploymentManager.getContractOrThrow(
+          'unichainL1CrossDomainMessenger'
+        );
       targets.push(unichainL1CrossDomainMessenger.address);
       values.push(0);
       signatures.push('sendMessage(address,bytes,uint32)');
@@ -1027,13 +1227,18 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
           l2ProposalData,
           [],
           constants.AddressZero,
-          '0x'
-        ]
+          '0x',
+        ],
       ];
 
-      const data = utils.defaultAbiCoder.encode(['uint64', '(bytes,bytes,(address,uint256)[],address,bytes)'], args);
+      const data = utils.defaultAbiCoder.encode(
+        ['uint64', '(bytes,bytes,(address,uint256)[],address,bytes)'],
+        args
+      );
 
-      signatures.push('ccipSend(uint64,(bytes,bytes,(address,uint256)[],address,bytes))');
+      signatures.push(
+        'ccipSend(uint64,(bytes,bytes,(address,uint256)[],address,bytes))'
+      );
       calldata.push(data);
       break;
     }
@@ -1059,12 +1264,23 @@ export async function executeOpenProposalAndRelay(
   bridgeDeploymentManager: DeploymentManager,
   openProposal: OpenProposal
 ) {
-  const startingBlockNumber = await governanceDeploymentManager.hre.ethers.provider.getBlockNumber();
+  const startingBlockNumber =
+    await governanceDeploymentManager.hre.ethers.provider.getBlockNumber();
   await executeOpenProposal(governanceDeploymentManager, openProposal);
   await mockAllRedstoneOracles(bridgeDeploymentManager);
 
-  if (await isBridgeProposal(governanceDeploymentManager, bridgeDeploymentManager, openProposal)) {
-    await relayMessage(governanceDeploymentManager, bridgeDeploymentManager, startingBlockNumber);
+  if (
+    await isBridgeProposal(
+      governanceDeploymentManager,
+      bridgeDeploymentManager,
+      openProposal
+    )
+  ) {
+    await relayMessage(
+      governanceDeploymentManager,
+      bridgeDeploymentManager,
+      startingBlockNumber
+    );
   } else {
     console.log(
       `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Proposal ${openProposal.id} doesn't target bridge; not relaying`
@@ -1073,15 +1289,24 @@ export async function executeOpenProposalAndRelay(
   }
 }
 
-async function getLiquidationMargin({ comet, actor, baseLiquidity, factorScale }): Promise<bigint> {
+async function getLiquidationMargin({
+  comet,
+  actor,
+  baseLiquidity,
+  factorScale,
+}): Promise<bigint> {
   const numAssets = await comet.numAssets();
   let liquidity = baseLiquidity;
   for (let i = 0; i < numAssets; i++) {
-    const { asset, priceFeed, scale, liquidateCollateralFactor } = await comet.getAssetInfo(i);
-    const collatBalance = (await comet.collateralBalanceOf(actor.address, asset)).toBigInt();
+    const { asset, priceFeed, scale, liquidateCollateralFactor } =
+      await comet.getAssetInfo(i);
+    const collatBalance = (
+      await comet.collateralBalanceOf(actor.address, asset)
+    ).toBigInt();
     const collatPrice = (await comet.getPrice(priceFeed)).toBigInt();
-    const collatValue = collatBalance * collatPrice / scale.toBigInt();
-    liquidity += collatValue * liquidateCollateralFactor.toBigInt() / factorScale;
+    const collatValue = (collatBalance * collatPrice) / scale.toBigInt();
+    liquidity +=
+      (collatValue * liquidateCollateralFactor.toBigInt()) / factorScale;
   }
 
   return liquidity;
@@ -1094,20 +1319,38 @@ invariant:
 isolating for timeElapsed:
 timeElapsed = -liquidationMargin / (baseBalanceOf * price / baseScale) / (borrowRate / factorScale);
 */
-export async function timeUntilUnderwater({ comet, actor, fudgeFactor = 0n }: { comet: CometInterface, actor: CometActor, fudgeFactor?: bigint }): Promise<number> {
+export async function timeUntilUnderwater({
+  comet,
+  actor,
+  fudgeFactor = 0n,
+}: {
+  comet: CometInterface;
+  actor: CometActor;
+  fudgeFactor?: bigint;
+}): Promise<number> {
   const baseBalance = await actor.getCometBaseBalance();
   const baseScale = (await comet.baseScale()).toBigInt();
-  const basePrice = (await comet.getPrice(await comet.baseTokenPriceFeed())).toBigInt();
-  const baseLiquidity = baseBalance * basePrice / baseScale;
+  const basePrice = (
+    await comet.getPrice(await comet.baseTokenPriceFeed())
+  ).toBigInt();
+  const baseLiquidity = (baseBalance * basePrice) / baseScale;
   const utilization = await comet.getUtilization();
   const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
   const factorScale = (await comet.factorScale()).toBigInt();
-  const liquidationMargin = await getLiquidationMargin({ comet, actor, baseLiquidity, factorScale });
+  const liquidationMargin = await getLiquidationMargin({
+    comet,
+    actor,
+    baseLiquidity,
+    factorScale,
+  });
 
   if (liquidationMargin < 0) {
     return 0; // already underwater
   }
 
   // XXX throw error if baseBalanceOf is positive and liquidationMargin is positive
-  return Number((-liquidationMargin * factorScale / baseLiquidity / borrowRate) + fudgeFactor);
+  return Number(
+    (-liquidationMargin * factorScale) / baseLiquidity / borrowRate +
+      fudgeFactor
+  );
 }

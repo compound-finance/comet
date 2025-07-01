@@ -5,6 +5,9 @@ export { cloneGov, deployNetworkComet as deployComet, sameAddress } from './Netw
 export { getConfiguration, getConfigurationStruct } from './NetworkConfiguration';
 export { exp, getBlock, wait } from '../../test/helpers';
 export { debug } from '../../plugins/deployment_manager/Utils';
+import { writeFileSync, mkdirSync } from 'fs';
+import path from 'path';
+
 
 export interface ProtocolConfiguration {
   name?: string;
@@ -214,26 +217,52 @@ export async function testnetProposal(actions: ProposalAction[], description: st
 
 }
 
-export async function proposal(actions: ProposalAction[], description: string): Promise<Proposal> {
-  const targets = [],
-    values = [],
-    calldatas = [],
-    signatures = [];
+export async function proposal(
+  actions: ProposalAction[],
+  description: string
+): Promise<Proposal> {
+  const targets   = [];
+  const values = [];
+  const calldatas = [];
+  const signatures = [];
+
   for (const action of actions) {
-    if (action['contract']) {
+    if ('contract' in action) {
       const { contract, value, signature, args } = action as ContractAction;
       targets.push(contract.address);
       values.push(value ?? 0);
-      calldatas.push(utils.id(signature).slice(0, 10) + (await calldata(contract.populateTransaction[signature](...args))).slice(2));
+      calldatas.push(
+        utils
+          .id(signature)
+          .slice(0, 10) +
+        (await calldata(contract.populateTransaction[signature](...args))).slice(2)
+      );
       signatures.push('');
     } else {
-      const { target, value, signature, calldata } = action as TargetAction;
+      const { target, value, signature, calldata: cd } = action as TargetAction;
       targets.push(target);
       values.push(value ?? 0);
-      calldatas.push(utils.id(signature).slice(0, 10) + calldata.slice(2));
+      calldatas.push(utils.id(signature).slice(0, 10) + cd.slice(2));
       signatures.push('');
     }
   }
 
-  return [targets, values, calldatas, description, signatures];
+  const fullProposal: Proposal = [targets, values, calldatas, description, signatures];
+
+  stashTemporaryProposal(fullProposal);
+  fullProposal.pop();
+  return fullProposal;
+}
+
+function stashTemporaryProposal(prop: Proposal) {
+  try {
+    const cacheDir = path.resolve(__dirname, '../', 'cache');
+    mkdirSync(cacheDir, { recursive: true });
+    const file = path.join(cacheDir, 'currentProposal.json');
+    writeFileSync(file, JSON.stringify(prop, null, 2));
+
+    console.log(`Proposal cached ${file}`);
+  } catch (e) {
+    console.warn('Failed to cache proposal:', e);
+  }
 }

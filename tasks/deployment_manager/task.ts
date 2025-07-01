@@ -5,8 +5,6 @@ import { HardhatRuntimeEnvironment, HardhatConfig } from 'hardhat/types';
 import { DeploymentManager, VerifyArgs } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import hreForBase from '../../plugins/scenario/utils/hreForBase';
-import { OpenProposal } from 'scenario/context/Gov';
-import axios from 'axios';
 
 // TODO: Don't depend on scenario's hreForBase
 async function getForkEnv(env: HardhatRuntimeEnvironment, deployment: string): Promise<HardhatRuntimeEnvironment> {
@@ -17,92 +15,6 @@ async function getForkEnv(env: HardhatRuntimeEnvironment, deployment: string): P
   return await hreForBase(base);
 }
 
-export async function createTenderlyVNet(
-  username: string,
-  project: string,
-  accessKey: string,
-  blockNumber = 0,
-  parentId = '1'
-) {
-  const slug = `vnet-${Date.now().toString(36)}`;
-
-  const body = {
-    slug,
-    display_name: slug,
-    fork_config: { network_id: Number(parentId), blockNumber },
-    virtual_network_config: { chain_config: { chain_id: +parentId } },
-    sync_state_config: { enabled: false },
-    explorer_page_config: {
-      enabled: false,
-      verification_visibility: 'bytecode',
-    },
-  };
-  const url = `https://api.tenderly.co/api/v1/account/${username}/project/${project}/vnets`;
-  let resp;
-  try {
-    resp = await axios.post(url, body, {
-      headers: { 'X-Access-Key': accessKey },
-    });
-  } catch (e) {
-    console.error('Tenderly error:', JSON.stringify(e.response?.data, null, 2));
-    throw e;
-  }
-
-  const { data } = resp;
-  const adminRpc = data.rpcs.find((r: any) => /admin/i.test(r.name))?.url;
-  if (!adminRpc) throw new Error('VNet created but admin RPC not returned');
-  return { id: data.id as string, rpc: adminRpc };
-}
-
-export async function getTenderlyEnv(
-  hre: HardhatRuntimeEnvironment,
-  parentNet = 'mainnet'
-) {
-  const { username, project, accessKey } = hre.config.tenderly;
-
-  const { id, rpc } = await createTenderlyVNet(username, project, accessKey);
-  const MNEMONIC =
-    'myth like woof scare over problem client lizard pioneer submit female collect';
-  function parseKeys(env = '') {
-    return env
-      .split(/[,\s]+/)
-      .filter(Boolean)
-      .map((k) => (k.startsWith('0x') ? k : `0x${k}`));
-  }
-
-  const envKeys = process.env.ETH_PK ? parseKeys(process.env.ETH_PK) : [];
-
-  const freshWallet = hre.ethers.Wallet.createRandom();
-  const freshPk = freshWallet.privateKey;
-
-  const allPks = [...envKeys, freshPk];
-
-  hre.config.networks[parentNet] = {
-    url: rpc,
-    chainId: hre.config.networks[parentNet].chainId,
-    accounts: process.env.ETH_PK
-      ? allPks
-      : {
-        mnemonic: MNEMONIC,
-        initialIndex: 0,
-        count: 10,
-        path: "m/44'/60'/0'/0",
-        passphrase: '',
-      },
-    gas: 'auto',
-    gasPrice: 'auto',
-    gasMultiplier: 1,
-    timeout: 20_000,
-    httpHeaders: {},
-  };
-
-  hre.network.name = parentNet;
-
-  await hre.changeNetwork(parentNet);
-
-  console.log(`Virtual TestNet ${id} -> ${rpc}`);
-  return hre;
-}
 
 function getDefaultDeployment(config: HardhatConfig, network: string): string {
   const base = config.scenario.bases.find(b => b.name == network);
@@ -141,50 +53,23 @@ async function runMigration<T>(
   }
 
   if (enact) {
-    const {
-      tenderlyExecute,
-      fundVoters
-    } = await import('../../scenario/utils'); 
 
     const {
       governor,
-      COMP,
+      timelock
     } = await deploymentManager.getContracts();
-
-    if(tenderly){
-      await fundVoters(deploymentManager, COMP);
-    }
     
     await migration.actions.enact(
       deploymentManager,
       govDeploymentManager,
       artifact
     );
+    console.log('Enactment complete');
 
     if (tenderly) {
-      const lastEvents = await governor.queryFilter(
-        governor.filters.ProposalCreated(),
-        -1
-      );
-      if (lastEvents.length === 0) {
-        throw new Error('No ProposalCreated events found');
-      }
-
-      const lastEvent = lastEvents[lastEvents.length - 1];
-      let proposal: OpenProposal = {
-        id: lastEvent.args.proposalId,
-        proposer: lastEvent.args.proposer,
-        targets: lastEvent.args.targets,
-        signatures: lastEvent.args.signatures,
-        calldatas: lastEvent.args.calldatas,
-        values: Array.from(lastEvent.args.values()),
-        startBlock: lastEvent.args.startBlock,
-        endBlock: lastEvent.args.endBlock,
-      };
-
-      await tenderlyExecute(deploymentManager, proposal);  
+      const { tenderlyExecute } = await import('../../scenario/utils');
+      await tenderlyExecute(deploymentManager, governor, timelock);
     }
-    console.log('Enactment complete');
   }
 }
 
@@ -321,10 +206,8 @@ task('migrate', 'Runs migration')
     ) => {
       const origNetwork = env.network.name;
 
-      let maybeForkEnv = simulate ? await getForkEnv(env, deployment) : env;
-      if (tenderly) {
-        maybeForkEnv = await getTenderlyEnv(env, origNetwork);
-      }
+      const maybeForkEnv = simulate ? await getForkEnv(env, deployment) : env;
+
 
       const network = origNetwork;
       const dm = new DeploymentManager(
@@ -335,7 +218,6 @@ task('migrate', 'Runs migration')
           writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
           verificationStrategy: 'eager', // We use eager here to verify contracts right after they are deployed
         },
-        tenderly
       );
 
       await dm.spider();
@@ -354,7 +236,7 @@ task('migrate', 'Runs migration')
           {
             writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
             verificationStrategy: 'eager', // We use eager here to verify contracts right after they are deployed
-          }
+          },
         );
         await governanceDm.spider();
       } else {
@@ -363,7 +245,7 @@ task('migrate', 'Runs migration')
 
       if (impersonate && !simulate) {
         throw new Error('Cannot impersonate an address if not simulating a migration. Please specify --simulate to simulate.');
-      } else if (impersonate && simulate && !tenderly) {
+      } else if (impersonate && simulate) {
         const signer = await impersonateAddress(governanceDm, impersonate, 10n ** 18n);
         governanceDm._signers.unshift(signer);
       }
