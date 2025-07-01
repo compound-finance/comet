@@ -63,7 +63,7 @@ const {
   MANTLESCAN_KEY,
   SCROLLSCAN_KEY,
   ANKR_KEY,
-  //_TENDERLY_KEY_RONIN,
+  _TENDERLY_KEY_RONIN,
   MNEMONIC = 'myth like woof scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
@@ -110,7 +110,7 @@ interface NetworkConfig {
   gasPrice?: number | 'auto';
 }
 
-const networkConfigs: NetworkConfig[] = [
+export const networkConfigs: NetworkConfig[] = [
   {
     network: 'mainnet',
     chainId: 1,
@@ -124,8 +124,8 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'ronin',
     chainId: 2020,
-    //url: `https://ronin.gateway.tenderly.co/${_TENDERLY_KEY_RONIN}`,
-    url: 'https://ronin.lgns.net/rpc',
+    url: `https://ronin.gateway.tenderly.co/${_TENDERLY_KEY_RONIN}`,
+    // url: 'https://ronin.lgns.net/rpc',
   },
   {
     network: 'polygon',
