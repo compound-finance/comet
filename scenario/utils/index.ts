@@ -839,7 +839,7 @@ export async function tenderlyExecute(
 
   for(let sim of res.data.simulation_results) {
     const simId = sim.simulation;
-    await shareSimulation(dm, simId);
+    await shareSimulation(dm, simId.id);
     debug(`Simulation ${simId.id} done, status: ${simId.status}`);
     debug(`Link: https://www.tdly.co/shared/simulation/${simId.id}`);
   }
