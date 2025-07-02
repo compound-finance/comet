@@ -153,7 +153,7 @@ jobs:
         if: github.event.inputs.impersonateAccount == '' && github.event.inputs.with_deploy == 'false'
       - name: Run Enact Migration (impersonate)
         run: |
-          yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true'] }} ${{ github.event.inputs.migration }} --impersonate ${{ github.event.inputs.impersonateAccount }}
+          yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true'] }} ${{ github.event.inputs.migration }} --impersonate ${{ github.event.inputs.impersonateAccount }} ${{ fromJSON('["", "--tenderly"]')[github.event.inputs.tenderly == 'true'] }}
         env:
           DEBUG: true
           ETH_PK: "${{ inputs.eth_pk }}"
