@@ -1,15 +1,15 @@
-import "hardhat/types/runtime";
-import "hardhat/config";
-import "hardhat/types/runtime";
+import 'hardhat/types/runtime';
+import 'hardhat/config';
+import 'hardhat/types/runtime';
 
-declare module "hardhat/types/runtime" {
+declare module 'hardhat/types/runtime' {
   interface HardhatRuntimeEnvironment {
     tenderly?: any;
     tenderlyNetwork?: any;
   }
 }
 
-declare module "hardhat/config" {
+declare module 'hardhat/config' {
   interface TenderlyConfig {
     project?: string;
     username?: string;
@@ -33,27 +33,27 @@ declare module "hardhat/config" {
   }
   interface HardhatConfig {
     tenderly: TenderlyConfig;
-    scenario: ScenarioConfig
+    scenario: ScenarioConfig;
   }
 }
 
-declare module "@nomicfoundation/hardhat-ethers/types" {
+declare module '@nomicfoundation/hardhat-ethers/types' {
   export interface Libraries {
     [libraryName: string]: string;
   }
 }
 
 
-declare module "@nomicfoundation/hardhat-ethers" {
-  export * from "@nomiclabs/hardhat-ethers";
+declare module '@nomicfoundation/hardhat-ethers' {
+  export * from '@nomiclabs/hardhat-ethers';
 }
 
-declare module "@nomicfoundation/hardhat-ethers/signers" {
-  export * from "@nomiclabs/hardhat-ethers/signers";
+declare module '@nomicfoundation/hardhat-ethers/signers' {
+  export * from '@nomiclabs/hardhat-ethers/signers';
 }
 
 
-declare module "hardhat/types/runtime" {
+declare module 'hardhat/types/runtime' {
   interface HardhatRuntimeEnvironment {
     upgrades?: any;  
     defender?: any;

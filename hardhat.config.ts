@@ -583,7 +583,7 @@ const config: HardhatUserConfig = {
   },
 
   tenderly: {
-    project: process.env.TENDERLY_PROJECT_SLUG || '',
+    project: 'comet',
     username: process.env.TENDERLY_USERNAME || '',
     accessKey: process.env.TENDERLY_ACCESS_KEY || '',
     privateVerification: false,
