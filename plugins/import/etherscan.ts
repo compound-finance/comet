@@ -7,6 +7,7 @@ export interface Result {
   result: string;
 }
 
+// Updated because of Etherscan V2 update. Not tested and could lead to issues
 export function getEtherscanApiUrl(network: string): string {
   // let host = {
   //   rinkeby: 'api-rinkeby.etherscan.io',
@@ -22,7 +23,7 @@ export function getEtherscanApiUrl(network: string): string {
   //   mantle: 'api.mantlescan.xyz',
   //   'ronin': 'explorer-kintsugi.roninchain.com/v2/2020',
   //   scroll: 'api.scrollscan.com'
-  // }[network];
+  // }[network];More actions
 
   // if (!host) {
   //   throw new Error(`Unknown etherscan API host for network ${network}`);

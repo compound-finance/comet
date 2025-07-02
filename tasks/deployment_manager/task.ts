@@ -217,6 +217,7 @@ task('migrate', 'Runs migration')
         {
           writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
           verificationStrategy: 'eager', // We use eager here to verify contracts right after they are deployed
+          saveBytecode: tenderly, // Save bytecode to cache if tenderly is enabled
         },
       );
 
@@ -236,6 +237,7 @@ task('migrate', 'Runs migration')
           {
             writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
             verificationStrategy: 'eager', // We use eager here to verify contracts right after they are deployed
+            saveBytecode: tenderly
           },
         );
         await governanceDm.spider();

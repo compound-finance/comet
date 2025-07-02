@@ -257,7 +257,7 @@ export async function proposal(
 
 function stashTemporaryProposal(prop: Proposal) {
   try {
-    const cacheDir = path.resolve(__dirname, '../', 'cache');
+    const cacheDir = path.resolve(__dirname, '../../', 'cache');
     mkdirSync(cacheDir, { recursive: true });
     const file = path.join(cacheDir, 'currentProposal.json');
     writeFileSync(file, JSON.stringify(prop, null, 2));

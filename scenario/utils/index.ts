@@ -12,7 +12,7 @@ import {
   utils,
 } from 'ethers';
 import { execSync } from 'child_process';
-import { existsSync } from 'fs';
+import { existsSync, unlinkSync } from 'fs';
 import { CometContext } from '../context/CometContext';
 import CometAsset from '../context/CometAsset';
 import { exp } from '../../test/helpers';
@@ -718,7 +718,7 @@ export async function tenderlyExecute(
   const blockStart = B0 + 1n;
   const blockEnd = blockStart + 1n;
   const blockCast = blockEnd;
-  const blockQueue = blockCast   + 1n;
+  const blockQueue = blockCast + 1n;
   const blockExec = blockQueue + 3n;
 
   const tsShift = (t: bigint, dBlocks: bigint) => t + dBlocks * 12n; 
@@ -762,61 +762,56 @@ export async function tenderlyExecute(
     ? COMP_WHALES.mainnet
     : COMP_WHALES.testnet;
 
+  const deployBytecodes = loadCachedBytecodes();
 
-  const art  = await dm.hre.artifacts.readArtifact('ConstantPriceFeed');
+  const deploySims = deployBytecodes.map((code) => ({
+    network_id: '1',
+    from: fromAddr,
+    to: '', 
+    block_number: Number(B0),
+    block_header: { timestamp: dm.hre.ethers.utils.hexlify(T0) },
+    input: dm.hre.ethers.utils.hexlify(code),
+    state_objects: statePatch,
+    save: true,
+    gas_price: 0,
+  }));
+  
 
-  const iface = new Interface(art.abi);
-  const bytecodeWithArgs =
-          art.bytecode +
-          iface.encodeDeploy([
-            8,                                             
-            exp(1, 8)
-          ]).slice(2);
+  const chainId = dm.hre.ethers.provider.network.chainId;
 
   const sims = [
+    ...deploySims,
     {
-      network_id: '1', from: fromAddr, to: '',
-      block_number: Number(B0),
-      block_header: { timestamp: dm.hre.ethers.utils.hexlify(T0) },
-      input: dm.hre.ethers.utils.hexlify(bytecodeWithArgs),
-      state_objects: statePatch, save: true, gas_price: 0, 
-    },
-    {
-      network_id: '1', from: fromAddr, to: governor.address,
+      network_id: chainId.toString(), from: fromAddr, to: governor.address,
       block_number: Number(B0),
       block_header: { timestamp: dm.hre.ethers.utils.hexlify(T0) },
       input: govIF.encodeFunctionData('propose', proposalArgs),
       state_objects: statePatch, save: true, gas_price: 0,
     },
     ...whales.map((w) => ({
-      network_id: '1', from: w, to: governor.address,
+      network_id: chainId.toString(), from: w, to: governor.address,
       block_number: Number(blockCast),
       block_header: { timestamp: dm.hre.ethers.utils.hexlify(timestampCast) },
       input: govIF.encodeFunctionData('castVote', [id, 1]),
-      state_objects: statePatch, save: true, save_if_fails: true,  gas_price: 0
+      state_objects: statePatch, save: true, save_if_fails: true, gas_price: 0,
     })),
     {
-      network_id: '1', from: fromAddr, to: governor.address,
+      network_id: chainId.toString(), from: fromAddr, to: governor.address,
       block_number: Number(blockQueue),
       block_header: { timestamp: dm.hre.ethers.utils.hexlify(timestampQueue) },
       input: govIF.encodeFunctionData('queue', [id]),
-      state_objects: statePatch, save: true, save_if_fails: true, gas_price: 0
+      state_objects: statePatch, save: true, save_if_fails: true, gas_price: 0,
     },
     {
-      network_id: '1', from: fromAddr, to: governor.address,
+      network_id: chainId.toString(), from: fromAddr, to: governor.address,
       block_number: Number(blockExec),
       block_header: { timestamp: dm.hre.ethers.utils.hexlify(timestampExec) },
       input: govIF.encodeFunctionData('execute', [id]),
-      state_objects: statePatch, save: true, save_if_fails: true, gas_price: 0
-    }
+      state_objects: statePatch, save: true, save_if_fails: true, gas_price: 0,
+    },
   ];
-
-  const body = {
-    simulations: sims,
-    block_number: Number(B0),
-    simulation_type: 'full',
-    save: true
-  };
+  
+  const body = { simulations: sims, block_number: Number(B0), simulation_type: 'full', save: true };
 
   const { username, project, accessKey } = dm.hre.config.tenderly;
   const res = await axios.post(
@@ -841,10 +836,30 @@ export async function tenderlyExecute(
     }
   );
 
-  console.log('https://www.tdly.co/shared/simulation/'+res.data.simulation_results[0].simulation.id);
-  console.log('https://www.tdly.co/shared/simulation/'+res.data.simulation_results[res.data.simulation_results.length - 1].simulation.id);
 
+  for(let sim of res.data.simulation_results) {
+    const simId = sim.simulation;
+    await shareSimulation(dm, simId);
+    debug(`Simulation ${simId.id} done, status: ${simId.status}`);
+    debug(`Link: https://www.tdly.co/shared/simulation/${simId.id}`);
+  }
+
+  cleanCache();
   return res.data;
+}
+
+async function shareSimulation(
+  dm: DeploymentManager,
+  simulationId: string
+) {
+  const { username, project, accessKey } = dm.hre.config.tenderly;
+  return axios.post(
+    `https://api.tenderly.co/api/v1/account/${username}/project/${project}/simulations/${simulationId}/share`,
+    {},
+    {
+      headers: { 'X-Access-Key': accessKey, 'Content-Type': 'application/json' },
+    }
+  );
 }
 
 export async function voteForOpenProposal(
@@ -897,6 +912,30 @@ function loadCachedProposal() {
   const json = JSON.parse(readFileSync(file, 'utf8'));
 
   return json;
+}
+
+function loadCachedBytecodes() {
+  const file = path.resolve(__dirname, '../../cache/bytecodes.json');
+  if (!existsSync(file)) {
+    throw new Error('Bytecode cache not found: ' + file);
+  }
+  const raw = readFileSync(file, 'utf8').trim();
+  if (!raw) {
+    throw new Error('Bytecode cache is empty: ' + file);
+  }
+  return JSON.parse(raw);
+}
+
+function cleanCache() {
+  const files = [
+    path.resolve(__dirname, '../../cache/currentProposal.json'),
+    path.resolve(__dirname, '../../cache/bytecodes.json'),
+  ];
+  for (const file of files) {
+    if (existsSync(file)) { 
+      unlinkSync(file);
+    }
+  }
 }
 
 export async function executeOpenProposal(
