@@ -185,7 +185,7 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
     hardhatConfig.networks[netConfig.network] = {
       chainId: netConfig.chainId,
       url:
-        (netConfig.network === GOV_NETWORK ? GOV_NETWORK_PROVIDER : undefined) ||
+        (netConfig.network === GOV_NETWORK ? GOV_NETWORK_PROVIDER || undefined : undefined) ||
         NETWORK_PROVIDER ||
         netConfig.url ||
         getDefaultProviderURL(netConfig.network),
