@@ -135,8 +135,8 @@ jobs:
           DEBUG: true
           ETH_PK: "${{ inputs.eth_pk }}"
           NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
-          GOV_NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8685"]')[github.event.inputs.eth_pk == '' && vars.GOV_NETWORK != '' && github.event.inputs.network != vars.GOV_NETWORK] }}
-          GOV_NETWORK: ${{ vars.GOV_NETWORK }}
+          GOV_NETWORK_PROVIDER: ${{ github.event.inputs.network != vars.GOV_NETWORK && github.event.inputs.eth_pk == '' && vars.GOV_NETWORK != '' && 'http://localhost:8685' || '' }}
+          GOV_NETWORK: ${{ github.event.inputs.network != vars.GOV_NETWORK && vars.GOV_NETWORK || '' }}
           REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
         if: github.event.inputs.impersonateAccount != '' && github.event.inputs.with_deploy == 'true'
       - name: Run Enact Migration
@@ -146,8 +146,8 @@ jobs:
           DEBUG: true
           ETH_PK: "${{ inputs.eth_pk }}"
           NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
-          GOV_NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8685"]')[github.event.inputs.eth_pk == '' && vars.GOV_NETWORK != '' && github.event.inputs.network != vars.GOV_NETWORK] }}
-          GOV_NETWORK: ${{ vars.GOV_NETWORK }}
+          GOV_NETWORK_PROVIDER: ${{ github.event.inputs.network != vars.GOV_NETWORK && github.event.inputs.eth_pk == '' && vars.GOV_NETWORK != '' && 'http://localhost:8685' || '' }}
+          GOV_NETWORK: ${{ github.event.inputs.network != vars.GOV_NETWORK && vars.GOV_NETWORK || '' }}
           REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
         if: github.event.inputs.impersonateAccount == '' && github.event.inputs.with_deploy == 'false'
       - name: Run Enact Migration (impersonate)
@@ -157,8 +157,8 @@ jobs:
           DEBUG: true
           ETH_PK: "${{ inputs.eth_pk }}"
           NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
-          GOV_NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8685"]')[github.event.inputs.eth_pk == '' && vars.GOV_NETWORK != '' && github.event.inputs.network != vars.GOV_NETWORK] }}
-          GOV_NETWORK: ${{ vars.GOV_NETWORK }}
+          GOV_NETWORK_PROVIDER: ${{ github.event.inputs.network != vars.GOV_NETWORK && github.event.inputs.eth_pk == '' && vars.GOV_NETWORK != '' && 'http://localhost:8685' || '' }}
+          GOV_NETWORK: ${{ github.event.inputs.network != vars.GOV_NETWORK && vars.GOV_NETWORK || '' }}
           REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
         if: github.event.inputs.impersonateAccount != '' && github.event.inputs.run_id != 0
       - name: Run Prepare and Enact Migration (impersonate)
@@ -168,8 +168,8 @@ jobs:
           DEBUG: true
           ETH_PK: "${{ inputs.eth_pk }}"
           NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
-          GOV_NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8685"]')[github.event.inputs.eth_pk == '' && vars.GOV_NETWORK != '' && github.event.inputs.network != vars.GOV_NETWORK] }}
-          GOV_NETWORK: ${{ vars.GOV_NETWORK }}
+          GOV_NETWORK_PROVIDER: ${{ github.event.inputs.network != vars.GOV_NETWORK && github.event.inputs.eth_pk == '' && vars.GOV_NETWORK != '' && 'http://localhost:8685' || '' }}
+          GOV_NETWORK: ${{ github.event.inputs.network != vars.GOV_NETWORK && vars.GOV_NETWORK || '' }}
           REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
         if: github.event.inputs.impersonateAccount != '' && github.event.inputs.with_deploy == 'false' && github.event.inputs.run_id == ''
       - name: Commit changes
