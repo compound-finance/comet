@@ -247,6 +247,15 @@ const config: HardhatUserConfig = {
       //hardfork: 'london',
       chains: networkConfigs.reduce((acc, { chainId }) => {
         if (chainId === 1) return acc;
+        if (chainId === 59144) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+            }
+          };
+          return acc;
+        }
         if (chainId === 2020) {
           acc[chainId] = {
             hardforkHistory: {
