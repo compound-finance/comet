@@ -2,6 +2,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { BigNumber, Contract, Event, EventFilter } from 'ethers';
 import { erc20 } from './ERC20';
 import { DeploymentManager } from '../../deployment_manager/DeploymentManager';
+import { debug, WHALES } from '../../../src/deploy';
 
 const getMaxEntry = (args: [string, BigNumber][]) =>
   args.reduce(([a1, m], [a2, e]) => (m.gte(e) == true ? [a1, m] : [a2, e]));
@@ -109,14 +110,40 @@ async function addTokens(
   MAX_SEARCH_BLOCKS = 40000,
   BLOCK_SPAN = 2048
 ) {
+  let ethers = dm.hre.ethers;
+  const whales = WHALES[dm.network] || [];
+  let tokenContract = new ethers.Contract(asset, erc20, ethers.provider);
+  for (const whale of whales) {
+    await dm.hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [whale],
+    });
+    await dm.hre.network.provider.send('hardhat_setBalance',
+      [whale, '0x1000000000000000'] // 1 ETH
+    );
+    const signer = await dm.getSigner(whale);
+    const balance = await tokenContract.balanceOf(whale);
+    const amountToTake = balance > amount ? amount : balance;
+    if (amountToTake > 0n) {
+      debug(`Source Tokens: stealing from whale ${whale}`, amountToTake, address);
+      // make gas fee 0 so we can source from contract addresses as well as EOAs
+      await tokenContract.connect(signer).transfer(address, amountToTake, { gasPrice: 0 });
+      amount = amount.sub(amountToTake);
+    }
+    await dm.hre.network.provider.request({
+      method: 'hardhat_stopImpersonatingAccount',
+      params: [whale],
+    });
+    // if received amount is 0, no need to continue
+    if (amount.toBigInt() <= 0n)
+      return;
+  }
 
   if(dm.network === 'ronin') {
     MAX_SEARCH_BLOCKS = 500;
   }
   // XXX we should really take min of current balance and amount and transfer that much
-  let ethers = dm.hre.ethers;
   block = block ?? (await ethers.provider.getBlockNumber());
-  let tokenContract = new ethers.Contract(asset, erc20, ethers.provider);
   let filter = tokenContract.filters.Transfer();
   if (mintableByBridgeConfig[dm.network] && mintableByBridgeConfig[dm.network].map((addr: string) => addr.toLowerCase()).includes(asset.toLowerCase())) {
     await dm.hre.network.provider.request({

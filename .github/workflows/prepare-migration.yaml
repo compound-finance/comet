@@ -39,7 +39,6 @@ jobs:
       ANKR_KEY: ${{ secrets.ANKR_KEY }}
       _TENDERLY_KEY_RONIN: ${{ secrets._TENDERLY_KEY_RONIN }}
       POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
-      ARBISCAN_KEY: ${{ secrets.ARBISCAN_KEY }}
       BASESCAN_KEY: ${{ secrets.BASESCAN_KEY }}
       LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
       OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}

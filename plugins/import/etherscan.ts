@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { networkConfigs } from '../../hardhat.config';
 
 export interface Result {
   status: string;
@@ -7,27 +8,37 @@ export interface Result {
 }
 
 export function getEtherscanApiUrl(network: string): string {
-  let host = {
-    rinkeby: 'api-rinkeby.etherscan.io',
-    ropsten: 'api-ropsten.etherscan.io',
-    sepolia: 'api-sepolia.etherscan.io',
-    mainnet: 'api.etherscan.io',
-    fuji: 'api-testnet.snowtrace.io',
-    avalanche: 'api.snowtrace.io',
-    polygon: 'api.polygonscan.com',
-    arbitrum: 'api.arbiscan.io',
-    base: 'api.basescan.org',
-    optimism: 'api-optimistic.etherscan.io',
-    mantle: 'api.mantlescan.xyz',
-    'ronin': 'explorer-kintsugi.roninchain.com/v2/2020',
-    scroll: 'api.scrollscan.com'
-  }[network];
+  // let host = {
+  //   rinkeby: 'api-rinkeby.etherscan.io',
+  //   ropsten: 'api-ropsten.etherscan.io',
+  //   sepolia: 'api-sepolia.etherscan.io',
+  //   mainnet: 'api.etherscan.io',
+  //   fuji: 'api-testnet.snowtrace.io',
+  //   avalanche: 'api.snowtrace.io',
+  //   polygon: 'api.polygonscan.com',
+  //   arbitrum: 'api.arbiscan.io',
+  //   base: 'api.basescan.org',
+  //   optimism: 'api-optimistic.etherscan.io',
+  //   mantle: 'api.mantlescan.xyz',
+  //   'ronin': 'explorer-kintsugi.roninchain.com/v2/2020',
+  //   scroll: 'api.scrollscan.com'
+  // }[network];
 
-  if (!host) {
+  // if (!host) {
+  //   throw new Error(`Unknown etherscan API host for network ${network}`);
+  // }
+
+  const chainId = networkConfigs.find(config => config.network.toLowerCase() === network.toLowerCase())?.chainId;
+
+  if (!chainId) {
     throw new Error(`Unknown etherscan API host for network ${network}`);
   }
 
-  return `https://${host}/api`;
+  if (chainId === 443) {
+    return `https://api.snowtrace.io/api`;
+  }
+
+  return `https://api.etherscan.io/v2/api?chainid=${chainId}`;
 }
 
 export function getEtherscanUrl(network: string): string {
@@ -63,7 +74,7 @@ export function getEtherscanApiKey(network: string): string {
     fuji: process.env.SNOWTRACE_KEY,
     avalanche: process.env.SNOWTRACE_KEY,
     polygon: process.env.POLYGONSCAN_KEY,
-    arbitrum: process.env.ARBISCAN_KEY,
+    arbitrum: process.env.ETHERSCAN_KEY,
     base: process.env.BASESCAN_KEY,
     optimism: process.env.OPTIMISMSCAN_KEY,
     mantle: process.env.MANTLESCAN_KEY,

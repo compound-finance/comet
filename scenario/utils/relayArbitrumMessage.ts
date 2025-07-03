@@ -105,8 +105,8 @@ export async function relayArbitrumMessage(
           blacklist: [],
         });
         continue;
-      } else 
-      if(token == '0xdC035D45d973E3EC169d2276DDab16f1e407384F'){
+      } else if(token == '0xdC035D45d973E3EC169d2276DDab16f1e407384F'){
+        console.log(`Sourcing ${amount} USDS for ${to}`);
         await sourceTokens({
           dm: bridgeDeploymentManager,
           amount: amount,

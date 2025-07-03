@@ -131,6 +131,7 @@ export const WHALES = {
     '0xd93f76944e870900779c09ddf1c46275f9d8bf9b', // COMP whale
     '0xe68ee8a12c611fd043fb05d65e1548dc1383f2b9', // native USDC whale
     '0x56CC5A9c0788e674f17F7555dC8D3e2F1C0313C0', // wUSDM whale
+    '0x92afd6F2385a90e44da3a8B60fe36f6cBe1D8709', // USDS whale
   ],
   base: [
     '0x6D3c5a4a7aC4B1428368310E4EC3bB1350d01455', // USDbC whale

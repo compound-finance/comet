@@ -57,14 +57,13 @@ const {
   ETHERSCAN_KEY,
   SNOWTRACE_KEY,
   POLYGONSCAN_KEY,
-  ARBISCAN_KEY,
   BASESCAN_KEY,
   OPTIMISMSCAN_KEY,
   MANTLESCAN_KEY,
   SCROLLSCAN_KEY,
   ANKR_KEY,
   //_TENDERLY_KEY_RONIN,
-  MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
+  MNEMONIC = 'myth like woof scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
   GOV_NETWORK_PROVIDER = '',
@@ -93,8 +92,6 @@ export function requireEnv(varName, msg?: string): string {
   'INFURA_KEY',
   'ANKR_KEY',
   'POLYGONSCAN_KEY',
-  'ARBISCAN_KEY',
-  'LINEASCAN_KEY',
   'OPTIMISMSCAN_KEY',
   'MANTLESCAN_KEY',
   'UNICHAIN_QUICKNODE_KEY',
@@ -110,7 +107,7 @@ interface NetworkConfig {
   gasPrice?: number | 'auto';
 }
 
-const networkConfigs: NetworkConfig[] = [
+export const networkConfigs: NetworkConfig[] = [
   {
     network: 'mainnet',
     chainId: 1,
@@ -284,9 +281,9 @@ const config: HardhatUserConfig = {
       // Polygon
       polygon: POLYGONSCAN_KEY,
       // Arbitrum
-      arbitrumOne: ARBISCAN_KEY,
-      arbitrumTestnet: ARBISCAN_KEY,
-      arbitrum: ARBISCAN_KEY,
+      arbitrumOne: ETHERSCAN_KEY,
+      arbitrumTestnet: ETHERSCAN_KEY,
+      arbitrum: ETHERSCAN_KEY,
       // Base
       base: BASESCAN_KEY,
       // optimism: OPTIMISMSCAN_KEY,
