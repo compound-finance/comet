@@ -59,7 +59,6 @@ const {
   ETHERSCAN_KEY,
   SNOWTRACE_KEY,
   POLYGONSCAN_KEY,
-  ARBISCAN_KEY,
   BASESCAN_KEY,
   OPTIMISMSCAN_KEY,
   MANTLESCAN_KEY,
@@ -95,7 +94,6 @@ export function requireEnv(varName, msg?: string): string {
   'INFURA_KEY',
   'ANKR_KEY',
   'POLYGONSCAN_KEY',
-  'ARBISCAN_KEY',
   'LINEASCAN_KEY',
   'OPTIMISMSCAN_KEY',
   'MANTLESCAN_KEY',
@@ -274,10 +272,6 @@ const config: HardhatUserConfig = {
       avalancheFujiTestnet: SNOWTRACE_KEY,
       // Polygon
       polygon: POLYGONSCAN_KEY,
-      // Arbitrum
-      arbitrumOne: ARBISCAN_KEY,
-      arbitrumTestnet: ARBISCAN_KEY,
-      arbitrum: ARBISCAN_KEY,
       // Base
       base: BASESCAN_KEY,
       // optimism: OPTIMISMSCAN_KEY,
