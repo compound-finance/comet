@@ -111,7 +111,7 @@ interface NetworkConfig {
   gasPrice?: number | 'auto';
 }
 
-const networkConfigs: NetworkConfig[] = [
+export const networkConfigs: NetworkConfig[] = [
   {
     network: 'mainnet',
     chainId: 1,
