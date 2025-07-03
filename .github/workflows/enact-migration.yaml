@@ -89,7 +89,7 @@ jobs:
           requested_network: "${{ env.GOV_NETWORK }}"
           ethereum_url: "${{ fromJSON('{\"linea\":\"https://rpc.ankr.com/linea/${ANKR_KEY}\",\"ronin\":\"https://ronin.gateway.tenderly.co/${_TENDERLY_KEY_RONIN}\",\"unichain\":\"https://multi-boldest-patina.unichain-mainnet.quiknode.pro/${UNICHAIN_QUICKNODE_KEY}\",\"mantle\":\"https://mantle-mainnet.infura.io/v3/$INFURA_KEY\",\"optimism\":\"https://rpc.ankr.com/optimism/$ANKR_KEY\",\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"sepolia\":\"https://sepolia.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\"}')[env.GOV_NETWORK] }}"
           port: 8685
-        if: github.event.inputs.eth_pk == '' && env.GOV_NETWORK != '' && github.event.inputs.impersonateAccount == ''
+        if: github.event.inputs.eth_pk == '' && env.GOV_NETWORK != '' && github.event.inputs.network != env.GOV_NETWORK
 
       - name: Checkout repository
         uses: actions/checkout@v4
