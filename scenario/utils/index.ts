@@ -709,7 +709,7 @@ export async function tenderlyExecute(
   dm: DeploymentManager,
   governor: Contract,
   timelock: Contract
-) {
+): Promise<void> {
  
   const latest = await dm.hre.ethers.provider.getBlock('latest');
   const B0 = BigInt(latest.number); 
@@ -763,24 +763,20 @@ export async function tenderlyExecute(
     : COMP_WHALES.testnet;
 
   const deployBytecodes = loadCachedBytecodes();
-
-  const deploySims = deployBytecodes.map((code) => ({
-    network_id: '1',
-    from: fromAddr,
-    to: '', 
-    block_number: Number(B0),
-    block_header: { timestamp: dm.hre.ethers.utils.hexlify(T0) },
-    input: dm.hre.ethers.utils.hexlify(code),
-    state_objects: statePatch,
-    save: true,
-    gas_price: 0,
-  }));
-  
-
   const chainId = dm.hre.ethers.provider.network.chainId;
 
   const sims = [
-    ...deploySims,
+    ...deployBytecodes.map((code) => ({
+      network_id: chainId,
+      from: fromAddr,
+      to: '', 
+      block_number: Number(B0),
+      block_header: { timestamp: dm.hre.ethers.utils.hexlify(T0) },
+      input: dm.hre.ethers.utils.hexlify(code),
+      state_objects: statePatch,
+      save: true,
+      gas_price: 0,
+    })),
     {
       network_id: chainId.toString(), from: fromAddr, to: governor.address,
       block_number: Number(B0),
@@ -811,33 +807,8 @@ export async function tenderlyExecute(
     },
   ];
   
-  const body = { simulations: sims, block_number: Number(B0), simulation_type: 'full', save: true };
-
-  const { username, project, accessKey } = dm.hre.config.tenderly;
-  const res = await axios.post(
-    `https://api.tenderly.co/api/v1/account/${username}/project/${project}/simulate-bundle`,
-    body,
-    { headers: { 'X-Access-Key': accessKey, 'Content-Type': 'application/json' } }
-  );
-
-  await axios.post(
-    `https://api.tenderly.co/api/v1/account/${username}/project/${project}/simulations/${res.data.simulation_results[0].simulation.id}/share`,
-    {},
-    {
-      headers: { 'X-Access-Key': accessKey, 'Content-Type': 'application/json' },
-    }
-  );
-
-  await axios.post(
-    `https://api.tenderly.co/api/v1/account/${username}/project/${project}/simulations/${res.data.simulation_results[res.data.simulation_results.length - 1].simulation.id}/share`,
-    {},
-    {
-      headers: { 'X-Access-Key': accessKey, 'Content-Type': 'application/json' },
-    }
-  );
-
-
-  for(let sim of res.data.simulation_results) {
+  const bundle = await simulateBundle(dm, sims, Number(B0));
+  for(let sim of bundle) {
     const simId = sim.simulation;
     await shareSimulation(dm, simId.id);
     debug(`Simulation ${simId.id} done, status: ${simId.status}`);
@@ -845,7 +816,29 @@ export async function tenderlyExecute(
   }
 
   cleanCache();
-  return res.data;
+}
+
+async function simulateBundle(
+  dm: DeploymentManager,
+  simulations: any[],
+  blockNumber: number = 0
+): Promise<any> {
+  const { username, project, accessKey } = dm.hre.config.tenderly;
+  const body = {
+    simulations,
+    block_number: blockNumber,
+    simulation_type: 'full',
+    save: true,
+  };
+
+  const result = await axios.post(  
+    `https://api.tenderly.co/api/v1/account/${username}/project/${project}/simulate-bundle`,
+    body,
+    {
+      headers: { 'X-Access-Key': accessKey, 'Content-Type': 'application/json' },
+    }
+  );
+  return result.data.simulation_results;
 }
 
 async function shareSimulation(
