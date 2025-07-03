@@ -910,11 +910,11 @@ function loadCachedProposal() {
 function loadCachedBytecodes() {
   const file = path.resolve(__dirname, '../../cache/bytecodes.json');
   if (!existsSync(file)) {
-    throw new Error('Bytecode cache not found: ' + file);
+    return [];
   }
   const raw = readFileSync(file, 'utf8').trim();
   if (!raw) {
-    throw new Error('Bytecode cache is empty: ' + file);
+    return [];
   }
   return JSON.parse(raw);
 }
