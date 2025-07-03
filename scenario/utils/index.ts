@@ -808,12 +808,13 @@ export async function tenderlyExecute(
   ];
   
   const bundle = await simulateBundle(dm, sims, Number(B0));
-  for(let sim of bundle) {
-    const simId = sim.simulation;
-    await shareSimulation(dm, simId.id);
-    debug(`Simulation ${simId.id} done, status: ${simId.status}`);
-    debug(`Link: https://www.tdly.co/shared/simulation/${simId.id}`);
-  }
+  const exec = bundle[bundle.length-1];
+  await shareSimulation(dm, exec.id);
+  debug(`\n================ TENDERLY EXECUTION =================\n`);
+  debug(`Simulation ${exec.id} done, status: ${exec.status}`);
+  debug(`Link: https://www.tdly.co/shared/simulation/${exec.id}`);
+  debug(`\n=====================================================\n`);
+  
 
   cleanCache();
 }
