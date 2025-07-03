@@ -89,7 +89,7 @@ export default migration('1750958707_add_eigen_collateral', {
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+  async enacted(): Promise<boolean> {
     return false;
   },
 
