@@ -204,9 +204,12 @@ scenario(
   'Comet#liquidation > user can end up with a minted supply',
   {
     filter: async (ctx) => !matchesDeployment(ctx, [{ network: 'base', deployment: 'usds' }]),
-    tokenBalances: {
-      $comet: { $base: 1000 },
-    },
+    tokenBalances: async (ctx) => (
+      {
+        $comet: {
+          $base: getConfigForScenario(ctx).liquidationBase
+        }
+      }),
     cometBalances: async (ctx) => ({
       albert: {
         $base: -getConfigForScenario(ctx).liquidationBase,

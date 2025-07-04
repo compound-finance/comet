@@ -25,7 +25,7 @@ const config = {
   withdrawBase: 1000,
   withdrawAsset: 3000,
   withdrawBase1: 1000,
-  withdrawAsset1: 3000,
+  withdrawAsset1: 1000,
 };
 
 export function getConfigForScenario(ctx: CometContext) {
@@ -145,6 +145,13 @@ export function getConfigForScenario(ctx: CometContext) {
 
   if (ctx.world.base.network === 'sepolia' && ctx.world.base.deployment === 'usdc') {
     config.bulkerAsset1 = 10;
+  }
+
+  if (ctx.world.base.network === 'unichain' && ctx.world.base.deployment === 'weth') {
+    config.liquidationBase = 1000;
+    config.liquidationBase1 = 350;
+    config.liquidationAsset = 100;
+    config.rewardsBase = 100;
   }
 
   return config;
