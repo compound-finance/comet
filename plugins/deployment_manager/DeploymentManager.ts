@@ -245,6 +245,7 @@ export class DeploymentManager {
   /* Deploys a contract from Hardhat artifacts */
   async _deploy<C extends Contract>(contractFile: string, deployArgs: any[], retries?: number): Promise<C> {
     if(this.config.saveBytecode) {
+<<<<<<< Updated upstream
       const contractFileName = contractFile.split('/').reverse()[0].split('.')[0];
       const artifact = this.hre.artifacts.readArtifactSync(contractFileName);
       const iface = new this.hre.ethers.utils.Interface(
@@ -256,6 +257,19 @@ export class DeploymentManager {
                 iface.encodeDeploy(deployArgs).slice(2);
 
       this.stashBytecode(bytecodeWithArgs);
+=======
+        const contractFileName = contractFile.split('/').reverse()[0].split('.')[0];
+        const artifact = this.hre.artifacts.readArtifactSync(contractFileName);
+        const iface = new this.hre.ethers.utils.Interface(
+          artifact.abi
+        );
+
+        const bytecodeWithArgs =
+          artifact.bytecode +
+                iface.encodeDeploy(deployArgs).slice(2);
+
+        this.stashBytecode(bytecodeWithArgs);
+>>>>>>> Stashed changes
     }
     const contract = await this.retry(
       async () => deploy(contractFile, deployArgs, this.hre, await this.deployOpts()),

@@ -23,7 +23,11 @@ export function getEtherscanApiUrl(network: string): string {
   //   mantle: 'api.mantlescan.xyz',
   //   'ronin': 'explorer-kintsugi.roninchain.com/v2/2020',
   //   scroll: 'api.scrollscan.com'
+<<<<<<< Updated upstream
   // }[network];
+=======
+  // }[network];More actions
+>>>>>>> Stashed changes
 
   // if (!host) {
   //   throw new Error(`Unknown etherscan API host for network ${network}`);
@@ -35,10 +39,15 @@ export function getEtherscanApiUrl(network: string): string {
     throw new Error(`Unknown etherscan API host for network ${network}`);
   }
 
+<<<<<<< Updated upstream
   if (network === 'avalanche') {
     return `https://api.snowtrace.io/api`;
   } else if (network === 'fuji') {
     return `https://api-testnet.snowtrace.io/api`;
+=======
+  if (chainId === 443) {
+    return `https://api.snowtrace.io/api`;
+>>>>>>> Stashed changes
   }
 
   return `https://api.etherscan.io/v2/api?chainid=${chainId}`;

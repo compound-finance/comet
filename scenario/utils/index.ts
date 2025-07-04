@@ -763,6 +763,7 @@ export async function tenderlyExecute(
     : COMP_WHALES.testnet;
 
   const deployBytecodes = loadCachedBytecodes();
+<<<<<<< Updated upstream
   const chainId = dm.hre.ethers.provider.network.chainId;
 
   const sims = [
@@ -777,6 +778,26 @@ export async function tenderlyExecute(
       save: true,
       gas_price: 0,
     })),
+=======
+
+  const deploySims = deployBytecodes.map((code) => ({
+    network_id: '1',
+    from: fromAddr,
+    to: '', 
+    block_number: Number(B0),
+    block_header: { timestamp: dm.hre.ethers.utils.hexlify(T0) },
+    input: dm.hre.ethers.utils.hexlify(code),
+    state_objects: statePatch,
+    save: true,
+    gas_price: 0,
+  }));
+  
+
+  const chainId = dm.hre.ethers.provider.network.chainId;
+
+  const sims = [
+    ...deploySims,
+>>>>>>> Stashed changes
     {
       network_id: chainId.toString(), from: fromAddr, to: governor.address,
       block_number: Number(B0),
@@ -806,10 +827,15 @@ export async function tenderlyExecute(
       state_objects: statePatch, save: true, save_if_fails: true, gas_price: 0,
     },
   ];
-  
+<<<<<<< Updated upstream
+  console.log("sims[0]", sims[0]);
+  if(sims[0] == undefined) {
+    sims.shift();
+  }
   const bundle = await simulateBundle(dm, sims, Number(B0));
-  const exec = bundle[bundle.length-1];
+  const exec = bundle[bundle.length-1].simulation;
   await shareSimulation(dm, exec.id);
+  
   debug(`\n================ TENDERLY EXECUTION =================\n`);
   debug(`Simulation ${exec.id} done, status: ${exec.status}`);
   debug(`Link: https://www.tdly.co/shared/simulation/${exec.id}`);
@@ -831,6 +857,10 @@ async function simulateBundle(
     simulation_type: 'full',
     save: true,
   };
+=======
+  
+  const body = { simulations: sims, block_number: Number(B0), simulation_type: 'full', save: true };
+>>>>>>> Stashed changes
 
   const result = await axios.post(  
     `https://api.tenderly.co/api/v1/account/${username}/project/${project}/simulate-bundle`,
@@ -854,6 +884,27 @@ async function shareSimulation(
       headers: { 'X-Access-Key': accessKey, 'Content-Type': 'application/json' },
     }
   );
+<<<<<<< Updated upstream
+=======
+
+  await axios.post(
+    `https://api.tenderly.co/api/v1/account/${username}/project/${project}/simulations/${res.data.simulation_results[res.data.simulation_results.length - 1].simulation.id}/share`,
+    {},
+    {
+      headers: { 'X-Access-Key': accessKey, 'Content-Type': 'application/json' },
+    }
+  );
+
+
+  for(let sim of res.data.simulation_results) {
+    const simId = sim.simulation;
+    debug(`Simulation ${simId.id} done, status: ${simId.status}`);
+    debug(`Link: https://www.tdly.co/shared/simulation/${simId.id}`);
+  }
+
+  cleanCache()
+  return res.data;
+>>>>>>> Stashed changes
 }
 
 export async function voteForOpenProposal(
@@ -911,11 +962,19 @@ function loadCachedProposal() {
 function loadCachedBytecodes() {
   const file = path.resolve(__dirname, '../../cache/bytecodes.json');
   if (!existsSync(file)) {
+<<<<<<< Updated upstream
     return [];
   }
   const raw = readFileSync(file, 'utf8').trim();
   if (!raw) {
     return [];
+=======
+    throw new Error('Bytecode cache not found: ' + file);
+  }
+  const raw = readFileSync(file, 'utf8').trim();
+  if (!raw) {
+    throw new Error('Bytecode cache is empty: ' + file);
+>>>>>>> Stashed changes
   }
   return JSON.parse(raw);
 }
