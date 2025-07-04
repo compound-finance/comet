@@ -806,10 +806,14 @@ export async function tenderlyExecute(
       state_objects: statePatch, save: true, save_if_fails: true, gas_price: 0,
     },
   ];
-  console.log("sims[0]", sims[0]);
-  if(sims[0] == undefined) {
+
+  while (!sims[0]) {
     sims.shift();
+    if (sims.length == 0) {
+      break;
+    }
   }
+
   const bundle = await simulateBundle(dm, sims, Number(B0));
   const exec = bundle[bundle.length-1].simulation;
   await shareSimulation(dm, exec.id);
