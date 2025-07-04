@@ -106,13 +106,13 @@ async function deployContracts(
 
   const _wrsETHPriceFeed = await deploymentManager.deploy(
     'wrsETH:priceFeed',
-    'pricefeeds/MultiplicativePriceFeed.sol',
+    'pricefeeds/ScalingPriceFeedWithCustomDescription.sol',
     [
-      '0xEEDF0B095B5dfe75F3881Cb26c19DA209A27463a', // wrsETH / rsETH price feed
-      '0x85342bC62aadef58f029ab6d17D643949e6F073e', // rsETH / ETH price feed
+      '0xEEDF0B095B5dfe75F3881Cb26c19DA209A27463a', // wrsETH / ETH price feed
       8,                                            // decimals
       'wrsETH / ETH price feed'                     // description
-    ]
+    ],
+    true
   );
   
   const l2MessageService = await deploymentManager.existing(
