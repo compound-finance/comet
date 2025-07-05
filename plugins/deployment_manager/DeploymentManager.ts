@@ -243,7 +243,11 @@ export class DeploymentManager {
   /* Deploys a contract from Hardhat artifacts */
   async _deploy<C extends Contract>(contractFile: string, deployArgs: any[], retries?: number): Promise<C> {
     const contract = await this.retry(
-      async () => deploy(contractFile, deployArgs, this.hre, await this.deployOpts()),
+      async () => {
+        const signer = await this.getSigner();
+        const nonce = await signer.getTransactionCount();
+        return deploy(contractFile, deployArgs, this.hre, await this.deployOpts(), nonce);
+      },
       retries
     );
     this.counter++;
