@@ -242,10 +242,20 @@ export class DeploymentManager {
 
   /* Deploys a contract from Hardhat artifacts */
   async _deploy<C extends Contract>(contractFile: string, deployArgs: any[], retries?: number): Promise<C> {
+    let lastNonce: number;
     const contract = await this.retry(
       async () => {
         const signer = await this.getSigner();
         const nonce = await signer.getTransactionCount();
+        if(!nonce) lastNonce = nonce;
+        else if (lastNonce == nonce) {
+          console.warn(`Nonce did not change for ${contractFile} deployment, using nonce ${nonce}. This may cause issues if the transaction is not mined.`);
+          await new Promise(ok => setTimeout(ok, 15_000));
+
+          return this._deploy(contractFile, deployArgs, retries);
+        }
+
+        lastNonce = nonce;
         return deploy(contractFile, deployArgs, this.hre, await this.deployOpts(), nonce);
       },
       retries
