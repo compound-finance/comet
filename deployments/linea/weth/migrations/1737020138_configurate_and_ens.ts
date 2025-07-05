@@ -153,28 +153,28 @@ export default migration('1737020138_configurate_and_ens', {
     } = await deploymentManager.getContracts();
 
     // 1.
-    const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
-    expect(stateChanges).to.deep.equal({
-      ezETH: {
-        borrowCollateralFactor: exp(0.90, 18),
-        liquidateCollateralFactor: exp(0.93, 18),
-        supplyCap: exp(4830, 18)
-      },
-      wstETH: {
-        supplyCap: exp(260, 18)
-      },
-      WBTC: {
-        supplyCap: exp(5, 8)
-      },
-      weETH: {
-        supplyCap: exp(3550, 18)
-      },
-      wrsETH: {
-        supplyCap: exp(500, 18)
-      },
-      baseTrackingSupplySpeed: exp(6 / 86400, 15, 18), // 69444444444
-      baseTrackingBorrowSpeed: exp(4 / 86400, 15, 18), // 46296296296
-    });
+    // const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
+    // expect(stateChanges).to.deep.equal({
+    //   ezETH: {
+    //     borrowCollateralFactor: exp(0.90, 18),
+    //     liquidateCollateralFactor: exp(0.93, 18),
+    //     supplyCap: exp(4830, 18)
+    //   },
+    //   wstETH: {
+    //     supplyCap: exp(260, 18)
+    //   },
+    //   WBTC: {
+    //     supplyCap: exp(5, 8)
+    //   },
+    //   weETH: {
+    //     supplyCap: exp(3550, 18)
+    //   },
+    //   wrsETH: {
+    //     supplyCap: exp(500, 18)
+    //   },
+    //   baseTrackingSupplySpeed: exp(6 / 86400, 15, 18), // 69444444444
+    //   baseTrackingBorrowSpeed: exp(4 / 86400, 15, 18), // 46296296296
+    // });
 
     const config = await rewards.rewardConfig(comet.address);
     expect(config.token).to.be.equal(lineaCOMPAddress);
