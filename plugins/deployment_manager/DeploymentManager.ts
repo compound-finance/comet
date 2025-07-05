@@ -254,9 +254,16 @@ export class DeploymentManager {
 
           return this._deploy(contractFile, deployArgs, retries);
         }
+        // check tx in pending state
+        const pendingTx = await signer.provider.getTransactionCount(signer.address, 'pending');
+        console.log(`Pending transactions for ${contractFile} deployment: ${pendingTx}`);
+        if (pendingTx > nonce) {
+          console.warn(`Pending transactions detected for ${contractFile} deployment, using nonce ${pendingTx}. This may cause issues if the transaction is not mined.`);
+          lastNonce = pendingTx;
+        }
 
         lastNonce = nonce;
-        return deploy(contractFile, deployArgs, this.hre, await this.deployOpts(), nonce);
+        return deploy(contractFile, deployArgs, this.hre, await this.deployOpts(), pendingTx? pendingTx : nonce);
       },
       retries
     );
