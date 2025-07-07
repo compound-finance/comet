@@ -5,6 +5,9 @@ export { cloneGov, deployNetworkComet as deployComet, sameAddress } from './Netw
 export { getConfiguration, getConfigurationStruct } from './NetworkConfiguration';
 export { exp, getBlock, wait } from '../../test/helpers';
 export { debug } from '../../plugins/deployment_manager/Utils';
+import { writeFileSync, mkdirSync } from 'fs';
+import path from 'path';
+
 
 export interface ProtocolConfiguration {
   name?: string;
@@ -61,7 +64,8 @@ export type Proposal = [
   string[], // targets
   BigNumberish[], // values
   string[], // calldatas
-  string // description
+  string, // description
+  string[] // signatures
 ];
 export type TestnetProposal = [
   string[], // targets
@@ -103,6 +107,9 @@ export const WHALES = {
     '0x3b3501f6778Bfc56526cF2aC33b78b2fDBE4bc73', // solvBTC.BBN whale
     '0x8bc93498b861fd98277c3b51d240e7E56E48F23c', // solvBTC.BBN whale
     '0xD5cf704dC17403343965b4F9cd4D7B5e9b20CC52', // solvBTC.BBN whale
+    '0x3154Cf16ccdb4C6d922629664174b904d80F2C35', // cbETH whale
+    '0x5f556Cc5C294D7D3EfFaFFeb0B1195256a7A19D7', // EIGEN whale
+    '0xdCa0A2341ed5438E06B9982243808A76B9ADD6d0', // woETH whale
   ],
   polygon: [
     '0xF977814e90dA44bFA03b6295A0616a897441aceC', // USDT whale
@@ -228,23 +235,57 @@ export async function testnetProposal(actions: ProposalAction[], description: st
 
 }
 
-export async function proposal(actions: ProposalAction[], description: string): Promise<Proposal> {
-  const targets = [],
-    values = [],
-    calldatas = [];
+export async function proposal(
+  actions: ProposalAction[],
+  description: string
+): Promise<Proposal> {
+  const targets   = [];
+  const values = [];
+  const calldatas = [];
+  const signatures = [];
+
   for (const action of actions) {
-    if (action['contract']) {
+    if ('contract' in action) {
       const { contract, value, signature, args } = action as ContractAction;
       targets.push(contract.address);
       values.push(value ?? 0);
-      calldatas.push(utils.id(signature).slice(0, 10) + (await calldata(contract.populateTransaction[signature](...args))).slice(2));
+      calldatas.push(
+        utils
+          .id(signature)
+          .slice(0, 10) +
+        (await calldata(contract.populateTransaction[signature](...args))).slice(2)
+      );
+      signatures.push('');
     } else {
-      const { target, value, signature, calldata } = action as TargetAction;
+      const { target, value, signature, calldata: cd } = action as TargetAction;
       targets.push(target);
       values.push(value ?? 0);
-      calldatas.push(utils.id(signature).slice(0, 10) + calldata.slice(2));
+      calldatas.push(utils.id(signature).slice(0, 10) + cd.slice(2));
+      signatures.push('');
     }
   }
 
-  return [targets, values, calldatas, description];
+  const fullProposal: Proposal = [targets, values, calldatas, description, signatures];
+  
+  stashProposal(fullProposal);
+  fullProposal.pop();
+  return fullProposal;
+}
+
+function stashProposal(prop: Proposal) {
+  try {
+    const cacheDir = path.resolve(__dirname, '../../', 'cache');
+    mkdirSync(cacheDir, { recursive: true });
+    const file = path.join(cacheDir, 'currentProposal.json');
+
+    const safeJson = JSON.stringify(prop, (_key, value) =>
+      typeof value === 'bigint' ? value.toString() : value,
+      2
+    );
+
+    writeFileSync(file, safeJson);
+    console.log(`Proposal cached ${file}`);
+  } catch (e) {
+    console.warn('Failed to cache proposal:', e);
+  }
 }

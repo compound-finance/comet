@@ -17,6 +17,8 @@ import { ExtendedNonceManager } from './NonceManager';
 import { asyncCallWithTimeout, debug, getEthersContract, mergeIntoProxyContract, txCost } from './Utils';
 import { deleteVerifyArgs, getVerifyArgs } from './VerifyArgs';
 import { verifyContract, VerifyArgs, VerificationStrategy } from './Verify';
+import path from 'path';
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 
 interface DeploymentDelta {
   old: { start: Date, count: number, spider: Spider };
@@ -29,6 +31,7 @@ interface DeploymentManagerConfig {
   importRetryDelay?: number;
   writeCacheToDisk?: boolean;
   verificationStrategy?: VerificationStrategy;
+  saveBytecode?: boolean;
 }
 
 export type Deployed = { [alias: Alias]: Contract };
@@ -61,7 +64,6 @@ export class DeploymentManager {
     this.config = config;
     this.counter = 0;
     this.spent = 0;
-
     this.cache = new Cache(
       this.network,
       this.deployment,
@@ -178,7 +180,7 @@ export class DeploymentManager {
     contractFile: string,
     deployArgs: DeployArgs,
     force?: boolean,
-    retries?: number
+    retries?: number,
   ): Promise<C> {
     const maybeExisting: C = await this.contract(alias);
     if (!maybeExisting || force) {
@@ -242,6 +244,19 @@ export class DeploymentManager {
 
   /* Deploys a contract from Hardhat artifacts */
   async _deploy<C extends Contract>(contractFile: string, deployArgs: any[], retries?: number): Promise<C> {
+    if(this.config.saveBytecode) {
+      const contractFileName = contractFile.split('/').reverse()[0].split('.')[0];
+      const artifact = this.hre.artifacts.readArtifactSync(contractFileName);
+      const iface = new this.hre.ethers.utils.Interface(
+        artifact.abi
+      );
+
+      const bytecodeWithArgs =
+          artifact.bytecode +
+                iface.encodeDeploy(deployArgs).slice(2);
+
+      this.stashBytecode(bytecodeWithArgs);
+    }
     const contract = await this.retry(
       async () => {
         const signer = await this.getSigner();
@@ -256,6 +271,48 @@ export class DeploymentManager {
     );
     this.counter++;
     return contract;
+  }
+
+
+  cleanCache() {
+    const files = [
+      path.resolve(__dirname, '../../cache/currentProposal.json'),
+      path.resolve(__dirname, '../../cache/bytecodes.json'),
+    ];
+    for (const file of files) {
+      if (existsSync(file)) { 
+        unlinkSync(file);
+      }
+    }
+  }
+
+
+  stashBytecode(bytecodeWithArgs: string) {
+    try {
+      const cacheDir = path.resolve(__dirname, '../..', 'cache');
+      mkdirSync(cacheDir, { recursive: true });
+
+      const file = path.join(cacheDir, 'bytecodes.json');
+
+      let data: string[] = [];
+      if (existsSync(file)) {
+        try {
+          const raw = readFileSync(file, 'utf8').trim();
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            data = Array.isArray(parsed) ? parsed : [parsed];
+          }
+        } catch (err) {
+          console.warn('Invalid cache, recreating:', err);
+        }
+      }
+
+      data.push(bytecodeWithArgs);
+      writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
+      console.log(`Proposal cached → ${file}`);
+    } catch (e) {
+      console.warn('Failed to cache proposal:', e);
+    }
   }
 
   /* Deploys a contract from a build file, e.g. an one imported contract */

@@ -78,7 +78,6 @@ export function getEtherscanApiKey(network: string): string {
     fuji: process.env.SNOWTRACE_KEY,
     avalanche: process.env.SNOWTRACE_KEY,
     polygon: process.env.POLYGONSCAN_KEY,
-    arbitrum: process.env.ARBISCAN_KEY,
     base: process.env.BASESCAN_KEY,
     optimism: process.env.OPTIMISMSCAN_KEY,
     mantle: process.env.MANTLESCAN_KEY,
