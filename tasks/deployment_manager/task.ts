@@ -33,6 +33,7 @@ async function runMigration<T>(
   overwrite: boolean,
   tenderly: boolean = false
 ) {
+  deploymentManager.cleanCache();
   let artifact: T = await deploymentManager.readArtifact(migration);
   if (prepare) {
     if (artifact && !overwrite) {

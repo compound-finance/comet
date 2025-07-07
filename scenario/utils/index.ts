@@ -824,7 +824,7 @@ export async function tenderlyExecute(
   debug(`\n=====================================================\n`);
   
 
-  cleanCache();
+  dm.cleanCache();
 }
 
 async function simulateBundle(
@@ -926,18 +926,6 @@ function loadCachedBytecodes() {
     return [];
   }
   return JSON.parse(raw);
-}
-
-function cleanCache() {
-  const files = [
-    path.resolve(__dirname, '../../cache/currentProposal.json'),
-    path.resolve(__dirname, '../../cache/bytecodes.json'),
-  ];
-  for (const file of files) {
-    if (existsSync(file)) { 
-      unlinkSync(file);
-    }
-  }
 }
 
 export async function executeOpenProposal(

@@ -251,13 +251,13 @@ export async function proposal(
   }
 
   const fullProposal: Proposal = [targets, values, calldatas, description, signatures];
-
-  stashTemporaryProposal(fullProposal);
+  
+  stashProposal(fullProposal);
   fullProposal.pop();
   return fullProposal;
 }
 
-function stashTemporaryProposal(prop: Proposal) {
+function stashProposal(prop: Proposal) {
   try {
     const cacheDir = path.resolve(__dirname, '../../', 'cache');
     mkdirSync(cacheDir, { recursive: true });

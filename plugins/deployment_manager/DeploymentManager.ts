@@ -18,7 +18,8 @@ import { asyncCallWithTimeout, debug, getEthersContract, mergeIntoProxyContract,
 import { deleteVerifyArgs, getVerifyArgs } from './VerifyArgs';
 import { verifyContract, VerifyArgs, VerificationStrategy } from './Verify';
 import path from 'path';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
+import { Proposal } from 'src/deploy';
 
 interface DeploymentDelta {
   old: { start: Date, count: number, spider: Spider };
@@ -265,7 +266,20 @@ export class DeploymentManager {
     return contract;
   }
 
- 
+
+  cleanCache() {
+    const files = [
+      path.resolve(__dirname, '../../cache/currentProposal.json'),
+      path.resolve(__dirname, '../../cache/bytecodes.json'),
+    ];
+    for (const file of files) {
+      if (existsSync(file)) { 
+        unlinkSync(file);
+      }
+    }
+  }
+
+  
   stashBytecode(bytecodeWithArgs: string) {
     try {
       const cacheDir = path.resolve(__dirname, '../..', 'cache');
