@@ -130,7 +130,7 @@ jobs:
 
       - name: Run Deploy Market and Enact Migration (impersonate)
         run: |
-          yarn hardhat deploy_and_migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true'] }} ${{ github.event.inputs.migration }} --impersonate ${{ github.event.inputs.impersonateAccount }}
+          yarn hardhat deploy_and_migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true'] }} ${{ github.event.inputs.migration }} --impersonate ${{ github.event.inputs.impersonateAccount }} ${{ fromJSON('["", "--tenderly"]')[github.event.inputs.tenderly == 'true'] }}
         env:
           DEBUG: true
           ETH_PK: "${{ inputs.eth_pk }}"
@@ -163,7 +163,7 @@ jobs:
         if: github.event.inputs.impersonateAccount != '' && github.event.inputs.run_id != 0
       - name: Run Prepare and Enact Migration (impersonate)
         run: |
-          yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --prepare --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true'] }} ${{ github.event.inputs.migration }} --impersonate ${{ github.event.inputs.impersonateAccount }}
+          yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --prepare --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true'] }} ${{ github.event.inputs.migration }} --impersonate ${{ github.event.inputs.impersonateAccount }} ${{ fromJSON('["", "--tenderly"]')[github.event.inputs.tenderly == 'true'] }}
         env:
           DEBUG: true
           ETH_PK: "${{ inputs.eth_pk }}"
