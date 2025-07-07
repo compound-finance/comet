@@ -12,7 +12,7 @@ import {
   utils,
 } from 'ethers';
 import { execSync } from 'child_process';
-import { existsSync, unlinkSync } from 'fs';
+import { existsSync } from 'fs';
 import { CometContext } from '../context/CometContext';
 import CometAsset from '../context/CometAsset';
 import { exp } from '../../test/helpers';
