@@ -9,7 +9,7 @@ import '@typechain/hardhat';
 import 'hardhat-chai-matchers';
 import 'hardhat-change-network';
 import 'hardhat-contract-sizer';
-import 'hardhat-cover';
+import 'solidity-coverage';
 import 'hardhat-gas-reporter';
 
 // Hardhat tasks
