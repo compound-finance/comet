@@ -58,7 +58,7 @@ async function runMigration<T>(
     const {
       governor,
       timelock
-    } = await deploymentManager.getContracts();
+    } = await govDeploymentManager.getContracts();
     
     await migration.actions.enact(
       deploymentManager,
@@ -69,7 +69,7 @@ async function runMigration<T>(
 
     if (tenderly) {
       const { tenderlyExecute } = await import('../../scenario/utils');
-      await tenderlyExecute(deploymentManager, governor, timelock);
+      await tenderlyExecute(govDeploymentManager, governor, timelock);
     }
   }
 }
