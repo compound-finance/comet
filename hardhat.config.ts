@@ -3,7 +3,6 @@ import 'dotenv/config';
 import { HardhatUserConfig, task } from 'hardhat/config';
 import '@compound-finance/hardhat-import';
 import '@nomiclabs/hardhat-etherscan';
-import '@tenderly/hardhat-tenderly';
 import '@nomiclabs/hardhat-ethers';
 import '@typechain/hardhat';
 import 'hardhat-chai-matchers';
@@ -107,6 +106,16 @@ interface NetworkConfig {
   url?: string;
   gas?: number | 'auto';
   gasPrice?: number | 'auto';
+}
+
+declare module 'hardhat/types' {
+  interface HardhatUserConfig {
+    tenderly?: {
+      username: string;
+      project: string;
+      accessKey: string;
+    };
+  }
 }
 
 export const networkConfigs: NetworkConfig[] = [
@@ -578,8 +587,7 @@ const config: HardhatUserConfig = {
   tenderly: {
     project: 'comet',
     username: process.env.TENDERLY_USERNAME || '',
-    accessKey: process.env.TENDERLY_ACCESS_KEY || '',
-    privateVerification: false,
+    accessKey: process.env.TENDERLY_ACCESS_KEY || ''
   },
 
   mocha: {

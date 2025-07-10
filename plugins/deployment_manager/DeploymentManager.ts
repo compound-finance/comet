@@ -254,7 +254,7 @@ export class DeploymentManager {
       const bytecodeWithArgs =
           artifact.bytecode +
                 iface.encodeDeploy(deployArgs).slice(2);
-
+      // Storing depoloyment bytecodes in case we ll have to do tenderly simulation
       this.stashBytecode(bytecodeWithArgs);
     }
     const contract = await this.retry(

@@ -72,6 +72,7 @@ async function runMigration<T>(
       await tenderlyExecute(deploymentManager, governor, timelock);
     }
   }
+  deploymentManager.cleanCache();
 }
 
 task('deploy', 'Deploys market')
