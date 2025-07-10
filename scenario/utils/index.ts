@@ -991,7 +991,7 @@ export async function tenderlyExecute(
 ): Promise<void> {
 
   // 1. Capture the current chain head to anchor our simulation
-  const latest = await dm.hre.ethers.provider.getBlock("latest");
+  const latest = await dm.hre.ethers.provider.getBlock('latest');
   const B0 = BigInt(latest.number);   // base block
   const T0 = BigInt(latest.timestamp); // base timestamp
 
@@ -1007,7 +1007,7 @@ export async function tenderlyExecute(
   const blockQueue = blockCast + 1n;
   const blockExec  = blockQueue + 3n;
 
-  // Helper to shift a timestamp by N blocks (≈12 s per block on L2)
+  // Helper to shift a timestamp by N blocks (12 s per block on L2)
   const tsShift = (t: bigint, dBlocks: bigint) => t + dBlocks * 12n;
   const timestampCast  = tsShift(T0, blockCast  - B0);
   const timestampQueue = tsShift(T0, blockQueue - B0);
@@ -1025,24 +1025,24 @@ export async function tenderlyExecute(
   // 4. STORAGE PATCHES
   //    - set Timelock.delay = 0 so queue so execute is instant
   //    - clear Governor guardian / extensions flags
-  const patchTL = { "0x2": "0x" + "00".repeat(64) };
+  const patchTL = { '0x2': '0x' + '00'.repeat(64) };
 
   const packed  = (1n << 48n) | 1n; // guardianShutdown = 0
   const rawGS   = dm.hre.ethers.utils.hexZeroPad(
     dm.hre.ethers.BigNumber.from(packed).toHexString(), 32);
-  const keyGS   = "0x00d7616c8fe29c6c2fbe1d0c5bc8f2faa4c35b43746e70b24b4d532752affd01";
+  const keyGS   = '0x00d7616c8fe29c6c2fbe1d0c5bc8f2faa4c35b43746e70b24b4d532752affd01';
 
   const basePLQ    = 0x042f525fd47e44d02e065dd7bb464f47b4f926fbd05b5e087891ebd756adf100n;
-  const slotVoteExt = "0x" + basePLQ.toString(16).padStart(64, "0");
-  const slotMapRoot = "0x" + (basePLQ + 1n).toString(16).padStart(64, "0");
+  const slotVoteExt = '0x' + basePLQ.toString(16).padStart(64, '0');
+  const slotMapRoot = '0x' + (basePLQ + 1n).toString(16).padStart(64, '0');
   const slotExtDead = dm.hre.ethers.utils.keccak256(
-    dm.hre.ethers.utils.defaultAbiCoder.encode(["uint256", "bytes32"], [id, slotMapRoot])
+    dm.hre.ethers.utils.defaultAbiCoder.encode(['uint256', 'bytes32'], [id, slotMapRoot])
   );
 
   const patchGov = {
     [keyGS]: rawGS,                     // guardianShutdown = 0
-    [slotVoteExt]: "0x" + "00".repeat(64), // clear vote‑extension mapping
-    [slotExtDead]: "0x" + "00".repeat(64)  // clear “dead proposals” mapping
+    [slotVoteExt]: '0x' + '00'.repeat(64), // clear vote‑extension mapping
+    [slotExtDead]: '0x' + '00'.repeat(64)  // clear “dead proposals” mapping
   };
 
   const statePatch = {
@@ -1051,7 +1051,7 @@ export async function tenderlyExecute(
   };
 
   // 5. Setup actors and deployment bytecode bundle
-  const whales = dm.network === "mainnet" ? COMP_WHALES.mainnet : COMP_WHALES.testnet;
+  const whales = dm.network === 'mainnet' ? COMP_WHALES.mainnet : COMP_WHALES.testnet;
   const deployBytecodes = loadCachedBytecodes();
   const chainId = dm.hre.ethers.provider.network.chainId;
 
@@ -1060,7 +1060,7 @@ export async function tenderlyExecute(
     ...deployBytecodes.map(code => ({
       network_id: chainId,
       from: fromAddr,
-      to: "",                    // CREATE
+      to: '',                    // CREATE
       block_number: Number(B0),
       block_header: { timestamp: dm.hre.ethers.utils.hexlify(T0) },
       input: dm.hre.ethers.utils.hexlify(code),
@@ -1075,7 +1075,7 @@ export async function tenderlyExecute(
       to: governor.address,
       block_number: Number(B0),
       block_header: { timestamp: dm.hre.ethers.utils.hexlify(T0) },
-      input: govIF.encodeFunctionData("propose", proposalArgs),
+      input: govIF.encodeFunctionData('propose', proposalArgs),
       state_objects: statePatch,
       save: true,
       gas_price: 0,
@@ -1087,7 +1087,7 @@ export async function tenderlyExecute(
       to: governor.address,
       block_number: Number(blockCast),
       block_header: { timestamp: dm.hre.ethers.utils.hexlify(timestampCast) },
-      input: govIF.encodeFunctionData("castVote", [id, 1]),
+      input: govIF.encodeFunctionData('castVote', [id, 1]),
       state_objects: statePatch,
       save: true,
       save_if_fails: true,
@@ -1100,7 +1100,7 @@ export async function tenderlyExecute(
       to: governor.address,
       block_number: Number(blockQueue),
       block_header: { timestamp: dm.hre.ethers.utils.hexlify(timestampQueue) },
-      input: govIF.encodeFunctionData("queue", [id]),
+      input: govIF.encodeFunctionData('queue', [id]),
       state_objects: statePatch,
       save: true,
       save_if_fails: true,
@@ -1113,7 +1113,7 @@ export async function tenderlyExecute(
       to: governor.address,
       block_number: Number(blockExec),
       block_header: { timestamp: dm.hre.ethers.utils.hexlify(timestampExec) },
-      input: govIF.encodeFunctionData("execute", [id]),
+      input: govIF.encodeFunctionData('execute', [id]),
       state_objects: statePatch,
       save: true,
       save_if_fails: true,
@@ -1129,10 +1129,10 @@ export async function tenderlyExecute(
   const exec   = bundle[bundle.length - 1].simulation;
   await shareSimulation(dm, exec.id);
 
-  debug("\n================ TENDERLY EXECUTION =================\n");
+  debug('\n================ TENDERLY EXECUTION =================\n');
   debug(`Simulation ${exec.id} done, status: ${exec.status}`);
   debug(`Link: https://www.tdly.co/shared/simulation/${exec.id}`);
-  debug("\n=====================================================\n");
+  debug('\n=====================================================\n');
 }
 
 
@@ -1141,7 +1141,6 @@ async function simulateBundle(
   simulations: any[],
   blockNumber: number = 0
 ): Promise<any> {
-  // @ts-ignore
   const { username, project, accessKey } = dm.hre.config.tenderly;
   const body = {
     simulations,
@@ -1164,7 +1163,6 @@ async function shareSimulation(
   dm: DeploymentManager,
   simulationId: string
 ) {
-  // @ts-ignore
   const { username, project, accessKey } = dm.hre.config.tenderly;
   return axios.post(
     `https://api.tenderly.co/api/v1/account/${username}/project/${project}/simulations/${simulationId}/share`,
