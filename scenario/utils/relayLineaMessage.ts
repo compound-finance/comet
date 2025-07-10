@@ -71,8 +71,23 @@ export default async function relayLineaMessage(
       bridgeDeploymentManager,
       LINEA_SETTER_ROLE_ACCOUNT
     );
+    
+    let callData = l2MessageService.interface.encodeFunctionData('anchorL1L2MessageHashes', [
+      [messageHash],
+      messageNumber,
+      messageNumber,
+      rollingHash
+    ]);
+
+   
     // First the message's hash has to be added by a specific account in the "contract's queue"
     if((await l2MessageService.lastAnchoredL1MessageNumber()).lt(messageNumber))
+      bridgeDeploymentManager.stashRelayMessage(
+        l2MessageService.address,
+        callData,
+        aliasSetterRoleAccount.address
+      );
+
       await l2MessageService.connect(aliasSetterRoleAccount).anchorL1L2MessageHashes(
         [messageHash],
         messageNumber,
@@ -86,6 +101,18 @@ export default async function relayLineaMessage(
       || _from.toLowerCase() === lineaL1TokenBridge.address.toLowerCase()
       || _from.toLowerCase() === lineaL1USDCBridge.address.toLowerCase()
     ){
+
+      callData = l2MessageService.interface.encodeFunctionData('claimMessage', [
+        _from,
+        _to,
+        _fee,
+        _value,
+        constants.AddressZero,
+        _calldata,
+        _nonce
+      ]);
+
+
       relayMessageTxn = await (
         await l2MessageService.claimMessage(
           _from,
@@ -101,6 +128,12 @@ export default async function relayLineaMessage(
           }
         )
       ).wait();
+      const signer = await bridgeDeploymentManager.getSigner();
+      bridgeDeploymentManager.stashRelayMessage(
+        l2MessageService.address,
+        callData,
+        signer.address
+      );
     } else continue;
 
     // Try to decode the SentMessage data to determine what type of cross-chain activity this is. So far,

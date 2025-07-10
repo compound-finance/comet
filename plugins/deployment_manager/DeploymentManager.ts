@@ -276,6 +276,7 @@ export class DeploymentManager {
 
   cleanCache() {
     const files = [
+      path.resolve(__dirname, '../../cache/relay.json'),
       path.resolve(__dirname, '../../cache/currentProposal.json'),
       path.resolve(__dirname, '../../cache/bytecodes.json'),
     ];
@@ -286,6 +287,37 @@ export class DeploymentManager {
     }
   }
 
+  stashRelayMessage(messanger: string, callData: string, signer: string) {
+    try {
+      const cacheDir = path.resolve(__dirname, '../..', 'cache');
+      mkdirSync(cacheDir, { recursive: true });
+      const file = path.join(cacheDir, 'relay.json');
+      let data: any[] = [];
+      
+      if (existsSync(file)) {
+        try {
+          const raw = readFileSync(file, 'utf8').trim();
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            data = Array.isArray(parsed) ? parsed : [parsed];
+          }
+        } catch (err) {
+          console.warn('Invalid cache, recreating:', err);
+        }
+      }
+
+      const newEntry = { messanger, target, callData, signer };
+      if (!data.some(entry => JSON.stringify(entry) === JSON.stringify(newEntry))) {
+        data.push(newEntry);
+        writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
+        console.log(`Proposal cached ${file}`);
+      } else {
+        console.log('Entry already exists in cache, not rewriting.');
+      }
+    } catch (e) {
+      console.warn('Failed to cache proposal:', e);
+    }
+  }
 
   stashBytecode(bytecodeWithArgs: string) {
     try {
@@ -309,7 +341,7 @@ export class DeploymentManager {
 
       data.push(bytecodeWithArgs);
       writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
-      console.log(`Proposal cached → ${file}`);
+      console.log(`Proposal cached ${file}`);
     } catch (e) {
       console.warn('Failed to cache proposal:', e);
     }

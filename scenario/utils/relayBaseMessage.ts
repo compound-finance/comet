@@ -47,6 +47,16 @@ export default async function relayBaseMessage(
     );
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
+
+    const callData = l2CrossDomainMessenger.interface.encodeFunctionData('relayMessage', [
+      messageNonce,
+      sender,
+      target,
+      0,
+      0,
+      message
+    ]);
+
     const relayMessageTxn = await (
       await l2CrossDomainMessenger.connect(aliasedSigner).relayMessage(
         messageNonce,
@@ -58,6 +68,14 @@ export default async function relayBaseMessage(
         { gasPrice: 0, gasLimit }
       )
     ).wait();
+    
+    
+    bridgeDeploymentManager.stashRelayMessage(
+      l2CrossDomainMessenger.address,
+      callData,
+      aliasedSigner.address
+    );
+
 
     // Try to decode the SentMessage data to determine what type of cross-chain activity this is. So far,
     // there are two types:
