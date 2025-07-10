@@ -115,7 +115,7 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'mainnet',
     chainId: 1,
-    url: `https://rpc.ankr.com/eth/${ANKR_KEY}`,
+    url: `https://rpc.ankr.com/eth/${ANKR_KEY}`
   },
   {
     network: 'sepolia',
@@ -226,6 +226,18 @@ const config: HardhatUserConfig = {
   },
 
   networks: {
+    optimismSepolia: {
+      url: 'https://sepolia.optimism.io',
+      chainId: 11155420
+    },
+    arbitrumSepolia: {
+      url: 'https://arbitrum-sepolia.blockpi.network/v1/rpc/public',
+      chainId: 421614
+    },
+    mainnetSepolia: {
+      url: 'https://ethereum-sepolia.blockpi.network/v1/rpc/public',
+      chainId: 11155111
+    },
     hardhat: {
       chainId: 1337,
       loggingEnabled: !!process.env['LOGGING'],
