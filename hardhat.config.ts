@@ -108,13 +108,19 @@ interface NetworkConfig {
   gasPrice?: number | 'auto';
 }
 
-declare module 'hardhat/types' {
-  interface HardhatUserConfig {
-    tenderly?: {
-      username: string;
-      project: string;
-      accessKey: string;
-    };
+declare module 'hardhat/types/config' {
+  export interface TenderlyConfig {
+    username: string;
+    project: string;
+    accessKey: string;
+  }
+
+  export interface HardhatUserConfig {
+    tenderly?: TenderlyConfig;
+  }
+
+  export interface HardhatConfig {
+    tenderly?: TenderlyConfig;
   }
 }
 
