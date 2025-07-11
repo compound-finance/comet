@@ -276,7 +276,7 @@ export class DeploymentManager {
 
   cleanCache() {
     const files = [
-      path.resolve(__dirname, '../../cache/relay.json'),
+      //path.resolve(__dirname, '../../cache/relay.json'),
       path.resolve(__dirname, '../../cache/currentProposal.json'),
       path.resolve(__dirname, '../../cache/bytecodes.json'),
     ];
@@ -306,7 +306,7 @@ export class DeploymentManager {
         }
       }
 
-      const newEntry = { messanger, target, callData, signer };
+      const newEntry = { messanger, callData, signer };
       if (!data.some(entry => JSON.stringify(entry) === JSON.stringify(newEntry))) {
         data.push(newEntry);
         writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');

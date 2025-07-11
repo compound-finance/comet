@@ -836,6 +836,7 @@ export async function tenderlyExecute(
   const chainId2 = bdm.hre.ethers.provider.network.chainId;
 
   const relayMessages = loadCachedRelayMessages();
+  console.log(`Relay messages: ${relayMessages.length}`);
 
   const simsL2 = [
     ...relayMessages.map((msg) => ({
@@ -846,9 +847,12 @@ export async function tenderlyExecute(
       block_header: { timestamp: gdm.hre.ethers.utils.hexlify(T0) },
       input: msg.callData,
       save: true,
+      save_if_fails: true,
       gas_price: 0,
     })),
   ];
+  console.log(simsL1)
+  console.log(simsL2)
 
   while (!simsL1[0]) {
     simsL1.shift();
@@ -859,7 +863,11 @@ export async function tenderlyExecute(
   debug(`\n==========================\ TENDERLY ==========================\n`);
 
   try {
+    debug(`\nExecuting Tenderly simulation for proposal ${id}...`);
     const bundle = await simulateBundle(gdm, simsL1, Number(B0));
+    console.log(bundle);
+    debug(`Tenderly simulation bundle size: ${bundle.length}`);
+    await shareSimulation(gdm, bundle[bundle.length - 1].simulation.id);
 
     const exec1 = bundle[bundle.length - 1].simulation;
 
@@ -896,6 +904,8 @@ async function simulateBundle(
     save: true,
   };
 
+  console.log("Simsulations length: ", simulations.length);
+
   const result = await axios.post(
     `https://api.tenderly.co/api/v1/account/${username}/project/${project}/simulate-bundle`,
     body,
@@ -906,6 +916,8 @@ async function simulateBundle(
       },
     }
   );
+
+  console.log(result.data)
   return result.data.simulation_results;
 }
 
@@ -1359,7 +1371,11 @@ export async function executeOpenProposalAndRelay(
     await governanceDeploymentManager.hre.ethers.provider.getBlockNumber();
   await executeOpenProposal(governanceDeploymentManager, openProposal);
   await mockAllRedstoneOracles(bridgeDeploymentManager);
-
+  console.log("ISSSSSSSSSSSS BRRRIIIDDDDGEEEEEE", await isBridgeProposal(
+    governanceDeploymentManager,
+    bridgeDeploymentManager,
+    openProposal
+  ))
   if (
     await isBridgeProposal(
       governanceDeploymentManager,

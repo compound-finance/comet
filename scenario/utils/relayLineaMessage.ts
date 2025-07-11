@@ -4,6 +4,7 @@ import { constants, ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { OpenBridgedProposal } from '../context/Gov';
 import { impersonateAddress } from '../../plugins/scenario/utils';
+import { tenderlyExecute } from '.';
 
 const LINEA_SETTER_ROLE_ACCOUNT = '0xc1C6B09D1eB6fCA0fF3cA11027E5Bc4AeDb47F67';
 
@@ -12,6 +13,8 @@ export default async function relayLineaMessage(
   bridgeDeploymentManager: DeploymentManager,
   startingBlockNumber: number
 ) {
+
+  console.log("###############################################################1")
   const lineaMessageService = await governanceDeploymentManager.getContractOrThrow(
     'lineaMessageService'
   );
@@ -33,7 +36,7 @@ export default async function relayLineaMessage(
   // Grab all events on the L1CrossDomainMessenger contract since the `startingBlockNumber`
   const filter = lineaMessageService.filters.MessageSent();
   const filterRollingHash = lineaMessageService.filters.RollingHashUpdated();
-
+  console.log("###############################################################2")
   const messageSentEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: (startingBlockNumber - 50000),
     toBlock: 'latest',
@@ -47,7 +50,7 @@ export default async function relayLineaMessage(
     address: lineaMessageService.address,
     topics: filterRollingHash.topics!
   });
-
+  console.log("###############################################################3")
   for (let i = 0; i < messageSentEvents.length; i++) {
     const messageSentEvent = messageSentEvents[i];
     const rollingHashUpdatedEvent = rollingHashUpdatedEvents[i];
@@ -78,7 +81,7 @@ export default async function relayLineaMessage(
       messageNumber,
       rollingHash
     ]);
-
+    console.log("###############################################################4")
    
     // First the message's hash has to be added by a specific account in the "contract's queue"
     if((await l2MessageService.lastAnchoredL1MessageNumber()).lt(messageNumber))
@@ -87,6 +90,8 @@ export default async function relayLineaMessage(
         callData,
         aliasSetterRoleAccount.address
       );
+
+      console.log("###############################################################5")
 
       await l2MessageService.connect(aliasSetterRoleAccount).anchorL1L2MessageHashes(
         [messageHash],
@@ -128,11 +133,14 @@ export default async function relayLineaMessage(
           }
         )
       ).wait();
+      console.log("###############################################################6")
       const signer = await bridgeDeploymentManager.getSigner();
+
+      console.log("###############################################################7")
       bridgeDeploymentManager.stashRelayMessage(
         l2MessageService.address,
         callData,
-        signer.address
+        await signer.getAddress()
       );
     } else continue;
 
@@ -192,9 +200,20 @@ export default async function relayLineaMessage(
 
     // Execute queued proposal
     await setNextBaseFeeToZero(bridgeDeploymentManager);
+    const callData = bridgeReceiver.interface.encodeFunctionData('executeProposal', [id]);
     await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
+    const signer = await bridgeDeploymentManager.getSigner();
+    bridgeDeploymentManager.stashRelayMessage(
+      bridgeReceiver.address,
+      callData,
+      await signer.getAddress()
+    );
     console.log(
       `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
     );
+
+    const { governor, timelock } =await governanceDeploymentManager.getContracts()
+
+    await tenderlyExecute(governanceDeploymentManager, bridgeDeploymentManager,governor, timelock)
   }
 }

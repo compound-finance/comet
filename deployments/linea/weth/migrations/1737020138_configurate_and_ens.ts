@@ -137,7 +137,7 @@ export default migration('1737020138_configurate_and_ens', {
   },
 
   async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return true;
+    return false;
   },
 
   async verify(

@@ -61,6 +61,8 @@ export class ProposalConstraint<T extends CometContext> implements StaticConstra
         }
       }
 
+      console.log("ISSSSSSSSSSss BRRRIIIDDDDGEEEEEE", isBridged)
+
       const governanceDeploymentManager = ctx.world.auxiliaryDeploymentManager || deploymentManager;
       const governor = await governanceDeploymentManager.contract('governor') as IGovernorBravo;
       const proposals = await getOpenProposals(governanceDeploymentManager, governor);
