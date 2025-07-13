@@ -12,7 +12,7 @@ scenario('upgrade Comet implementation and initialize', {filter: async (ctx) => 
 
   // Deploy new version of Comet Factory
   const dm = context.world.deploymentManager;
-  const cometModifiedFactory = await dm.deploy('cometFactory', 'test/CometModifiedFactory.sol', [], true);
+  const cometModifiedFactory = await dm.deploy('cometFactory', 'test/CometModifiedFactoryWithExtendedAssetList.sol', [], true);
 
   // Execute a governance proposal to:
   // 1. Set the new factory address in Configurator
@@ -40,7 +40,7 @@ scenario('upgrade Comet implementation and initialize using deployUpgradeToAndCa
   const dm = context.world.deploymentManager;
   const cometModifiedFactory = await dm.deploy(
     'cometFactory',
-    'test/CometModifiedFactory.sol',
+    'test/CometModifiedFactoryWithExtendedAssetList.sol',
     [],
     true
   );
@@ -49,7 +49,7 @@ scenario('upgrade Comet implementation and initialize using deployUpgradeToAndCa
   // 1. Set the new factory address in Configurator
   // 2. DeployUpgradeToAndCall the new implementation of Comet
   const setFactoryCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [comet.address, cometModifiedFactory.address]);
-  const modifiedComet = (await dm.hre.ethers.getContractFactory('CometModified')).attach(comet.address);
+  const modifiedComet = (await dm.hre.ethers.getContractFactory('CometModifiedWithExtendedAssetList')).attach(comet.address);
   const initializeCalldata = (await modifiedComet.populateTransaction.initialize(constants.AddressZero)).data;
   const deployUpgradeToAndCallCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'bytes'], [configurator.address, comet.address, initializeCalldata]);
 
@@ -69,7 +69,7 @@ scenario('upgrade Comet implementation and call new function', {filter: async (c
 
   // Deploy new version of Comet Factory
   const dm = context.world.deploymentManager;
-  const cometModifiedFactory = await dm.deploy('cometFactory', 'test/CometModifiedFactory.sol', [], true);
+  const cometModifiedFactory = await dm.deploy('cometFactory', 'test/CometModifiedFactoryWithExtendedAssetList.sol', [], true);
 
   // Upgrade Comet implementation
   const setFactoryCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [comet.address, cometModifiedFactory.address]);
@@ -81,7 +81,7 @@ scenario('upgrade Comet implementation and call new function', {filter: async (c
     [setFactoryCalldata, deployAndUpgradeToCalldata]
   );
 
-  const CometModified = await dm.hre.ethers.getContractFactory('CometModified');
+  const CometModified = await dm.hre.ethers.getContractFactory('CometModifiedWithExtendedAssetList');
   const modifiedComet = CometModified.attach(comet.address).connect(signer.signer);
 
   // Call new functions on Comet
