@@ -17,7 +17,7 @@ contract GovernorProposal is Script {
         string memory chainName = vm.envString("CHAIN_NAME"); // Access the env variable
 
         // Define the address of the Governor Bravo Proxy
-        address governorBravoProxyAddress = 0xc0Da02939E1441F497fd74F78cE7Decb17B66529;
+        address governorBravoProxyAddress = 0x309a862bbc1a00e45506cb8a802d1ff10004c8c0;
 
         // Cast the proxy address to the GovernorBravoDelegate interface
         IGovernorBravo governorBravo = IGovernorBravo(governorBravoProxyAddress);

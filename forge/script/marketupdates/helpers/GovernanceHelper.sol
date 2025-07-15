@@ -13,7 +13,7 @@ import "./MarketUpdateAddresses.sol";
 library GovernanceHelper {
     uint constant public BLOCKS_PER_DAY = 7168;
 
-    address constant governorBravoProxyAddress = 0xc0Da02939E1441F497fd74F78cE7Decb17B66529;
+    address constant governorBravoProxyAddress = 0x309a862bbC1A00e45506cB8A802D1ff10004c8C0;
     IGovernorBravo constant governorBravo = IGovernorBravo(governorBravoProxyAddress);
 
     // COMP token address
@@ -95,7 +95,17 @@ library GovernanceHelper {
         ProposalRequest memory proposalRequest = createDeploymentProposalRequest(addresses);
         string memory description = "Proposal to trigger updates for market admin";
         vm.startBroadcast(proposalCreator);
-        uint256 proposalId = governorBravo.propose(proposalRequest.targets, proposalRequest.values, proposalRequest.signatures, proposalRequest.calldatas, description);
+        bytes[] memory calldatas = proposalRequest.calldatas;
+        for (uint i = 0; i < proposalRequest.targets.length; i++) {
+            if (bytes(proposalRequest.signatures[i]).length > 0) {
+            calldatas[i] = abi.encodePacked(
+                bytes4(keccak256(bytes(proposalRequest.signatures[i]))),
+                calldatas[i]
+            );
+            }
+        }
+        proposalRequest.calldatas = calldatas;
+        uint256 proposalId = governorBravo.propose(proposalRequest.targets, proposalRequest.values, proposalRequest.calldatas, description);
         vm.stopBroadcast();
         return proposalId;
     }
@@ -104,7 +114,17 @@ library GovernanceHelper {
         // Create a proposal
         address proposalCreator = getTopDelegates()[0];
         vm.startBroadcast(proposalCreator);
-        uint256 proposalId = governorBravo.propose(proposalRequest.targets, proposalRequest.values, proposalRequest.signatures, proposalRequest.calldatas, description);
+        bytes[] memory calldatas = proposalRequest.calldatas;
+        for (uint i = 0; i < proposalRequest.targets.length; i++) {
+            if (bytes(proposalRequest.signatures[i]).length > 0) {
+            calldatas[i] = abi.encodePacked(
+                bytes4(keccak256(bytes(proposalRequest.signatures[i]))),
+                calldatas[i]
+            );
+            }
+        }
+        uint256 proposalId = governorBravo.propose(proposalRequest.targets, proposalRequest.values, proposalRequest.calldatas, description);
+        
         vm.stopBroadcast();
 
         // Move proposal to Active state
@@ -137,19 +157,19 @@ library GovernanceHelper {
 
     function createAndPassMarketUpdateProposalL2(Vm vm, address marketAdmin, ProposalRequest memory proposalRequest, string memory description, address marketUpdateProposer) public {
         vm.startPrank(marketAdmin);
-        MarketUpdateProposer(marketUpdateProposer).propose(proposalRequest.targets, proposalRequest.values, proposalRequest.signatures, proposalRequest.calldatas, description);
+        uint256 id = MarketUpdateProposer(marketUpdateProposer).propose(proposalRequest.targets, proposalRequest.values, proposalRequest.signatures, proposalRequest.calldatas, description);
 
         // Fast forward by 5 days
         vm.warp(block.timestamp + 5 days);
 
-        MarketUpdateProposer(marketUpdateProposer).execute(1);
+        MarketUpdateProposer(marketUpdateProposer).execute(id);
 
         vm.stopPrank();
     }
 
     function moveProposalToActive(Vm vm, uint proposalId) public {
         require(governorBravo.state(proposalId) == IGovernorBravo.ProposalState.Pending, "Proposal is not Pending");
-        require(governorBravo.proposals(proposalId).eta == 0, "Proposal has already been queued");
+        require(governorBravo.proposalEta(proposalId) == 0, "Proposal has already been queued");
 
         // Add a check to see the current state is pending
         uint votingDelay = governorBravo.votingDelay();
@@ -165,10 +185,14 @@ library GovernanceHelper {
         console.log("Moving proposal to Succeeded");
         require(governorBravo.state(proposalId) == IGovernorBravo.ProposalState.Active, "Proposal is not Active");
 
-
-        require(governorBravo.proposals(proposalId).forVotes > governorBravo.quorumVotes(), "Proposal does not have enough votes");
+        (uint256 againstVotes, uint256 forVotes, uint256 abstainVotes) = governorBravo.proposalVotes(proposalId);
+        console.log("Against Votes: ", againstVotes);
+        console.log("For Votes: ", forVotes);
+        console.log("Abstain Votes: ", abstainVotes);
+        console.log("Quorum: ", governorBravo.quorum(governorBravo.proposalSnapshot(proposalId)));
+        require(forVotes > governorBravo.quorum(governorBravo.proposalSnapshot(proposalId)), "Proposal does not have enough votes");
         // Advance to the end of the voting period
-        uint256 endBlock = governorBravo.proposals(proposalId).endBlock;
+        uint256 endBlock = governorBravo.proposalDeadline(proposalId);
         vm.roll(endBlock + 1);
 
         require(governorBravo.state(proposalId) == IGovernorBravo.ProposalState.Succeeded, "Proposal is not Succeeded");
@@ -176,7 +200,7 @@ library GovernanceHelper {
 
     function moveProposalToExecution(Vm vm, uint proposalId) public {
         console.log("Moving proposal to Execution");
-        uint proposalEta = governorBravo.proposals(proposalId).eta;
+        uint proposalEta = governorBravo.proposalEta(proposalId);
         require(proposalEta != 0, "Proposal has not been queued");
 
         vm.warp(proposalEta + 2 days);
@@ -184,11 +208,12 @@ library GovernanceHelper {
         require(block.timestamp >= proposalEta, "Time has not passed for proposal to be executed");
         governorBravo.execute(proposalId);
         require(governorBravo.state(proposalId) == IGovernorBravo.ProposalState.Executed, "Proposal is not Executed");
-
     }
 
     function voteOnProposal(Vm vm, uint256 proposalId, address proposalCreator) public {
         address[12] memory voters = getTopDelegates();
+        console.log("Voting on proposal with ID: ", proposalId);
+        console.log("Proposal Creator: ", proposalCreator);
 
         // Cast votes from multiple accounts
         for (uint i = 0; i < voters.length; i++) {
@@ -198,7 +223,6 @@ library GovernanceHelper {
             console.log("Proposal state during voting: ", uint(governorBravo.state(proposalId)));
             governorBravo.castVoteWithReason(proposalId, 1, "yes"); // 1 = "For" vote
             vm.stopBroadcast();
-            console.log("Done voting with account: ", voters[i]);
         }
     }
 
@@ -210,12 +234,12 @@ library GovernanceHelper {
             0x2210dc066aacB03C9676C4F1b36084Af14cCd02E,
             0x88F659b4B6D5614B991c6404b34f821e10390eC0,
             0x070341aA5Ed571f0FB2c4a5641409B1A46b4961b,
-            0xdC1F98682F4F8a5c6d54F345F448437b83f5E432,
+            0xb06DF4dD01a5c5782f360aDA9345C87E86ADAe3D,
             0xB933AEe47C438f22DE0747D57fc239FE37878Dd1,
             0x2817Cb83c96a091E833A9A93E02D5464034e24f1,
             0x21b3B193B71680E2fAfe40768C03a0Fd305EFa75,
             0xE364E90d0A5289bF462A5c9f6e1CcAE680215413,
             0x3FB19771947072629C8EEE7995a2eF23B72d4C8A
-            ];
+        ];
     }
 }

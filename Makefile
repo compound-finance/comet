@@ -11,7 +11,7 @@ MARKET_ADMIN_PERMISSION_CHECKER = 0x62DD0452411113404cf9a7fE88A5E6E86f9B71a6
 
 SOLIDITY_COMPILER_VERSION = "0.8.15"
 SENDER = "0x470579d16401a36BF63b1428eaA7189FBdE5Fee9"
-EVM_VERSION = "london"
+EVM_VERSION = "cancun"
 OWNERS = '["0xDD659911EcBD4458db07Ee7cDdeC79bf8F859AbC", "0xda32C5AEE8Fc5C51Ed9a99f5608c33f435F740B4", "0x1D8e0b8F4CEd9262C9ac0c0870BF8B45D74ad9D9", "0x47526FDDBA0A5a7ef001FaaD4836b771B3e92522"]'
 THRESHOLD = 2
 
@@ -37,7 +37,7 @@ deploy-contracts:
 	CHAIN_ID=$(CHAIN_ID) forge script forge/script/marketupdates/DeployContracts.s.sol:DeployContracts \
 		--rpc-url $(RPC_URL) \
 		--optimize \
-		--optimizer-runs 200 \
+		--optimizer-runs 1 \
 		--use $(SOLIDITY_COMPILER_VERSION) \
 		--evm-version $(EVM_VERSION) \
 		--broadcast \
@@ -51,7 +51,7 @@ compute-contracts-addresses:
 	CHAIN_ID=$(CHAIN_ID) forge script forge/script/marketupdates/ComputeContractsAddresses.s.sol:ComputeContractAddresses \
 		--rpc-url $(RPC_URL) \
 		--optimize \
-		--optimizer-runs 200 \
+		--optimizer-runs 1 \
 		--use $(SOLIDITY_COMPILER_VERSION) \
 		--evm-version $(EVM_VERSION) \
 		--via-ir \
@@ -65,7 +65,7 @@ verify-MarketUpdateTimelock:
 	forge verify-contract \
 		--chain-id $(CHAIN_ID) \
 		--compiler-version $(SOLIDITY_COMPILER_VERSION) \
-		--optimizer-runs 200 \
+		--optimizer-runs 1 \
 		--constructor-args $(shell cast abi-encode "constructor(address,uint256)" $(SENDER) 172800) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--watch \
@@ -79,7 +79,7 @@ verify-MarketUpdateProposer:
 	forge verify-contract \
 		--chain-id $(CHAIN_ID) \
 		--compiler-version $(SOLIDITY_COMPILER_VERSION) \
-		--optimizer-runs 200 \
+		--optimizer-runs 1 \
 		--constructor-args $(shell cast abi-encode "constructor(address,address,address,address)" $(SENDER) $(MARKET_UPDATE_MULTISIG) 0x0000000000000000000000000000000000000000 $(MARKET_ADMIN_TIMELOCK_ADDRESS)) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--watch \
@@ -93,7 +93,7 @@ verify-CometProxyAdmin:
 	forge verify-contract \
 		--chain-id $(CHAIN_ID) \
 		--compiler-version $(SOLIDITY_COMPILER_VERSION) \
-		--optimizer-runs 200 \
+		--optimizer-runs 1 \
 		--constructor-args $(shell cast abi-encode "constructor(address)" $(SENDER)) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--watch \
@@ -107,7 +107,7 @@ verify-Configurator:
 	forge verify-contract \
 		--chain-id $(CHAIN_ID) \
 		--compiler-version $(SOLIDITY_COMPILER_VERSION) \
-		--optimizer-runs 200 \
+		--optimizer-runs 1 \
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--watch \
 		--via-ir \
@@ -120,7 +120,7 @@ verify-MarketAdminPermissionChecker:
 	forge verify-contract \
 		--chain-id $(CHAIN_ID) \
 		--compiler-version $(SOLIDITY_COMPILER_VERSION) \
-		--optimizer-runs 200 \
+		--optimizer-runs 1 \
 		--constructor-args $(shell cast abi-encode "constructor(address,address,address)" $(SENDER) $(MARKET_UPDATE_MULTISIG) 0x0000000000000000000000000000000000000000) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--watch \

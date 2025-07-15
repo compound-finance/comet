@@ -513,7 +513,7 @@ scenario(
 scenario(
   'Comet#bulker > (wstETH base) all actions in one txn',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && !matchesDeployment(ctx, [{ deployment: 'wsteth' }]),
+    filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && matchesDeployment(ctx, [{ deployment: 'wsteth' }]),
     supplyCaps: async (ctx) =>  (
       {
         $asset0: getConfigForScenario(ctx).bulkerAsset,

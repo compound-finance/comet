@@ -6,7 +6,7 @@ import "./MarketAddresses.sol";
 import "./ChainAddresses.sol";
 
 library MarketUpdateAddresses {
-    address public constant GOVERNOR_BRAVO_PROXY_ADDRESS = 0xc0Da02939E1441F497fd74F78cE7Decb17B66529; // See - https://etherscan.io/address/0xc0Da02939E1441F497fd74F78cE7Decb17B66529
+    address public constant GOVERNOR_BRAVO_PROXY_ADDRESS = 0x309a862bbC1A00e45506cB8A802D1ff10004c8C0; // See - https://etherscan.io/address/0x309a862bbC1A00e45506cB8A802D1ff10004c8C0
     address public constant GOVERNOR_BRAVO_TIMELOCK_ADDRESS = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925; // See - https://etherscan.io/address/0x6d903f6003cca6255D85CcA4D3B5E5146dC33925
 
     // Old Addresses
