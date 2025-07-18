@@ -71,6 +71,7 @@ async function runMigration<T>(
       const { tenderlyExecute } = await import('../../scenario/utils');
       await tenderlyExecute(govDeploymentManager, deploymentManager, governor, timelock);
     }
+    await govDeploymentManager.cleanCache();
   }
 }
 

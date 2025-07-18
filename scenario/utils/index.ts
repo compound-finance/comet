@@ -835,37 +835,11 @@ export async function tenderlyExecute(
 
   const chainId2 = bdm.hre.ethers.provider.network.chainId;
 
-  const relayMessages = loadCachedRelayMessages();
-  console.log(`Relay messages: ${relayMessages.length}`);
 
-  const simsL2 = [
-    ...relayMessages.map((msg) => ({
-      network_id: chainId2.toString(),
-      from: msg.signer,
-      to: msg.messanger,
-      block_number: Number(B0),
-      block_header: { timestamp: gdm.hre.ethers.utils.hexlify(T0) },
-      input: msg.callData,
-      save: true,
-      save_if_fails: true,
-      gas_price: 0,
-    })),
-  ];
-  console.log(simsL1)
-  console.log(simsL2)
-
-  while (!simsL1[0]) {
-    simsL1.shift();
-    if (simsL1.length == 0) {
-      break;
-    }
-  }
   debug(`\n==========================\ TENDERLY ==========================\n`);
-
   try {
     debug(`\nExecuting Tenderly simulation for proposal ${id}...`);
     const bundle = await simulateBundle(gdm, simsL1, Number(B0));
-    console.log(bundle);
     debug(`Tenderly simulation bundle size: ${bundle.length}`);
     await shareSimulation(gdm, bundle[bundle.length - 1].simulation.id);
 
@@ -874,21 +848,62 @@ export async function tenderlyExecute(
     debug(` >>> PROPOSAL EXECUTED  ${id} \n`);
     debug(`Simulation ${exec1.id} done, status: ${exec1.status}`);
     debug(`Link: https://www.tdly.co/shared/simulation/${exec1.id}`);
+    let proposals;
+    if (chainId1 !== chainId2) {
+      proposals = await relayMessage(gdm, bdm, parseFloat(B0.toString()),  bundle[bundle.length - 1].transaction.transaction_info.logs);
+    }
+    const relayMessages = loadCachedRelayMessages();
+    const latestL2 = await bdm.hre.ethers.provider.getBlock("latest");
+    const maxEta = Math.max(...proposals.map(p => Number(p.eta || 0)));
+    const T0L2 = BigInt(Math.max(latestL2.timestamp, maxEta + 1))
+    const B0L2 = Number(latestL2.number) + 1;
+    const simsL2 = relayMessages.map((msg, i, arr) => {
+      const isLast = i === arr.length - 1;
+    
+      const timestamp = isLast
+        ? Number(T0L2) 
+        : latestL2.timestamp; 
+    
+      const block = isLast
+        ? B0L2 : latestL2.number;
+    
+      return {
+        network_id: chainId2.toString(),
+        from: msg.signer,
+        to: msg.messanger,
+        block_number: Number(block),
+        block_header: {
+          timestamp: gdm.hre.ethers.utils.hexlify(Number(timestamp))
+        },
+        input: msg.callData,
+        save: true,
+        save_if_fails: true,
+        gas_price: 0,
+      };
+    });
+  
+  
+    while (!simsL1[0]) {
+      simsL1.shift();
+      if (simsL1.length == 0) {
+        break;
+      }
+    }
 
     if (simsL2.length > 0) {
-      const bundle2 = await simulateBundle(bdm, simsL2, Number(B0));
-      const exec2 = bundle2[bundle2.length - 1].simulation;
-      await shareSimulation(bdm, exec2.id);
+      const bundle2 = await simulateBundle(bdm, simsL2, Number(B0L2));
       debug(` >>> PROPOSAL RELAYED ${id} \n`);
-      debug(`Simulation ${exec2.id} done, status: ${exec2.status}`);
-      debug(`Link: https://www.tdly.co/shared/simulation/${exec2.id}`);
+      for (let i = 0; i < bundle2.length; i++) {
+        const sim = bundle2[i];
+        await shareSimulation(bdm, sim.simulation.id);
+        debug("Rel[" + i + "] " + sim.simulation.status + ". link: https://www.tdly.co/shared/simulation/" + sim.simulation.id);
+      }
     }
   } catch (err) {
     debug(`Error during Tenderly simulation: ${err.message}`);
   }
 
   debug(`\n================================================================\n`);
-  gdm.cleanCache();
 }
 
 async function simulateBundle(
@@ -904,8 +919,6 @@ async function simulateBundle(
     save: true,
   };
 
-  console.log("Simsulations length: ", simulations.length);
-
   const result = await axios.post(
     `https://api.tenderly.co/api/v1/account/${username}/project/${project}/simulate-bundle`,
     body,
@@ -916,8 +929,6 @@ async function simulateBundle(
       },
     }
   );
-
-  console.log(result.data)
   return result.data.simulation_results;
 }
 
@@ -1371,11 +1382,6 @@ export async function executeOpenProposalAndRelay(
     await governanceDeploymentManager.hre.ethers.provider.getBlockNumber();
   await executeOpenProposal(governanceDeploymentManager, openProposal);
   await mockAllRedstoneOracles(bridgeDeploymentManager);
-  console.log("ISSSSSSSSSSSS BRRRIIIDDDDGEEEEEE", await isBridgeProposal(
-    governanceDeploymentManager,
-    bridgeDeploymentManager,
-    openProposal
-  ))
   if (
     await isBridgeProposal(
       governanceDeploymentManager,

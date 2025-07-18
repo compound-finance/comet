@@ -280,7 +280,7 @@ function stashProposal(prop: Proposal) {
 
     const safeJson = JSON.stringify(prop, (_key, value) =>
       typeof value === 'bigint' ? value.toString() : value,
-      2
+    2
     );
 
     writeFileSync(file, safeJson);

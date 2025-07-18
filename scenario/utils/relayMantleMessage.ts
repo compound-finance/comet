@@ -10,10 +10,15 @@ function applyL1ToL2Alias(address: string) {
   return `0x${(BigInt(address) + offset).toString(16)}`;
 }
 
+function isTenderlyLog(log: any): log is { raw: { topics: string[]; data: string } } {
+  return !!log?.raw?.topics && !!log?.raw?.data;
+}
+
 export default async function relayMantleMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
-  startingBlockNumber: number
+  startingBlockNumber: number,
+  tenderlyLogs?: any[]
 ) {
   const mantleL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow('mantleL1CrossDomainMessenger');
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
@@ -22,35 +27,68 @@ export default async function relayMantleMessage(
 
   const openBridgedProposals: OpenBridgedProposal[] = [];
 
-  // Grab all events on the L1CrossDomainMessenger contract since the `startingBlockNumber`
   const filter = mantleL1CrossDomainMessenger.filters.SentMessage();
-  const sentMessageEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
-    fromBlock: startingBlockNumber,
-    toBlock: 'latest',
-    address: mantleL1CrossDomainMessenger.address,
-    topics: filter.topics!
-  });
+  let sentMessageEvents: Log[] = [];
+
+  if (tenderlyLogs) {
+    const topic = mantleL1CrossDomainMessenger.interface.getEventTopic('SentMessage');
+    const tenderlyParsed = tenderlyLogs.filter(log => log.raw?.topics?.[0] === topic);
+    const realLogs = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+      fromBlock: startingBlockNumber,
+      toBlock: 'latest',
+      address: mantleL1CrossDomainMessenger.address,
+      topics: filter.topics!
+    });
+    sentMessageEvents = [...realLogs, ...tenderlyParsed];
+  } else {
+    sentMessageEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+      fromBlock: startingBlockNumber,
+      toBlock: 'latest',
+      address: mantleL1CrossDomainMessenger.address,
+      topics: filter.topics!
+    });
+  }
 
   for (let sentMessageEvent of sentMessageEvents) {
-    const { args: { target, sender, message, messageNonce, gasLimit } } = mantleL1CrossDomainMessenger.interface.parseLog(sentMessageEvent);
+    const { args: { target, sender, message, messageNonce, gasLimit } } = isTenderlyLog(sentMessageEvent)
+      ? mantleL1CrossDomainMessenger.interface.parseLog({
+          topics: sentMessageEvent.raw.topics,
+          data: sentMessageEvent.raw.data
+        })
+      : mantleL1CrossDomainMessenger.interface.parseLog(sentMessageEvent);
+
     const aliasedSigner = await impersonateAddress(
       bridgeDeploymentManager,
       applyL1ToL2Alias(mantleL1CrossDomainMessenger.address)
     );
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
-    const relayMessageTxn = await (
-      await l2CrossDomainMessenger.connect(aliasedSigner).relayMessage(
-        messageNonce,
-        sender,
-        target,
-        0,
-        0,
-        gasLimit,
-        message,
-        { gasPrice: 0, gasLimit: 7_500_000 }
-      )
-    ).wait();
+
+    let relayMessageTxn;
+    if (tenderlyLogs) {
+      const callData = l2CrossDomainMessenger.interface.encodeFunctionData(
+        "relayMessage",
+        [messageNonce, sender, target, 0, 0, message]
+      );
+      bridgeDeploymentManager.stashRelayMessage(
+        l2CrossDomainMessenger.address,
+        callData,
+        aliasedSigner.address
+      );
+    } else {
+      relayMessageTxn = await (
+        await l2CrossDomainMessenger.connect(aliasedSigner).relayMessage(
+          messageNonce,
+          sender,
+          target,
+          0,
+          0,
+          gasLimit,
+          message,
+          { gasPrice: 0, gasLimit: 7_500_000 }
+        )
+      ).wait();
+    }
 
     // Try to decode the SentMessage data to determine what type of cross-chain activity this is. So far,
     // there are two types:
@@ -92,10 +130,10 @@ export default async function relayMantleMessage(
     } else if (target === bridgeReceiver.address) {
       // Cross-chain message passing
       const proposalCreatedEvent = relayMessageTxn.events.find(event => event.address === bridgeReceiver.address);
-      const { args: { id, eta } } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
+        const { args: { id, eta } } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
 
       // Add the proposal to the list of open bridged proposals to be executed after all the messages have been relayed
-      openBridgedProposals.push({ id, eta });
+        openBridgedProposals.push({ id, eta });
     } else {
       throw new Error(`[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Unrecognized target for cross-chain message`);
     }
@@ -109,7 +147,21 @@ export default async function relayMantleMessage(
 
     // Execute queued proposal
     await setNextBaseFeeToZero(bridgeDeploymentManager);
-    await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
+
+    if (tenderlyLogs) {
+      const callData = bridgeReceiver.interface.encodeFunctionData(
+        "executeProposal",
+        [id]
+      );
+      const signer = await bridgeDeploymentManager.getSigner();
+      bridgeDeploymentManager.stashRelayMessage(
+        bridgeReceiver.address,
+        callData,
+        signer.address
+      );
+    } else {
+      await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
+    }
     console.log(
       `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
     );

@@ -222,7 +222,7 @@ export default migration('1735299799_update_comet_to_support_more_collaterals', 
   },
 
   async enacted(): Promise<boolean> {
-    return true;
+    return false;
   },
 
   async verify(deploymentManager: DeploymentManager) {
