@@ -5,6 +5,9 @@ export { cloneGov, deployNetworkComet as deployComet, sameAddress } from './Netw
 export { getConfiguration, getConfigurationStruct } from './NetworkConfiguration';
 export { exp, getBlock, wait } from '../../test/helpers';
 export { debug } from '../../plugins/deployment_manager/Utils';
+import { writeFileSync, mkdirSync } from 'fs';
+import path from 'path';
+
 
 export interface ProtocolConfiguration {
   name?: string;
@@ -61,7 +64,8 @@ export type Proposal = [
   string[], // targets
   BigNumberish[], // values
   string[], // calldatas
-  string // description
+  string, // description
+  string[] // signatures
 ];
 export type TestnetProposal = [
   string[], // targets
@@ -103,6 +107,9 @@ export const WHALES = {
     '0x3b3501f6778Bfc56526cF2aC33b78b2fDBE4bc73', // solvBTC.BBN whale
     '0x8bc93498b861fd98277c3b51d240e7E56E48F23c', // solvBTC.BBN whale
     '0xD5cf704dC17403343965b4F9cd4D7B5e9b20CC52', // solvBTC.BBN whale
+    '0x3154Cf16ccdb4C6d922629664174b904d80F2C35', // cbETH whale
+    '0x5f556Cc5C294D7D3EfFaFFeb0B1195256a7A19D7', // EIGEN whale
+    '0xdCa0A2341ed5438E06B9982243808A76B9ADD6d0', // woETH whale
   ],
   polygon: [
     '0xF977814e90dA44bFA03b6295A0616a897441aceC', // USDT whale
@@ -164,6 +171,11 @@ export const WHALES = {
     '0x233493E9DC68e548AC27E4933A600A3A4682c0c3', // FBTC whale
     '0xCd83CbBFCE149d141A5171C3D6a0F0fCCeE225Ab', // COMP whale
   ],
+  'unichain': [
+    '0x4200000000000000000000000000000000000006', // WETH whale
+    '0x7Ae0911198AD568E1FE4af3cf81e36A29983778f', // wstETH whale
+    '0x4B2cf5C94A88934870B523983B22e6d2dd1b6577', // wstETH whale
+  ],
   linea: [
     '0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f', // ETH whale
     '0x9be5e24F05bBAfC28Da814bD59284878b388a40f', // WBTC whale
@@ -173,12 +185,11 @@ export const WHALES = {
     '0x7160570BB153Edd0Ea1775EC2b2Ac9b65F1aB61B', // wstETH whale
     '0x0684FC172a0B8e6A65cF4684eDb2082272fe9050', // ezETH whale
     '0x3A0ee670EE34D889B52963bD20728dEcE4D9f8FE', // ezETH whale
+    '0x96d6cE4e83dB947fF6bD1Ab0B377F23cd5D9ec2D', // ezETH whale
+    '0x8a90D208666Deec08123444F67Bf5B1836074a67', // ezETH whale
+    '0x935EfCBeFc1dF0541aFc3fE145134f8c9a0beB89', // ezETH whale
     '0x6a72F4F191720c411Cd1fF6A5EA8DeDEC3A64771', // USDT whale
-  ],
-  'unichain': [
-    '0x4200000000000000000000000000000000000006', // WETH whale
-    '0x7Ae0911198AD568E1FE4af3cf81e36A29983778f', // wstETH whale
-    '0x4B2cf5C94A88934870B523983B22e6d2dd1b6577', // wstETH whale
+    '0x2c7118c4C88B9841FCF839074c26Ae8f035f2921', // COMP whale
   ],
   ronin: [
     '0x41058bcc968f809e9dbb955f402de150a3e5d1b5',
@@ -226,23 +237,57 @@ export async function testnetProposal(actions: ProposalAction[], description: st
 
 }
 
-export async function proposal(actions: ProposalAction[], description: string): Promise<Proposal> {
-  const targets = [],
-    values = [],
-    calldatas = [];
+export async function proposal(
+  actions: ProposalAction[],
+  description: string
+): Promise<Proposal> {
+  const targets   = [];
+  const values = [];
+  const calldatas = [];
+  const signatures = [];
+
   for (const action of actions) {
-    if (action['contract']) {
+    if ('contract' in action) {
       const { contract, value, signature, args } = action as ContractAction;
       targets.push(contract.address);
       values.push(value ?? 0);
-      calldatas.push(utils.id(signature).slice(0, 10) + (await calldata(contract.populateTransaction[signature](...args))).slice(2));
+      calldatas.push(
+        utils
+          .id(signature)
+          .slice(0, 10) +
+        (await calldata(contract.populateTransaction[signature](...args))).slice(2)
+      );
+      signatures.push('');
     } else {
-      const { target, value, signature, calldata } = action as TargetAction;
+      const { target, value, signature, calldata: cd } = action as TargetAction;
       targets.push(target);
       values.push(value ?? 0);
-      calldatas.push(utils.id(signature).slice(0, 10) + calldata.slice(2));
+      calldatas.push(utils.id(signature).slice(0, 10) + cd.slice(2));
+      signatures.push('');
     }
   }
 
-  return [targets, values, calldatas, description];
+  const fullProposal: Proposal = [targets, values, calldatas, description, signatures];
+  
+  stashProposal(fullProposal);
+  fullProposal.pop();
+  return fullProposal;
+}
+
+function stashProposal(prop: Proposal) {
+  try {
+    const cacheDir = path.resolve(__dirname, '../../', 'cache');
+    mkdirSync(cacheDir, { recursive: true });
+    const file = path.join(cacheDir, 'currentProposal.json');
+
+    const safeJson = JSON.stringify(prop, (_key, value) =>
+      typeof value === 'bigint' ? value.toString() : value,
+    2
+    );
+
+    writeFileSync(file, safeJson);
+    console.log(`Proposal cached ${file}`);
+  } catch (e) {
+    console.warn('Failed to cache proposal:', e);
+  }
 }

@@ -7,6 +7,7 @@ export interface Result {
   result: string;
 }
 
+// Updated because of Etherscan V2 update. Not tested and could lead to issues
 export function getEtherscanApiUrl(network: string): string {
   // let host = {
   //   rinkeby: 'api-rinkeby.etherscan.io',
@@ -34,8 +35,10 @@ export function getEtherscanApiUrl(network: string): string {
     throw new Error(`Unknown etherscan API host for network ${network}`);
   }
 
-  if (chainId === 443) {
+  if (network === 'avalanche') {
     return `https://api.snowtrace.io/api`;
+  } else if (network === 'fuji') {
+    return `https://api-testnet.snowtrace.io/api`;
   }
 
   return `https://api.etherscan.io/v2/api?chainid=${chainId}`;
@@ -54,6 +57,7 @@ export function getEtherscanUrl(network: string): string {
     base: 'basescan.org',
     optimism: 'optimistic.etherscan.io',
     mantle: 'mantlescan.xyz',
+    linea: 'lineascan.build',
     'ronin': 'explorer-kintsugi.roninchain.com/v2/2020',
     scroll: 'scrollscan.com'
   }[network];

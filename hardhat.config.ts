@@ -2,13 +2,14 @@ import 'dotenv/config';
 
 import { HardhatUserConfig, task } from 'hardhat/config';
 import '@compound-finance/hardhat-import';
-import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-etherscan';
+import '@tenderly/hardhat-tenderly';
+import '@nomiclabs/hardhat-ethers';
 import '@typechain/hardhat';
 import 'hardhat-chai-matchers';
 import 'hardhat-change-network';
 import 'hardhat-contract-sizer';
-import 'hardhat-cover';
+import 'solidity-coverage';
 import 'hardhat-gas-reporter';
 
 // Hardhat tasks
@@ -46,6 +47,9 @@ import unichainWETHRelationConfigMap from './deployments/unichain/weth/relations
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
 import roninRelationConfigMap from './deployments/ronin/weth/relations';
 import roninWronRelationConfigMap from './deployments/ronin/wron/relations';
+import lineaUsdcRelationConfigMap from './deployments/linea/usdc/relations';
+import lineaUsdtRelationConfigMap from './deployments/linea/usdt/relations';
+import lineaWethRelationConfigMap from './deployments/linea/weth/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -184,7 +188,12 @@ export const networkConfigs: NetworkConfig[] = [
     network: 'scroll',
     chainId: 534352,
     url: 'https://rpc.scroll.io',
-  }
+  },
+  {
+    network: 'linea',
+    chainId: 59144,
+    url: `https://rpc.ankr.com/linea/${ANKR_KEY}`,
+  },
 ];
 
 function getDefaultProviderURL(network: string) {
@@ -196,7 +205,7 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
     hardhatConfig.networks[netConfig.network] = {
       chainId: netConfig.chainId,
       url:
-        (netConfig.network === GOV_NETWORK ? GOV_NETWORK_PROVIDER : undefined) ||
+        (netConfig.network === GOV_NETWORK ? GOV_NETWORK_PROVIDER || undefined : undefined) ||
         NETWORK_PROVIDER ||
         netConfig.url ||
         getDefaultProviderURL(netConfig.network),
@@ -261,6 +270,15 @@ const config: HardhatUserConfig = {
       //hardfork: 'london',
       chains: networkConfigs.reduce((acc, { chainId }) => {
         if (chainId === 1) return acc;
+        if (chainId === 59144) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+            }
+          };
+          return acc;
+        }
         if (chainId === 2020) {
           acc[chainId] = {
             hardforkHistory: {
@@ -307,6 +325,7 @@ const config: HardhatUserConfig = {
       unichain: ETHERSCAN_KEY,
       // Scroll
       'scroll': ETHERSCAN_KEY,
+      linea: ETHERSCAN_KEY,
     },
     customChains: [
       {
@@ -354,6 +373,14 @@ const config: HardhatUserConfig = {
           // links for deployment
           // apiURL: 'https://api.mantlescan.xyz/api',
           // browserURL: 'https://mantlescan.xyz/'
+        }
+      },
+      {
+        network: 'linea',
+        chainId: 59144,
+        urls: {
+          apiURL: 'https://api.lineascan.build/api',
+          browserURL: 'https://lineascan.build/'
         }
       },
       {
@@ -422,7 +449,12 @@ const config: HardhatUserConfig = {
       'ronin': {
         weth: roninRelationConfigMap,
         wron: roninWronRelationConfigMap
-      }
+      },
+      'linea': {
+        usdc: lineaUsdcRelationConfigMap,
+        usdt: lineaUsdtRelationConfigMap,
+        weth: lineaWethRelationConfigMap
+      },
     },
   },
 
@@ -588,6 +620,24 @@ const config: HardhatUserConfig = {
         auxiliaryBase: 'mainnet'
       },
       {
+        name: 'linea-usdc',
+        network: 'linea',
+        deployment: 'usdc',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'linea-usdt',
+        network: 'linea',
+        deployment: 'usdt',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'linea-weth',
+        network: 'linea',
+        deployment: 'weth',
+        auxiliaryBase: 'mainnet'
+      },
+      {
         name: 'ronin-weth',
         network: 'ronin',
         deployment: 'weth',
@@ -600,6 +650,13 @@ const config: HardhatUserConfig = {
         auxiliaryBase: 'mainnet'
       },
     ],
+  },
+
+  tenderly: {
+    project: 'comet',
+    username: process.env.TENDERLY_USERNAME || '',
+    accessKey: process.env.TENDERLY_ACCESS_KEY || '',
+    privateVerification: false,
   },
 
   mocha: {
