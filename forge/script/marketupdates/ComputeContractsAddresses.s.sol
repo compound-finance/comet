@@ -32,7 +32,7 @@ contract ComputeContractAddresses is Script {
 
         console.log("computing addresses for contracts with sender: ", msg.sender);
 
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        uint256 deployerPrivateKey = vm.envUint("ETH_PK");
 
         address deployer = vm.rememberKey(deployerPrivateKey);
         vm.startBroadcast(deployer);

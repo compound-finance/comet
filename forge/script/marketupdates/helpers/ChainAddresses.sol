@@ -20,7 +20,9 @@ library ChainAddresses {
         SCROLL,
         OPTIMISM,
         MAINNET_SEPOLIA,
-        OP_SEPOLIA,
+        LINEA,
+        RONIN,
+        UNICHAIN,
         MANTLE
     }
 
@@ -31,9 +33,35 @@ library ChainAddresses {
     address constant public MAINNET_COMET_PROXY_ADMIN = 0x1EC63B5883C3481134FD50D5DAebc83Ecd2E8779; // See - https://etherscan.io/address/0x1EC63B5883C3481134FD50D5DAebc83Ecd2E8779
 
     address constant public MAINNET_MARKET_ADMIN = 0xA1C7b6d8b4DeD5ee46330C865cC8aeCfB13c8b65; // See - https://etherscan.io/address/0xA1C7b6d8b4DeD5ee46330C865cC8aeCfB13c8b65
-    address constant public MAINNET_MARKET_UPDATE_PAUSE_GUARDIAN = 0xbbf3f1421D886E9b2c5D716B5192aC998af2012c ; // See - pauseGuardian in https://etherscan.io/address/0xc3d688B66703497DAA19211EEdff47f25384cdc3#readProxyContract
+    address constant public MAINNET_MARKET_UPDATE_PAUSE_GUARDIAN = 0xbbf3f1421D886E9b2c5D716B5192aC998af2012c; // See - pauseGuardian in https://etherscan.io/address/0xc3d688B66703497DAA19211EEdff47f25384cdc3#readProxyContract
     address constant public MAINNET_MARKET_UPDATE_PROPOSAL_GUARDIAN = 0xbbf3f1421D886E9b2c5D716B5192aC998af2012c ; // See - https://etherscan.io/address/0xc3d688B66703497DAA19211EEdff47f25384cdc3#readProxyContract
 
+    // Linea addresses
+    address constant public LINEA_GOVERNOR_TIMELOCK = 0x4A900f81dEdA753bbBab12453b3775D5f26df6F3; // See - https://lineascan.build/address/0x4A900f81dEdA753bbBab12453b3775D5f26df6F3
+    address constant public LINEA_CONFIGURATOR_PROXY = 0x970FfD8E335B8fa4cd5c869c7caC3a90671d5Dc3; // See - https://lineascan.build/address/0x970FfD8E335B8fa4cd5c869c7caC3a90671d5Dc3
+    address constant public LINEA_COMET_PROXY_ADMIN = 0x4b5DeE60531a72C1264319Ec6A22678a4D0C8118; // See - https://lineascan.build/address/0x4b5DeE60531a72C1264319Ec6A22678a4D0C8118
+
+    address constant public LINEA_MARKET_ADMIN = 0x7e14050080306cd36b47DE61ce604b3a1EC70c4e; // See - https://lineascan.build/address/0x7e14050080306cd36b47DE61ce604b3a1EC70c4e
+    address constant public LINEA_MARKET_UPDATE_PAUSE_GUARDIAN =  0x5A1e5d7E09cA94506084a26304d53A138145bF52; // See - pauseGuardian in https://lineascan.build/address/0x5A1e5d7E09cA94506084a26304d53A138145bF52
+    address constant public LINEA_MARKET_UPDATE_PROPOSAL_GUARDIAN =  0x5A1e5d7E09cA94506084a26304d53A138145bF52; // See - https://lineascan.build/address/0x5A1e5d7E09cA94506084a26304d53A138145bF52
+
+    // Ronin addresses
+    // address constant public RONIN_GOVERNOR_TIMELOCK = 0xBbb0Ebd903fafbb8fFF58B922fD0CD85E251ac2c; // See - https://app.roninchain.com/address/0x6d903f6003cca6255D85CcA4D3B5E5146dC33925
+    // address constant public RONIN_CONFIGURATOR_PROXY = 0x966c72F456FC248D458784EF3E0b6d042be115F2; // See - https://app.roninchain.com/address/0x316f9708bB98af7dA9c68C1C3b5e79039cD336E3
+    // address constant public RONIN_COMET_PROXY_ADMIN = 0xfa64A82a3d13D4c05d5133E53b2EbB8A0FA9c3F6; // See - https://app.roninchain.com/address/0x1EC63B5883C3481134FD50D5DAebc83Ecd2E8779
+
+    // address constant public RONIN_MARKET_ADMIN = 0x7e14050080306cd36b47DE61ce604b3a1EC70c4e; // See - https://app.roninchain.com/address/0xA1C7b6d8b4DeD5ee46330C865cC8aeCfB13c8b65
+    // address constant public RONIN_MARKET_UPDATE_PAUSE_GUARDIAN =  0x69daaf2Fb26Cb138D33466808dE917d571151a68; // See - pauseGuardian in https://app.roninchain.com/address/0xc3d688B66703497DAA19211EEdff47f25384cdc3
+    // address constant public RONIN_MARKET_UPDATE_PROPOSAL_GUARDIAN =  0x69daaf2Fb26Cb138D33466808dE917d571151a68; // See - https://app.roninchain.com/address/0xc3d688B66703497DAA19211EEdff47f25384cdc3
+
+    // Unichain addresses
+    address constant public UNICHAIN_GOVERNOR_TIMELOCK = 0x2F4eAF29dfeeF4654bD091F7112926E108eF4Ed0; // See - https://unichain.blockscout.com/address/0x6d903f6003cca6255D85CcA4D3B5E5146dC33925
+    address constant public UNICHAIN_CONFIGURATOR_PROXY = 0x8df378453Ff9dEFFa513367CDF9b3B53726303e9; // See - https://unichain.blockscout.com/address/0x316f9708bB98af7dA9c68C1C3b5e79039cD336E3
+    address constant public UNICHAIN_COMET_PROXY_ADMIN = 0xaeB318360f27748Acb200CE616E389A6C9409a07; // See - https://unichain.blockscout.com/address/0x1EC63B5883C3481134FD50D5DAebc83Ecd2E8779
+
+    address constant public UNICHAIN_MARKET_ADMIN = 0x7e14050080306cd36b47DE61ce604b3a1EC70c4e; // See - https://unichain.blockscout.com/address/0xA1C7b6d8b4DeD5ee46330C865cC8aeCfB13c8b65
+    address constant public UNICHAIN_MARKET_UPDATE_PAUSE_GUARDIAN = 0x6784FC9e931D7d5B1075e665A4016c299ee6C31B; // See - pauseGuardian in https://unichain.blockscout.com/address/0xc3d688B66703497DAA19211EEdff47f25384cdc3
+    address constant public UNICHAIN_MARKET_UPDATE_PROPOSAL_GUARDIAN = 0x6784FC9e931D7d5B1075e665A4016c299ee6C31B; // See - https://unichain.blockscout.com/address/0xc3d688B66703497DAA19211EEdff47f25384cdc3
 
     // Polygon addresses
     address constant public POLYGON_LOCAL_TIMELOCK = 0xCC3E7c85Bb0EE4f09380e041fee95a0caeDD4a02; // See - https://polygonscan.com/address/0xCC3E7c85Bb0EE4f09380e041fee95a0caeDD4a02
@@ -42,8 +70,8 @@ library ChainAddresses {
     address constant public POLYGON_BRIDGE_RECEIVER = 0x18281dfC4d00905DA1aaA6731414EABa843c468A; // See - https://polygonscan.com/address/0x18281dfC4d00905DA1aaA6731414EABa843c468A
 
     address constant public POLYGON_MARKET_ADMIN = 0x7e14050080306cd36b47DE61ce604b3a1EC70c4e; // See - https://polygonscan.com/address/0x7e14050080306cd36b47DE61ce604b3a1EC70c4e
-    address constant public POLYGON_MARKET_UPDATE_PAUSE_GUARDIAN = 0x8Ab717CAC3CbC4934E63825B88442F5810aAF6e5  ; // See - pauseGuardian in https://polygonscan.com/address/0x8Ab717CAC3CbC4934E63825B88442F5810aAF6e5#readProxyContract
-    address constant public POLYGON_MARKET_UPDATE_PROPOSAL_GUARDIAN = 0x8Ab717CAC3CbC4934E63825B88442F5810aAF6e5  ; // See - https://polygonscan.com/address/0x8Ab717CAC3CbC4934E63825B88442F5810aAF6e5#readProxyContract
+    address constant public POLYGON_MARKET_UPDATE_PAUSE_GUARDIAN = 0x8Ab717CAC3CbC4934E63825B88442F5810aAF6e5; // See - pauseGuardian in https://polygonscan.com/address/0x8Ab717CAC3CbC4934E63825B88442F5810aAF6e5
+    address constant public POLYGON_MARKET_UPDATE_PROPOSAL_GUARDIAN = 0x8Ab717CAC3CbC4934E63825B88442F5810aAF6e5; // See - https://polygonscan.com/address/0x8Ab717CAC3CbC4934E63825B88442F5810aAF6e5
 
     // Arbitrum addresses
     address constant public ARBITRUM_LOCAL_TIMELOCK = 0x3fB4d38ea7EC20D91917c09591490Eeda38Cf88A; // See - https://arbiscan.io/address/0x3fB4d38ea7EC20D91917c09591490Eeda38Cf88A
@@ -85,6 +113,7 @@ library ChainAddresses {
     address constant public OPTIMISM_MARKET_UPDATE_PAUSE_GUARDIAN = 0x3fFd6c073a4ba24a113B18C8F373569640916A45; // See - https://optimistic.etherscan.io/address/0xE36A30D249f7761327fd973001A32010b521b6Fd#readProxyContract
     address constant public OPTIMISM_MARKET_UPDATE_PROPOSAL_GUARDIAN = 0x3fFd6c073a4ba24a113B18C8F373569640916A45; // See - https://optimistic.etherscan.io/address/0xE36A30D249f7761327fd973001A32010b521b6Fd#readProxyContract
 
+    // Mantle addresses
     address constant public MANTLE_MARKET_ADMIN = 0x7e14050080306cd36b47DE61ce604b3a1EC70c4e; // See - https://explorer.mantle.xyz/address/0x7e14050080306cd36b47DE61ce604b3a1EC70c4e
     address constant public MANTLE_MARKET_UPDATE_PAUSE_GUARDIAN = 0x2127338F0ff71Ecc779dce407D95C7D32f7C5F45; // See - https://explorer.mantle.xyz/address/0x2127338F0ff71Ecc779dce407D95C7D32f7C5F45
     address constant public MANTLE_MARKET_UPDATE_PROPOSAL_GUARDIAN = 0x2127338F0ff71Ecc779dce407D95C7D32f7C5F45; // See - https://explorer.mantle.xyz/address/0x2127338F0ff71Ecc779dce407D95C7D32f7C5F45
@@ -103,6 +132,33 @@ library ChainAddresses {
                 marketUpdatePauseGuardian: MAINNET_MARKET_UPDATE_PAUSE_GUARDIAN,
                 marketUpdateProposalGuardian: MAINNET_MARKET_UPDATE_PROPOSAL_GUARDIAN,
                 marketAdmin: MAINNET_MARKET_ADMIN
+            });
+        } else if (chain == Chain.LINEA) {
+            return ChainAddressesStruct({
+                governorTimelockAddress: LINEA_GOVERNOR_TIMELOCK,
+                configuratorProxyAddress: LINEA_CONFIGURATOR_PROXY,
+                cometProxyAdminAddress: LINEA_COMET_PROXY_ADMIN,
+                marketUpdatePauseGuardian: LINEA_MARKET_UPDATE_PAUSE_GUARDIAN,
+                marketUpdateProposalGuardian: LINEA_MARKET_UPDATE_PROPOSAL_GUARDIAN,
+                marketAdmin: LINEA_MARKET_ADMIN
+            });
+        // } else if (chain == Chain.RONIN) {
+        //     return ChainAddressesStruct({
+        //         governorTimelockAddress: RONIN_GOVERNOR_TIMELOCK,
+        //         configuratorProxyAddress: RONIN_CONFIGURATOR_PROXY,
+        //         cometProxyAdminAddress: RONIN_COMET_PROXY_ADMIN,
+        //         marketUpdatePauseGuardian: RONIN_MARKET_UPDATE_PAUSE_GUARDIAN,
+        //         marketUpdateProposalGuardian: RONIN_MARKET_UPDATE_PROPOSAL_GUARDIAN,
+        //         marketAdmin: RONIN_MARKET_ADMIN
+        //     });
+        } else if (chain == Chain.UNICHAIN) {
+            return ChainAddressesStruct({
+                governorTimelockAddress: UNICHAIN_GOVERNOR_TIMELOCK,
+                configuratorProxyAddress: UNICHAIN_CONFIGURATOR_PROXY,
+                cometProxyAdminAddress: UNICHAIN_COMET_PROXY_ADMIN,
+                marketUpdatePauseGuardian: UNICHAIN_MARKET_UPDATE_PAUSE_GUARDIAN,
+                marketUpdateProposalGuardian: UNICHAIN_MARKET_UPDATE_PROPOSAL_GUARDIAN,
+                marketAdmin: UNICHAIN_MARKET_ADMIN
             });
         } else if (chain == Chain.POLYGON) {
             return ChainAddressesStruct({
@@ -149,15 +205,6 @@ library ChainAddresses {
                 marketUpdateProposalGuardian: OPTIMISM_MARKET_UPDATE_PROPOSAL_GUARDIAN,
                 marketAdmin: OPTIMISM_MARKET_ADMIN
             });
-        } else if (chain == Chain.OP_SEPOLIA) {
-            return ChainAddressesStruct({
-                governorTimelockAddress: OPTIMISM_LOCAL_TIMELOCK,
-                configuratorProxyAddress: OPTIMISM_CONFIGURATOR_PROXY,
-                cometProxyAdminAddress: OPTIMISM_COMET_PROXY_ADMIN,
-                marketUpdatePauseGuardian: OPTIMISM_MARKET_UPDATE_PAUSE_GUARDIAN,
-                marketUpdateProposalGuardian: OPTIMISM_MARKET_UPDATE_PROPOSAL_GUARDIAN,
-                marketAdmin: OPTIMISM_MARKET_ADMIN
-            });
         } else if (chain == Chain.MANTLE) {
             return ChainAddressesStruct({
                 governorTimelockAddress: MANTLE_LOCAL_TIMELOCK,
@@ -187,6 +234,12 @@ library ChainAddresses {
             return OPTIMISM_LOCAL_TIMELOCK;
         } else if (chain == Chain.MANTLE) {
             return MANTLE_LOCAL_TIMELOCK;
+        } else if (chain == Chain.LINEA) {
+            return LINEA_GOVERNOR_TIMELOCK;
+        // } else if (chain == Chain.RONIN) {
+        //     return RONIN_GOVERNOR_TIMELOCK;
+        } else if (chain == Chain.UNICHAIN) {
+            return UNICHAIN_GOVERNOR_TIMELOCK;
         } else {
             revert("MarketUpdateAddresses: Chain not supported");
         }
@@ -195,6 +248,12 @@ library ChainAddresses {
     function getChainBasedOnChainId(uint chainId) public pure returns (Chain) {
         if(chainId == 1) {
             return Chain.ETHEREUM;
+        } else if(chainId == 59144) {
+            return Chain.LINEA;
+        } else if(chainId == 2020) {
+            return Chain.RONIN;
+        } else if(chainId == 130) {
+            return Chain.UNICHAIN;
         } else if(chainId == 137) {
             return Chain.POLYGON;
         } else if(chainId == 42161) {
@@ -205,8 +264,6 @@ library ChainAddresses {
             return Chain.SCROLL;
         } else if(chainId == 10) {
             return Chain.OPTIMISM;
-        } else if(chainId == 11155420) {
-            return Chain.OP_SEPOLIA;
         } else if(chainId == 11155111) {
             return Chain.MAINNET_SEPOLIA;
         } else if(chainId == 5000) {

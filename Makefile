@@ -3,14 +3,14 @@
 
 # Declare constants at the top
 MARKET_UPDATE_MULTISIG = 0x7e14050080306cd36b47DE61ce604b3a1EC70c4e
-MARKET_ADMIN_TIMELOCK_ADDRESS = 0x81Bc6016Fa365bfE929a51Eec9217B441B598eC6
-MARKET_UPDATE_PROPOSER = 0xB6Ef3AC71E9baCF1F4b9426C149d855Bfc4415F9
-CONFIGURATOR_IMPL = 0x371DB45c7ee248dAFf4Dc1FFB67A20faa0ecFE02
-COMET_PROXY_ADMIN = 0x24D86Da09C4Dd64e50dB7501b0f695d030f397aF
-MARKET_ADMIN_PERMISSION_CHECKER = 0x62DD0452411113404cf9a7fE88A5E6E86f9B71a6
+MARKET_ADMIN_TIMELOCK_ADDRESS = 0x67174e10D3DeE790FdaB7eE0cBbAb64093072108
+MARKET_UPDATE_PROPOSER = 0x3577D305984931111f2eCb449c91C473C4A985df
+CONFIGURATOR_IMPL = 0x7cf6d0aD3f4B4BadcE860E7d45641BE790078E08
+COMET_PROXY_ADMIN = 0x168097e9aDdC04859934a9C45823a151De6e0471
+MARKET_ADMIN_PERMISSION_CHECKER = 0x68Fb67b0C9A2e7063760287dbe0ec89f7932E13d
 
 SOLIDITY_COMPILER_VERSION = "0.8.15"
-SENDER = "0x470579d16401a36BF63b1428eaA7189FBdE5Fee9"
+SENDER = "0x9825413dd3875E01B34451A7A7e066b2225a234E"
 EVM_VERSION = "cancun"
 OWNERS = '["0xDD659911EcBD4458db07Ee7cDdeC79bf8F859AbC", "0xda32C5AEE8Fc5C51Ed9a99f5608c33f435F740B4", "0x1D8e0b8F4CEd9262C9ac0c0870BF8B45D74ad9D9", "0x47526FDDBA0A5a7ef001FaaD4836b771B3e92522"]'
 THRESHOLD = 2
@@ -44,6 +44,7 @@ deploy-contracts:
 		--via-ir \
 		-vvvv \
 		--sender $(SENDER)
+# 		\ --legacy
 
 # Compute contracts addresses
 compute-contracts-addresses:
@@ -72,6 +73,8 @@ verify-MarketUpdateTimelock:
 		--via-ir \
 		${MARKET_ADMIN_TIMELOCK_ADDRESS} \
 		contracts/marketupdates/MarketUpdateTimelock.sol:MarketUpdateTimelock
+# 		\ --verifier blockscout \
+#   		--verifier-url 'https://unichain.blockscout.com/api/' \
 
 # Verifying MarketUpdateProposer
 verify-MarketUpdateProposer:
@@ -86,6 +89,8 @@ verify-MarketUpdateProposer:
 		--via-ir \
 		${MARKET_UPDATE_PROPOSER} \
 		contracts/marketupdates/MarketUpdateProposer.sol:MarketUpdateProposer
+# 		\ --verifier blockscout \
+#   		--verifier-url 'https://unichain.blockscout.com/api/' \
 
 # Verifying CometProxyAdmin
 verify-CometProxyAdmin:
@@ -100,6 +105,8 @@ verify-CometProxyAdmin:
 		--via-ir \
 		${COMET_PROXY_ADMIN} \
 		contracts/CometProxyAdmin.sol:CometProxyAdmin
+# 		\ --verifier blockscout \
+#   		--verifier-url 'https://unichain.blockscout.com/api/' \
 
 # Verifying Configurator
 verify-Configurator:
@@ -113,6 +120,8 @@ verify-Configurator:
 		--via-ir \
 		${CONFIGURATOR_IMPL} \
 		contracts/Configurator.sol:Configurator
+# 		\ --verifier blockscout \
+#   		--verifier-url 'https://unichain.blockscout.com/api/' \
 
 # Verifying MarketAdminPermissionChecker
 verify-MarketAdminPermissionChecker:
@@ -127,3 +136,5 @@ verify-MarketAdminPermissionChecker:
 		--via-ir \
 		${MARKET_ADMIN_PERMISSION_CHECKER} \
 		contracts/marketupdates/MarketAdminPermissionChecker.sol:MarketAdminPermissionChecker
+# 		\ --verifier blockscout \
+#   		--verifier-url 'https://unichain.blockscout.com/api/' \
