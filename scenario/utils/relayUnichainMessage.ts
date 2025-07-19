@@ -186,6 +186,8 @@ export async function relayUnichainMessage(
       `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
     );
   }
+
+  return openBridgedProposals;
 }
 
 export async function relayUnichainCCTPMint(
@@ -194,6 +196,10 @@ export async function relayUnichainCCTPMint(
   startingBlockNumber: number,
   tenderlyLogs?: any[]
 ){
+
+  if(tenderlyLogs){
+    return
+  }
   // CCTP relay
   // L1 contracts
   const L1MessageTransmitter = await governanceDeploymentManager.getContractOrThrow('CCTPMessageTransmitter');

@@ -89,12 +89,12 @@ export default async function relayMessage(
         tenderlyLogs
       );
     case 'ronin':
-      await relayRoninMessage(
+      return await relayRoninMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
-        startingBlockNumber
+        startingBlockNumber,
+        tenderlyLogs
       );
-      break;
     default:
       throw new Error(
         `No message relay implementation from ${bridgeNetwork} -> ${governanceDeploymentManager.network}`

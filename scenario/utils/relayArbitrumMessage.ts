@@ -176,15 +176,17 @@ export async function relayArbitrumMessage(
             callData,
             arbitrumSigner.address
           );
-        } else {
-          await sourceTokens({
-            dm: bridgeDeploymentManager,
-            amount: amount,
-            asset: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
-            address: to,
-            blacklist: [],
-          });
         }
+
+
+        await sourceTokens({
+          dm: bridgeDeploymentManager,
+          amount: amount,
+          asset: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
+          address: to,
+          blacklist: [],
+        });
+
         continue;
       }
     }
@@ -267,6 +269,10 @@ export async function relayArbitrumCCTPMint(
   startingBlockNumber: number,
   tenderlyLogs?: any[]
 ){
+
+  if(tenderlyLogs) {
+    return;
+  }
   // CCTP relay
   // L1 contracts
   const L1MessageTransmitter = await governanceDeploymentManager.getContractOrThrow('CCTPMessageTransmitter');

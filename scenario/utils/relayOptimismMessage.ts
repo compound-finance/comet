@@ -86,7 +86,8 @@ export default async function relayOptimismMessage(
         callData,
         aliasedSigner.address
       );
-    } else {
+    }
+
       relayMessageTxn = await (
         await l2CrossDomainMessenger.connect(aliasedSigner).relayMessage(
           messageNonce,
@@ -94,7 +95,6 @@ export default async function relayOptimismMessage(
           target,
           0,
           0,
-          gasLimit,
           message,
         { gasPrice: 0, gasLimit }
         )
@@ -154,7 +154,6 @@ export default async function relayOptimismMessage(
     } else {
       throw new Error(`[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Unrecognized target for cross-chain message`);
     }
-  }
 
    // Execute open bridged proposals now that all messages have been bridged
   for (let proposal of openBridgedProposals) {

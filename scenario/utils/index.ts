@@ -852,9 +852,11 @@ export async function tenderlyExecute(
     if (chainId1 !== chainId2) {
       proposals = await relayMessage(gdm, bdm, parseFloat(B0.toString()),  bundle[bundle.length - 1].transaction.transaction_info.logs);
     }
+    const timelockL2 = await bdm.getContractOrThrow('timelock');
+    const delay = await timelockL2.delay();
     const relayMessages = loadCachedRelayMessages();
     const latestL2 = await bdm.hre.ethers.provider.getBlock("latest");
-    const maxEta = Math.max(...proposals.map(p => Number(p.eta || 0)));
+    const maxEta = Math.max(...proposals.map(p => Number(p.eta || 0))) + delay.toNumber();
     const T0L2 = BigInt(Math.max(latestL2.timestamp, maxEta + 1))
     const B0L2 = Number(latestL2.number) + 1;
     const simsL2 = relayMessages.map((msg, i, arr) => {
@@ -866,7 +868,7 @@ export async function tenderlyExecute(
     
       const block = isLast
         ? B0L2 : latestL2.number;
-    
+      
       return {
         network_id: chainId2.toString(),
         from: msg.signer,
@@ -893,11 +895,10 @@ export async function tenderlyExecute(
     if (simsL2.length > 0) {
       const bundle2 = await simulateBundle(bdm, simsL2, Number(B0L2));
       debug(` >>> PROPOSAL RELAYED ${id} \n`);
-      for (let i = 0; i < bundle2.length; i++) {
-        const sim = bundle2[i];
-        await shareSimulation(bdm, sim.simulation.id);
-        debug("Rel[" + i + "] " + sim.simulation.status + ". link: https://www.tdly.co/shared/simulation/" + sim.simulation.id);
-      }
+      const sim = bundle2[bundle2.length - 1];
+      await shareSimulation(bdm, sim.simulation.id);
+      debug(`Simulation ${sim.simulation.id} done, status: ${sim.simulation.status}`);
+      debug(`Link: https://www.tdly.co/shared/simulation/${sim.simulation.id}`);
     }
   } catch (err) {
     debug(`Error during Tenderly simulation: ${err.message}`);

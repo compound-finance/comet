@@ -98,7 +98,7 @@ export default async function relayBaseMessage(
         callData,
         aliasedSigner.address
       );
-    } else {
+      
       relayMessageTxn = await (
         await l2CrossDomainMessenger
           .connect(aliasedSigner)
@@ -212,4 +212,6 @@ export default async function relayBaseMessage(
       `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
     );
   }
+
+  return openBridgedProposals;
 }

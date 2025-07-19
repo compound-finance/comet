@@ -64,6 +64,7 @@ const {
   POLYGONSCAN_KEY,
   BASESCAN_KEY,
   OPTIMISMSCAN_KEY,
+  ARBISCAN_KEY,
   MANTLESCAN_KEY,
   SCROLLSCAN_KEY,
   ANKR_KEY,
@@ -100,7 +101,8 @@ export function requireEnv(varName, msg?: string): string {
   'OPTIMISMSCAN_KEY',
   'MANTLESCAN_KEY',
   'UNICHAIN_QUICKNODE_KEY',
-  'SCROLLSCAN_KEY'
+  'SCROLLSCAN_KEY',
+  'ARBISCAN_KEY',
 ].map((v) => requireEnv(v));
 
 // Networks
@@ -292,6 +294,8 @@ const config: HardhatUserConfig = {
       base: BASESCAN_KEY,
       // optimism: OPTIMISMSCAN_KEY,
       optimisticEthereum: OPTIMISMSCAN_KEY,
+      // Arbitrum
+      arbitrum: ARBISCAN_KEY,
       // Mantle
       mantle: MANTLESCAN_KEY,
       unichain: ETHERSCAN_KEY,

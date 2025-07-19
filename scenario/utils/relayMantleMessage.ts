@@ -75,20 +75,19 @@ export default async function relayMantleMessage(
         callData,
         aliasedSigner.address
       );
-    } else {
-      relayMessageTxn = await (
-        await l2CrossDomainMessenger.connect(aliasedSigner).relayMessage(
-          messageNonce,
-          sender,
-          target,
-          0,
-          0,
-          gasLimit,
-          message,
-          { gasPrice: 0, gasLimit: 7_500_000 }
-        )
-      ).wait();
-    }
+    } 
+
+    relayMessageTxn = await (
+      await l2CrossDomainMessenger.connect(aliasedSigner).relayMessage(
+        messageNonce,
+        sender,
+        target,
+        0,
+        0,
+        message,
+        { gasPrice: 0, gasLimit: 7_500_000 }
+      )
+    ).wait();
 
     // Try to decode the SentMessage data to determine what type of cross-chain activity this is. So far,
     // there are two types:
@@ -166,4 +165,5 @@ export default async function relayMantleMessage(
       `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
     );
   }
+  return openBridgedProposals;
 }
