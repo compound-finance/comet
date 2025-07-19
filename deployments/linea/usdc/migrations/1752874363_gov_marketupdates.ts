@@ -7,7 +7,7 @@ import { utils } from 'ethers';
 
 const gauntletMultiSigAddress = '0x7e14050080306cd36b47DE61ce604b3a1EC70c4e';
 
-const localTimelockAddress = '0xCC3E7c85Bb0EE4f09380e041fee95a0caeDD4a02';
+const localTimelockAddress = '0x4A900f81dEdA753bbBab12453b3775D5f26df6F3';
 
 const marketUpdateTimelockAddress = '0x67174e10D3DeE790FdaB7eE0cBbAb64093072108';
 const marketUpdateProposerAddress = '0x3577D305984931111f2eCb449c91C473C4A985df';
@@ -15,14 +15,13 @@ const newConfiguratorImplementationAddress = '0x7cf6d0aD3f4B4BadcE860E7d45641BE7
 const newCometProxyAdminAddress = '0x168097e9aDdC04859934a9C45823a151De6e0471';
 const marketAdminPermissionCheckerAddress = '0x68Fb67b0C9A2e7063760287dbe0ec89f7932E13d';
 
-const pauseGuardianAddress = '0x8Ab717CAC3CbC4934E63825B88442F5810aAF6e5';
+const pauseGuardianAddress = '0x5A1e5d7E09cA94506084a26304d53A138145bF52';
 
-const cometProxyAdminOldAddress = '0xd712ACe4ca490D4F3E92992Ecf3DE12251b975F9';
-const configuratorProxyAddress = '0x83E0F742cAcBE66349E3701B171eE2487a26e738';
-const cometProxyUsdcAddress = '0xF25212E676D1F7F89Cd72fFEe66158f541246445';
-const cometProxyUsdtAddress = '0xaeB318360f27748Acb200CE616E389A6C9409a07';
+const cometProxyAdminOldAddress = '0x4b5DeE60531a72C1264319Ec6A22678a4D0C8118';
+const configuratorProxyAddress = '0x970FfD8E335B8fa4cd5c869c7caC3a90671d5Dc3';
+const cometProxyUsdcAddress = '0x8D38A3d6B3c3B7d96D6536DA7Eef94A9d7dbC991';
 
-export default migration('1752829960_gov_marketupdates', {
+export default migration('1752874363_gov_marketupdates', {
   prepare: async () => {
     return {};
   },
@@ -32,11 +31,12 @@ export default migration('1752829960_gov_marketupdates', {
     govDeploymentManager: DeploymentManager,
   ) => {
     const trace = deploymentManager.tracer();
+    await deploymentManager.spider();
 
     const { bridgeReceiver } = await deploymentManager.getContracts();
 
     const {
-      fxRoot,
+      lineaMessageService,
       governor,
     } = await govDeploymentManager.getContracts();
 
@@ -44,11 +44,6 @@ export default migration('1752829960_gov_marketupdates', {
     const changeProxyAdminForCometProxyUsdcCalldata = utils.defaultAbiCoder.encode(
       ['address', 'address'],
       [cometProxyUsdcAddress, newCometProxyAdminAddress]
-    );
-
-    const changeProxyAdminForCometProxyUsdtCalldata = utils.defaultAbiCoder.encode(
-      ['address', 'address'],
-      [cometProxyUsdtAddress, newCometProxyAdminAddress]
     );
 
     const changeProxyAdminForConfiguratorProxyCalldata = utils.defaultAbiCoder.encode(
@@ -72,13 +67,11 @@ export default migration('1752829960_gov_marketupdates', {
         [
           cometProxyAdminOldAddress,
           cometProxyAdminOldAddress,
-          cometProxyAdminOldAddress,
           newCometProxyAdminAddress,
           configuratorProxyAddress,
         ],
-        [ 0, 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0 ],
         [
-          'changeProxyAdmin(address,address)',
           'changeProxyAdmin(address,address)',
           'changeProxyAdmin(address,address)',
           'upgrade(address,address)',
@@ -86,7 +79,6 @@ export default migration('1752829960_gov_marketupdates', {
         ],
         [
           changeProxyAdminForCometProxyUsdcCalldata,
-          changeProxyAdminForCometProxyUsdtCalldata,
           changeProxyAdminForConfiguratorProxyCalldata,
           upgradeConfiguratorProxyCalldata,
           setMarketAdminPermissionCheckerForConfiguratorProxyCalldata,
@@ -95,11 +87,11 @@ export default migration('1752829960_gov_marketupdates', {
     );
   
     const actions = [
-      // 1. Set Comet configuration + deployAndUpgradeTo new Comet and set reward config on Polygon.
+      // 1. Set Comet configuration + deployAndUpgradeTo new Comet and set reward config on Linea.
       {
-        contract: fxRoot,
-        signature: 'sendMessageToChild(address,bytes)',
-        args: [bridgeReceiver.address, l2ProposalData],
+        contract: lineaMessageService,
+        signature: 'sendMessage(address,uint256,bytes)',
+        args: [bridgeReceiver.address, 0, l2ProposalData],
       },
     ];
 

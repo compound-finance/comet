@@ -1,14 +1,9 @@
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
-import {
-  MarketAdminPermissionChecker,
-  MarketUpdateProposer,
-  MarketUpdateTimelock,
-  CometProxyAdmin,
-  Configurator,
-} from './../../../../build/types';
+import { Configurator } from './../../../../build/types';
 import { expect } from 'chai';
 import { proposal } from '../../../../src/deploy';
+import { utils } from 'ethers';
 
 const gauntletMultiSigAddress = '0xA1C7b6d8b4DeD5ee46330C865cC8aeCfB13c8b65';
 
@@ -31,7 +26,7 @@ const cometProxyWbtcAddress = '0xe85Dc543813B8c2CFEaAc371517b925a166a9293';
 const cometProxyWethAddress = '0xA17581A9E3356d9A858b789D68B4d866e593aE94';
 const cometProxyWstethAddress = '0x3D0bb1ccaB520A66e607822fC55BC921738fAFE3';
 
-export default migration('1752654094_gov_marketupdates', {
+export default migration('1752829095_gov_marketupdates', {
   prepare: async () => {
     return {};
   },
@@ -40,9 +35,6 @@ export default migration('1752654094_gov_marketupdates', {
     deploymentManager: DeploymentManager
   ) => {
     const trace = deploymentManager.tracer();
-    const ethers = deploymentManager.hre.ethers;
-    const { utils } = ethers;
-
     const { governor } = await deploymentManager.getContracts();
 
     const changeProxyAdminForCometProxyUsdсCalldata = utils.defaultAbiCoder.encode(
@@ -172,25 +164,25 @@ export default migration('1752654094_gov_marketupdates', {
 
     const { configurator } = await deploymentManager.getContracts();
 
-    const marketAdminPermissionChecker = (await ethers.getContractAt(
+    const marketAdminPermissionChecker = await ethers.getContractAt(
       'MarketAdminPermissionChecker',
       marketAdminPermissionCheckerAddress
-    )) as MarketAdminPermissionChecker;
+    );
 
-    const marketUpdateTimelock = (await ethers.getContractAt(
+    const marketUpdateTimelock = await ethers.getContractAt(
       'MarketUpdateTimelock',
       marketUpdateTimelockAddress
-    )) as MarketUpdateTimelock;
+    );
 
-    const marketUpdateProposer = (await ethers.getContractAt(
+    const marketUpdateProposer = await ethers.getContractAt(
       'MarketUpdateProposer',
       marketUpdateProposerAddress
-    )) as MarketUpdateProposer;
+    );
 
-    const cometProxyAdminNew = (await ethers.getContractAt(
+    const cometProxyAdminNew = await ethers.getContractAt(
       'CometProxyAdmin',
       newCometProxyAdminAddress
-    )) as CometProxyAdmin;
+    );
 
     expect(configurator.address).to.be.equal(configuratorProxyAddress);
     expect(await (configurator as Configurator).governor()).to.be.equal(localTimelockAddress);

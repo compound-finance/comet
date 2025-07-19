@@ -190,6 +190,7 @@ export const WHALES = {
     '0x935EfCBeFc1dF0541aFc3fE145134f8c9a0beB89', // ezETH whale
     '0x6a72F4F191720c411Cd1fF6A5EA8DeDEC3A64771', // USDT whale
     '0x2c7118c4C88B9841FCF839074c26Ae8f035f2921', // COMP whale
+    '0x8D38A3d6B3c3B7d96D6536DA7Eef94A9d7dbC991', // wstETH whale
   ],
   ronin: [
     '0x41058bcc968f809e9dbb955f402de150a3e5d1b5',

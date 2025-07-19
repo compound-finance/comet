@@ -1,15 +1,10 @@
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
-import {
-  MarketAdminPermissionChecker,
-  MarketUpdateProposer,
-  MarketUpdateTimelock,
-  CometProxyAdmin,
-  Configurator,
-} from './../../../../build/types';
+import { Configurator } from './../../../../build/types';
 import { expect } from 'chai';
 import { proposal } from '../../../../src/deploy';
 import { applyL1ToL2Alias, estimateL2Transaction } from '../../../../scenario/utils/arbitrumUtils';
+import { utils } from 'ethers';
 
 const gauntletMultiSigAddress = '0x7e14050080306cd36b47DE61ce604b3a1EC70c4e';
 
@@ -40,8 +35,6 @@ export default migration('1752829115_gov_marketupdates', {
     govDeploymentManager: DeploymentManager,
   ) => {
     const trace = deploymentManager.tracer();
-    const ethers = deploymentManager.hre.ethers;
-    const { utils } = ethers;
 
     const { bridgeReceiver, timelock:  l2Timelock} = await deploymentManager.getContracts();
 
@@ -174,25 +167,25 @@ export default migration('1752829115_gov_marketupdates', {
 
     const { configurator } = await deploymentManager.getContracts();
 
-    const marketAdminPermissionChecker = (await ethers.getContractAt(
+    const marketAdminPermissionChecker = await ethers.getContractAt(
       'MarketAdminPermissionChecker',
       marketAdminPermissionCheckerAddress
-    )) as MarketAdminPermissionChecker;
+    );
 
-    const marketUpdateTimelock = (await ethers.getContractAt(
+    const marketUpdateTimelock = await ethers.getContractAt(
       'MarketUpdateTimelock',
       marketUpdateTimelockAddress
-    )) as MarketUpdateTimelock;
+    );
 
-    const marketUpdateProposer = (await ethers.getContractAt(
+    const marketUpdateProposer = await ethers.getContractAt(
       'MarketUpdateProposer',
       marketUpdateProposerAddress
-    )) as MarketUpdateProposer;
+    );
 
-    const cometProxyAdminNew = (await ethers.getContractAt(
+    const cometProxyAdminNew = await ethers.getContractAt(
       'CometProxyAdmin',
       newCometProxyAdminAddress
-    )) as CometProxyAdmin;
+    );
 
     expect(configurator.address).to.be.equal(configuratorProxyAddress);
     expect(await (configurator as Configurator).governor()).to.be.equal(localTimelockAddress);

@@ -32,10 +32,14 @@
     ],
     "skipLibCheck": true
   },
-  "include": ["./scripts", "./test", "./tasks", "./plugins", "./scenario"],
-  "files": [
-    "./index.ts",
-    "./hardhat.config.ts",
-  ],
-  "exclude": ["node_modules"]
+
+  "include": [
+    "hardhat.config.ts",
+    "scripts",
+    "tasks",
+    "plugins",
+    "scenario",
+    "test",
+    "types/**/*.d.ts"
+  ]
 }
