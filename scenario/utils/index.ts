@@ -836,7 +836,7 @@ export async function tenderlyExecute(
   const chainId2 = bdm.hre.ethers.provider.network.chainId;
 
 
-  debug(`\n==========================\ TENDERLY ==========================\n`);
+  debug(`\n========================== TENDERLY ==========================\n`);
   try {
     debug(`\nExecuting Tenderly simulation for proposal ${id}...`);
     const bundle = await simulateBundle(gdm, simsL1, Number(B0));
@@ -851,54 +851,55 @@ export async function tenderlyExecute(
     let proposals;
     if (chainId1 !== chainId2) {
       proposals = await relayMessage(gdm, bdm, parseFloat(B0.toString()),  bundle[bundle.length - 1].transaction.transaction_info.logs);
-    }
-    const timelockL2 = await bdm.getContractOrThrow('timelock');
-    const delay = await timelockL2.delay();
-    const relayMessages = loadCachedRelayMessages();
-    const latestL2 = await bdm.hre.ethers.provider.getBlock("latest");
-    const maxEta = Math.max(...proposals.map(p => Number(p.eta || 0))) + delay.toNumber();
-    const T0L2 = BigInt(Math.max(latestL2.timestamp, maxEta + 1))
-    const B0L2 = Number(latestL2.number) + 1;
-    const simsL2 = relayMessages.map((msg, i, arr) => {
-      const isLast = i === arr.length - 1;
     
-      const timestamp = isLast
-        ? Number(T0L2) 
-        : latestL2.timestamp; 
+      const timelockL2 = await bdm.getContractOrThrow('timelock');
+      const delay = await timelockL2.delay();
+      const relayMessages = loadCachedRelayMessages();
+      const latestL2 = await bdm.hre.ethers.provider.getBlock('latest');
+      const maxEta = Math.max(...proposals.map(p => Number(p.eta || 0))) + delay.toNumber();
+      const T0L2 = BigInt(Math.max(latestL2.timestamp, maxEta + 1));
+      const B0L2 = Number(latestL2.number) + 1;
+      const simsL2 = relayMessages.map((msg, i, arr) => {
+        const isLast = i === arr.length - 1;
     
-      const block = isLast
-        ? B0L2 : latestL2.number;
+        const timestamp = isLast
+          ? Number(T0L2) 
+          : latestL2.timestamp; 
+    
+        const block = isLast
+          ? B0L2 : latestL2.number;
       
-      return {
-        network_id: chainId2.toString(),
-        from: msg.signer,
-        to: msg.messanger,
-        block_number: Number(block),
-        block_header: {
-          timestamp: gdm.hre.ethers.utils.hexlify(Number(timestamp))
-        },
-        input: msg.callData,
-        save: true,
-        save_if_fails: true,
-        gas_price: 0,
-      };
-    });
+        return {
+          network_id: chainId2.toString(),
+          from: msg.signer,
+          to: msg.messanger,
+          block_number: Number(block),
+          block_header: {
+            timestamp: gdm.hre.ethers.utils.hexlify(Number(timestamp))
+          },
+          input: msg.callData,
+          save: true,
+          save_if_fails: true,
+          gas_price: 0,
+        };
+      });
   
   
-    while (!simsL1[0]) {
-      simsL1.shift();
-      if (simsL1.length == 0) {
-        break;
+      while (!simsL1[0]) {
+        simsL1.shift();
+        if (simsL1.length == 0) {
+          break;
+        }
       }
-    }
 
-    if (simsL2.length > 0) {
-      const bundle2 = await simulateBundle(bdm, simsL2, Number(B0L2));
-      debug(` >>> PROPOSAL RELAYED ${id} \n`);
-      const sim = bundle2[bundle2.length - 1];
-      await shareSimulation(bdm, sim.simulation.id);
-      debug(`Simulation ${sim.simulation.id} done, status: ${sim.simulation.status}`);
-      debug(`Link: https://www.tdly.co/shared/simulation/${sim.simulation.id}`);
+      if (simsL2.length > 0) {
+        const bundle2 = await simulateBundle(bdm, simsL2, Number(B0L2));
+        debug(` >>> PROPOSAL RELAYED ${id} \n`);
+        const sim = bundle2[bundle2.length - 1];
+        await shareSimulation(bdm, sim.simulation.id);
+        debug(`Simulation ${sim.simulation.id} done, status: ${sim.simulation.status}`);
+        debug(`Link: https://www.tdly.co/shared/simulation/${sim.simulation.id}`);
+      }
     }
   } catch (err) {
     debug(`Error during Tenderly simulation: ${err.message}`);
@@ -1095,28 +1096,28 @@ export async function fastGovernanceExecute(
   const proposeTxn =
     dm.network === 'mainnet'
       ? await (
-          await governor.connect(proposer).propose(
-            targets,
-            values,
-            calldatas.map((calldata, i) => {
-              return utils.id(signatures[i]).slice(0, 10) + calldata.slice(2);
-            }),
-            'FastExecuteProposal',
-            { gasPrice: 0 }
-          )
-        ).wait()
+        await governor.connect(proposer).propose(
+          targets,
+          values,
+          calldatas.map((calldata, i) => {
+            return utils.id(signatures[i]).slice(0, 10) + calldata.slice(2);
+          }),
+          'FastExecuteProposal',
+          { gasPrice: 0 }
+        )
+      ).wait()
       : await (
-          await testnetPropose(
-            dm,
-            proposer,
-            targets,
-            values,
-            signatures,
-            calldatas,
-            'FastExecuteProposal',
-            0
-          )
-        ).wait();
+        await testnetPropose(
+          dm,
+          proposer,
+          targets,
+          values,
+          signatures,
+          calldatas,
+          'FastExecuteProposal',
+          0
+        )
+      ).wait();
   const proposeEvent = proposeTxn.events.find(
     (event) => event.event === 'ProposalCreated'
   );

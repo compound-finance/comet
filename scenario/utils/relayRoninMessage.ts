@@ -7,7 +7,7 @@ import { OpenBridgedProposal } from '../context/Gov';
 
 const roninChainSelector = '6916147374840168594';
 
-function isTenderlyLog(log: any): log is { raw: { topics: string[]; data: string } } {
+function isTenderlyLog(log: any): log is { raw: { topics: string[], data: string } } {
   return !!log?.raw?.topics && !!log?.raw?.data;
 }
 

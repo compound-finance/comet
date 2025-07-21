@@ -266,7 +266,7 @@ export async function proposal(
   }
 
   const fullProposal: Proposal = [targets, values, calldatas, description, signatures];
-  
+
   stashProposal(fullProposal);
   fullProposal.pop();
   return fullProposal;
