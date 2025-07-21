@@ -21,7 +21,7 @@ jobs:
         run: forge install
 
       - name: Run tests
-        run: forge/run-tests.sh
+        run: bash forge/run-tests.sh
         env:
           ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
           SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
