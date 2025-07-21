@@ -14,3 +14,5 @@ forge test -vvv
 
 # 4. Delete the temporary environment file
 rm .env.forge-temp
+# To test a specific test case in Foundry, use the --match-test flag:
+# Example: forge test --match-test testFunctionName -vvvv

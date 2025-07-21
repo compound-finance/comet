@@ -46,13 +46,13 @@ library ChainAddresses {
     address constant public LINEA_MARKET_UPDATE_PROPOSAL_GUARDIAN =  0x5A1e5d7E09cA94506084a26304d53A138145bF52; // See - https://lineascan.build/address/0x5A1e5d7E09cA94506084a26304d53A138145bF52
 
     // Ronin addresses
-    // address constant public RONIN_GOVERNOR_TIMELOCK = 0xBbb0Ebd903fafbb8fFF58B922fD0CD85E251ac2c; // See - https://app.roninchain.com/address/0x6d903f6003cca6255D85CcA4D3B5E5146dC33925
-    // address constant public RONIN_CONFIGURATOR_PROXY = 0x966c72F456FC248D458784EF3E0b6d042be115F2; // See - https://app.roninchain.com/address/0x316f9708bB98af7dA9c68C1C3b5e79039cD336E3
-    // address constant public RONIN_COMET_PROXY_ADMIN = 0xfa64A82a3d13D4c05d5133E53b2EbB8A0FA9c3F6; // See - https://app.roninchain.com/address/0x1EC63B5883C3481134FD50D5DAebc83Ecd2E8779
+    address constant public RONIN_GOVERNOR_TIMELOCK = 0xBbb0Ebd903fafbb8fFF58B922fD0CD85E251ac2c; // See - https://app.roninchain.com/address/0x6d903f6003cca6255D85CcA4D3B5E5146dC33925
+    address constant public RONIN_CONFIGURATOR_PROXY = 0x966c72F456FC248D458784EF3E0b6d042be115F2; // See - https://app.roninchain.com/address/0x316f9708bB98af7dA9c68C1C3b5e79039cD336E3
+    address constant public RONIN_COMET_PROXY_ADMIN = 0xfa64A82a3d13D4c05d5133E53b2EbB8A0FA9c3F6; // See - https://app.roninchain.com/address/0x1EC63B5883C3481134FD50D5DAebc83Ecd2E8779
 
-    // address constant public RONIN_MARKET_ADMIN = 0x7e14050080306cd36b47DE61ce604b3a1EC70c4e; // See - https://app.roninchain.com/address/0xA1C7b6d8b4DeD5ee46330C865cC8aeCfB13c8b65
-    // address constant public RONIN_MARKET_UPDATE_PAUSE_GUARDIAN =  0x69daaf2Fb26Cb138D33466808dE917d571151a68; // See - pauseGuardian in https://app.roninchain.com/address/0xc3d688B66703497DAA19211EEdff47f25384cdc3
-    // address constant public RONIN_MARKET_UPDATE_PROPOSAL_GUARDIAN =  0x69daaf2Fb26Cb138D33466808dE917d571151a68; // See - https://app.roninchain.com/address/0xc3d688B66703497DAA19211EEdff47f25384cdc3
+    address constant public RONIN_MARKET_ADMIN = 0x7e14050080306cd36b47DE61ce604b3a1EC70c4e; // See - https://app.roninchain.com/address/0xA1C7b6d8b4DeD5ee46330C865cC8aeCfB13c8b65
+    address constant public RONIN_MARKET_UPDATE_PAUSE_GUARDIAN =  0x69daaf2Fb26Cb138D33466808dE917d571151a68; // See - pauseGuardian in https://app.roninchain.com/address/0xc3d688B66703497DAA19211EEdff47f25384cdc3
+    address constant public RONIN_MARKET_UPDATE_PROPOSAL_GUARDIAN =  0x69daaf2Fb26Cb138D33466808dE917d571151a68; // See - https://app.roninchain.com/address/0xc3d688B66703497DAA19211EEdff47f25384cdc3
 
     // Unichain addresses
     address constant public UNICHAIN_GOVERNOR_TIMELOCK = 0x2F4eAF29dfeeF4654bD091F7112926E108eF4Ed0; // See - https://unichain.blockscout.com/address/0x6d903f6003cca6255D85CcA4D3B5E5146dC33925
@@ -142,15 +142,15 @@ library ChainAddresses {
                 marketUpdateProposalGuardian: LINEA_MARKET_UPDATE_PROPOSAL_GUARDIAN,
                 marketAdmin: LINEA_MARKET_ADMIN
             });
-        // } else if (chain == Chain.RONIN) {
-        //     return ChainAddressesStruct({
-        //         governorTimelockAddress: RONIN_GOVERNOR_TIMELOCK,
-        //         configuratorProxyAddress: RONIN_CONFIGURATOR_PROXY,
-        //         cometProxyAdminAddress: RONIN_COMET_PROXY_ADMIN,
-        //         marketUpdatePauseGuardian: RONIN_MARKET_UPDATE_PAUSE_GUARDIAN,
-        //         marketUpdateProposalGuardian: RONIN_MARKET_UPDATE_PROPOSAL_GUARDIAN,
-        //         marketAdmin: RONIN_MARKET_ADMIN
-        //     });
+        } else if (chain == Chain.RONIN) {
+            return ChainAddressesStruct({
+                governorTimelockAddress: RONIN_GOVERNOR_TIMELOCK,
+                configuratorProxyAddress: RONIN_CONFIGURATOR_PROXY,
+                cometProxyAdminAddress: RONIN_COMET_PROXY_ADMIN,
+                marketUpdatePauseGuardian: RONIN_MARKET_UPDATE_PAUSE_GUARDIAN,
+                marketUpdateProposalGuardian: RONIN_MARKET_UPDATE_PROPOSAL_GUARDIAN,
+                marketAdmin: RONIN_MARKET_ADMIN
+            });
         } else if (chain == Chain.UNICHAIN) {
             return ChainAddressesStruct({
                 governorTimelockAddress: UNICHAIN_GOVERNOR_TIMELOCK,
@@ -236,8 +236,8 @@ library ChainAddresses {
             return MANTLE_LOCAL_TIMELOCK;
         } else if (chain == Chain.LINEA) {
             return LINEA_GOVERNOR_TIMELOCK;
-        // } else if (chain == Chain.RONIN) {
-        //     return RONIN_GOVERNOR_TIMELOCK;
+        } else if (chain == Chain.RONIN) {
+            return RONIN_GOVERNOR_TIMELOCK;
         } else if (chain == Chain.UNICHAIN) {
             return UNICHAIN_GOVERNOR_TIMELOCK;
         } else {

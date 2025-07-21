@@ -31,7 +31,7 @@ scenario(
       })
     );
 
-    await betty.withdrawAsset({ asset: baseToken, amount: 1000n * baseScale.toBigInt() }); // force accrue
+    await betty.withdrawAsset({ asset: baseToken, amount: BigInt(getConfigForScenario(context).liquidationBase) / 100n * baseScale.toBigInt() }); // force accrue
 
     expect(await comet.isLiquidatable(albert.address)).to.be.true;
   }

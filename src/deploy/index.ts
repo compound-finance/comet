@@ -204,7 +204,9 @@ export const WHALES = {
     '0x5b714f5ce0a09ab2fec8362dc1c254c7b7d6e6bd',
     '0x0cf8ff40a508bdbc39fbe1bb679dcba64e65c7df',
     '0x2ecb08f87f075b5769fe543d0e52e40140575ea7',
-    '0x05b0bb3c1c320b280501b86706c3551995bc8571'
+    '0x05b0bb3c1c320b280501b86706c3551995bc8571',
+    '0x392d372f2a51610e9ac5b741379d5631ca9a1c7f', // USDC whale
+    '0x245db945c485b68fdc429e4f7085a1761aa4d45d', // WETH whale
   ]
 };
 

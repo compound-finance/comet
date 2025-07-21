@@ -100,8 +100,8 @@ export function getConfigForScenario(ctx: CometContext) {
 
   if (ctx.world.base.network === 'ronin' && ctx.world.base.deployment === 'weth') {
     config.transferBase = 10;
-    config.transferAsset = 100000;
-    config.transferAsset1 = 100000;
+    config.transferAsset = 200000;
+    config.transferAsset1 = 200000;
     config.rewardsAsset = 1000000;
     config.rewardsBase = 200;
     config.withdrawBase = 10;
