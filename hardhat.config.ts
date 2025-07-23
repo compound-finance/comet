@@ -279,6 +279,42 @@ const config: HardhatUserConfig = {
           };
           return acc;
         }
+        if (chainId === 42161) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+            }
+          };
+          return acc;
+        }
+        if (chainId === 5000) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+            }
+          };
+          return acc;
+        }
+        if (chainId === 137) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+            }
+          };
+          return acc;
+        }
+        if (chainId === 534352) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+            }
+          };
+          return acc;
+        }
         if (chainId === 2020) {
           acc[chainId] = {
             hardforkHistory: {

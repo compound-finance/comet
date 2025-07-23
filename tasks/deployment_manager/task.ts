@@ -10,7 +10,7 @@ import hreForBase from '../../plugins/scenario/utils/hreForBase';
 async function getForkEnv(env: HardhatRuntimeEnvironment, deployment: string): Promise<HardhatRuntimeEnvironment> {
   const base = env.config.scenario.bases.find(b => b.network == env.network.name && b.deployment == deployment);
   if (!base) {
-    throw new Error(`No fork spec for ${env.network.name}`);
+    throw new Error(`No fork spec for ${env.network.name}-${deployment}`);
   }
   return await hreForBase(base);
 }
