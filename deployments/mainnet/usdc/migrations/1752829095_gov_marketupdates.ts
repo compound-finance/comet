@@ -139,7 +139,24 @@ export default migration('1752829095_gov_marketupdates', {
       },
     ];
 
-    const description = `DESCRIPTION`;
+    const description = `#Alternate Governance track for Market Updates - Mainnet\n\n##Proposal summary\n
+WOOF! proposes an alternate governance track for market updates on the Compound III markets on Mainnet, following the successful deployment by DoDAO on the Optimism network. This proposal aims to streamline market parameter updates by introducing a parallel governance process, reducing friction, and enabling faster updates while maintaining community oversight.
+
+Currently, 70-90% of proposals focus on market parameter updates, which require specialized validation and consume significant community resources (estimated at $300,000 annually). This process diverts attention from critical proposals like new partnerships or asset additions. By granting a market admin role to a Safe address (managed by Gauntlet or community members) and routing updates through a Timelock, the community can review or block changes while speeding up the process.
+
+This proposal was discussed in detail here - https://www.comp.xyz/t/market-updates-alternate-governance-track/5379. OpenZeppelin provided feedback, recommending the Configurator update as the optimal solution. Simulations have confirmed the market’s readiness using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario).
+
+
+##Proposal Actions
+
+The first through sixth actions update the proxy admin for the USDC, USDS, USDT, WBTC, WETH, and wstETH Comet proxies to a new CometProxyAdmin contract.
+
+The seventh action updates the proxy admin for the Configurator proxy to the new CometProxyAdmin contract.
+
+The eighth action upgrades the Configurator proxy to a new implementation.
+
+The ninth action sets the MarketAdminPermissionChecker for the Configurator proxy, enabling the alternate governance track for market updates with a Timelock for community to review or even block the market updates via this alternate route.
+`;
 
     const txn = await deploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(actions, description))))
