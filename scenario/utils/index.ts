@@ -197,7 +197,7 @@ export async function getActorAddressFromName(
     const cometRegex = /comet/;
     let actorAddress: string;
     if (cometRegex.test(name)) {
-      // If name matches regex, e.g. "$comet"
+      // If name matches regex, e.g. '$comet'
       actorAddress = (await context.getComet()).address;
     } else {
       throw new Error(`Invalid actor name: ${name}`);
@@ -218,11 +218,11 @@ export async function getAssetFromName(
     const baseAssetRegex = /base/;
     let asset: string;
     if (collateralAssetRegex.test(name)) {
-      // If name matches regex, e.g. "$asset10"
+      // If name matches regex, e.g. '$asset10'
       const assetIndex = name.match(/[0-9]+/g)![0];
       ({ asset } = await comet.getAssetInfo(assetIndex));
     } else if (baseAssetRegex.test(name)) {
-      // If name matches "base"
+      // If name matches 'base'
       asset = await comet.baseToken();
     } else {
       throw new Error(`Invalid asset name: ${name}`);
@@ -706,125 +706,206 @@ async function mockRedstoneOracle(dm: DeploymentManager, feed: string) {
 }
 
 export async function tenderlyExecute(
-  dm: DeploymentManager,
+  gdm: DeploymentManager,
+  bdm: DeploymentManager,
   governor: Contract,
   timelock: Contract
 ): Promise<void> {
- 
-  const latest = await dm.hre.ethers.provider.getBlock('latest');
-  const B0 = BigInt(latest.number); 
+  const latest = await gdm.hre.ethers.provider.getBlock('latest');
+  const B0 = BigInt(latest.number);
   const T0 = BigInt(latest.timestamp);
-  
+
   const blockStart = B0 + 1n;
   const blockEnd = blockStart + 1n;
   const blockCast = blockEnd;
   const blockQueue = blockCast + 1n;
   const blockExec = blockQueue + 3n;
 
-  const tsShift = (t: bigint, dBlocks: bigint) => t + dBlocks * 12n; 
-  const timestampCast = tsShift(T0, blockCast  - B0);
+  const tsShift = (t: bigint, dBlocks: bigint) => t + dBlocks * 12n;
+  const timestampCast = tsShift(T0, blockCast - B0);
   const timestampQueue = tsShift(T0, blockQueue - B0);
-  const timestampExec = tsShift(T0, blockExec  - B0);
+  const timestampExec = tsShift(T0, blockExec - B0);
 
-  const proposalArgs = loadCachedProposal(); proposalArgs.pop();
+  const proposalArgs = loadCachedProposal();
+  proposalArgs.pop();
   const id = BigInt(await governor.proposalCount());
   const govIF = new Interface(governor.interface.fragments);
-  const signer = await dm.getSigner();
+  const signer = await gdm.getSigner();
   const fromAddr = await signer.getAddress();
 
   const patchTL = { '0x2': '0x' + '00'.repeat(64) };
 
   const packed = (1n << 48n) | 1n;
-  const rawGS = dm.hre.ethers.utils.hexZeroPad(
-    dm.hre.ethers.BigNumber.from(packed).toHexString(), 32);
-  const keyGS = '0x00d7616c8fe29c6c2fbe1d0c5bc8f2faa4c35b43746e70b24b4d532752affd01';
+  const rawGS = gdm.hre.ethers.utils.hexZeroPad(
+    gdm.hre.ethers.BigNumber.from(packed).toHexString(),
+    32
+  );
+  const keyGS =
+    '0x00d7616c8fe29c6c2fbe1d0c5bc8f2faa4c35b43746e70b24b4d532752affd01';
 
   const basePLQ = BigInt(
-    '0x042f525fd47e44d02e065dd7bb464f47b4f926fbd05b5e087891ebd756adf100');
+    '0x042f525fd47e44d02e065dd7bb464f47b4f926fbd05b5e087891ebd756adf100'
+  );
   const slotVoteExt = '0x' + basePLQ.toString(16).padStart(64, '0');
   const slotMapRoot = '0x' + (basePLQ + 1n).toString(16).padStart(64, '0');
-  const slotExtDead = dm.hre.ethers.utils.keccak256(
-    dm.hre.ethers.utils.defaultAbiCoder.encode(['uint256','bytes32'], [id, slotMapRoot])
+  const slotExtDead = gdm.hre.ethers.utils.keccak256(
+    gdm.hre.ethers.utils.defaultAbiCoder.encode(
+      ['uint256', 'bytes32'],
+      [id, slotMapRoot]
+    )
   );
 
   const patchGov = {
     [keyGS]: rawGS,
     [slotVoteExt]: '0x' + '00'.repeat(64),
-    [slotExtDead]: '0x' + '00'.repeat(64)
+    [slotExtDead]: '0x' + '00'.repeat(64),
   };
 
   const statePatch = {
     [timelock.address]: { storage: patchTL },
-    [governor.address]: { storage: patchGov }
+    [governor.address]: { storage: patchGov },
   };
 
-  const whales = dm.network === 'mainnet'
-    ? COMP_WHALES.mainnet
-    : COMP_WHALES.testnet;
+  const whales =
+    gdm.network === 'mainnet' ? COMP_WHALES.mainnet : COMP_WHALES.testnet;
 
   const deployBytecodes = loadCachedBytecodes();
-  const chainId = dm.hre.ethers.provider.network.chainId;
+  const chainId1 = gdm.hre.ethers.provider.network.chainId;
 
-  const sims = [
+  const simsL1 = [
     ...deployBytecodes.map((code) => ({
-      network_id: chainId,
+      network_id: chainId1,
       from: fromAddr,
-      to: '', 
+      to: '',
       block_number: Number(B0),
-      block_header: { timestamp: dm.hre.ethers.utils.hexlify(T0) },
-      input: dm.hre.ethers.utils.hexlify(code),
+      block_header: { timestamp: gdm.hre.ethers.utils.hexlify(T0) },
+      input: gdm.hre.ethers.utils.hexlify(code),
       state_objects: statePatch,
       save: true,
       gas_price: 0,
     })),
     {
-      network_id: chainId.toString(), from: fromAddr, to: governor.address,
+      network_id: chainId1.toString(),
+      from: fromAddr,
+      to: governor.address,
       block_number: Number(B0),
-      block_header: { timestamp: dm.hre.ethers.utils.hexlify(T0) },
+      block_header: { timestamp: gdm.hre.ethers.utils.hexlify(T0) },
       input: govIF.encodeFunctionData('propose', proposalArgs),
-      state_objects: statePatch, save: true, gas_price: 0,
+      state_objects: statePatch,
+      save: true,
+      gas_price: 0,
     },
     ...whales.map((w) => ({
-      network_id: chainId.toString(), from: w, to: governor.address,
+      network_id: chainId1.toString(),
+      from: w,
+      to: governor.address,
       block_number: Number(blockCast),
-      block_header: { timestamp: dm.hre.ethers.utils.hexlify(timestampCast) },
+      block_header: { timestamp: gdm.hre.ethers.utils.hexlify(timestampCast) },
       input: govIF.encodeFunctionData('castVote', [id, 1]),
-      state_objects: statePatch, save: true, save_if_fails: true, gas_price: 0,
+      state_objects: statePatch,
+      save: true,
+      save_if_fails: true,
+      gas_price: 0,
     })),
     {
-      network_id: chainId.toString(), from: fromAddr, to: governor.address,
+      network_id: chainId1.toString(),
+      from: fromAddr,
+      to: governor.address,
       block_number: Number(blockQueue),
-      block_header: { timestamp: dm.hre.ethers.utils.hexlify(timestampQueue) },
+      block_header: { timestamp: gdm.hre.ethers.utils.hexlify(timestampQueue) },
       input: govIF.encodeFunctionData('queue', [id]),
-      state_objects: statePatch, save: true, save_if_fails: true, gas_price: 0,
+      state_objects: statePatch,
+      save: true,
+      save_if_fails: true,
+      gas_price: 0,
     },
     {
-      network_id: chainId.toString(), from: fromAddr, to: governor.address,
+      network_id: chainId1.toString(),
+      from: fromAddr,
+      to: governor.address,
       block_number: Number(blockExec),
-      block_header: { timestamp: dm.hre.ethers.utils.hexlify(timestampExec) },
+      block_header: { timestamp: gdm.hre.ethers.utils.hexlify(timestampExec) },
       input: govIF.encodeFunctionData('execute', [id]),
-      state_objects: statePatch, save: true, save_if_fails: true, gas_price: 0,
+      state_objects: statePatch,
+      save: true,
+      save_if_fails: true,
+      gas_price: 0,
     },
   ];
 
-  while (!sims[0]) {
-    sims.shift();
-    if (sims.length == 0) {
-      break;
+  const chainId2 = bdm.hre.ethers.provider.network.chainId;
+
+
+  debug(`\n========================== TENDERLY ==========================\n`);
+  try {
+    debug(`\nExecuting Tenderly simulation for proposal ${id}...`);
+    const bundle = await simulateBundle(gdm, simsL1, Number(B0));
+    debug(`Tenderly simulation bundle size: ${bundle.length}`);
+    await shareSimulation(gdm, bundle[bundle.length - 1].simulation.id);
+
+    const exec1 = bundle[bundle.length - 1].simulation;
+
+    debug(` >>> PROPOSAL EXECUTED  ${id} \n`);
+    debug(`Simulation ${exec1.id} done, status: ${exec1.status}`);
+    debug(`Link: https://www.tdly.co/shared/simulation/${exec1.id}`);
+    let proposals;
+    if (chainId1 !== chainId2) {
+      proposals = await relayMessage(gdm, bdm, parseFloat(B0.toString()),  bundle[bundle.length - 1].transaction.transaction_info.logs);
+    
+      const timelockL2 = await bdm.getContractOrThrow('timelock');
+      const delay = await timelockL2.delay();
+      const relayMessages = loadCachedRelayMessages();
+      const latestL2 = await bdm.hre.ethers.provider.getBlock('latest');
+      const maxEta = Math.max(...proposals.map(p => Number(p.eta || 0))) + delay.toNumber();
+      const T0L2 = BigInt(Math.max(latestL2.timestamp, maxEta + 1));
+      const B0L2 = Number(latestL2.number) + 1;
+      const simsL2 = relayMessages.map((msg, i, arr) => {
+        const isLast = i === arr.length - 1;
+    
+        const timestamp = isLast
+          ? Number(T0L2) 
+          : latestL2.timestamp; 
+    
+        const block = isLast
+          ? B0L2 : latestL2.number;
+      
+        return {
+          network_id: chainId2.toString(),
+          from: msg.signer,
+          to: msg.messanger,
+          block_number: Number(block),
+          block_header: {
+            timestamp: gdm.hre.ethers.utils.hexlify(Number(timestamp))
+          },
+          input: msg.callData,
+          save: true,
+          save_if_fails: true,
+          gas_price: 0,
+        };
+      });
+  
+  
+      while (!simsL1[0]) {
+        simsL1.shift();
+        if (simsL1.length == 0) {
+          break;
+        }
+      }
+
+      if (simsL2.length > 0) {
+        const bundle2 = await simulateBundle(bdm, simsL2, Number(B0L2));
+        debug(` >>> PROPOSAL RELAYED ${id} \n`);
+        const sim = bundle2[bundle2.length - 1];
+        await shareSimulation(bdm, sim.simulation.id);
+        debug(`Simulation ${sim.simulation.id} done, status: ${sim.simulation.status}`);
+        debug(`Link: https://www.tdly.co/shared/simulation/${sim.simulation.id}`);
+      }
     }
+  } catch (err) {
+    debug(`Error during Tenderly simulation: ${err.message}`);
   }
 
-  const bundle = await simulateBundle(dm, sims, Number(B0));
-  const exec = bundle[bundle.length-1].simulation;
-  await shareSimulation(dm, exec.id);
-  
-  debug(`\n================ TENDERLY EXECUTION =================\n`);
-  debug(`Simulation ${exec.id} done, status: ${exec.status}`);
-  debug(`Link: https://www.tdly.co/shared/simulation/${exec.id}`);
-  debug(`\n=====================================================\n`);
-  
-
-  dm.cleanCache();
+  debug(`\n================================================================\n`);
 }
 
 async function simulateBundle(
@@ -832,7 +913,7 @@ async function simulateBundle(
   simulations: any[],
   blockNumber: number = 0
 ): Promise<any> {
-  const { username, project, accessKey } = ((dm.hre.config) as any).tenderly;
+  const { username, project, accessKey } = (dm.hre.config as any).tenderly;
   const body = {
     simulations,
     block_number: blockNumber,
@@ -840,26 +921,29 @@ async function simulateBundle(
     save: true,
   };
 
-  const result = await axios.post(  
+  const result = await axios.post(
     `https://api.tenderly.co/api/v1/account/${username}/project/${project}/simulate-bundle`,
     body,
     {
-      headers: { 'X-Access-Key': accessKey, 'Content-Type': 'application/json' },
+      headers: {
+        'X-Access-Key': accessKey,
+        'Content-Type': 'application/json',
+      },
     }
   );
   return result.data.simulation_results;
 }
 
-async function shareSimulation(
-  dm: DeploymentManager,
-  simulationId: string
-) {
-  const { username, project, accessKey } = ((dm.hre.config) as any).tenderly;
+async function shareSimulation(dm: DeploymentManager, simulationId: string) {
+  const { username, project, accessKey } = (dm.hre.config as any).tenderly;
   return axios.post(
     `https://api.tenderly.co/api/v1/account/${username}/project/${project}/simulations/${simulationId}/share`,
     {},
     {
-      headers: { 'X-Access-Key': accessKey, 'Content-Type': 'application/json' },
+      headers: {
+        'X-Access-Key': accessKey,
+        'Content-Type': 'application/json',
+      },
     }
   );
 }
@@ -904,6 +988,19 @@ function loadCachedProposal() {
   const json = JSON.parse(readFileSync(file, 'utf8'));
 
   return json;
+}
+
+function loadCachedRelayMessages() {
+  const file = path.resolve(__dirname, '../../cache/relay.json');
+  if (!existsSync(file)) {
+    return [];
+  }
+
+  const raw = readFileSync(file, 'utf8').trim();
+  if (!raw) {
+    return [];
+  }
+  return JSON.parse(raw);
 }
 
 function loadCachedBytecodes() {
@@ -1287,7 +1384,6 @@ export async function executeOpenProposalAndRelay(
     await governanceDeploymentManager.hre.ethers.provider.getBlockNumber();
   await executeOpenProposal(governanceDeploymentManager, openProposal);
   await mockAllRedstoneOracles(bridgeDeploymentManager);
-
   if (
     await isBridgeProposal(
       governanceDeploymentManager,
@@ -1368,5 +1464,8 @@ export async function timeUntilUnderwater({
   }
 
   // XXX throw error if baseBalanceOf is positive and liquidationMargin is positive
-  return Number((-liquidationMargin * factorScale / baseLiquidity / borrowRate) + fudgeFactor);
+  return Number(
+    (-liquidationMargin * factorScale) / baseLiquidity / borrowRate +
+      fudgeFactor
+  );
 }

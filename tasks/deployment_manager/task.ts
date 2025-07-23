@@ -69,8 +69,9 @@ async function runMigration<T>(
 
     if (tenderly) {
       const { tenderlyExecute } = await import('../../scenario/utils');
-      await tenderlyExecute(govDeploymentManager, governor, timelock);
+      await tenderlyExecute(govDeploymentManager, deploymentManager, governor, timelock);
     }
+    await govDeploymentManager.cleanCache();
   }
 }
 
@@ -260,6 +261,7 @@ task('migrate', 'Runs migration')
       }
 
       const migrationPath = `${__dirname}/../../deployments/${network}/${deployment}/migrations/${migrationName}.ts`;
+      console.log(`Loading migration from ${migrationPath}`);
       const [migration] = await loadMigrations([migrationPath]);
       if (!migration) {
         throw new Error(`Unknown migration for network ${network}/${deployment}: \`${migrationName}\`.`);
