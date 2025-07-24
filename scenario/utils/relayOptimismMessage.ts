@@ -5,7 +5,7 @@ import { BigNumber, ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { OpenBridgedProposal } from '../context/Gov';
 
-function isTenderlyLog(log: any): log is { raw: { topics: string[]; data: string } } {
+function isTenderlyLog(log: any): log is { raw: { topics: string[], data: string } } {
   return !!log?.raw?.topics && !!log?.raw?.data;
 }
 
@@ -31,13 +31,13 @@ export default async function relayOptimismMessage(
   let sentMessageEvents: Log[] = [];
 
   if (tenderlyLogs) {
-    const topic = opL1CrossDomainMessenger.interface.getEventTopic("SentMessage");
+    const topic = opL1CrossDomainMessenger.interface.getEventTopic('SentMessage');
     const tenderlyEvents = tenderlyLogs.filter(
       log => log.raw?.topics?.[0] === topic && log.raw?.address?.toLowerCase() === opL1CrossDomainMessenger.address.toLowerCase()
     );
     const realEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
       fromBlock: startingBlockNumber,
-      toBlock: "latest",
+      toBlock: 'latest',
       address: opL1CrossDomainMessenger.address,
       topics: filter.topics!
     });
@@ -88,17 +88,17 @@ export default async function relayOptimismMessage(
       );
     }
 
-      relayMessageTxn = await (
-        await l2CrossDomainMessenger.connect(aliasedSigner).relayMessage(
-          messageNonce,
-          sender,
-          target,
-          0,
-          0,
-          message,
+    relayMessageTxn = await (
+      await l2CrossDomainMessenger.connect(aliasedSigner).relayMessage(
+        messageNonce,
+        sender,
+        target,
+        0,
+        0,
+        message,
         { gasPrice: 0, gasLimit }
-        )
-      ).wait();
+      )
+    ).wait();
 
     // Try to decode the SentMessage data to determine what type of cross-chain activity this is. So far,
     // there are two types:
@@ -107,8 +107,8 @@ export default async function relayOptimismMessage(
     if (target === l2StandardBridge.address) {
       // Bridging ERC20 token
       const messageWithoutPrefix = message.slice(2); // strip out the 0x prefix
-    const messageWithoutSigHash = '0x' + messageWithoutPrefix.slice(8);
-    try {
+      const messageWithoutSigHash = '0x' + messageWithoutPrefix.slice(8);
+      try {
         // 1a. Bridging ERC20 token
         const [ l1Token, _l2Token, _from, to, amount, _data ] = ethers.utils.defaultAbiCoder.decode(
           ['address l1Token', 'address l2Token', 'address from', 'address to', 'uint256 amount', 'bytes data'],
@@ -118,7 +118,7 @@ export default async function relayOptimismMessage(
         console.log(
           `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Bridged over ${amount} of ${l1Token} to user ${to}`
         );
-    } catch (e) {
+      } catch (e) {
         // 1a. Bridging ETH
         const [ _from, to, amount, _data ] = ethers.utils.defaultAbiCoder.decode(
           ['address from', 'address to', 'uint256 amount', 'bytes data'],
@@ -155,27 +155,27 @@ export default async function relayOptimismMessage(
       throw new Error(`[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Unrecognized target for cross-chain message`);
     }
 
-   // Execute open bridged proposals now that all messages have been bridged
-  for (let proposal of openBridgedProposals) {
-    const { eta, id } = proposal;
-    // Fast forward l2 time
-    await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
+    // Execute open bridged proposals now that all messages have been bridged
+    for (let proposal of openBridgedProposals) {
+      const { eta, id } = proposal;
+      // Fast forward l2 time
+      await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
 
-    // Execute queued proposal
-    await setNextBaseFeeToZero(bridgeDeploymentManager);
+      // Execute queued proposal
+      await setNextBaseFeeToZero(bridgeDeploymentManager);
 
-    if (tenderlyLogs) {
-      const callData = bridgeReceiver.interface.encodeFunctionData("executeProposal", [id]);
-      const signer = await bridgeDeploymentManager.getSigner();
+      if (tenderlyLogs) {
+        const callData = bridgeReceiver.interface.encodeFunctionData('executeProposal', [id]);
+        const signer = await bridgeDeploymentManager.getSigner();
 
-      bridgeDeploymentManager.stashRelayMessage(
-        bridgeReceiver.address,
-        callData,
-        signer.address
-      );
-    } else {
-      await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
-    }
+        bridgeDeploymentManager.stashRelayMessage(
+          bridgeReceiver.address,
+          callData,
+          signer.address
+        );
+      } else {
+        await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
+      }
       console.log(
         `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
       );

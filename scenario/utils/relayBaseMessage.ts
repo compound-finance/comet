@@ -40,7 +40,7 @@ export default async function relayBaseMessage(
   let sentMessageEvents: Log[] = [];
 
   if (tenderlyLogs) {
-    const sentMessageTopic = baseL1CrossDomainMessenger.interface.getEventTopic("SentMessage");
+    const sentMessageTopic = baseL1CrossDomainMessenger.interface.getEventTopic('SentMessage');
 
     const tenderlySentMessageEvents = tenderlyLogs.filter(log =>
       log.raw?.topics?.[0] === sentMessageTopic &&
@@ -58,7 +58,7 @@ export default async function relayBaseMessage(
   } else {
     sentMessageEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
       fromBlock: startingBlockNumber,
-      toBlock: "latest",
+      toBlock: 'latest',
       address: baseL1CrossDomainMessenger.address,
       topics: filter.topics!,
     });
@@ -90,7 +90,7 @@ export default async function relayBaseMessage(
     
     if (tenderlyLogs) {
       const callData = l2CrossDomainMessenger.interface.encodeFunctionData(
-        "relayMessage",
+        'relayMessage',
         [messageNonce, sender, target, 0, 0, message]
       );
       bridgeDeploymentManager.stashRelayMessage(
@@ -131,9 +131,9 @@ export default async function relayBaseMessage(
       } catch (e) {
         // 1a. Bridging ETH
         const { _from, to, amount, _data } = ethers.utils.defaultAbiCoder.decode(
-            ['address from', 'address to', 'uint256 amount', 'bytes data'],
-            messageWithoutSigHash
-          );
+          ['address from', 'address to', 'uint256 amount', 'bytes data'],
+          messageWithoutSigHash
+        );
 
         const oldBalance = await bridgeDeploymentManager.hre.ethers.provider.getBalance(to);
         const newBalance = oldBalance.add(BigNumber.from(amount));
@@ -196,7 +196,7 @@ export default async function relayBaseMessage(
     await setNextBaseFeeToZero(bridgeDeploymentManager);
     if (tenderlyLogs) {
       const callData = bridgeReceiver.interface.encodeFunctionData(
-        "executeProposal",
+        'executeProposal',
         [id]
       );
       const signer = await bridgeDeploymentManager.getSigner();

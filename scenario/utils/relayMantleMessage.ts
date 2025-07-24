@@ -68,7 +68,7 @@ export default async function relayMantleMessage(
     if (tenderlyLogs) {
       const callData = l2CrossDomainMessenger.interface.encodeFunctionData(
         'relayMessage',
-        [messageNonce, sender, target, 0, 0, message]
+        [messageNonce, sender, target, 0, 0, 0, message]
       );
       bridgeDeploymentManager.stashRelayMessage(
         l2CrossDomainMessenger.address,
@@ -82,6 +82,7 @@ export default async function relayMantleMessage(
         messageNonce,
         sender,
         target,
+        0,
         0,
         0,
         message,

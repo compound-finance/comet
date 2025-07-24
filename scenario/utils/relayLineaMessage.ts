@@ -34,7 +34,6 @@ export default async function relayLineaMessage(
   const l2USDCBridge = await bridgeDeploymentManager.getContractOrThrow('l2USDCBridge');
   const l2MessageService = await bridgeDeploymentManager.getContractOrThrow('l2MessageService');
   const l2StandardBridge = await bridgeDeploymentManager.getContractOrThrow('l2StandardBridge');
-  const governor = await governanceDeploymentManager.getContractOrThrow('governor');
   const openBridgedProposals: OpenBridgedProposal[] = [];
   // Grab all events on the L1CrossDomainMessenger contract since the `startingBlockNumber`
   const filter = lineaMessageService.filters.MessageSent();
@@ -44,8 +43,8 @@ export default async function relayLineaMessage(
   
   if (tenderlyLogs) {
   
-    const msgTopic = lineaMessageService.interface.getEventTopic("MessageSent");
-    const hashTopic = lineaMessageService.interface.getEventTopic("RollingHashUpdated");
+    const msgTopic = lineaMessageService.interface.getEventTopic('MessageSent');
+    const hashTopic = lineaMessageService.interface.getEventTopic('RollingHashUpdated');
   
     const tenderlyMsgEvents = tenderlyLogs.filter(log =>
       log.raw?.topics?.[0] === msgTopic &&
@@ -180,21 +179,21 @@ export default async function relayLineaMessage(
       }
    
 
-        relayMessageTxn = await (
-          await l2MessageService.claimMessage(
-            _from,
-            _to,
-            _fee,
-            _value,
-            constants.AddressZero,
-            _calldata,
-            _nonce,
-            {
-              gasPrice: 0,
-              gasLimit: 10000000
-            }
-          )
-        ).wait();
+      relayMessageTxn = await (
+        await l2MessageService.claimMessage(
+          _from,
+          _to,
+          _fee,
+          _value,
+          constants.AddressZero,
+          _calldata,
+          _nonce,
+          {
+            gasPrice: 0,
+            gasLimit: 10000000
+          }
+        )
+      ).wait();
       
     } else continue;
 

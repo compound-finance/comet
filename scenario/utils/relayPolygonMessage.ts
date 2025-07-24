@@ -64,6 +64,8 @@ export default async function relayPolygonMessage(
     bridgeDeploymentManager.hre.ethers.provider
   );
 
+  const openBridgedProposals: OpenBridgedProposal[] = [];
+
   const filter = stateSender.filters.StateSynced();
   let stateSyncedEvents: Log[] = [];
 
@@ -88,7 +90,7 @@ export default async function relayPolygonMessage(
     });
   }
 
-  for (let stateSyncedEvent of stateSyncedEvents) {
+  for (const stateSyncedEvent of stateSyncedEvents) {
     let parsed;
     if (isTenderlyLog(stateSyncedEvent)) {
       parsed = stateSender.interface.parseLog({
@@ -106,6 +108,7 @@ export default async function relayPolygonMessage(
     const { data: stateSyncedData } = parsed.args;
 
     const maybeBridgeERC20Data = tryDecodeStateSyncedData(stateSyncedData);
+
     if (maybeBridgeERC20Data !== undefined) {
       const depositSyncType = await childChainManager.DEPOSIT();
       const data = ethers.utils.defaultAbiCoder.encode(
@@ -122,7 +125,7 @@ export default async function relayPolygonMessage(
         const callData = childChainManager.interface.encodeFunctionData('onStateReceive', [123, data]);
         const signer = await bridgeDeploymentManager.getSigner();
         bridgeDeploymentManager.stashRelayMessage(
-          bridgeReceiver.address,
+          childChainManager.address,
           callData,
           signer.address
         );
@@ -146,43 +149,46 @@ export default async function relayPolygonMessage(
       );
 
       await setNextBaseFeeToZero(bridgeDeploymentManager);
-      let onStateReceiveTxn;
 
       if (tenderlyLogs) {
         const callData = fxChild.interface.encodeFunctionData('onStateReceive', [123, stateSyncedData]);
         bridgeDeploymentManager.stashRelayMessage(
-          bridgeReceiver.address,
+          fxChild.address,
           callData,
           polygonReceiverSigner.address
         );
-      } else {
-        onStateReceiveTxn = await (
-          await fxChild.connect(polygonReceiverSigner).onStateReceive(
-            123, // stateId
-            stateSyncedData, // _data
-            { gasPrice: 0 }
-          )
-        ).wait();
-
-        const proposalCreatedEvent = onStateReceiveTxn.events.find(
-          event => event.address === bridgeReceiver.address
-        );
-        const { args } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
-        const proposal = args as unknown as OpenBridgedProposal;
-        await executeBridgedProposal(bridgeDeploymentManager, proposal);
-        console.log(
-          `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${proposal.id}`
-        );
       }
+      const onStateReceiveTxn = await (
+        await fxChild.connect(polygonReceiverSigner).onStateReceive(
+          123, // stateId
+          stateSyncedData, // _data
+          { gasPrice: 0 }
+        )
+      ).wait();
 
+      const proposalCreatedEvent = onStateReceiveTxn.events.find(
+        event => event.address === bridgeReceiver.address
+      );
+      const { args: { id, eta } } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
+      
+      openBridgedProposals.push({ id, eta });
       if (tenderlyLogs) {
-        const callData = bridgeReceiver.interface.encodeFunctionData('executeProposal', [123]);
+        const signer = await bridgeDeploymentManager.getSigner();
+        const callData = bridgeReceiver.interface.encodeFunctionData('executeProposal', [id]);
         bridgeDeploymentManager.stashRelayMessage(
           bridgeReceiver.address,
           callData,
-          polygonReceiverSigner.address
+          await signer.getAddress()
         );
       }
+      else {
+        await executeBridgedProposal(bridgeDeploymentManager, { id, eta });
+      }
+      console.log(
+        `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
+      );
     }
   }
+
+  return openBridgedProposals;
 }

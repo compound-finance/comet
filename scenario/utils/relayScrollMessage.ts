@@ -99,18 +99,17 @@ export default async function relayScrollMessage(
         callData,
         aliasAccount.address
       );
-    } else {
-      relayMessageTxn = await (
-        await l2Messenger.connect(aliasAccount).relayMessage(
-          sender,
-          target,
-          value,
-          messageNonce,
-          message,
-          { gasPrice: 0, gasLimit }
-        )
-      ).wait();
     }
+    relayMessageTxn = await (
+      await l2Messenger.connect(aliasAccount).relayMessage(
+        sender,
+        target,
+        value,
+        messageNonce,
+        message,
+        { gasPrice: 0, gasLimit }
+      )
+    ).wait();
 
     const messageWithoutPrefix = message.slice(2); // strip out the 0x prefix
     const messageWithoutSigHash = '0x' + messageWithoutPrefix.slice(8);
@@ -197,9 +196,11 @@ export default async function relayScrollMessage(
       );
     } else {
       await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
-      console.log(
-        `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
-      );
     }
+    console.log(
+      `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
+    );
   }
+
+  return openBridgedProposals;
 }

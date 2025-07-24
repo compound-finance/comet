@@ -4,6 +4,7 @@ import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
 import { utils, BigNumber } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
+import { OpenBridgedProposal } from '../context/Gov';
 
 function isTenderlyLog(log: any): log is { raw: { topics: string[], data: string } } {
   return !!log?.raw?.topics && !!log?.raw?.data;
@@ -24,6 +25,7 @@ export async function relayArbitrumMessage(
 
   let inboxMessageDeliveredEvents: Log[] = [];
   let messageDeliveredEvents: Log[] = [];
+  const openBridgedProposals: OpenBridgedProposal[] = [];
 
   if (tenderlyLogs) {
     const inboxTopic = utils.id('InboxMessageDelivered(uint256,bytes)');
@@ -225,6 +227,10 @@ export async function relayArbitrumMessage(
         await setNextBaseFeeToZero(bridgeDeploymentManager);
 
         await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
+        openBridgedProposals.push({
+          id: BigNumber.from(id),
+          eta: BigNumber.from(eta)
+        });
       }
     }
   }
@@ -261,6 +267,8 @@ export async function relayArbitrumMessage(
       );
     }
   }
+
+  return openBridgedProposals;
 }
 
 export async function relayArbitrumCCTPMint(
