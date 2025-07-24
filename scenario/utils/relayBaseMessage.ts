@@ -98,16 +98,16 @@ export default async function relayBaseMessage(
         callData,
         aliasedSigner.address
       );
-      
-      relayMessageTxn = await (
-        await l2CrossDomainMessenger
-          .connect(aliasedSigner)
-          .relayMessage(messageNonce, sender, target, 0, 0, message, {
-            gasPrice: 0,
-            gasLimit,
-          })
-      ).wait();
     }
+
+    relayMessageTxn = await (
+      await l2CrossDomainMessenger
+        .connect(aliasedSigner)
+        .relayMessage(messageNonce, sender, target, 0, 0, message, {
+          gasPrice: 0,
+          gasLimit,
+        })
+    ).wait();
 
     // Try to decode the SentMessage data to determine what type of cross-chain activity this is. So far,
     // there are two types:
