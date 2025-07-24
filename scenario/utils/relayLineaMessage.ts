@@ -128,7 +128,7 @@ export default async function relayLineaMessage(
     
     let callData;
     // First the message's hash has to be added by a specific account in the "contract's queue"
-    if((await l2MessageService.lastAnchoredL1MessageNumber()).lt(messageNumber)){
+    if((await l2MessageService.lastAnchoredL1MessageNumber()).lte(messageNumber)){
       if(tenderlyLogs) {
         callData = l2MessageService.interface.encodeFunctionData('anchorL1L2MessageHashes', [
           [messageHash],
