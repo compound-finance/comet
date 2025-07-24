@@ -201,56 +201,24 @@ export async function relayArbitrumMessage(
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
 
+    const tx = await (
+      await arbitrumSigner.sendTransaction(transactionRequest)
+    ).wait();
     if(tenderlyLogs) {
       bridgeDeploymentManager.stashRelayMessage(
         toAddress,
         data,
         sender
       );
-    } else {
-      const tx = await (
-        await arbitrumSigner.sendTransaction(transactionRequest)
-      ).wait();
-
-      const proposalCreatedLog = tx.logs.find(
-        event => event.address === bridgeReceiver.address
-      );
-      if (proposalCreatedLog) {
-        const {
-          args: { id, eta }
-        } = bridgeReceiver.interface.parseLog(proposalCreatedLog);
-
-        // fast forward l2 time
-        await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
-
-        // execute queued proposal
-        await setNextBaseFeeToZero(bridgeDeploymentManager);
-
-        await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
-        openBridgedProposals.push({
-          id: BigNumber.from(id),
-          eta: BigNumber.from(eta)
-        });
-      }
     }
-  }
 
-  // Handle proposal execution for tenderly
-  if(tenderlyLogs) {
-    // We need to handle proposal execution separately for tenderly
-    // since we don't get the proposalCreatedLog in the loop above
-    const proposalFilter = bridgeReceiver.filters.ProposalCreated();
-    const proposalEvents = await bridgeDeploymentManager.hre.ethers.provider.getLogs({
-      fromBlock: 'latest',
-      toBlock: 'latest',
-      address: bridgeReceiver.address,
-      topics: proposalFilter.topics
-    });
-
-    for(let event of proposalEvents) {
+    const proposalCreatedLog = tx.logs.find(
+      event => event.address === bridgeReceiver.address
+    );
+    if (proposalCreatedLog) {
       const {
         args: { id, eta }
-      } = bridgeReceiver.interface.parseLog(event);
+      } = bridgeReceiver.interface.parseLog(proposalCreatedLog);
 
       // fast forward l2 time
       await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
@@ -258,13 +226,21 @@ export async function relayArbitrumMessage(
       // execute queued proposal
       await setNextBaseFeeToZero(bridgeDeploymentManager);
 
-      const callData = bridgeReceiver.interface.encodeFunctionData('executeProposal', [id]);
-      const signer = await bridgeDeploymentManager.getSigner();
-      bridgeDeploymentManager.stashRelayMessage(  
-        bridgeReceiver.address,
-        callData,
-        await signer.getAddress()
-      );
+      if(tenderlyLogs) {
+        const signer = await bridgeDeploymentManager.getSigner();
+        const callData = bridgeReceiver.interface.encodeFunctionData('executeProposal', [id]);
+        bridgeDeploymentManager.stashRelayMessage(
+          bridgeReceiver.address,
+          callData,
+          await signer.getAddress()
+        );
+      } else {
+        await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
+      }
+      openBridgedProposals.push({
+        id: BigNumber.from(id),
+        eta: BigNumber.from(eta)
+      });
     }
   }
 
