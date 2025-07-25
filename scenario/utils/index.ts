@@ -1034,7 +1034,15 @@ export async function executeOpenProposal(
   // Execute proposal (maybe, w/ gas limit so we see if exec reverts, not a gas estimation error)
   if ((await governor.state(id)) == ProposalState.Queued) {
     const block = await dm.hre.ethers.provider.getBlock('latest');
-    const eta = await governor.proposalEta(id);
+    const eta = await (async () => {
+      try {
+        return await governor.proposalEta(id);
+      }
+      catch (err) {
+        const proposal = await governor.proposals(id);
+        return proposal.eta;
+      }
+    })();
     await setNextBlockTimestamp(
       dm,
       Math.max(block.timestamp, eta.toNumber()) + 1
