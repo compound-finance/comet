@@ -27,7 +27,7 @@ export async function cloneGov(
 
   const COMP = await deploymentManager.clone('COMP', clone.comp, [admin.address]);
 
-  const governorImpl = await deploymentManager.clone('governor:implementation', clone.governorBravoImpl, []);
+  const governorImpl = await deploymentManager.clone('governor:implementation', clone.governorBravoImpl, [], 'mainnet', true);
   const governorProxy = await deploymentManager.clone('governor', clone.governorBravo, [
     timelock.address,
     COMP.address,

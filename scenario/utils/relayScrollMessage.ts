@@ -16,10 +16,15 @@ function applyL1ToL2Alias(address: string) {
   return `0x${(BigInt(address) + offset).toString(16)}`;
 }
 
+function isTenderlyLog(log: any): log is { raw: { topics: string[], data: string } } {
+  return !!log?.raw?.topics && !!log?.raw?.data;
+}
+
 export default async function relayScrollMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
-  startingBlockNumber: number
+  startingBlockNumber: number,
+  tenderlyLogs?: any[]
 ) {
   const scrollMessenger = await governanceDeploymentManager.getContractOrThrow(
     'scrollMessenger'
@@ -35,16 +40,41 @@ export default async function relayScrollMessage(
 
   // Grab all events on the L1CrossDomainMessenger contract since the `startingBlockNumber`
   const filter = scrollMessenger.filters.SentMessage();
-  const messageSentEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
-    fromBlock: startingBlockNumber,
-    toBlock: 'latest',
-    address: scrollMessenger.address,
-    topics: filter.topics!
-  });
+  let messageSentEvents: Log[] = [];
+
+  if (tenderlyLogs) {
+    const topic = scrollMessenger.interface.getEventTopic('SentMessage');
+    const tenderlyEvents = tenderlyLogs.filter(
+      log => log.raw?.topics?.[0] === topic && log.raw?.address?.toLowerCase() === scrollMessenger.address.toLowerCase()
+    );
+    const realEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+      fromBlock: startingBlockNumber,
+      toBlock: 'latest',
+      address: scrollMessenger.address,
+      topics: filter.topics!
+    });
+    messageSentEvents = [...realEvents, ...tenderlyEvents];
+  } else {
+    messageSentEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+      fromBlock: startingBlockNumber,
+      toBlock: 'latest',
+      address: scrollMessenger.address,
+      topics: filter.topics!
+    });
+  }
+
   for (let messageSentEvent of messageSentEvents) {
-    const {
-      args: { sender, target, value, messageNonce, gasLimit, message }
-    } = scrollMessenger.interface.parseLog(messageSentEvent);
+    let parsed;
+    if (isTenderlyLog(messageSentEvent)) {
+      parsed = scrollMessenger.interface.parseLog({
+        topics: messageSentEvent.raw.topics,
+        data: messageSentEvent.raw.data
+      });
+    } else {
+      parsed = scrollMessenger.interface.parseLog(messageSentEvent);
+    }
+
+    const { sender, target, value, messageNonce, gasLimit, message } = parsed.args;
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
 
@@ -59,9 +89,18 @@ export default async function relayScrollMessage(
         bridgeDeploymentManager,
         applyL1ToL2Alias(scrollMessenger.address)
       );
-    }    
+    }
 
-    const relayMessageTxn = await (
+    let relayMessageTxn;
+    if (tenderlyLogs) {
+      const callData = l2Messenger.interface.encodeFunctionData('relayMessage', [sender, target, value, messageNonce, message]);
+      bridgeDeploymentManager.stashRelayMessage(
+        l2Messenger.address,
+        callData,
+        aliasAccount.address
+      );
+    }
+    relayMessageTxn = await (
       await l2Messenger.connect(aliasAccount).relayMessage(
         sender,
         target,
@@ -147,9 +186,21 @@ export default async function relayScrollMessage(
 
     // Execute queued proposal
     await setNextBaseFeeToZero(bridgeDeploymentManager);
-    await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
+    if (tenderlyLogs) {
+      const callData = bridgeReceiver.interface.encodeFunctionData('executeProposal', [id]);
+      const signer = await bridgeDeploymentManager.getSigner();
+      bridgeDeploymentManager.stashRelayMessage(
+        bridgeReceiver.address,
+        callData,
+        signer.address
+      );
+    } else {
+      await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
+    }
     console.log(
       `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
     );
   }
+
+  return openBridgedProposals;
 }

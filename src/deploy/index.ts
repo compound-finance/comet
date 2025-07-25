@@ -5,6 +5,9 @@ export { cloneGov, deployNetworkComet as deployComet, sameAddress } from './Netw
 export { getConfiguration, getConfigurationStruct } from './NetworkConfiguration';
 export { exp, getBlock, wait } from '../../test/helpers';
 export { debug } from '../../plugins/deployment_manager/Utils';
+import { writeFileSync, mkdirSync } from 'fs';
+import path from 'path';
+
 
 export interface ProtocolConfiguration {
   name?: string;
@@ -61,7 +64,8 @@ export type Proposal = [
   string[], // targets
   BigNumberish[], // values
   string[], // calldatas
-  string // description
+  string, // description
+  string[] // signatures
 ];
 export type TestnetProposal = [
   string[], // targets
@@ -103,11 +107,15 @@ export const WHALES = {
     '0x3b3501f6778Bfc56526cF2aC33b78b2fDBE4bc73', // solvBTC.BBN whale
     '0x8bc93498b861fd98277c3b51d240e7E56E48F23c', // solvBTC.BBN whale
     '0xD5cf704dC17403343965b4F9cd4D7B5e9b20CC52', // solvBTC.BBN whale
+    '0x3154Cf16ccdb4C6d922629664174b904d80F2C35', // cbETH whale
+    '0x5f556Cc5C294D7D3EfFaFFeb0B1195256a7A19D7', // EIGEN whale
+    '0xdCa0A2341ed5438E06B9982243808A76B9ADD6d0', // woETH whale
   ],
   polygon: [
     '0xF977814e90dA44bFA03b6295A0616a897441aceC', // USDT whale
     '0x2093b4281990a568c9d588b8bce3bfd7a1557ebd', // WETH whale
     '0xe50fA9b3c56FfB159cB0FCA61F5c9D750e8128c8', // WETH whale
+    '0x62ac55b745F9B08F1a81DCbbE630277095Cf4Be1', // WETH whale
     '0xd814b26554204245a30f8a42c289af582421bf04', // WBTC whale
     '0x167384319b41f7094e62f7506409eb38079abff8', // WMATIC whale
     '0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97', // WMATIC whale
@@ -139,6 +147,7 @@ export const WHALES = {
     '0x3bf93770f2d4a794c3d9EBEfBAeBAE2a8f09A5E5', // cbETH whale
     '0xcf3D55c10DB69f28fD1A75Bd73f3D8A2d9c595ad', // cbETH whale
     '0xb125E6687d4313864e53df431d5425969c15Eb2F', // cbETH whale
+    '0x1539A4611f16a139891c14365Cab86599F3A8AFC', // tBTC whale
   ],
   scroll: [
     '0xaaaaAAAACB71BF2C8CaE522EA5fa455571A74106', // USDC whale
@@ -167,6 +176,22 @@ export const WHALES = {
     '0x7Ae0911198AD568E1FE4af3cf81e36A29983778f', // wstETH whale
     '0x4B2cf5C94A88934870B523983B22e6d2dd1b6577', // wstETH whale
   ],
+  linea: [
+    '0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f', // ETH whale
+    '0x9be5e24F05bBAfC28Da814bD59284878b388a40f', // WBTC whale
+    '0xCeEd853798ff1c95cEB4dC48f68394eb7A86A782', // wstETH whale
+    '0x03dDD23943b3C698442C5f2841eae70058DbAb8B', // wstETH whale
+    '0x0180912F869065c7a44617Cd4c288bE6Bce5d192', // wstETH whale
+    '0x7160570BB153Edd0Ea1775EC2b2Ac9b65F1aB61B', // wstETH whale
+    '0x0684FC172a0B8e6A65cF4684eDb2082272fe9050', // ezETH whale
+    '0x3A0ee670EE34D889B52963bD20728dEcE4D9f8FE', // ezETH whale
+    '0x96d6cE4e83dB947fF6bD1Ab0B377F23cd5D9ec2D', // ezETH whale
+    '0x8a90D208666Deec08123444F67Bf5B1836074a67', // ezETH whale
+    '0x935EfCBeFc1dF0541aFc3fE145134f8c9a0beB89', // ezETH whale
+    '0x6a72F4F191720c411Cd1fF6A5EA8DeDEC3A64771', // USDT whale
+    '0x2c7118c4C88B9841FCF839074c26Ae8f035f2921', // COMP whale
+    '0x8D38A3d6B3c3B7d96D6536DA7Eef94A9d7dbC991', // wstETH whale
+  ],
   ronin: [
     '0x41058bcc968f809e9dbb955f402de150a3e5d1b5',
     '0x68a57af44503da4223bb6f494de012410fda1ae0',
@@ -179,7 +204,9 @@ export const WHALES = {
     '0x5b714f5ce0a09ab2fec8362dc1c254c7b7d6e6bd',
     '0x0cf8ff40a508bdbc39fbe1bb679dcba64e65c7df',
     '0x2ecb08f87f075b5769fe543d0e52e40140575ea7',
-    '0x05b0bb3c1c320b280501b86706c3551995bc8571'
+    '0x05b0bb3c1c320b280501b86706c3551995bc8571',
+    '0x392d372f2a51610e9ac5b741379d5631ca9a1c7f', // USDC whale
+    '0x245db945c485b68fdc429e4f7085a1761aa4d45d', // WETH whale
   ]
 };
 
@@ -213,23 +240,57 @@ export async function testnetProposal(actions: ProposalAction[], description: st
 
 }
 
-export async function proposal(actions: ProposalAction[], description: string): Promise<Proposal> {
-  const targets = [],
-    values = [],
-    calldatas = [];
+export async function proposal(
+  actions: ProposalAction[],
+  description: string
+): Promise<Proposal> {
+  const targets   = [];
+  const values = [];
+  const calldatas = [];
+  const signatures = [];
+
   for (const action of actions) {
-    if (action['contract']) {
+    if ('contract' in action) {
       const { contract, value, signature, args } = action as ContractAction;
       targets.push(contract.address);
       values.push(value ?? 0);
-      calldatas.push(utils.id(signature).slice(0, 10) + (await calldata(contract.populateTransaction[signature](...args))).slice(2));
+      calldatas.push(
+        utils
+          .id(signature)
+          .slice(0, 10) +
+        (await calldata(contract.populateTransaction[signature](...args))).slice(2)
+      );
+      signatures.push('');
     } else {
-      const { target, value, signature, calldata } = action as TargetAction;
+      const { target, value, signature, calldata: cd } = action as TargetAction;
       targets.push(target);
       values.push(value ?? 0);
-      calldatas.push(utils.id(signature).slice(0, 10) + calldata.slice(2));
+      calldatas.push(utils.id(signature).slice(0, 10) + cd.slice(2));
+      signatures.push('');
     }
   }
 
-  return [targets, values, calldatas, description];
+  const fullProposal: Proposal = [targets, values, calldatas, description, signatures];
+  
+  stashProposal(fullProposal);
+  fullProposal.pop();
+  return fullProposal;
+}
+
+function stashProposal(prop: Proposal) {
+  try {
+    const cacheDir = path.resolve(__dirname, '../../', 'cache');
+    mkdirSync(cacheDir, { recursive: true });
+    const file = path.join(cacheDir, 'currentProposal.json');
+
+    const safeJson = JSON.stringify(prop, (_key, value) =>
+      typeof value === 'bigint' ? value.toString() : value,
+    2
+    );
+
+    writeFileSync(file, safeJson);
+    console.log(`Proposal cached ${file}`);
+  } catch (e) {
+    console.warn('Failed to cache proposal:', e);
+  }
 }
