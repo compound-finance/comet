@@ -23,13 +23,16 @@ scenario(
     const baseToken = await comet.baseToken();
     const baseScale = await comet.baseScale();
 
-    await world.increaseTime(
-      await timeUntilUnderwater({
-        comet,
-        actor: albert,
-        fudgeFactor: 6000n * 6000n // 1 hour past when position is underwater
-      })
-    );
+    const timeBeforeLiquidation = await timeUntilUnderwater({
+      comet,
+      actor: albert,
+      fudgeFactor: 6000n * 6000n // 1 hour past when position is underwater
+    });
+
+    while(!(await comet.isLiquidatable(albert.address))) {
+      await comet.accrueAccount(albert.address);
+      await world.increaseTime(timeBeforeLiquidation);
+    }
 
     await betty.withdrawAsset({ asset: baseToken, amount: BigInt(getConfigForScenario(context).liquidationBase) / 100n * baseScale.toBigInt() }); // force accrue
 
@@ -165,13 +168,17 @@ scenario(
   async ({ comet, actors }, context, world) => {
     const { albert, betty } = actors;
 
-    await world.increaseTime(
-      await timeUntilUnderwater({
-        comet,
-        actor: albert,
-        fudgeFactor: 60n * 10n // 10 minutes past when position is underwater
-      })
-    );
+    
+    const timeBeforeLiquidation = await timeUntilUnderwater({
+      comet,
+      actor: albert,
+      fudgeFactor: 6000n * 6000n // 1 hour past when position is underwater
+    });
+
+    while(!(await comet.isLiquidatable(albert.address))) {
+      await comet.accrueAccount(albert.address);
+      await world.increaseTime(timeBeforeLiquidation);
+    }
 
     const lp0 = await comet.liquidatorPoints(betty.address);
 

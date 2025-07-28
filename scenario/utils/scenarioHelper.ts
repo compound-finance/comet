@@ -15,6 +15,7 @@ const config = {
   liquidationAsset: 200,
   liquidationAsset1: 1000,
   liquidationDenominator: 90,
+  liquidationDenominator1: 100,
   liquidationNumerator: 90,
   rewardsAsset: 10000,
   rewardsBase: 1000,
@@ -182,6 +183,7 @@ export function getConfigForScenario(ctx: CometContext) {
     config.liquidationBase1 = 350;
     config.liquidationAsset = 100;
     config.rewardsBase = 100;
+    config.rewardsAsset = 1000;
   }
 
   if (ctx.world.base.network === 'fuji' && ctx.world.base.deployment === 'usdc') {
