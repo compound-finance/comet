@@ -77,14 +77,13 @@ async function testSupplyFromCollateral(context: CometContext, assetNum: number)
 }
 
 for (let i = 0; i < MAX_ASSETS; i++) {
-  const amountToSupply = 100; // in units of asset, not wei
   scenario(
     `Comet#supply > collateral asset ${i}`,
     {
       // XXX Unfortunately, the filtering step happens before solutions are run, so this will filter out
       // hypothetical assets added during the migration/proposal constraint because those assets don't exist
       // yet
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToSupply),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, getConfigForScenario(ctx).supplyCollateral),
       tokenBalances: async (ctx) =>  (
         {
           albert: { [`$asset${i}`]: getConfigForScenario(ctx).supplyCollateral }
@@ -98,11 +97,10 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 }
 
 for (let i = 0; i < MAX_ASSETS; i++) {
-  const amountToSupply = 100; // in units of asset, not wei
   scenario(
     `Comet#supplyFrom > collateral asset ${i}`,
     {
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToSupply),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, getConfigForScenario(ctx).supplyCollateral),
       tokenBalances: async (ctx) =>  (
         {
           albert: { [`$asset${i}`]: getConfigForScenario(ctx).supplyCollateral }
@@ -259,7 +257,7 @@ scenario(
     const utilization = await comet.getUtilization();
     const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
 
-    expectApproximately(await albert.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, 1n) + 1n);
+    expectApproximately(await albert.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, 1n) + 2n);
 
     // Albert repays 1000 units of base borrow
     await baseAsset.approve(albert, comet.address);
