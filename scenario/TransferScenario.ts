@@ -39,11 +39,10 @@ async function testTransferFromCollateral(context: CometContext, assetNum: numbe
 }
 
 for (let i = 0; i < MAX_ASSETS; i++) {
-  const amountToTransfer = 100; // in units of asset, not wei
   scenario(
     `Comet#transfer > collateral asset ${i}, enough balance`,
     {
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToTransfer),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, getConfigForScenario(ctx).transferCollateral),
       cometBalances: async (ctx) =>  (
         {
           albert: { [`$asset${i}`]: getConfigForScenario(ctx).transferCollateral }
@@ -57,11 +56,10 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 }
 
 for (let i = 0; i < MAX_ASSETS; i++) {
-  const amountToTransfer = 100; // in units of asset, not wei
   scenario(
     `Comet#transferFrom > collateral asset ${i}, enough balance`,
     {
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToTransfer),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, getConfigForScenario(ctx).transferCollateral),
       cometBalances: async (ctx) =>  (
         {
           albert: { [`$asset${i}`]: getConfigForScenario(ctx).transferCollateral }
