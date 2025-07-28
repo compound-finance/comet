@@ -169,6 +169,7 @@ export function getConfigForScenario(ctx: CometContext) {
     config.liquidationBase = 1000;
     config.liquidationBase1 = 350;
     config.liquidationAsset = 100;
+    config.rewardsAsset = 1000;
     config.rewardsBase = 100;
   }
 
