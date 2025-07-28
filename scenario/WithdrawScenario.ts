@@ -45,11 +45,10 @@ async function testWithdrawFromCollateral(context: CometContext, assetNum: numbe
 }
 
 for (let i = 0; i < MAX_ASSETS; i++) {
-  const amountToWithdraw = 100; // in units of asset, not wei
   scenario(
     `Comet#withdraw > collateral asset ${i}`,
     {
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToWithdraw),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, getConfigForScenario(ctx).withdrawCollateral),
       cometBalances: async (ctx) =>  (
         {
           albert: { [`$asset${i}`]: getConfigForScenario(ctx).withdrawCollateral }
@@ -63,11 +62,10 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 }
 
 for (let i = 0; i < MAX_ASSETS; i++) {
-  const amountToWithdraw = 100; // in units of asset, not wei
   scenario(
     `Comet#withdrawFrom > collateral asset ${i}`,
     {
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToWithdraw),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, getConfigForScenario(ctx).withdrawCollateral),
       cometBalances: async (ctx) =>  (
         {
           albert: { [`$asset${i}`]: getConfigForScenario(ctx).withdrawCollateral }
