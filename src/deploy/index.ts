@@ -143,6 +143,7 @@ export const WHALES = {
     '0xe68ee8a12c611fd043fb05d65e1548dc1383f2b9', // native USDC whale
     '0x56CC5A9c0788e674f17F7555dC8D3e2F1C0313C0', // wUSDM whale
     '0x8437d7C167dFB82ED4Cb79CD44B7a32A1dd95c77', // weETH whale
+    '0x6b030Ff3FB9956B1B69f475B77aE0d3Cf2CC5aFa', // rsETH whale
   ],
   base: [
     '0x6D3c5a4a7aC4B1428368310E4EC3bB1350d01455', // USDbC whale
