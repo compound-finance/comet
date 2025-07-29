@@ -4,18 +4,21 @@ import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { exp, proposal } from '../../../../src/deploy';
 
 const RSETH_ADDRESS = '0xA1290d69c65A6Fe4DF752f95823fae25cB99e5A7';
-const RSETH_TO_USD_PRICE_FEED = '0x9d2F2f96B24C444ee32E57c04F7d944bcb8c8549';
+const RSETH_TO_ETH_PRICE_FEED = '0x9d2F2f96B24C444ee32E57c04F7d944bcb8c8549';
 
 let newPriceFeedAddress: string;
 
 export default migration('1753715731_add_rseth_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
+    const WETHPriceFeed = await deploymentManager.fromDep('WETH:priceFeed', 'mainnet', 'usdc');
     const rsETHMultiplicativePriceFeed = await deploymentManager.deploy(
       'rsETH:priceFeed',
-      'pricefeeds/ScalingPriceFeed.sol',
+      'pricefeeds/MultiplicativePriceFeed.sol',
       [
-        RSETH_TO_USD_PRICE_FEED,  // rsETH / USD price feed
+        RSETH_TO_ETH_PRICE_FEED,  // rsETH / ETH price feed
+        WETHPriceFeed.address,    // ETH / USD price feed
         8,                        // decimals
+        'rsETH / USD price feed'  // description
       ]
     );
     return { rsETHPriceFeedAddress: rsETHMultiplicativePriceFeed.address };
@@ -107,16 +110,10 @@ The second action deploys and upgrades Comet to a new version.`;
 
     const rsETHAssetIndex = Number(await comet.numAssets()) - 1;
 
-    const rsETH = await deploymentManager.existing(
-      'rsETH',
-      RSETH_ADDRESS,
-      'mainnet',
-      'contracts/ERC20.sol:ERC20'
-    );
     const rsETHAssetConfig = {
-      asset: rsETH.address,
+      asset: RSETH_ADDRESS,
       priceFeed: newPriceFeedAddress,
-      decimals: await rsETH.decimals(),
+      decimals: 18n,
       borrowCollateralFactor: exp(0.85, 18),
       liquidateCollateralFactor: exp(0.90, 18),
       liquidationFactor: exp(0.95, 18),
