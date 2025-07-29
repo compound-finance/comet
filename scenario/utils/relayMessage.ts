@@ -12,83 +12,89 @@ import relayRoninMessage from './relayRoninMessage';
 export default async function relayMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
-  startingBlockNumber: number
+  startingBlockNumber: number,
+  tenderlyLogs?: any[]
 ) {
   const bridgeNetwork = bridgeDeploymentManager.network;
+  let proposal;
   switch (bridgeNetwork) {
     case 'base':
-      await relayBaseMessage(
+      return await relayBaseMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
-        startingBlockNumber
+        startingBlockNumber,
+        tenderlyLogs
       );
-      break;
     case 'optimism':
-      await relayOptimismMessage(
+      return await relayOptimismMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
-        startingBlockNumber
+        startingBlockNumber,
+        tenderlyLogs
       );
-      break;
     case 'mantle':
-      await relayMantleMessage(
+      return await relayMantleMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
-        startingBlockNumber
+        startingBlockNumber,
+        tenderlyLogs
       );
-      break;
     case 'unichain':
-      await relayUnichainMessage(
+      proposal = await relayUnichainMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
-        startingBlockNumber
+        startingBlockNumber,
+        tenderlyLogs
       );
       await relayUnichainCCTPMint(
         governanceDeploymentManager,
         bridgeDeploymentManager,
-        startingBlockNumber
+        startingBlockNumber,
+        tenderlyLogs
       );
-      break;
+      return proposal;
     case 'polygon':
-      await relayPolygonMessage(
+      return await relayPolygonMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
-        startingBlockNumber
+        startingBlockNumber,
+        tenderlyLogs
       );
-      break;
     case 'arbitrum':
-      await relayArbitrumMessage(
+      proposal = await relayArbitrumMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
-        startingBlockNumber
+        startingBlockNumber,
+        tenderlyLogs
       );
       await relayArbitrumCCTPMint(
         governanceDeploymentManager,
         bridgeDeploymentManager,
-        startingBlockNumber
+        startingBlockNumber,
+        tenderlyLogs
       );
-      break;
+      return proposal;
     case 'linea':
-      await relayLineaMessage(
+      return await relayLineaMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
-        startingBlockNumber
+        startingBlockNumber,
+        tenderlyLogs
       );
-      break;
     case 'scroll':
-      await relayScrollMessage(
+      return await relayScrollMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
-        startingBlockNumber
+        startingBlockNumber,
+        tenderlyLogs
       );
-      break;
     case 'ronin':
-      await relayRoninMessage(
+      return await relayRoninMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
-        startingBlockNumber
+        startingBlockNumber,
+        tenderlyLogs
       );
-      break;
     default:
       throw new Error(
         `No message relay implementation from ${bridgeNetwork} -> ${governanceDeploymentManager.network}`

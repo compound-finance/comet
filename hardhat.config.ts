@@ -61,13 +61,15 @@ const {
   ETH_PK,
   ETHERSCAN_KEY,
   SNOWTRACE_KEY,
-  POLYGONSCAN_KEY,
-  BASESCAN_KEY,
-  OPTIMISMSCAN_KEY,
-  MANTLESCAN_KEY,
-  SCROLLSCAN_KEY,
+  // POLYGONSCAN_KEY,
+  // ARBISCAN_KEY,
+  // BASESCAN_KEY,
+  // OPTIMISMSCAN_KEY,
+  // MANTLESCAN_KEY,
+  // SCROLLSCAN_KEY,
   ANKR_KEY,
   _TENDERLY_KEY_RONIN,
+  _TENDERLY_KEY_POLYGON,
   MNEMONIC = 'myth like woof scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
@@ -78,8 +80,10 @@ const {
 } = process.env;
 
 function* deriveAccounts(pk: string, n: number = 10) {
-  for (let i = 0; i < n; i++)
-    yield (BigInt('0x' + pk) + BigInt(i)).toString(16);
+  for (let i = 0; i < n; i++){
+    if(!pk.startsWith('0x')) pk = '0x' + pk;
+    yield (BigInt(pk) + BigInt(i)).toString(16);
+  }
 }
 
 export function requireEnv(varName, msg?: string): string {
@@ -96,11 +100,13 @@ export function requireEnv(varName, msg?: string): string {
   'SNOWTRACE_KEY',
   'INFURA_KEY',
   'ANKR_KEY',
-  'POLYGONSCAN_KEY',
-  'OPTIMISMSCAN_KEY',
-  'MANTLESCAN_KEY',
+  // 'POLYGONSCAN_KEY',
+  // 'ARBISCAN_KEY',
+  // 'LINEASCAN_KEY',
+  // 'OPTIMISMSCAN_KEY',
+  // 'MANTLESCAN_KEY',
   'UNICHAIN_QUICKNODE_KEY',
-  'SCROLLSCAN_KEY'
+  // 'SCROLLSCAN_KEY'
 ].map((v) => requireEnv(v));
 
 // Networks
@@ -116,7 +122,7 @@ export const networkConfigs: NetworkConfig[] = [
   {
     network: 'mainnet',
     chainId: 1,
-    url: `https://rpc.ankr.com/eth/${ANKR_KEY}`,
+    url: `https://rpc.ankr.com/eth/${ANKR_KEY}`
   },
   {
     network: 'sepolia',
@@ -132,7 +138,8 @@ export const networkConfigs: NetworkConfig[] = [
   {
     network: 'polygon',
     chainId: 137,
-    url: `https://rpc.ankr.com/polygon/${ANKR_KEY}`,
+    url: `https://polygon.gateway.tenderly.co/${_TENDERLY_KEY_POLYGON}`,
+    // url: `https://rpc.ankr.com/polygon/${ANKR_KEY}`,
   },
   {
     network: 'optimism',
@@ -151,6 +158,11 @@ export const networkConfigs: NetworkConfig[] = [
     network: 'unichain',
     chainId: 130,
     url: `https://multi-boldest-patina.unichain-mainnet.quiknode.pro/${UNICHAIN_QUICKNODE_KEY}`,
+  },
+  {
+    network: 'linea',
+    chainId: 59144,
+    url: `https://rpc.ankr.com/linea/${ANKR_KEY}`,
   },
   {
     network: 'base',
@@ -232,6 +244,18 @@ const config: HardhatUserConfig = {
   },
 
   networks: {
+    optimismSepolia: {
+      url: 'https://sepolia.optimism.io',
+      chainId: 11155420
+    },
+    arbitrumSepolia: {
+      url: 'https://arbitrum-sepolia.blockpi.network/v1/rpc/public',
+      chainId: 421614
+    },
+    mainnetSepolia: {
+      url: 'https://ethereum-sepolia.blockpi.network/v1/rpc/public',
+      chainId: 11155111
+    },
     hardhat: {
       chainId: 1337,
       loggingEnabled: !!process.env['LOGGING'],
@@ -247,6 +271,42 @@ const config: HardhatUserConfig = {
       chains: networkConfigs.reduce((acc, { chainId }) => {
         if (chainId === 1) return acc;
         if (chainId === 59144) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+            }
+          };
+          return acc;
+        }
+        if (chainId === 42161) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+            }
+          };
+          return acc;
+        }
+        if (chainId === 5000) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+            }
+          };
+          return acc;
+        }
+        if (chainId === 137) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+            }
+          };
+          return acc;
+        }
+        if (chainId === 534352) {
           acc[chainId] = {
             hardforkHistory: {
               berlin: 1,
@@ -287,16 +347,20 @@ const config: HardhatUserConfig = {
       avalanche: SNOWTRACE_KEY,
       avalancheFujiTestnet: SNOWTRACE_KEY,
       // Polygon
-      polygon: POLYGONSCAN_KEY,
+      polygon: ETHERSCAN_KEY,
+      // Arbitrum
+      arbitrumOne: ETHERSCAN_KEY,
+      arbitrumTestnet: ETHERSCAN_KEY,
+      arbitrum: ETHERSCAN_KEY,
       // Base
-      base: BASESCAN_KEY,
+      base: ETHERSCAN_KEY,
       // optimism: OPTIMISMSCAN_KEY,
-      optimisticEthereum: OPTIMISMSCAN_KEY,
+      optimisticEthereum: ETHERSCAN_KEY,
       // Mantle
-      mantle: MANTLESCAN_KEY,
+      mantle: ETHERSCAN_KEY,
       unichain: ETHERSCAN_KEY,
       // Scroll
-      'scroll': SCROLLSCAN_KEY,
+      'scroll': ETHERSCAN_KEY,
       linea: ETHERSCAN_KEY,
     },
     customChains: [

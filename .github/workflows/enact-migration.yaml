@@ -63,6 +63,7 @@ jobs:
       MANTLESCAN_KEY: ${{ secrets.MANTLESCAN_KEY }}
       SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
       _TENDERLY_KEY_RONIN: ${{ secrets._TENDERLY_KEY_RONIN }}
+      _TENDERLY_KEY_POLYGON: ${{ secrets._TENDERLY_KEY_POLYGON }}
       UNICHAIN_QUICKNODE_KEY: ${{ secrets.UNICHAIN_QUICKNODE_KEY }}
       GOV_NETWORK: ${{ vars.GOV_NETWORK }}
     steps:

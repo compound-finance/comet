@@ -77,12 +77,13 @@ export function getEtherscanApiKey(network: string): string {
     mainnet: process.env.ETHERSCAN_KEY,
     fuji: process.env.SNOWTRACE_KEY,
     avalanche: process.env.SNOWTRACE_KEY,
-    polygon: process.env.POLYGONSCAN_KEY,
-    base: process.env.BASESCAN_KEY,
-    optimism: process.env.OPTIMISMSCAN_KEY,
-    mantle: process.env.MANTLESCAN_KEY,
+    polygon: process.env.ETHERSCAN_KEY,
+    arbitrum: process.env.ETHERSCAN_KEY,
+    base: process.env.ETHERSCAN_KEY,
+    optimism: process.env.ETHERSCAN_KEY,
+    mantle: process.env.ETHERSCAN_KEY,
+    scroll: process.env.ETHERSCAN_KEY,
     linea: process.env.ETHERSCAN_KEY,
-    scroll: process.env.SCROLLSCAN_KEY
   }[network];
 
   if (!apiKey) {

@@ -2,6 +2,10 @@ name: Run Unit Tests
 on:
   workflow_dispatch:
   pull_request:
+
+permissions:
+  checks: write  # Grant write permission to checks
+
 jobs:
   unit-tests:
     name: Unit tests
