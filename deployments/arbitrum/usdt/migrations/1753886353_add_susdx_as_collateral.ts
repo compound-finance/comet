@@ -145,7 +145,7 @@ export default migration('1753886353_add_susdx_as_collateral', {
 
 Compound Growth Program [AlphaGrowth] proposes to add sUSDX into cUSDTv3 on Arbitrum network. This proposal takes the governance steps recommended and necessary to update a Compound III USDT market on Arbitrum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/add-susdx-on-usdc-and-usdt-markets-on-arbitrum/6823/4).
 
-Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1008) and [forum discussion](https://www.comp.xyz/t/add-susdx-on-usdc-and-usdt-markets-on-arbitrum/6823).
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1009) and [forum discussion](https://www.comp.xyz/t/add-susdx-on-usdc-and-usdt-markets-on-arbitrum/6823).
 
 
 ## Proposal Actions
