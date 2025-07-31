@@ -6,28 +6,14 @@ import { applyL1ToL2Alias, estimateL2Transaction } from '../../../../scenario/ut
 import { ethers } from 'ethers';
 
 const SUSDX_ADDRESS = '0x7788A3538C5fc7F9c7C8A74EAC4c898fC8d87d92';
-
-let newPriceFeed: string;
+const SUSDX_PRICE_FEED_ADDRESS = '0xbd61C60E47Bb8242658531D460df76941b821093'; // Placeholder, replace with actual price feed address if different
 
 export default migration('1753886353_add_susdx_as_collateral', {
-  async prepare(deploymentManager: DeploymentManager) {
-    const constantPriceFeed = await deploymentManager.fromDep('WETH:priceFeed', 'arbitrum', 'weth');
-    const sUSDXPriceFeed = await deploymentManager.deploy(
-      'sUSDX:priceFeed',
-      'pricefeeds/PriceFeedWith4626Support.sol',
-      [
-        SUSDX_ADDRESS,             // sUSDX / USD price feed
-        constantPriceFeed.address, // USDX / USD price feed (we consider USDX to USD as 1:1)
-        8,                         // decimals
-        'sUSDX / USD price feed',  // description
-      ],
-      true
-    );
-  
-    return { sUSDXPriceFeedAddress: sUSDXPriceFeed.address };
+  async prepare() {  
+    return {};
   },
 
-  enact: async (deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, { sUSDXPriceFeedAddress }) => {
+  enact: async (deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager) => {
     const trace = deploymentManager.tracer();
     const {
       bridgeReceiver,
@@ -43,8 +29,6 @@ export default migration('1753886353_add_susdx_as_collateral', {
       governor
     } = await govDeploymentManager.getContracts();
 
-    newPriceFeed = sUSDXPriceFeedAddress;
-
     const sUSDX = await deploymentManager.existing(
       'sUSDX',
       SUSDX_ADDRESS,
@@ -54,7 +38,7 @@ export default migration('1753886353_add_susdx_as_collateral', {
 
     const sUSDXPriceFeed = await deploymentManager.existing(
       'sUSDX:priceFeed',
-      sUSDXPriceFeedAddress,
+      SUSDX_PRICE_FEED_ADDRESS,
       'arbitrum'
     );
 
@@ -180,7 +164,7 @@ The first proposal action adds sUSDX to the USDT Comet on Arbitrum. This sends t
 
     const sUSDXAssetConfig = {
       asset: sUSDX.address,
-      priceFeed: newPriceFeed,
+      priceFeed: SUSDX_PRICE_FEED_ADDRESS,
       decimals: 18n,
       borrowCollateralFactor: exp(0.86, 18),
       liquidateCollateralFactor: exp(0.91, 18),
