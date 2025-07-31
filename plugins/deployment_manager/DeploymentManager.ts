@@ -204,7 +204,7 @@ export class DeploymentManager {
         [].concat(addresses).map(async (address) => {
           let buildFile;
           if (artifact !== undefined) {
-            buildFile = await readContract(this.cache, this.hre, artifact, network, address, !this.cache);
+            buildFile = await readContract(this.cache, this.hre, artifact, network, address, !this.cache || (artifact.length > 0));
           } else {
             buildFile = await this.import(address, network);
           }
