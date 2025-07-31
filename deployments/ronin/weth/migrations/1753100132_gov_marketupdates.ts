@@ -7,7 +7,7 @@ import { utils, constants } from 'ethers';
 
 const destinationChainSelector = '6916147374840168594';
 
-const gauntletMultiSigAddress = '0x7e14050080306cd36b47DE61ce604b3a1EC70c4e';
+const gauntletMultiSigAddress = '0xA34d0A0812AD443494A83c424fE25810d00cbdeC';
 
 const localTimelockAddress = '0xBbb0Ebd903fafbb8fFF58B922fD0CD85E251ac2c';
 
@@ -68,18 +68,25 @@ export default migration('1753100132_gov_marketupdates', {
       [marketAdminPermissionCheckerAddress]
     );
 
+    const setMarketAdminCalldata = utils.defaultAbiCoder.encode(
+      ['address'],
+      [gauntletMultiSigAddress]
+    );
+
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
         [
+          marketUpdateProposerAddress,
           cometProxyAdminOldAddress,
           cometProxyAdminOldAddress,
           cometProxyAdminOldAddress,
           newCometProxyAdminAddress,
           configuratorProxyAddress,
         ],
-        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0],
         [
+          'setMarketAdmin(address)',
           'changeProxyAdmin(address,address)',
           'changeProxyAdmin(address,address)',
           'changeProxyAdmin(address,address)',
@@ -87,6 +94,7 @@ export default migration('1753100132_gov_marketupdates', {
           'setMarketAdminPermissionChecker(address)',
         ],
         [
+          setMarketAdminCalldata,
           changeProxyAdminForCometProxyWronCalldata,
           changeProxyAdminForCometProxyWethCalldata,
           changeProxyAdminForConfiguratorProxyCalldata,
@@ -136,10 +144,11 @@ This proposal was discussed in detail here - https://www.comp.xyz/t/market-updat
 
 This proposal executes a single cross-chain action via Chainlink's CCIP 'ccipSend', which forwards encoded instructions to the 'bridgeReceiver' on Ronin. The payload contains multiple actions that are executed on L2:
 
-1. Updating the proxy admin for the WRON and WETH Comet markets to a new 'CometProxyAdmin' contract.
-2. Updating the proxy admin for the Configurator proxy to the new 'CometProxyAdmin'.
-3. Upgrading the Configurator proxy to a new implementation.
-4. Setting the 'MarketAdminPermissionChecker' on the Configurator, enabling an alternate governance track for faster market updates routed through a Timelock for community oversight.
+1. Setting new proposal guardian on the 'MarketUpdateProposer' contract.
+2. Updating the proxy admin for the WRON and WETH Comet markets to a new 'CometProxyAdmin' contract.
+3. Updating the proxy admin for the Configurator proxy to the new 'CometProxyAdmin'.
+4. Upgrading the Configurator proxy to a new implementation.
+5. Setting the 'MarketAdminPermissionChecker' on the Configurator, enabling an alternate governance track for faster market updates routed through a Timelock for community oversight.
 
 All these actions can be executed on Ronin after this relay message is processed.
 `;
