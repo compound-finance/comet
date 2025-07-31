@@ -125,7 +125,7 @@ export async function deployNetworkComet(
   const cometAdmin = await deploymentManager.deploy(
     'cometAdmin',
     'CometProxyAdmin.sol',
-    [],
+    [admin.address],
     maybeForce()
   );
 
