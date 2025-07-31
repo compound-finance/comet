@@ -29,7 +29,7 @@
   "scripts": {
     "build": "hardhat compile",
     "clean": "hardhat clean && rm -rf build/ cache/ coverage* dist/",
-    "cover": "hardhat cover && npx istanbul report --include coverage.json html lcov",
+    "cover": "hardhat coverage && npx istanbul report --include coverage.json html lcov",
     "gas": "REPORT_GAS=true yarn test",
     "lint": "eslint 'plugins/**/*' 'scenario/**/*' 'scripts/**/*' 'src/**/*' 'tasks/**/*' 'test/**/*' hardhat.config.ts",
     "lint-contracts": "solhint 'contracts/**/*.sol'",
@@ -37,7 +37,7 @@
     "scenario": "hardhat scenario",
     "spider": "hardhat spider",
     "test": "hardhat test ./test/*.ts ./test/**/*.ts ./plugins/deployment_manager/test/*.ts ",
-    "test:coverage": "hardhat cover --no-compile",
+    "test:coverage": "NODE_OPTIONS='--max-old-space-size=8192' hardhat coverage --no-compile",
     "audit:liquidator": "vendoza contracts/liquidator/vendor/manifest.json",
     "audit:vendor": "vendoza contracts/vendor/manifest.json",
     "slither:fn-clashes": "slither-check-upgradeability contracts/Configurator.sol Configurator --proxy-filename contracts/ConfiguratorProxy.sol --proxy-name ConfiguratorProxy",
@@ -48,10 +48,13 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@flashbots/ethers-provider-bundle": "^0.5.0",
+    "@tenderly/api-client": "^1.1.0",
+    "@tenderly/sdk": "^0.3.1",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
     "deep-object-diff": "^1.1.9",
     "jest-diff": "^27.4.2",
+    "solidity-coverage": "^0.8.16",
     "undici": "^5.21.2"
   },
   "devDependencies": {
@@ -76,11 +79,10 @@
     "eslint": "^8.12.0",
     "ethers": "^5.7.2",
     "fast-glob": "^3.2.7",
-    "hardhat": "2.22.14",
+    "hardhat": "^2.22.17",
     "hardhat-chai-matchers": "https://github.com/jflatow/hardhat/releases/download/viaIR/nomicfoundation-hardhat-chai-matchers-v1.0.4.tgz",
     "hardhat-change-network": "^0.0.7",
     "hardhat-contract-sizer": "^2.10.0",
-    "hardhat-cover": "compound-finance/hardhat-cover",
     "hardhat-gas-reporter": "^1.0.7",
     "mocha-junit-reporter": "^2.0.2",
     "mocha-multi-reporters": "hayesgm/mocha-multi-reporters#hayesgm/reporter-options-to-option",
@@ -90,10 +92,17 @@
     "ts-node": "^10.4.0",
     "typechain": "^6.0.2",
     "typescript": "^4.4.4",
-    "vendoza": "0.0.4"
+    "vendoza": "0.0.4",
+    "@tenderly/hardhat-tenderly": "^2.5.2"
   },
   "repository": "git@github.com:compound-finance/comet.git",
   "resolutions": {
-    "mocha": "^9.1.3"
-  }
+    "minimatch": "^3.1.2",
+    "mocha": "^9.1.3",
+    "cbor": "8.1.0",
+    "micro-eth-signer":"0.14.0",
+    "@tenderly/hardhat-tenderly/ethers": "^6.7.0",
+    "@tenderly/hardhat-tenderly/@nomicfoundation/hardhat-ethers": "3.0.9"
+  },
+  "packageManager": "yarn@1.22.22"
 }

@@ -32,7 +32,7 @@ async function main() {
   const wallet = new ethers.Wallet(process.env.ETH_PK!, hreDST.ethers.provider);
   const signer: SignerWithAddress = wallet as unknown as SignerWithAddress;
 
-  const ethAdapter = new EthersAdapter({ ethers: hreDST.ethers, signerOrProvider: signer });
+  const ethAdapter = new EthersAdapter({ ethers: hreDST.ethers as any, signerOrProvider: signer });
   const safeFactory = await SafeFactory.create({ ethAdapter: ethAdapter });
   const safeSdk = await safeFactory.deploySafe({ safeAccountConfig });
   console.log(safeSdk);

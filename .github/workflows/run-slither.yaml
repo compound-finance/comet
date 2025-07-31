@@ -24,6 +24,9 @@ jobs:
       - name: Install packages
         run: pip install slither-analyzer solc-select
 
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
       - name: Switch to solidity version
         run: solc-select install 0.8.15;solc-select use 0.8.15
 

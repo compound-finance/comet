@@ -256,8 +256,13 @@ async function getEtherscanApiData(network: string, address: string, apiKey: str
 
   let s = <EtherscanSource>(<unknown>result.result[0]);
 
+  // check if this is a contract and not a wallet
+  if (!s.SourceCode || !s.ABI || !s.ContractName) {
+    throw new Error(`No source code found for address ${address} on network ${network}.`);
+  }
+
   if (s.ABI === 'Contract source code not verified') {
-    throw new Error('Contract source code not verified');
+    throw new Error(`Contract source code not verified for address ${address} on network ${network}.`);
   }
 
   return {
@@ -278,8 +283,8 @@ async function scrapeContractCreationCodeFromEtherscanApi(network: string, addre
     address,
     apikey: getEtherscanApiKey(network)
   };
-  const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
-  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({ ...params, ...{ apikey: '[API_KEY]' } })}`;
+  const url = `${getEtherscanApiUrl(network)}&${paramString(params)}`;
+  const debugUrl = `${getEtherscanApiUrl(network)}&${paramString({ ...params, ...{ apikey: '[API_KEY]' } })}`;
 
   debug(`Attempting to pull Contract Creation code from API at ${debugUrl}`);
   const result = await get(url, {});
@@ -328,8 +333,8 @@ async function pullFirstTransactionForContractFromEtherscan(network: string, add
     sort: 'asc',
     apikey: getEtherscanApiKey(network)
   };
-  const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
-  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({ ...params, ...{ apikey: '[API_KEY]' } })}`;
+  const url = `${getEtherscanApiUrl(network)}&${paramString(params)}`;
+  const debugUrl = `${getEtherscanApiUrl(network)}&${paramString({ ...params, ...{ apikey: '[API_KEY]' } })}`;
 
   debug(`Attempting to pull Contract Creation code from first tx at ${debugUrl}`);
   const result = await get(url, {});

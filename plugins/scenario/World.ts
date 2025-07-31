@@ -40,7 +40,7 @@ export class World {
       const auxiliaryBase = hre.config.scenario.bases.find(b => b.name === this.base.auxiliaryBase);
       this.auxiliaryDeploymentManager = new DeploymentManager(auxiliaryBase.network, auxiliaryBase.deployment, await hreForBase(auxiliaryBase));
       this.snapshotAuxiliaryDeploymentManager = this.auxiliaryDeploymentManager;
-    }    
+    }
     await this.deploymentManager.hre.network.provider.send('evm_mine');
   }
 

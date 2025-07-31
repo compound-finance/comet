@@ -158,7 +158,7 @@ scenario(
         albert: { $asset0: ` == ${getConfigForScenario(ctx).rewardsAsset}` }, // in units of asset, not wei
         $comet: { $base: ` >= ${getConfigForScenario(ctx).rewardsBase} ` }
       }
-    )
+    ),
   },
   async ({ comet, rewards, actors }, context, world) => {
     const { albert } = actors;

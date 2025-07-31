@@ -2,6 +2,10 @@ name: Run Unit Tests
 on:
   workflow_dispatch:
   pull_request:
+
+permissions:
+  checks: write  # Grant write permission to checks
+
 jobs:
   unit-tests:
     name: Unit tests
@@ -13,8 +17,6 @@ jobs:
       ANKR_KEY: ${{ secrets.ANKR_KEY }}
       _TENDERLY_KEY_RONIN: ${{ secrets._TENDERLY_KEY_RONIN }}
       POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
-      ARBISCAN_KEY: ${{ secrets.ARBISCAN_KEY }}
-      LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
       OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
       MANTLESCAN_KEY: ${{ secrets.MANTLESCAN_KEY }}
       SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}

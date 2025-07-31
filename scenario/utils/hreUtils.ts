@@ -5,7 +5,9 @@ export async function setNextBaseFeeToZero(dm: DeploymentManager) {
 }
 
 export async function mineBlocks(dm: DeploymentManager, blocks: number) {
-  await dm.hre.network.provider.send('hardhat_mine', [`0x${blocks.toString(16)}`]);
+  const hex = `0x${blocks.toString(16)}`;
+
+  await dm.hre.network.provider.send('hardhat_mine', [hex]);
 }
 
 export async function setNextBlockTimestamp(dm: DeploymentManager, timestamp: number) {

@@ -16,6 +16,7 @@ on:
           - mantle
           - ronin
           - unichain
+          - linea
           - scroll
       deployment:
         description: Deployment Name (e.g. "usdc")
@@ -39,19 +40,18 @@ jobs:
       ANKR_KEY: ${{ secrets.ANKR_KEY }}
       _TENDERLY_KEY_RONIN: ${{ secrets._TENDERLY_KEY_RONIN }}
       POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
-      ARBISCAN_KEY: ${{ secrets.ARBISCAN_KEY }}
       BASESCAN_KEY: ${{ secrets.BASESCAN_KEY }}
-      LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
       OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
       MANTLESCAN_KEY: ${{ secrets.MANTLESCAN_KEY }}
       SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
+      UNICHAIN_QUICKNODE_KEY: ${{ secrets.UNICHAIN_QUICKNODE_KEY }}
     steps:
       - name: Seacrest
         uses: hayesgm/seacrest@af229b0a00b73cb6fa9940a836a62fa3b918fd77
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ inputs.network }}"
-          ethereum_url: "${{ fromJSON('{\"ronin\":\"https://ronin.gateway.tenderly.co/$_TENDERLY_KEY_RONIN\",\"unichain\":\"https://multi-boldest-patina.unichain-mainnet.quiknode.pro/${UNICHAIN_QUICKNODE_KEY}\",\"mantle\":\"https://mantle-mainnet.infura.io/v3/$INFURA_KEY\",\"optimism\":\"https://rpc.ankr.com/optimism/$ANKR_KEY\",\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"sepolia\":\"https://sepolia.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\",\"base\":\"https://rpc.ankr.com/base/$ANKR_KEY\",\"scroll\":\"https://rpc.scroll.io\"}')[inputs.network] }}"
+          ethereum_url: "${{ fromJSON('{\"linea\":\"https://rpc.ankr.com/linea/${ANKR_KEY}\",\"ronin\":\"https://ronin.gateway.tenderly.co/$_TENDERLY_KEY_RONIN\",\"unichain\":\"https://multi-boldest-patina.unichain-mainnet.quiknode.pro/${UNICHAIN_QUICKNODE_KEY}\",\"mantle\":\"https://mantle-mainnet.infura.io/v3/$INFURA_KEY\",\"optimism\":\"https://rpc.ankr.com/optimism/$ANKR_KEY\",\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"sepolia\":\"https://sepolia.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\",\"base\":\"https://rpc.ankr.com/base/$ANKR_KEY\",\"scroll\":\"https://rpc.scroll.io\"}')[inputs.network] }}"
           port: 8585
         if: github.event.inputs.eth_pk == ''
 
