@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import { HardhatUserConfig, task } from 'hardhat/config';
+import { HardhatUserConfig, subtask, task } from 'hardhat/config';
 import '@compound-finance/hardhat-import';
 import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-etherscan';
@@ -10,7 +10,7 @@ import 'hardhat-change-network';
 import 'hardhat-contract-sizer';
 import 'hardhat-cover';
 import 'hardhat-gas-reporter';
-
+import { TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS } from 'hardhat/builtin-tasks/task-names';
 // Hardhat tasks
 import './tasks/deployment_manager/task.ts';
 import './tasks/spider/task.ts';
@@ -110,6 +110,19 @@ interface NetworkConfig {
   gas?: number | 'auto';
   gasPrice?: number | 'auto';
 }
+
+subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(async (_, __, runSuper) => {
+  const paths = await runSuper();
+  
+  return paths.filter((p: string) => {
+    return !(
+      p.includes("contracts/capo/contracts/test/") ||
+      p.includes("contracts/capo/test/") ||
+      p.includes("forge-std") ||
+      p.endsWith(".t.sol")
+    );
+  });
+});
 
 const networkConfigs: NetworkConfig[] = [
   {
@@ -245,6 +258,16 @@ const config: HardhatUserConfig = {
             hardforkHistory: {
               berlin: 1,
               london: 2,
+            }
+          };
+          return acc;
+        }
+        if (chainId === 42161) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+              shanghai: 3,
             }
           };
           return acc;
