@@ -22,6 +22,8 @@ SCROLLSCAN_KEY=your_scrollscan_api_key
 
 **Note**: We will only use hardhat (local development environment) and blockdag networks. No code will be deleted.
 
+**Important**: The API keys above don't need to contain valid values, except for `ETHERSCAN_KEY` which is used by hardhat to fetch contracts. You can use placeholder text like `placeholder` or `your_arbiscan_api_key` for the other keys. This makes it easy to get started without having to obtain real API keys from all the different blockchain explorers and services.
+
 ### 2. Deploy DAI Market example Locally
 
 ```bash
