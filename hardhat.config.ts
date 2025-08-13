@@ -617,7 +617,8 @@ const config: HardhatUserConfig = {
       {
         name: 'local-dai',
         network: 'local',
-        deployment: 'dai'
+        deployment: 'dai',
+        auxiliaryBase: 'mainnet'
       },
     ],
   },
