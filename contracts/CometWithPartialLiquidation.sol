@@ -416,25 +416,21 @@ contract CometWithExtendedAssetList is CometMainInterface {
      * @return Whether the account is minimally collateralized enough to not be liquidated
      */
     function isLiquidatable(address account) override public view returns (bool) {
-        int104 principal = userBasic[account].principal;
-
-        if (principal >= 0) {
-            return false;
-        }
-
-        uint16 assetsIn = userBasic[account].assetsIn;
-        uint8 _reserved = userBasic[account]._reserved;
-        int liquidity = signedMulPrice(
-            presentValue(principal),
+        int debt = signedMulPrice(
+            presentValue(userBasic[account].principal),
             getPrice(baseTokenPriceFeed),
             uint64(baseScale)
         );
+        return (debt + int(_getLiquidity(account)) < 0);
+    }
+
+    function _getLiquidity(address account) internal view returns (uint256) {
+        uint16 assetsIn = userBasic[account].assetsIn;
+        uint8 _reserved = userBasic[account]._reserved;
+        uint256 liquidity = 0;
 
         for (uint8 i = 0; i < numAssets; ) {
             if (isInAsset(assetsIn, i, _reserved)) {
-                if (liquidity >= 0) {
-                    return false;
-                }
 
                 AssetInfo memory asset = getAssetInfo(i);
                 uint newAmount = mulPrice(
@@ -442,15 +438,15 @@ contract CometWithExtendedAssetList is CometMainInterface {
                     getPrice(asset.priceFeed),
                     asset.scale
                 );
-                liquidity += signed256(mulFactor(
+                liquidity += mulFactor(
                     newAmount,
                     asset.liquidateCollateralFactor
-                ));
+                );
             }
             unchecked { i++; }
         }
 
-        return liquidity < 0;
+        return liquidity;
     }
 
     /**
@@ -1054,9 +1050,15 @@ contract CometWithExtendedAssetList is CometMainInterface {
      * @dev Transfer user's collateral and debt to the protocol itself.
      */
     function absorbInternal(address absorber, address account) internal {
-        if (!isLiquidatable(account)) revert NotLiquidatable();
-
         UserBasic memory accountUser = userBasic[account];
+        int debt = signedMulPrice(
+            presentValue(accountUser.principal),
+            getPrice(baseTokenPriceFeed),
+            uint64(baseScale)
+        );
+        uint256 liquidity = _getLiquidity(account);
+        if (debt + int(liquidity) < 0) revert NotLiquidatable();
+
         int104 oldPrincipal = accountUser.principal;
         int256 oldBalance = presentValue(oldPrincipal);
         uint16 assetsIn = accountUser.assetsIn;
