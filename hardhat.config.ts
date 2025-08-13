@@ -175,7 +175,12 @@ const networkConfigs: NetworkConfig[] = [
     network: 'scroll',
     chainId: 534352,
     url: 'https://rpc.scroll.io',
-  }
+  },
+  {
+    network: 'bdag-primordial',
+    chainId: 1043,
+    url: 'https://node-blockdag.spacedev.io/rpc',//"http://13.234.176.105:18545"
+  },
 ];
 
 function getDefaultProviderURL(network: string) {
@@ -341,6 +346,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: 'https://explorer-kintsugi.roninchain.com/v2/2020',
           browserURL: 'https://app.roninchain.com'
+        }
+      },
+      {
+        network: 'bdag-primordial',
+        chainId: 1043,
+        urls: {
+          apiURL: '',//There is no apiUrl yet
+          browserURL: 'https://primordial.bdagscan.com/' //"http://13.234.176.105:18545"
         }
       }
     ]
@@ -576,6 +589,12 @@ const config: HardhatUserConfig = {
         name: 'ronin-wron',
         network: 'ronin',
         deployment: 'wron',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'bdag-primordial-dai',
+        network: 'bdag-primordial',
+        deployment: 'dai',
         auxiliaryBase: 'mainnet'
       },
     ],
