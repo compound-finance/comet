@@ -531,7 +531,7 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
 
   await configuratorAsProxy.setConfiguration(cometProxyWithPartialLiquidation.address, configuration);
   await configuratorAsProxy.setFactory(cometProxyWithPartialLiquidation.address, cometFactoryWithPartialLiquidation.address);
-  await configuratorAsProxy.setHealthFactor(cometProxyWithPartialLiquidation.address, exp(0.95, 15));
+  await configuratorAsProxy.setHealthFactor(cometProxyWithPartialLiquidation.address, exp(1.05, 15));
 
 
   return {

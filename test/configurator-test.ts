@@ -588,7 +588,7 @@ describe('configurator', function () {
       expect(await cometAsProxy.storeFrontPriceFactor()).to.be.equal(newStoreFrontPriceFactor);
     });
 
-    it.only('sets healthFactor and deploys Comet with new configuration', async () => {
+    it('sets healthFactor and deploys Comet with new configuration', async () => {
       const { configurator, configuratorProxy, proxyAdmin, cometWithPartialLiquidation : comet, cometProxyWithPartialLiquidation : cometProxy } = await makeConfigurator({
         assets: {
           USDC: { decimals: 6, },
@@ -604,7 +604,7 @@ describe('configurator', function () {
       expect((await configuratorAsProxy.healthFactors(cometProxy.address))).to.be.equal(await cometAsProxy.healthFactor());
 
       const oldHealthFactor = (await cometAsProxy.healthFactor()).toBigInt();
-      const newHealthFactor = factor(0.90);
+      const newHealthFactor = factor(1.10);
       const txn = await wait(configuratorAsProxy.setHealthFactor(cometProxy.address, newHealthFactor));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
