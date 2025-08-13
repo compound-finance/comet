@@ -6,6 +6,7 @@ import "./IERC20NonStandard.sol";
 import "./IPriceFeed.sol";
 import "./IAssetListFactory.sol";
 import "./IAssetListFactoryHolder.sol";
+import "./IHealthFactorHolder.sol";
 import "./IAssetList.sol";
 
 /**
@@ -13,7 +14,7 @@ import "./IAssetList.sol";
  * @notice An efficient monolithic money market protocol
  * @author Compound
  */
-contract CometWithExtendedAssetList is CometMainInterface {
+contract CometWithPartialLiquidation is CometMainInterface {
     /** General configuration constants **/
 
     /// @notice The admin of the protocol
@@ -215,6 +216,10 @@ contract CometWithExtendedAssetList is CometMainInterface {
         // Implicit initialization (not worth increasing contract size)
         // trackingSupplyIndex = 0;
         // trackingBorrowIndex = 0;
+    }
+
+    function healthFactor() external view returns (uint256) {
+        return IHealthFactorHolder(extensionDelegate).healthFactor(address(this));
     }
 
     /**
