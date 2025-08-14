@@ -37,7 +37,12 @@ yarn hardhat deploy --network hardhat --deployment dai
 yarn hardhat deploy --network hardhat --deployment dai --simulate
 ```
 
+### 3. Running Tests
+
+Run tests explained in the Testing section to check everything is working as expected
+
 ## Testing
+
 
 ### Basic Tests
 
@@ -78,6 +83,101 @@ yarn hardhat test --network hardhat
 ```
 
 **Note**: Tests that try to fork from mainnet (like liquidation tests) will fail if `ANKR_KEY` is not set.
+
+## Testing Market on Specific Blockchain
+
+You can test your deployed market on any blockchain network using the same test commands. Here's how to test on different networks:
+
+### Testing on Local Network
+
+```bash
+# Deploy with BDAG governor on local network
+yarn hardhat deploy --bdag --network local --deployment dai
+
+# Run basic tests against local deployment
+yarn hardhat test test/sanity-test.ts --network local
+
+# Test core functionality
+yarn hardhat test test/supply-test.ts --network local
+yarn hardhat test test/withdraw-test.ts --network local
+yarn hardhat test test/balance-test.ts --network local
+
+# Test advanced features
+yarn hardhat test test/rewards-test.ts --network local
+yarn hardhat test test/absorb-test.ts --network local
+```
+
+### Testing on Other Networks
+
+```bash
+# Deploy to target network (example: polygon)
+yarn hardhat deploy --bdag --network polygon --deployment dai
+
+# Run tests against deployed contracts
+yarn hardhat test test/supply-test.ts --network polygon
+yarn hardhat test test/withdraw-test.ts --network polygon
+```
+
+### Account Funding Requirements
+
+**Important**: When testing on real blockchains, your testing accounts need to have funds:
+
+- **Local Network (Hardhat)**: Testing accounts are **automatically funded** with test ETH
+- **Testnets**: You need to fund accounts with test tokens
+- **Mainnets**: You need real tokens for testing (not recommended for development)
+
+### Test Execution Flow
+
+1. **Deploy contracts** to target network
+2. **Fund testing accounts** (if needed)
+3. **Run tests** against deployed contracts
+4. **Verify results** match expected behavior
+
+**Note**: Tests will use the existing deployment cache, so they run against your deployed contracts rather than creating new ones.
+
+### How Deployment Caching Works
+
+The Hardhat deployment manager uses a **caching system** to avoid re-deploying contracts:
+
+#### **Cache Location:**
+```
+deployments/{network}/{deployment}/.contracts/
+├── cache.json          # Contract addresses and metadata
+├── governor.json       # Governor contract details
+├── comet.json         # Comet contract details
+└── ...                # Other deployed contracts
+```
+
+#### **Cache Behavior:**
+1. **First Deployment**: Contracts are deployed and cached
+2. **Subsequent Runs**: Contracts are loaded from cache
+3. **Tests**: Use cached contract addresses automatically
+
+#### **Example Cache Entry:**
+```json
+{
+  "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  "deployedAt": "2024-01-15T10:30:00Z",
+  "constructorArgs": [],
+  "verified": false
+}
+```
+
+#### **Verifying Cache Usage:**
+```bash
+# Check if contracts are cached
+ls deployments/local/dai/.contracts/
+
+# Clear cache to force re-deployment
+rm -rf deployments/local/dai/.contracts/
+yarn hardhat deploy --bdag --network local --deployment dai
+```
+
+**Benefits:**
+- **Faster Testing**: No need to re-deploy for each test
+- **Consistent State**: Tests use same contract instances
+- **Cost Savings**: Avoid unnecessary gas costs on real networks
+
 
 
 ## Understanding execution flow
@@ -269,5 +369,3 @@ yarn hardhat deploy --deployment dai
 - **Flexible Control**: Can override with `--bdag` flag
 - **Clear Logging**: Shows which governor is being used
 - **Backward Compatible**: Maintains existing functionality
-
----
