@@ -1,6 +1,6 @@
 import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
 import { FaucetToken, SimplePriceFeed } from '../../../build/types';
-import { DeploySpec, deployComet, exp, wait, cloneGov, createMultisigGov } from '../../../src/deploy';
+import { DeploySpec, deployComet, exp, wait, cloneGov } from '../../../src/deploy';
 
 async function makeToken(
   deploymentManager: DeploymentManager,
@@ -30,7 +30,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   // Set verification strategy to none to skip contract verification
   deploymentManager.setVerificationStrategy('none');
 
-  const { fauceteer, governor, timelock } = await createMultisigGov(deploymentManager);
+  const { fauceteer, governor, timelock } = await cloneGov(deploymentManager);
 
   const DAI = await makeToken(deploymentManager, 10000000, 'DAI', 18, 'DAI');
   const GOLD = await makeToken(deploymentManager, 20000000, 'GOLD', 8, 'GOLD');

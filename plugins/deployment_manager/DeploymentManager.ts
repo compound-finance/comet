@@ -29,6 +29,7 @@ interface DeploymentManagerConfig {
   importRetryDelay?: number;
   writeCacheToDisk?: boolean;
   verificationStrategy?: VerificationStrategy;
+  bdag?: boolean;
 }
 
 export type Deployed = { [alias: Alias]: Contract };
