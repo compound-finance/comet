@@ -98,12 +98,7 @@ export async function createMultisigGov(
   const governorImpl = await deploymentManager.deploy(
     'governor:implementation',
     'CustomGovernor.sol',
-    [
-      timelock.address,
-      COMP.address,
-      admin.address, // initialAdmin
-      1 // multisigThreshold (1 for single admin, increase for multi-admin)
-    ]
+    []
   );
 
   // Deploy governor proxy
@@ -112,8 +107,13 @@ export async function createMultisigGov(
     'vendor/proxy/transparent/TransparentUpgradeableProxy.sol',
     [
       governorImpl.address,
-      admin.address, // proxy admin
-      [] // initialization data
+      admin.address,
+      governorImpl.interface.encodeFunctionData('initialize', [
+        timelock.address,
+        COMP.address,
+        admin.address,
+        1
+      ])
     ]
   );
 

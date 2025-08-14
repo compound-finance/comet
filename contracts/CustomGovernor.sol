@@ -49,12 +49,21 @@ contract CustomGovernor is IGovernorBravo {
     /// @notice An event emitted when an admin approves a proposal
     event ProposalApproved(uint proposalId, address admin);
 
-    constructor(
+    /**
+     * @notice Initialize the governor (called by proxy)
+     * @param timelock_ The timelock contract address
+     * @param token_ The governance token address
+     * @param initialAdmin_ The initial admin address
+     * @param threshold_ The multisig threshold
+     */
+    function initialize(
         address timelock_,
         address token_,
         address initialAdmin_,
         uint threshold_
-    ) {
+    ) external {
+        require(timelock == Timelock(payable(0)), "CustomGovernor::initialize: already initialized");
+        
         timelock = Timelock(payable(timelock_));
         token = token_;
         multisigThreshold = threshold_;
@@ -80,11 +89,11 @@ contract CustomGovernor is IGovernorBravo {
             id: proposalCount,
             proposer: msg.sender,
             eta: 0,
-            startBlock: 0, // Not used for multisig
-            endBlock: 0,   // Not used for multisig
-            forVotes: 0,   // Not used for multisig
-            againstVotes: 0, // Not used for multisig
-            abstainVotes: 0, // Not used for multisig
+            startBlock: 0, 
+            endBlock: 0,   
+            forVotes: 0,   
+            againstVotes: 0, 
+            abstainVotes: 0, 
             canceled: false,
             executed: false
         });
