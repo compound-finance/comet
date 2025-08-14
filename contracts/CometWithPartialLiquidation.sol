@@ -1061,8 +1061,10 @@ contract CometWithPartialLiquidation is CometMainInterface {
             getPrice(baseTokenPriceFeed),
             uint64(baseScale)
         );
-        uint256 liquidity = _getLiquidity(account);
-        if (debt + int(liquidity) < 0) revert NotLiquidatable();
+        uint256 accumulatedLiquidity = _getLiquidity(account);
+        if (debt + int(accumulatedLiquidity) >= 0) revert NotLiquidatable();
+
+        uint256 targetHF = IHealthFactorHolder(extensionDelegate).healthFactor(address(this));
 
         int104 oldPrincipal = accountUser.principal;
         int256 oldBalance = presentValue(oldPrincipal);
@@ -1082,6 +1084,14 @@ contract CometWithPartialLiquidation is CometMainInterface {
 
                 uint256 value = mulPrice(seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale);
                 deltaValue += mulFactor(value, assetInfo.liquidationFactor);
+    
+                uint256 seizedLiquidity = mulFactor(value, assetInfo.liquidateCollateralFactor);
+
+                if (accumulatedLiquidity >= seizedLiquidity) {
+                    accumulatedLiquidity -= seizedLiquidity;
+                } else {
+                    accumulatedLiquidity = 0;
+                }
 
                 emit AbsorbCollateral(absorber, account, asset, seizeAmount, value);
             }
