@@ -63,7 +63,7 @@ task('deploy', 'Deploys market')
   .addFlag('noVerify', 'do not verify any contracts')
   .addFlag('noVerifyImpl', 'do not verify the impl contract')
   .addFlag('overwrite', 'overwrites cache')
-  .addFlag('bdag', 'use BDAG config')
+  .addFlag('bdag', 'use BDAG specifications')
   .addParam('deployment', 'The deployment to deploy')
   .setAction(async ({ simulate, noDeploy, noVerify, noVerifyImpl, overwrite, bdag, deployment }, env) => {
     const maybeForkEnv = simulate ? await getForkEnv(env, deployment) : env;

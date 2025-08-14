@@ -211,39 +211,63 @@ This execution flow ensures that:
 - **Deployment is idempotent** (can be run multiple times safely)
 
 
-### Plan to Implement Custom Governor
+## Custom Governor Implementation
 
-This section outlines the step-by-step process to replace the cloned Governor Bravo with a custom governor implementation that's compatible with the `IGovernorBravo` interface.
+This section describes how the system automatically chooses between Governor Bravo and a custom multisig governor based on configuration flags.
 
-#### Step 1: Create a Custom Governor Contract
-- Create `contracts/CustomGovernor.sol` that implements `IGovernorBravo`
-- Implement all required functions and events from the interface
-- Add custom logic while maintaining compatibility
+### Implementation Overview
 
-#### Step 2: Create createGov Method in Network.ts
-- Add `createGov()` function in `src/deploy/Network.ts`
-- Deploy custom governor implementation instead of cloning from mainnet
-- Set up proxy pattern with custom implementation
-- Configure timelock and token relationships
+The system uses a **flag-based approach** to automatically select the appropriate governor:
 
-#### Step 3: Update Deployment Scripts
-- Modify deployment scripts to use `createGov()` instead of `cloneGov()`
-- Update `deployments/local/dai/deploy.ts` and other deployment files
-- Ensure proper contract initialization
+- **`--bdag` flag**: Uses custom multisig governor (`createMultisigGov`)
+- **No flag**: Uses standard Governor Bravo (`_cloneGov`)
 
-#### Step 4: Update Relations Configuration
-- Modify `deployments/relations.ts` to point to custom governor
-- Update artifact references for custom implementation
-- Ensure spider tool can discover custom governor
+### Step 1: Custom Governor Contract ✅
+- Created `contracts/CustomGovernor.sol` that implements `IGovernorBravo`
+- Implements all required functions and events from the interface
+- Features multisig logic with admin approvals instead of token voting
+- Includes UUPS upgradeability for future improvements
 
-#### Step 5: Test Custom Governor
-- Create test scenarios for custom governor functionality
-- Verify proposal creation, voting, and execution
-- Test integration with existing Comet infrastructure
+### Step 2: Flag-Based Governor Selection ✅
+- Modified `cloneGov()` function in `src/deploy/Network.ts` to check `deploymentManager.config.bdag`
+- If BDAG flag is set: uses `createMultisigGov()` (custom governor)
+- If no flag: uses `_cloneGov()` (standard Governor Bravo)
+- No changes needed to deployment scripts - automatic selection
 
-#### Step 6: Deploy and Verify
-- Deploy custom governor to target networks
-- Verify contract source code on block explorers
-- Test governance proposals end-to-end
+### Step 3: Deployment Manager Integration ✅
+- Extended `DeploymentManagerConfig` interface to include `bdag?: boolean`
+- Added `--bdag` flag to deploy tasks in `tasks/deployment_manager/task.ts`
+- Flag is passed through deployment manager config to `cloneGov()`
+
+### Step 4: Usage Examples
+
+#### Using BDAG Flag:
+```bash
+# Deploy with custom multisig governor
+yarn hardhat deploy --bdag --deployment dai
+
+# Deploy and migrate with custom governor
+yarn hardhat deploy_and_migrate --bdag --deployment dai migration_name
+```
+
+#### Standard Deployment:
+```bash
+# Deploy with Governor Bravo (default)
+yarn hardhat deploy --deployment dai
+```
+
+### Step 5: Key Features
+
+#### Custom Governor Features:
+- **Multisig Logic**: Admin-based approvals instead of token voting
+- **UUPS Upgradeable**: Can be upgraded through governance proposals
+- **Immutable Threshold**: Multisig threshold set in constructor
+- **Governance Integration**: Upgrades follow same proposal process
+
+#### Automatic Selection:
+- **No Code Changes**: Existing deployments work unchanged
+- **Flexible Control**: Can override with `--bdag` flag
+- **Clear Logging**: Shows which governor is being used
+- **Backward Compatible**: Maintains existing functionality
 
 ---
