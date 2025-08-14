@@ -43,7 +43,6 @@ Run tests explained in the Testing section to check everything is working as exp
 
 ## Testing
 
-
 ### Basic Tests
 
 ```bash
@@ -84,6 +83,43 @@ yarn hardhat test --network hardhat
 
 **Note**: Tests that try to fork from mainnet (like liquidation tests) will fail if `ANKR_KEY` is not set.
 
+### Custom Tests
+
+#### Deployment Verification Test
+
+The `deployment-verification-test.ts` is a comprehensive test that verifies your deployed market configuration:
+
+**What it tests:**
+- ✅ **Ownership relationships** (timelock admin, comet governor, proxy admin)
+- ✅ **Base token configuration** (token address, price feed)
+- ✅ **Asset configurations** (supply caps, collateral factors, price feeds)
+- ✅ **Custom governor setup** (detects BDAG multisig governor vs standard Governor Bravo)
+- ✅ **Proxy implementation** (verifies upgradeable contracts are properly linked)
+
+**Usage:**
+```bash
+# Test local DAI deployment
+export MARKET=dai && yarn hardhat test test/deployment-verification-test.ts --network local
+
+# Test Polygon USDC deployment
+export MARKET=usdc && yarn hardhat test test/deployment-verification-test.ts --network polygon
+
+# Test Base WETH deployment
+export MARKET=weth && yarn hardhat test test/deployment-verification-test.ts --network base
+```
+
+**Expected Output:**
+```
+🔍 Testing deployment on network: local, market: dai
+✅ Custom BDAG governor detected and verified
+```
+
+**Key Features:**
+- **Network agnostic**: Works with any deployed network/market combination
+- **Automatic detection**: Identifies if you're using BDAG custom governor or standard Governor Bravo
+- **Comprehensive verification**: Checks all critical deployment configurations
+- **Clear error messages**: Shows exactly what's wrong if verification fails
+
 ## Testing Market on Specific Blockchain
 
 You can test your deployed market on any blockchain network using the same test commands. Here's how to test on different networks:
@@ -93,6 +129,9 @@ You can test your deployed market on any blockchain network using the same test 
 ```bash
 # Deploy with BDAG governor on local network
 yarn hardhat deploy --bdag --network local --deployment dai
+
+# Run deployment verification test
+export MARKET=dai && yarn hardhat test test/deployment-verification-test.ts --network local
 
 # Run basic tests against local deployment
 yarn hardhat test test/sanity-test.ts --network local
