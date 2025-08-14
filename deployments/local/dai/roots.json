@@ -1,1 +1,7 @@
-{}
+{
+    "comet": "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1",
+    "configurator": "0x68B1D87F95878fE05B998F19b66F4baba5De1aed",
+    "rewards": "0x3Aa5ebB10DC797CAC828524e59A333d0A371443c",
+    "cometFactory": "0x9A676e781A523b5d0C0e43731313A708CB607508",
+    "fauceteer": "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+}
