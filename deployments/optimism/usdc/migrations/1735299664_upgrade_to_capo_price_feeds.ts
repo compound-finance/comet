@@ -19,20 +19,13 @@ const FEED_DECIMALS = 8;
 
 const WSTETH_STETH_PRICE_FEED_ADDRESS = '0xe59EBa0D492cA53C6f46015EEa00517F2707dc77';
 const STETH_ETH_PRICE_FEED_ADDRESS = '0x14d2d3a82AeD4019FddDfe07E8bdc485fb0d2249';
+
+let newWstETHToUSDPriceFeed: string;
+
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
-
-    const { comet } = await deploymentManager.getContracts();
-    console.log(`Comet address: ${comet.address}`);
     const { governor } = await deploymentManager.getContracts();
-
-    const wstETH = await ethers.getContractAt('contracts/IWstETH.sol:IWstETH', WSTETH_ADDRESS) as IWstETH;
-    console.log(wstETH);
-    console.log(`wstETH address: ${wstETH.address}`);
-
-    const rateProviderWstEth = await ethers.getContractAt('contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface', STETH_TO_WSTETH_RATE_PROVIDER) as AggregatorV3Interface;
-        console.log(rateProviderWstEth);
-        console.log(`wstETH address: ${rateProviderWstEth.address}`);
+    const rateProviderWstEth = await deploymentManager.existing('wstEth:priceFeed', WSTETH_STETH_PRICE_FEED_ADDRESS, 'optimism', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     
     const [, currentRatioWstEth] = await rateProviderWstEth.latestRoundData();
     const now = (await ethers.provider.getBlock("latest"))!.timestamp;
@@ -65,11 +58,12 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
                 }
             ]
         );
-    console.log(wstEthCapoPriceFeed);
+
     console.log(`Deployed wstETH capo price feed at ${wstEthCapoPriceFeed.address}`);
+    newWstETHToUSDPriceFeed = wstEthCapoPriceFeed.address;
      
     return {
-      wstEthCapoPriceFeedAddress: wstEthCapoPriceFeed.address
+      wstEthCapoPriceFeedAddress: wstEthCapoPriceFeed.address,
     };
   },
 
@@ -97,20 +91,32 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       )
     );
 
+    const deployAndUpgradeToCalldata = await calldata(
+      cometAdmin.populateTransaction.deployAndUpgradeTo(
+        configurator.address,
+        comet.address
+      )
+    );
+
+
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
         [
           configurator.address,
+          cometAdmin.address
         ],
         [
+          0,
           0,
         ],
         [
           'updateAssetPriceFeed',
+          'deployAndUpgradeTo'
         ],
         [
           updateWstEthPriceFeedCalldata,
+          deployAndUpgradeToCalldata
         ],
       ]
     );
@@ -162,6 +168,23 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     return false;
   },
 
-  async verify(deploymentManager: DeploymentManager) {
-  },
+   async verify(deploymentManager: DeploymentManager) {
+      const { comet, configurator } = await deploymentManager.getContracts();
+                  
+      const wstETHIndexInComet = await configurator.getAssetIndex(
+        comet.address,
+        WSTETH_ADDRESS
+      );
+      
+      const wstETHInCometInfo = await comet.getAssetInfoByAddress(
+        WSTETH_ADDRESS
+      ); 
+      
+      const wstETHInConfiguratorInfoWETHComet = (
+          await configurator.getConfiguration(comet.address)
+      ).assetConfigs[wstETHIndexInComet];
+      
+      expect(wstETHInCometInfo.priceFeed).to.eq(newWstETHToUSDPriceFeed);
+      expect(wstETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newWstETHToUSDPriceFeed);
+    },
 });

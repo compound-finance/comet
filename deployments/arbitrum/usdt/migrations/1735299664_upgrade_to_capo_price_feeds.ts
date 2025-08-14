@@ -7,32 +7,31 @@ import { Contract } from 'ethers';
 import { utils } from 'ethers';
 import { applyL1ToL2Alias, estimateL2Transaction } from '../../../../scenario/utils/arbitrumUtils';
 import { Numeric } from '../../../../test/helpers';
-import { AggregatorV3Interface, ILRTOracle, IWstETH } from '../../../../build/types';
+import { AggregatorV3Interface, IWstETH } from '../../../../build/types';
 
 export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
     return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
 }
 
-const ETH_USD_PRICE_FEED = '0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70';
+const ETH_USD_PRICE_FEED = '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612';
 
-const WSTETH_ADDRESS = '0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452';
-const WSTETH_STETH_PRICE_FEED_ADDRESS = '0xB88BAc61a4Ca37C43a3725912B1f472c9A5bc061'; 
-const STETH_ETH_PRICE_FEED_ADDRESS = '0xf586d0728a47229e747d824a939000Cf21dEF5A0';
-
-const CBETH_ADDRESS = '0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22';
-const CBETH_ETH_PRICE_FEED = '0x806b4Ac04501c29769051e42783cF04dCE41440b';
+const WSTETH_ADDRESS = '0x5979D7b546E38E414F7E9822514be443A4800529';
+const WSTETH_STETH_PRICE_FEED_ADDRESS = '0xB1552C5e96B312d0Bf8b554186F846C40614a540';
+const STETH_ETH_PRICE_FEED_ADDRESS = '0xded2c52b75B24732e9107377B7Ba93eC1fFa4BAf';
 
 const FEED_DECIMALS = 8;
 
-let newCbEthToUsdPriceFeed: string;
-let newWstETHToUSDCPriceFeed: string;
+let newWstETHToETHPriceFeed: string;
+
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
 
     const { comet } = await deploymentManager.getContracts();
     console.log(`Comet address: ${comet.address}`);
     const { governor } = await deploymentManager.getContracts();
-    const rateProviderWstEth = await deploymentManager.existing('wstEth:priceFeed', WSTETH_STETH_PRICE_FEED_ADDRESS, 'base', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
+
+    const rateProviderWstEth = await deploymentManager.existing('contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface', WSTETH_STETH_PRICE_FEED_ADDRESS) as AggregatorV3Interface;
+    console.log(`wstETH address: ${rateProviderWstEth.address}`);
 
     const [, currentRatioWstEth] = await rateProviderWstEth.latestRoundData();
     const now = (await ethers.provider.getBlock("latest"))!.timestamp;
@@ -47,68 +46,40 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         'wstETH / ETH price feed'        // description
       ]
     );
-     
+
     const wstEthCapoPriceFeed = await deploymentManager.deploy(
-        'wstETH:capoPriceFeed',
-        'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
-            [
-                governor.address,
-                ETH_USD_PRICE_FEED,
-                _wstETHToETHPriceFeed.address,
-                "wstETH:capoPriceFeed",
-                FEED_DECIMALS,
-                3600,
-                {
-                    snapshotRatio: currentRatioWstEth,
-                    snapshotTimestamp: now - 3600,
-                    maxYearlyRatioGrowthPercent: exp(0.01, 4)
-                }
-            ]
-        );
+    'wstETH:capoPriceFeed',
+    'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
+        [
+            governor.address,
+            ETH_USD_PRICE_FEED,
+            _wstETHToETHPriceFeed.address,
+            "wstETH:capoPriceFeed",
+            FEED_DECIMALS,
+            3600,
+            {
+                snapshotRatio: currentRatioWstEth,
+                snapshotTimestamp: now - 3600,
+                maxYearlyRatioGrowthPercent: exp(0.01, 4)
+            }
+        ]
+    );
+
+    newWstETHToETHPriceFeed = wstEthCapoPriceFeed.address;
     console.log(`Deployed wstETH capo price feed at ${wstEthCapoPriceFeed.address}`);
 
-    newWstETHToUSDCPriceFeed = wstEthCapoPriceFeed.address;
-
-    const rateProviderCbEth = await deploymentManager.existing('cbEth:priceFeed', CBETH_ETH_PRICE_FEED, 'base', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
-    
-    console.log(`ezETH address: ${rateProviderCbEth.address}`);
-         
-    const [, currentRatioCbEth] = await rateProviderCbEth.latestRoundData()
-    const cbEthCapoPriceFeed = await deploymentManager.deploy(
-        'ezETH:capoPriceFeed',
-        'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
-           [
-             governor.address,
-             ETH_USD_PRICE_FEED,
-             rateProviderCbEth.address,
-             'ezETH:capoPriceFeed',
-             FEED_DECIMALS,
-             3600,
-             {
-               snapshotRatio: currentRatioCbEth,
-               snapshotTimestamp: now - 3600,
-               maxYearlyRatioGrowthPercent: exp(0.01, 4)
-             }
-           ],
-        )
-    console.log(`Deployed cbETH capo price feed at ${cbEthCapoPriceFeed.address}`);
-
-    newCbEthToUsdPriceFeed = cbEthCapoPriceFeed.address;
-
     return {
-      wstEthCapoPriceFeedAddress: wstEthCapoPriceFeed.address,
-      cbEthCapoPriceFeedAddress: cbEthCapoPriceFeed.address
+      wstEthCapoPriceFeedAddress: wstEthCapoPriceFeed.address
     };
   },
 
   async enact(deploymentManager: DeploymentManager, govDeploymentManager, {
-    wstEthCapoPriceFeedAddress,
-    cbEthCapoPriceFeedAddress
+    wstEthCapoPriceFeedAddress
   }) {
 
     const trace = deploymentManager.tracer();
 
-    const { configurator, comet, bridgeReceiver, l2Timelock } = await deploymentManager.getContracts();
+    const { configurator, comet, bridgeReceiver, timelock: l2Timelock } = await deploymentManager.getContracts();
 
     const {
       arbitrumInbox,
@@ -117,20 +88,11 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       cometAdmin
     } = await govDeploymentManager.getContracts();
 
-
     const updateWstEthPriceFeedCalldata = await calldata(
       configurator.populateTransaction.updateAssetPriceFeed(
         comet.address,
         WSTETH_ADDRESS,
         wstEthCapoPriceFeedAddress
-      )
-    );
-
-    const updateCbEthPriceFeedCalldata = await calldata(
-      configurator.populateTransaction.updateAssetPriceFeed(
-        comet.address,
-        CBETH_ADDRESS,
-        cbEthCapoPriceFeedAddress
       )
     );
 
@@ -147,22 +109,18 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       [
         [
           configurator.address,
-          configurator.address,
           cometAdmin.address
         ],
         [
-          0,
           0,
           0
         ],
         [
           'updateAssetPriceFeed',
-          'updateAssetPriceFeed',
           'deployAndUpgradeTo'
         ],
         [
           updateWstEthPriceFeedCalldata,
-          updateCbEthPriceFeedCalldata,
           deployAndUpgradeToCalldata
         ],
       ]
@@ -216,41 +174,23 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
   },
 
   async verify(deploymentManager: DeploymentManager) {
-      const { comet, configurator } = await deploymentManager.getContracts();
-          
-      const cbETHIndexInComet = await configurator.getAssetIndex(
-        comet.address,
-        CBETH_ADDRESS
-      );
-
-      const wstETHIndexInComet = await configurator.getAssetIndex(
-        comet.address,
-        WSTETH_ADDRESS
-      );
-
-          
-      // 1. & 2. & 3. Check if the price feeds are set correctly.
-      const cbETHInCometInfo = await comet.getAssetInfoByAddress(
-        CBETH_ADDRESS
+        const { comet, configurator } = await deploymentManager.getContracts();
+    
+        const wstETHIndexInComet = await configurator.getAssetIndex(
+          comet.address,
+          WSTETH_ADDRESS
         );
-          
-      const cbETHInConfiguratorInfoWETHComet = (
-          await configurator.getConfiguration(comet.address)
-      ).assetConfigs[cbETHIndexInComet];
-            
-      expect(cbETHInCometInfo.priceFeed).to.eq(newCbEthToUsdPriceFeed);
-      expect(cbETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newCbEthToUsdPriceFeed);
-
-
-      const wstETHInCometInfo = await comet.getAssetInfoByAddress(
-        WSTETH_ADDRESS
+    
+        // 1. & 2. & 3. Check if the price feeds are set correctly.
+        const wstETHInCometInfo = await comet.getAssetInfoByAddress(
+          WSTETH_ADDRESS
         );
-
-      const wstETHInConfiguratorInfoWETHComet = (
+    
+        const wstETHInConfiguratorInfoWETHComet = (
           await configurator.getConfiguration(comet.address)
         ).assetConfigs[wstETHIndexInComet];
-
-      expect(wstETHInCometInfo.priceFeed).to.eq(newWstETHToUSDCPriceFeed);
-      expect(wstETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newWstETHToUSDCPriceFeed);
-    },
+      
+        expect(wstETHInCometInfo.priceFeed).to.eq(newWstETHToETHPriceFeed);
+        expect(wstETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newWstETHToETHPriceFeed);
+      },
 });
