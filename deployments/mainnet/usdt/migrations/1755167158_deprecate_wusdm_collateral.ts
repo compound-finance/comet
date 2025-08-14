@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
-import { proposal } from '../../../../src/deploy';
+import { proposal, exp } from '../../../../src/deploy';
 
 const WUSDM_ADDRESS = '0x57F5E098CaD7A3D1Eed53991D4d66C45C9AF7812';
 
@@ -9,18 +9,18 @@ let newPriceFeedAddress;
 
 export default migration('1755167158_deprecate_wusdm_collateral', {
   async prepare(
-    // deploymentManager: DeploymentManager
+    deploymentManager: DeploymentManager
   ) {
-    // const _wUSDMPriceFeed = await deploymentManager.deploy(
-    //   'WETH:priceFeed',
-    //   'pricefeeds/ConstantPriceFeed.sol',
-    //   [
-    //     8, // decimals
-    //     1  // constantPrice
-    //   ],
-    //   true
-    // );
-    return { wUSDMPriceFeedAddress: '0x7BaDaB7109afBbF48eCd8d6498CaAcd2630b45B9' };
+    const _wUSDMPriceFeed = await deploymentManager.deploy(
+      'WETH:priceFeed',
+      'pricefeeds/ConstantPriceFeed.sol',
+      [
+        8, // decimals
+        1  // constantPrice
+      ],
+      true
+    );
+    return { wUSDMPriceFeedAddress: _wUSDMPriceFeed.address };
   },
 
   enact: async (deploymentManager: DeploymentManager, _, { wUSDMPriceFeedAddress }) => {
@@ -35,6 +35,16 @@ export default migration('1755167158_deprecate_wusdm_collateral', {
 
     newPriceFeedAddress = wUSDMPriceFeedAddress;
 
+    const newAssetConfig = {
+      asset: wUSDM.address,
+      priceFeed: wUSDMPriceFeedAddress,
+      decimals: await wUSDM.decimals(),
+      borrowCollateralFactor: 0,
+      liquidateCollateralFactor: exp(0.0001, 18),
+      liquidationFactor: exp(1, 18),
+      supplyCap: 0,
+    };
+
     const {
       governor,
       comet,
@@ -46,16 +56,10 @@ export default migration('1755167158_deprecate_wusdm_collateral', {
       // 1. Update wUSDM price feed to return the smallest possible price
       {
         contract: configurator,
-        signature: 'updateAssetPriceFeed(address,address,address)',
-        args: [comet.address, wUSDM.address, wUSDMPriceFeedAddress],
+        signature: 'updateAsset(address,(address,address,uint8,uint64,uint64,uint64,uint128))',
+        args: [comet.address, newAssetConfig],
       },
-      // 2. Update wUSDM supply cap to 0 to prevent further deposits
-      {
-        contract: configurator,
-        signature: 'updateAssetSupplyCap(address,address,uint128)',
-        args: [comet.address, wUSDM.address, 0],
-      },
-      // 3. Deploy and upgrade to a new version of Comet
+      // 2. Deploy and upgrade to a new version of Comet
       {
         contract: cometAdmin,
         signature: 'deployAndUpgradeTo(address,address)',
@@ -76,11 +80,9 @@ Further detailed information can be found on the corresponding [proposal pull re
 
 ## Proposal Actions
 
-The first proposal action updates wUSDM price feed to return the smallest possible price.
+The first proposal action updates wUSDM config to a deprecated state.
 
-The second action updates wUSDM supply cap to 0 to prevent further deposits.
-
-The third action deploys and upgrades Comet to a new version.`;
+The second action deploys and upgrades Comet to a new version.`;
     const txn = await deploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
@@ -107,11 +109,17 @@ The third action deploys and upgrades Comet to a new version.`;
     expect(0).to.be.equal(wUSDMAssetInfo.supplyCap);
     expect(newPriceFeedAddress).to.be.equal(wUSDMAssetInfo.priceFeed);
     expect(1).to.be.equal(await comet.getPrice(wUSDMAssetInfo.priceFeed));
+    expect(0).to.be.equal(wUSDMAssetInfo.borrowCollateralFactor);
+    expect(exp(0.0001, 18)).to.be.equal(wUSDMAssetInfo.liquidateCollateralFactor);
+    expect(exp(1, 18)).to.be.equal(wUSDMAssetInfo.liquidationFactor);
 
     // 2. Compare proposed asset config with Configurator asset config
     const configuratorWUSDMAssetConfig = (await configurator.getConfiguration(comet.address)).assetConfigs[wUSDMAssetIndex];
     expect(0).to.be.equal(configuratorWUSDMAssetConfig.supplyCap);
     expect(newPriceFeedAddress).to.be.equal(configuratorWUSDMAssetConfig.priceFeed);
     expect(1).to.be.equal(await comet.getPrice(configuratorWUSDMAssetConfig.priceFeed));
+    expect(0).to.be.equal(configuratorWUSDMAssetConfig.borrowCollateralFactor);
+    expect(exp(0.0001, 18)).to.be.equal(configuratorWUSDMAssetConfig.liquidateCollateralFactor);
+    expect(exp(1, 18)).to.be.equal(configuratorWUSDMAssetConfig.liquidationFactor);
   },
 });

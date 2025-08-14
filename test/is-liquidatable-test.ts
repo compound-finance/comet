@@ -1,4 +1,5 @@
-import { expect, exp, makeProtocol } from './helpers';
+import { expect, exp, makeProtocol, makeConfigurator } from './helpers';
+import { ethers } from 'hardhat';
 
 /*
 Prices are set in terms of the base token (USDC with 6 decimals, by default):
@@ -39,6 +40,56 @@ describe('isLiquidatable', function () {
     await comet.setBasePrincipal(alice.address, -1_000_000);
 
     expect(await comet.isLiquidatable(alice.address)).to.be.true;
+  });
+  
+
+  it('cannot liquidate if price is 0', async () => {
+    const {
+      comet,
+      cometProxy,
+      tokens,
+      configurator,
+      configuratorProxy,
+      proxyAdmin,
+      users: [alice],
+    } = await makeConfigurator({
+      assets: {
+        USDC: { decimals: 6 },
+        COMP: {
+          initial: 1e7,
+          decimals: 18,
+          initialPrice: 1, // 1 COMP = 1 USDC
+        },
+      },
+    });
+    const cometAsProxy = comet.attach(cometProxy.address);
+    const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+    const { COMP } = tokens;
+
+    // user owes $100,000
+    await cometAsProxy.setBasePrincipal(alice.address, -100_000_000_000);
+    expect(await cometAsProxy.isLiquidatable(alice.address)).to.be.true;
+    const revertPriceFeedFactory = await ethers.getContractFactory('RevertPriceFeed');
+    const revertPriceFeed = await revertPriceFeedFactory.deploy(
+      8,
+      1
+    );
+    await revertPriceFeed.deployed();
+    console.log('revertPriceFeed deployed:');
+
+    await configuratorAsProxy.updateAssetPriceFeed(cometAsProxy.address, COMP.address, revertPriceFeed.address);
+    console.log('updated asset price feed');
+    await proxyAdmin.deployAndUpgradeTo(configuratorAsProxy.address, cometAsProxy.address);
+    console.log('upgraded comet to configurator proxy');
+    expect(await cometAsProxy.isLiquidatable(alice.address)).to.be.true;
+    console.log('position is liquidatable');
+    await revertPriceFeed.setToRevert(true);
+    await COMP.allocateTo(alice.address, 1);
+    await COMP.connect(alice).approve(cometAsProxy.address, 1);
+    await cometAsProxy.connect(alice).supply(COMP.address, 1);
+    console.log('successfully supplied 1 wei of COMP');
+    await expect(cometAsProxy.isLiquidatable(alice.address)).to.be.reverted;
+    console.log('position cannot be liquidated');
   });
 
   it('is false when collateral can cover the borrowed principal', async () => {
