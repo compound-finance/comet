@@ -3,8 +3,9 @@ pragma solidity 0.8.15;
 
 import "./IGovernorBravo.sol";
 import "./vendor/Timelock.sol";
+import "./vendor/proxy/ERC1967/ERC1967Upgrade.sol";
 
-contract CustomGovernor is IGovernorBravo {
+contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
     /// @notice The name of this contract
     string public constant name = "Custom Governor";
 
@@ -34,8 +35,8 @@ contract CustomGovernor is IGovernorBravo {
     /// @notice Mapping of admin addresses
     mapping (address => bool) public admins;
 
-    /// @notice Number of admins required to approve a proposal
-    uint public multisigThreshold;
+    /// @notice Number of admins required to approve a proposal (immutable)
+    uint public immutable multisigThreshold;
 
     /// @notice Mapping of proposal approvals by admins
     mapping (uint => mapping (address => bool)) public proposalApprovals;
@@ -44,33 +45,38 @@ contract CustomGovernor is IGovernorBravo {
     mapping (uint => uint) public proposalApprovalCounts;
 
     /// @notice An event emitted when an admin is added or removed
-    event AdminChanged(address admin, bool isAdmin);
+    event GovernorAdminChanged(address admin, bool isAdmin);
 
     /// @notice An event emitted when an admin approves a proposal
     event ProposalApproved(uint proposalId, address admin);
+
+    /**
+     * @notice Constructor to set immutable multisig threshold
+     * @param threshold_ The multisig threshold (immutable)
+     */
+    constructor(uint threshold_) {
+        multisigThreshold = threshold_;
+    }
 
     /**
      * @notice Initialize the governor (called by proxy)
      * @param timelock_ The timelock contract address
      * @param token_ The governance token address
      * @param initialAdmin_ The initial admin address
-     * @param threshold_ The multisig threshold
      */
     function initialize(
         address timelock_,
         address token_,
-        address initialAdmin_,
-        uint threshold_
+        address initialAdmin_
     ) external {
         require(timelock == Timelock(payable(0)), "CustomGovernor::initialize: already initialized");
         
         timelock = Timelock(payable(timelock_));
         token = token_;
-        multisigThreshold = threshold_;
         
         // Set initial admin
         admins[initialAdmin_] = true;
-        emit AdminChanged(initialAdmin_, true);
+        emit GovernorAdminChanged(initialAdmin_, true);
     }
 
     function propose(
@@ -185,7 +191,7 @@ contract CustomGovernor is IGovernorBravo {
     function setAdmin(address admin, bool isAdmin) external {
         require(admins[msg.sender], "CustomGovernor::setAdmin: only admins can manage admins");
         admins[admin] = isAdmin;
-        emit AdminChanged(admin, isAdmin);
+        emit GovernorAdminChanged(admin, isAdmin);
     }
 
     /**
@@ -269,4 +275,72 @@ contract CustomGovernor is IGovernorBravo {
         // For multisig, voting is not used - just return 0 for interface compliance
         return 0;
     }
+
+    // UUPS Upgrade functionality
+    /**
+     * @notice Propose an upgrade to the implementation
+     * @param newImplementation The address of the new implementation
+     * @param description Description of the upgrade
+     */
+    function proposeUpgrade(address newImplementation, string memory description) external returns (uint) {
+        require(admins[msg.sender], "CustomGovernor::proposeUpgrade: only admins can propose upgrades");
+        
+        // Create upgrade proposal data
+        address[] memory targets = new address[](1);
+        targets[0] = address(this);
+        
+        uint[] memory values = new uint[](1);
+        values[0] = 0;
+        
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = abi.encodeWithSelector(this.upgradeTo.selector, newImplementation);
+        
+        // Use the regular propose function
+        return propose(targets, values, calldatas, description);
+    }
+
+    /**
+     * @notice Propose an upgrade with initialization data
+     * @param newImplementation The address of the new implementation
+     * @param data The initialization data
+     * @param description Description of the upgrade
+     */
+    function proposeUpgradeAndCall(address newImplementation, bytes calldata data, string memory description) external returns (uint) {
+        require(admins[msg.sender], "CustomGovernor::proposeUpgradeAndCall: only admins can propose upgrades");
+        
+        // Create upgrade proposal data
+        address[] memory targets = new address[](1);
+        targets[0] = address(this);
+        
+        uint[] memory values = new uint[](1);
+        values[0] = 0;
+        
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = abi.encodeWithSelector(this.upgradeToAndCall.selector, newImplementation, data);
+        
+        // Use the regular propose function
+        return propose(targets, values, calldatas, description);
+    }
+
+
+
+    /**
+     * @notice Execute upgrade (internal function called by proposal execution)
+     * @param newImplementation The address of the new implementation
+     */
+    function upgradeTo(address newImplementation) external {
+        require(msg.sender == address(this), "CustomGovernor::upgradeTo: only self can call");
+        _upgradeToAndCallUUPS(newImplementation, bytes(""), false);
+    }
+
+    /**
+     * @notice Execute upgrade with initialization data (internal function called by proposal execution)
+     * @param newImplementation The address of the new implementation
+     * @param data The initialization data
+     */
+    function upgradeToAndCall(address newImplementation, bytes calldata data) external {
+        require(msg.sender == address(this), "CustomGovernor::upgradeToAndCall: only self can call");
+        _upgradeToAndCallUUPS(newImplementation, data, true);
+    }
+
 }

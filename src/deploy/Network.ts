@@ -87,6 +87,7 @@ export async function createMultisigGov(
   const admin = adminSigner ?? await deploymentManager.getSigner();
   const clone = {
     comp: '0xc00e94cb662c3520282e6f5717214004a7f26888',
+    governorBravo: '0xc0da02939e1441f497fd74f78ce7decb17b66529',
   };
   
   const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
@@ -98,21 +99,19 @@ export async function createMultisigGov(
   const governorImpl = await deploymentManager.deploy(
     'governor:implementation',
     'CustomGovernor.sol',
-    []
+    [1] // multisigThreshold (1 for single admin, increase for multi-admin)
   );
 
-  // Deploy governor proxy
+  // Deploy governor proxy using ERC1967Proxy (UUPS pattern)
   const governorProxy = await deploymentManager.deploy(
     'governor',
-    'vendor/proxy/transparent/TransparentUpgradeableProxy.sol',
+    'vendor/proxy/ERC1967/ERC1967Proxy.sol',
     [
       governorImpl.address,
-      admin.address,
       governorImpl.interface.encodeFunctionData('initialize', [
         timelock.address,
         COMP.address,
-        admin.address,
-        1
+        admin.address
       ])
     ]
   );
