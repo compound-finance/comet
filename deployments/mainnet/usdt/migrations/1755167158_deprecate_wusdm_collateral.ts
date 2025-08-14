@@ -65,9 +65,9 @@ export default migration('1755167158_deprecate_wusdm_collateral', {
 
 ## Proposal summary
 
-WOOF! proposes to deprecate wUSDM from cUSDTv3 on Ethereum network, since deprecation of USDM itself and it's Chainlink oracle.
+WOOF! proposes to deprecate wUSDM from cUSDTv3 on Ethereum network, since deprecation of USDM itself and its Chainlink oracle.
 
-In order to achieve this price feed will be updated to a new one, which will return smallest acceptable price - 0.00000001 (1e-8), and supply cup will be set to 0 to prevent further deposits. This proposal takes the governance steps recommended and necessary to update a Compound III USDT market on Ethereum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario).
+In order to achieve this price feed will be updated to a new one, which will return the smallest acceptable price - 0.00000001 (1e-8), and the supply cup will be set to 0 to prevent further deposits. This proposal takes the governance steps recommended and necessary to update a Compound III USDT market on Ethereum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario).
 
 Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1013).
 
