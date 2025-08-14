@@ -39,7 +39,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const bridgeReceiver = await deploymentManager.fromDep('bridgeReceiver', 'arbitrum', 'usdc.e');
 
   // Deploy Comet
-  const deployed = await deployComet(deploymentManager, deploySpec);
+  const deployed = await deployComet(deploymentManager, deploySpec, {}, true);
 
   return {
     ...deployed,

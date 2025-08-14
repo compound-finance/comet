@@ -13,6 +13,7 @@ on:
           - arbitrum
           - base
           - optimism
+          - linea
           - mantle
           - unichain
           - scroll
@@ -42,6 +43,11 @@ on:
         description: Deploy Market
         required: false
         default: false
+      tenderly:
+        type: boolean
+        description: Use Tenderly for simulation
+        required: false
+        default: false
 jobs:
   enact-migration:
     name: Enact Migration
@@ -52,15 +58,14 @@ jobs:
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
       ANKR_KEY: ${{ secrets.ANKR_KEY }}
       POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
-      ARBISCAN_KEY: ${{ secrets.ARBISCAN_KEY }}
       BASESCAN_KEY: ${{ secrets.BASESCAN_KEY }}
-      LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
       OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
       MANTLESCAN_KEY: ${{ secrets.MANTLESCAN_KEY }}
       SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
       _TENDERLY_KEY_RONIN: ${{ secrets._TENDERLY_KEY_RONIN }}
+      _TENDERLY_KEY_POLYGON: ${{ secrets._TENDERLY_KEY_POLYGON }}
       UNICHAIN_QUICKNODE_KEY: ${{ secrets.UNICHAIN_QUICKNODE_KEY }}
-      GOV_NETWORK: ${{ secrets.GOV_NETWORK }}
+      GOV_NETWORK: ${{ vars.GOV_NETWORK }}
     steps:
       - name: Get governance network
         run: |
@@ -72,13 +77,22 @@ jobs:
             *)
                 echo "No governance network for selected network" ;;
           esac
+          
+      - name: Export Tenderly secrets
+        if: github.event.inputs.tenderly == 'true'
+        env:
+          TENDERLY_USERNAME:     ${{ secrets.TENDERLY_USERNAME }}
+          TENDERLY_ACCESS_KEY:   ${{ secrets.TENDERLY_ACCESS_KEY }}
+        run: |
+          echo "TENDERLY_USERNAME=$TENDERLY_USERNAME"       >> "$GITHUB_ENV"
+          echo "TENDERLY_ACCESS_KEY=$TENDERLY_ACCESS_KEY"   >> "$GITHUB_ENV"
 
       - name: Seacrest
         uses: hayesgm/seacrest@af229b0a00b73cb6fa9940a836a62fa3b918fd77
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ inputs.network }}"
-          ethereum_url: "${{ fromJSON('{\"ronin\":\"https://ronin.gateway.tenderly.co/${_TENDERLY_KEY_RONIN}\",\"unichain\":\"https://multi-boldest-patina.unichain-mainnet.quiknode.pro/${UNICHAIN_QUICKNODE_KEY}\",\"mantle\":\"https://mantle-mainnet.infura.io/v3/$INFURA_KEY\",\"optimism\":\"https://rpc.ankr.com/optimism/$ANKR_KEY\",\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"sepolia\":\"https://sepolia.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\",\"base\":\"https://rpc.ankr.com/base/$ANKR_KEY\",\"scroll\":\"https://rpc.scroll.io\"}')[inputs.network] }}"
+          ethereum_url: "${{ fromJSON('{\"linea\":\"https://rpc.ankr.com/linea/${ANKR_KEY}\",\"ronin\":\"https://ronin.gateway.tenderly.co/${_TENDERLY_KEY_RONIN}\",\"unichain\":\"https://multi-boldest-patina.unichain-mainnet.quiknode.pro/${UNICHAIN_QUICKNODE_KEY}\",\"mantle\":\"https://mantle-mainnet.infura.io/v3/$INFURA_KEY\",\"optimism\":\"https://rpc.ankr.com/optimism/$ANKR_KEY\",\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"sepolia\":\"https://sepolia.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\",\"base\":\"https://rpc.ankr.com/base/$ANKR_KEY\",\"scroll\":\"https://rpc.scroll.io\"}')[github.event.inputs.network] }}"
           port: 8585
         if: github.event.inputs.eth_pk == ''
 
@@ -86,10 +100,10 @@ jobs:
         uses: hayesgm/seacrest@af229b0a00b73cb6fa9940a836a62fa3b918fd77
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
-          requested_network: "${{ env.GOV_NETWORK }}"
-          ethereum_url: "${{ fromJSON('{\"ronin\":\"https://ronin.gateway.tenderly.co/${_TENDERLY_KEY_RONIN}\",\"unichain\":\"https://multi-boldest-patina.unichain-mainnet.quiknode.pro/${UNICHAIN_QUICKNODE_KEY}\",\"mantle\":\"https://mantle-mainnet.infura.io/v3/$INFURA_KEY\",\"optimism\":\"https://rpc.ankr.com/optimism/$ANKR_KEY\",\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"sepolia\":\"https://sepolia.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\"}')[env.GOV_NETWORK] }}"
+          requested_network: "${{ vars.GOV_NETWORK }}"
+          ethereum_url: "${{ fromJSON('{\"linea\":\"https://rpc.ankr.com/linea/${ANKR_KEY}\",\"ronin\":\"https://ronin.gateway.tenderly.co/${_TENDERLY_KEY_RONIN}\",\"unichain\":\"https://multi-boldest-patina.unichain-mainnet.quiknode.pro/${UNICHAIN_QUICKNODE_KEY}\",\"mantle\":\"https://mantle-mainnet.infura.io/v3/$INFURA_KEY\",\"optimism\":\"https://rpc.ankr.com/optimism/$ANKR_KEY\",\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"sepolia\":\"https://sepolia.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\"}')[vars.GOV_NETWORK] }}"
           port: 8685
-        if: github.event.inputs.eth_pk == '' && env.GOV_NETWORK != '' && github.event.inputs.impersonateAccount == ''
+        if: github.event.inputs.eth_pk == '' && vars.GOV_NETWORK != '' && github.event.inputs.network != vars.GOV_NETWORK
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -117,13 +131,13 @@ jobs:
 
       - name: Run Deploy Market and Enact Migration (impersonate)
         run: |
-          yarn hardhat deploy_and_migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true'] }} ${{ github.event.inputs.migration }} --impersonate ${{ github.event.inputs.impersonateAccount }}
+          yarn hardhat deploy_and_migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true'] }} ${{ github.event.inputs.migration }} --impersonate ${{ github.event.inputs.impersonateAccount }} ${{ fromJSON('["", "--tenderly"]')[github.event.inputs.tenderly == 'true'] }}
         env:
           DEBUG: true
           ETH_PK: "${{ inputs.eth_pk }}"
           NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
-          GOV_NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8685"]')[github.event.inputs.eth_pk == '' && env.GOV_NETWORK != ''] }}
-          GOV_NETWORK: ${{ env.GOV_NETWORK }}
+          GOV_NETWORK_PROVIDER: ${{ github.event.inputs.network != vars.GOV_NETWORK && github.event.inputs.eth_pk == '' && vars.GOV_NETWORK != '' && 'http://localhost:8685' || '' }}
+          GOV_NETWORK: ${{ github.event.inputs.network != vars.GOV_NETWORK && vars.GOV_NETWORK || '' }}
           REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
         if: github.event.inputs.impersonateAccount != '' && github.event.inputs.with_deploy == 'true'
       - name: Run Enact Migration
@@ -133,32 +147,32 @@ jobs:
           DEBUG: true
           ETH_PK: "${{ inputs.eth_pk }}"
           NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
-          GOV_NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8685"]')[github.event.inputs.eth_pk == '' && env.GOV_NETWORK != ''] }}
-          GOV_NETWORK: ${{ env.GOV_NETWORK }}
+          GOV_NETWORK_PROVIDER: ${{ github.event.inputs.network != vars.GOV_NETWORK && github.event.inputs.eth_pk == '' && vars.GOV_NETWORK != '' && 'http://localhost:8685' || '' }}
+          GOV_NETWORK: ${{ github.event.inputs.network != vars.GOV_NETWORK && vars.GOV_NETWORK || '' }}
           REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
         if: github.event.inputs.impersonateAccount == '' && github.event.inputs.with_deploy == 'false'
       - name: Run Enact Migration (impersonate)
         run: |
-          yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true'] }} ${{ github.event.inputs.migration }} --impersonate ${{ github.event.inputs.impersonateAccount }}
+          yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true'] }} ${{ github.event.inputs.migration }} --impersonate ${{ github.event.inputs.impersonateAccount }} ${{ fromJSON('["", "--tenderly"]')[github.event.inputs.tenderly == 'true'] }}
         env:
           DEBUG: true
           ETH_PK: "${{ inputs.eth_pk }}"
           NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
-          GOV_NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8685"]')[github.event.inputs.eth_pk == '' && env.GOV_NETWORK != ''] }}
-          GOV_NETWORK: ${{ env.GOV_NETWORK }}
+          GOV_NETWORK_PROVIDER: ${{ github.event.inputs.network != vars.GOV_NETWORK && github.event.inputs.eth_pk == '' && vars.GOV_NETWORK != '' && 'http://localhost:8685' || '' }}
+          GOV_NETWORK: ${{ github.event.inputs.network != vars.GOV_NETWORK && vars.GOV_NETWORK || '' }}
           REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
         if: github.event.inputs.impersonateAccount != '' && github.event.inputs.run_id != 0
       - name: Run Prepare and Enact Migration (impersonate)
         run: |
-          yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --prepare --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true'] }} ${{ github.event.inputs.migration }} --impersonate ${{ github.event.inputs.impersonateAccount }}
+          yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --prepare --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true'] }} ${{ github.event.inputs.migration }} --impersonate ${{ github.event.inputs.impersonateAccount }} ${{ fromJSON('["", "--tenderly"]')[github.event.inputs.tenderly == 'true'] }}
         env:
           DEBUG: true
           ETH_PK: "${{ inputs.eth_pk }}"
           NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
-          GOV_NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8685"]')[github.event.inputs.eth_pk == '' && env.GOV_NETWORK != ''] }}
-          GOV_NETWORK: ${{ env.GOV_NETWORK }}
+          GOV_NETWORK_PROVIDER: ${{ github.event.inputs.network != vars.GOV_NETWORK && github.event.inputs.eth_pk == '' && vars.GOV_NETWORK != '' && 'http://localhost:8685' || '' }}
+          GOV_NETWORK: ${{ github.event.inputs.network != vars.GOV_NETWORK && vars.GOV_NETWORK || '' }}
           REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
-        if: github.event.inputs.impersonateAccount != '' && github.event.inputs.with_deploy == 'false'
+        if: github.event.inputs.impersonateAccount != '' && github.event.inputs.with_deploy == 'false' && github.event.inputs.run_id == ''
       - name: Commit changes
         if: ${{ github.event.inputs.simulate == 'false' }}
         run: |
