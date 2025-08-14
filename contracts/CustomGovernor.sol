@@ -1,0 +1,261 @@
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity 0.8.15;
+
+import "./IGovernorBravo.sol";
+import "./vendor/Timelock.sol";
+
+contract CustomGovernor is IGovernorBravo {
+    /// @notice The name of this contract
+    string public constant name = "Custom Governor";
+
+     /// @notice The address of the governance token (for interface compliance)
+    address public token;
+
+     /// @notice The address of the timelock
+    Timelock public timelock;
+
+    /// @notice The total number of proposals
+    uint public proposalCount;
+
+    /// @notice The maximum number of actions that can be included in a proposal
+    uint public proposalMaxOperations = 10;
+
+    /// @notice The official record of all proposals ever proposed
+    mapping (uint => Proposal) public _proposals;
+
+    /// @notice Proposal details storage
+    mapping (uint => address[]) public proposalTargets;
+    mapping (uint => uint[]) public proposalValues;
+    mapping (uint => bytes[]) public proposalCalldatas;
+
+    /// @notice The latest proposal for each proposer
+    mapping (address => uint) public latestProposalIds;
+
+    /// @notice Mapping of admin addresses
+    mapping (address => bool) public admins;
+
+    /// @notice Number of admins required to approve a proposal
+    uint public multisigThreshold;
+
+    /// @notice Mapping of proposal approvals by admins
+    mapping (uint => mapping (address => bool)) public proposalApprovals;
+
+    /// @notice Mapping of proposal approval counts
+    mapping (uint => uint) public proposalApprovalCounts;
+
+    /// @notice An event emitted when an admin is added or removed
+    event AdminChanged(address admin, bool isAdmin);
+
+    /// @notice An event emitted when an admin approves a proposal
+    event ProposalApproved(uint proposalId, address admin);
+
+    constructor(
+        address timelock_,
+        address token_,
+        address initialAdmin_,
+        uint threshold_
+    ) {
+        timelock = Timelock(payable(timelock_));
+        token = token_;
+        multisigThreshold = threshold_;
+        
+        // Set initial admin
+        admins[initialAdmin_] = true;
+        emit AdminChanged(initialAdmin_, true);
+    }
+
+    function propose(
+        address[] memory targets,
+        uint[] memory values,
+        bytes[] memory calldatas,
+        string memory description
+    ) public returns (uint) {
+        require(admins[msg.sender], "CustomGovernor::propose: only admins can propose");
+        require(targets.length == values.length && targets.length == calldatas.length, "CustomGovernor::propose: proposal function information arity mismatch");
+        require(targets.length != 0, "CustomGovernor::propose: must provide actions");
+        require(targets.length <= proposalMaxOperations, "CustomGovernor::propose: too many actions");
+
+        proposalCount++;
+        Proposal memory newProposal = Proposal({
+            id: proposalCount,
+            proposer: msg.sender,
+            eta: 0,
+            startBlock: 0, // Not used for multisig
+            endBlock: 0,   // Not used for multisig
+            forVotes: 0,   // Not used for multisig
+            againstVotes: 0, // Not used for multisig
+            abstainVotes: 0, // Not used for multisig
+            canceled: false,
+            executed: false
+        });
+
+        _proposals[newProposal.id] = newProposal;
+        proposalTargets[newProposal.id] = targets;
+        proposalValues[newProposal.id] = values;
+        proposalCalldatas[newProposal.id] = calldatas;
+        latestProposalIds[newProposal.proposer] = newProposal.id;
+
+        // Create signatures array (empty for now)
+        string[] memory signatures = new string[](targets.length);
+
+        emit ProposalCreated(newProposal.id, msg.sender, targets, values, signatures, calldatas, 0, 0, description);
+        return newProposal.id;
+    }
+
+    function queue(uint proposalId) external {
+        require(admins[msg.sender], "CustomGovernor::queue: only admins can queue");
+        require(state(proposalId) == IGovernorBravo.ProposalState.Succeeded, "CustomGovernor::queue: proposal can only be queued if it is succeeded");
+        
+        // Check if proposal has enough approvals
+        require(proposalApprovalCounts[proposalId] >= multisigThreshold, "CustomGovernor::queue: not enough approvals");
+        
+        Proposal storage proposal = _proposals[proposalId];
+        uint eta = block.timestamp + timelock.delay();
+        address[] memory targets = proposalTargets[proposalId];
+        uint[] memory values = proposalValues[proposalId];
+        bytes[] memory calldatas = proposalCalldatas[proposalId];
+        
+        for (uint i = 0; i < targets.length; i++) {
+            string memory signature = "";
+            if (calldatas[i].length >= 4) {
+                signature = string(abi.encodePacked(calldatas[i][0], calldatas[i][1], calldatas[i][2], calldatas[i][3]));
+            }
+            _queueOrRevertInternal(targets[i], values[i], signature, calldatas[i], eta);
+        }
+        proposal.eta = eta;
+        emit ProposalQueued(proposalId, eta);
+    }
+
+    function execute(uint proposalId) external {
+        require(admins[msg.sender], "CustomGovernor::execute: only admins can execute");
+        require(state(proposalId) == IGovernorBravo.ProposalState.Queued, "CustomGovernor::execute: proposal can only be executed if it is queued");
+        Proposal storage proposal = _proposals[proposalId];
+        proposal.executed = true;
+        address[] memory targets = proposalTargets[proposalId];
+        uint[] memory values = proposalValues[proposalId];
+        bytes[] memory calldatas = proposalCalldatas[proposalId];
+        
+        for (uint i = 0; i < targets.length; i++) {
+            string memory signature = "";
+            if (calldatas[i].length >= 4) {
+                signature = string(abi.encodePacked(calldatas[i][0], calldatas[i][1], calldatas[i][2], calldatas[i][3]));
+            }
+            timelock.executeTransaction{value: values[i]}(targets[i], values[i], signature, calldatas[i], proposal.eta);
+        }
+        emit ProposalExecuted(proposalId);
+    }
+
+    function cancel(uint proposalId) external {
+        IGovernorBravo.ProposalState state = state(proposalId);
+        require(state != IGovernorBravo.ProposalState.Executed, "CustomGovernor::cancel: cannot cancel executed proposal");
+
+        Proposal storage proposal = _proposals[proposalId];
+        require(msg.sender == proposal.proposer, "CustomGovernor::cancel: only proposer can cancel");
+
+        proposal.canceled = true;
+        address[] memory targets = proposalTargets[proposalId];
+        uint[] memory values = proposalValues[proposalId];
+        bytes[] memory calldatas = proposalCalldatas[proposalId];
+        
+        for (uint i = 0; i < targets.length; i++) {
+            string memory signature = "";
+            if (calldatas[i].length >= 4) {
+                signature = string(abi.encodePacked(calldatas[i][0], calldatas[i][1], calldatas[i][2], calldatas[i][3]));
+            }
+            timelock.cancelTransaction(targets[i], values[i], signature, calldatas[i], proposal.eta);
+        }
+
+        emit ProposalCanceled(proposalId);
+    }
+
+    /**
+     * @notice Add or remove an admin
+     * @param admin The address to add or remove
+     * @param isAdmin Whether to add (true) or remove (false) the admin
+     */
+    function setAdmin(address admin, bool isAdmin) external {
+        require(admins[msg.sender], "CustomGovernor::setAdmin: only admins can manage admins");
+        admins[admin] = isAdmin;
+        emit AdminChanged(admin, isAdmin);
+    }
+
+    /**
+     * @notice Check if an address is an admin
+     * @param admin The address to check
+     * @return Whether the address is an admin
+     */
+    function isAdmin(address admin) external view returns (bool) {
+        return admins[admin];
+    }
+
+    /**
+     * @notice Approve a proposal (multisig functionality)
+     * @param proposalId The proposal to approve
+     */
+    function approveProposal(uint proposalId) external {
+        require(admins[msg.sender], "CustomGovernor::approveProposal: only admins can approve");
+        require(!proposalApprovals[proposalId][msg.sender], "CustomGovernor::approveProposal: already approved");
+        
+        proposalApprovals[proposalId][msg.sender] = true;
+        proposalApprovalCounts[proposalId]++;
+        emit ProposalApproved(proposalId, msg.sender);
+    }
+
+    /**
+     * @notice Get the number of approvals for a proposal
+     * @param proposalId The proposal to check
+     * @return Number of approvals
+     */
+    function getProposalApprovals(uint proposalId) external view returns (uint) {
+        return proposalApprovalCounts[proposalId];
+    }
+
+    /**
+     * @notice Check if a proposal has enough approvals to be queued
+     * @param proposalId The proposal to check
+     * @return Whether the proposal has enough approvals
+     */
+    function hasEnoughApprovals(uint proposalId) external view returns (bool) {
+        return proposalApprovalCounts[proposalId] >= multisigThreshold;
+    }
+
+    function state(uint proposalId) public view returns (IGovernorBravo.ProposalState) {
+        require(proposalCount >= proposalId, "CustomGovernor::state: invalid proposal id");
+        Proposal storage proposal = _proposals[proposalId];
+        if (proposal.canceled) {
+            return IGovernorBravo.ProposalState.Canceled;
+        }
+        if (proposal.executed) {
+            return IGovernorBravo.ProposalState.Executed;
+        }
+        if (proposal.eta == 0) {
+            return IGovernorBravo.ProposalState.Succeeded; // Auto-succeed for multisig
+        }
+        if (block.timestamp >= proposal.eta + timelock.GRACE_PERIOD()) {
+            return IGovernorBravo.ProposalState.Expired;
+        }
+        return IGovernorBravo.ProposalState.Queued;
+    }
+
+    function _queueOrRevertInternal(address target, uint value, string memory signature, bytes memory data, uint eta) internal {
+        require(!timelock.queuedTransactions(keccak256(abi.encode(target, value, signature, data, eta))), "CustomGovernor::_queueOrRevertInternal: identical proposal action already queued at eta");
+        timelock.queueTransaction(target, value, signature, data, eta);
+    }
+
+    // Interface compliance functions (minimal implementation)
+    function comp() external view returns (address) { return token; }
+    function MIN_VOTING_PERIOD() external pure returns (uint256) { return 1; }
+    function MIN_VOTING_DELAY() external pure returns (uint256) { return 0; }
+    function MIN_PROPOSAL_THRESHOLD() external pure returns (uint256) { return 0; }
+    function votingDelay() external pure returns (uint256) { return 0; }
+    function votingPeriod() external pure returns (uint256) { return 1; }
+    function proposals(uint256 proposalId) external view returns (Proposal memory) { return _proposals[proposalId]; }
+    function proposalEta(uint256 proposalId) external view returns (uint256) { return _proposals[proposalId].eta; }
+    function proposalDetails(uint proposalId) external view returns (address[] memory, uint[] memory, bytes[] memory, bytes32) {
+        return (proposalTargets[proposalId], proposalValues[proposalId], proposalCalldatas[proposalId], bytes32(0));
+    }
+    function castVote(uint proposalId, uint8 support) external pure returns (uint) {
+        // For multisig, voting is not used - just return 0 for interface compliance
+        return 0;
+    }
+}

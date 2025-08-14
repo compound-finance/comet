@@ -79,6 +79,58 @@ export async function cloneGov(
   return { COMP, fauceteer, governor, timelock };
 }
 
+export async function createMultisigGov(
+  deploymentManager: DeploymentManager,
+  adminSigner?: SignerWithAddress
+): Promise<Deployed> {
+  const trace = deploymentManager.tracer();
+  const admin = adminSigner ?? await deploymentManager.getSigner();
+  const clone = {
+    comp: '0xc00e94cb662c3520282e6f5717214004a7f26888',
+  };
+  
+  const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
+  const timelock = await deploymentManager.deploy('timelock', 'test/SimpleTimelock.sol', [admin.address]);
+  
+  const COMP = await deploymentManager.clone('COMP', clone.comp, [admin.address]);
+
+  // Deploy custom governor implementation
+  const governorImpl = await deploymentManager.deploy(
+    'governor:implementation',
+    'CustomGovernor.sol',
+    [
+      timelock.address,
+      COMP.address,
+      admin.address, // initialAdmin
+      1 // multisigThreshold (1 for single admin, increase for multi-admin)
+    ]
+  );
+
+  // Deploy governor proxy
+  const governorProxy = await deploymentManager.deploy(
+    'governor',
+    'vendor/proxy/transparent/TransparentUpgradeableProxy.sol',
+    [
+      governorImpl.address,
+      admin.address, // proxy admin
+      [] // initialization data
+    ]
+  );
+
+  const governor = governorImpl.attach(governorProxy.address);
+
+  // Set timelock admin to governor
+  await deploymentManager.idempotent(
+    async () => !sameAddress(await timelock.admin(), governor.address),
+    async () => {
+      trace(`Transferring Governor of Timelock to ${governor.address}`);
+      trace(await wait(timelock.connect(admin).setAdmin(governor.address)));
+    }
+  );
+
+  return { COMP, fauceteer, governor, timelock };
+}
+
 export async function deployNetworkComet(
   deploymentManager: DeploymentManager,
   deploySpec: DeploySpec = { all: true },
