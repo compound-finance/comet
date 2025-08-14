@@ -79,7 +79,7 @@ export type TestnetProposal = [
 // Ideally these wouldn't be hardcoded, but other solutions are much more complex, and slower
 export const COMP_WHALES = {
   mainnet: [
-    //'0x9aa835bc7b8ce13b9b0c9764a52fbf71ac62ccf1',
+    '0x9aa835bc7b8ce13b9b0c9764a52fbf71ac62ccf1',
     '0x683a4f9915d6216f73d6df50151725036bd26c02',
     '0x8169522c2C57883E8EF80C498aAB7820dA539806',
     '0x8d07D225a769b7Af3A923481E1FdF49180e6A265',

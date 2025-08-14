@@ -198,7 +198,7 @@ export class DeploymentManager {
     artifact?: string
   ): Promise<C> {
     const maybeExisting = await this.contract<C>(alias);
-    if (!maybeExisting) {
+    if (!maybeExisting || artifact) {
       const trace = this.tracer();
       const contracts = await Promise.all(
         [].concat(addresses).map(async (address) => {
