@@ -251,18 +251,20 @@ contract CustomGovernor is IGovernorBravo {
         timelock.queueTransaction(target, value, signature, data, eta);
     }
 
-    // Interface compliance functions (minimal implementation)
-    function comp() external view returns (address) { return token; }
-    function MIN_VOTING_PERIOD() external pure returns (uint256) { return 1; }
-    function MIN_VOTING_DELAY() external pure returns (uint256) { return 0; }
-    function MIN_PROPOSAL_THRESHOLD() external pure returns (uint256) { return 0; }
-    function votingDelay() external pure returns (uint256) { return 0; }
-    function votingPeriod() external pure returns (uint256) { return 1; }
     function proposals(uint256 proposalId) external view returns (Proposal memory) { return _proposals[proposalId]; }
-    function proposalEta(uint256 proposalId) external view returns (uint256) { return _proposals[proposalId].eta; }
+    
     function proposalDetails(uint proposalId) external view returns (address[] memory, uint[] memory, bytes[] memory, bytes32) {
         return (proposalTargets[proposalId], proposalValues[proposalId], proposalCalldatas[proposalId], bytes32(0));
     }
+
+    // Interface compliance functions (minimal implementation)
+    function comp() external view returns (address) { return token; }
+    function MIN_VOTING_PERIOD() external pure returns (uint256) { return 0; }
+    function MIN_VOTING_DELAY() external pure returns (uint256) { return 0; }
+    function MIN_PROPOSAL_THRESHOLD() external pure returns (uint256) { return 0; }
+    function votingDelay() external pure returns (uint256) { return 0; }
+    function votingPeriod() external pure returns (uint256) { return 0; }
+    function proposalEta(uint256 proposalId) external view returns (uint256) { return _proposals[proposalId].eta; }
     function castVote(uint proposalId, uint8 support) external pure returns (uint) {
         // For multisig, voting is not used - just return 0 for interface compliance
         return 0;
