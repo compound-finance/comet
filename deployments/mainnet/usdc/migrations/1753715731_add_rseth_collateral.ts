@@ -78,7 +78,7 @@ export default migration('1753715731_add_rseth_collateral', {
 
 ## Proposal summary
 
-Compound Growth Program [AlphaGrowth] proposes to add rsETH into cUSDCv3 on Ethereum network. This proposal takes the governance steps recommended and necessary to update a Compound III USDC market on Ethereum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based on the [recommendations from Gauntlet](https://www.comp.xyz/t/alphagrowth-add-market-eth-on-unichain/6712/9).
+WOOF! proposes to add rsETH into cUSDCv3 on Ethereum network. This proposal takes the governance steps recommended and necessary to update a Compound III USDC market on Ethereum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based on the [recommendations from Gauntlet](https://www.comp.xyz/t/alphagrowth-add-market-eth-on-unichain/6712/9).
 
 Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1005) and [forum discussion](https://www.comp.xyz/t/alphagrowth-add-market-eth-on-unichain/6712).
 
