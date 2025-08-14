@@ -242,7 +242,7 @@ const config: HardhatUserConfig = {
 
   networks: {
     hardhat: {
-      chainId: parseInt(LOCAL_CHAIN_ID),
+      chainId: 1337,
       loggingEnabled: !!process.env['LOGGING'],
       gas: 120000000,
       gasPrice: 'auto',
