@@ -8,17 +8,19 @@ const WUSDM_ADDRESS = '0x57F5E098CaD7A3D1Eed53991D4d66C45C9AF7812';
 let newPriceFeedAddress;
 
 export default migration('1755167158_deprecate_wusdm_collateral', {
-  async prepare(deploymentManager: DeploymentManager) {
-    const _wUSDMPriceFeed = await deploymentManager.deploy(
-      'WETH:priceFeed',
-      'pricefeeds/ConstantPriceFeed.sol',
-      [
-        8, // decimals
-        1  // constantPrice
-      ],
-      true
-    );
-    return { wUSDMPriceFeedAddress: _wUSDMPriceFeed.address };
+  async prepare(
+    // deploymentManager: DeploymentManager
+  ) {
+    // const _wUSDMPriceFeed = await deploymentManager.deploy(
+    //   'WETH:priceFeed',
+    //   'pricefeeds/ConstantPriceFeed.sol',
+    //   [
+    //     8, // decimals
+    //     1  // constantPrice
+    //   ],
+    //   true
+    // );
+    return { wUSDMPriceFeedAddress: '0x7BaDaB7109afBbF48eCd8d6498CaAcd2630b45B9' };
   },
 
   enact: async (deploymentManager: DeploymentManager, _, { wUSDMPriceFeedAddress }) => {

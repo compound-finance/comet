@@ -77,6 +77,9 @@ function getBlockRollback(base: ForkSpec) {
   else if (base.network === 'unichain') {
     return 0;
   }
+  else if (base.network === 'mainnet') {
+    return 30;
+  }
   else if (base.network === 'base') {
     return 200;
   }
