@@ -36,7 +36,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const admin = await deploymentManager.getSigner();
 
   // Deploy CometProxyAdmin (shared across all Comet instances)
-  const proxyAdmin = await deploymentManager.deploy(
+  const cometAdmin = await deploymentManager.deploy(
     'cometAdmin',
     'CometProxyAdmin.sol',
     [],
@@ -80,12 +80,12 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     deploySpec.all
   );
 
-  // Transfer proxyAdmin ownership to timelock
+  // Transfer cometAdmin ownership to timelock
   await deploymentManager.idempotent(
-    async () => (await proxyAdmin.owner()) !== timelock.address,
+    async () => (await cometAdmin.owner()) !== timelock.address,
     async () => {
       trace(`Transferring ownership of CometProxyAdmin to ${timelock.address}`);
-      trace(await wait(proxyAdmin.connect(admin).transferOwnership(timelock.address)));
+      trace(await wait(cometAdmin.connect(admin).transferOwnership(timelock.address)));
     }
   );
 
@@ -139,7 +139,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     COMP,
     
     // Shared Admin & Governance
-    cometAdmin: proxyAdmin,
+    cometAdmin,
     configuratorImpl,
     configuratorProxy,
     cometFactory,

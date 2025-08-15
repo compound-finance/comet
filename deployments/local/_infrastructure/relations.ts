@@ -19,4 +19,13 @@ export default {
       },
     },
   },
+  // Fix cometAdmin relation with missing alias field
+  cometAdmin: {
+    relations: {
+      timelock: {
+        field: async (cometAdmin) => cometAdmin.owner(),
+        alias: 'timelock'
+      }
+    }
+  },
 }; 
