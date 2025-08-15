@@ -219,6 +219,94 @@ yarn hardhat deploy --bdag --network local --deployment dai
 
 
 
+## How Deployment Scripts Are Executed
+
+When you run `yarn hardhat deploy --deployment dai`, the system automatically finds and executes the correct deployment script. Here's how this works:
+
+### Deployment Script Resolution
+
+The deployment system uses a **path-based resolution** to find the right deployment script:
+
+1. **Command Line Parameters**: `--deployment dai` specifies which market to deploy
+2. **Network Context**: `--network hardhat` determines the blockchain network
+3. **Path Construction**: System builds path: `deployments/{network}/{deployment}/deploy.ts`
+4. **Script Execution**: The found script is imported and executed
+
+### Example Path Resolution
+
+```bash
+# Command
+yarn hardhat deploy --network hardhat --deployment dai
+
+# Resolves to script path
+deployments/hardhat/dai/deploy.ts
+```
+
+### How the System Finds Your Script
+
+The DeploymentManager creates a Cache object with the network and deployment parameters, which handles all path resolution:
+
+```typescript
+// 1. DeploymentManager constructor creates Cache
+const dm = new DeploymentManager(
+  network,        // 'hardhat'
+  deployment,     // 'dai'
+  env,
+  config
+);
+
+// 2. Cache constructor stores network and deployment
+this.cache = new Cache(
+  this.network,    // 'hardhat'
+  this.deployment, // 'dai'
+  config.writeCacheToDisk ?? false,
+  config.baseDir
+);
+
+// 3. Cache.getFilePath() uses stored network/deployment to build path
+const deployScript = this.cache.getFilePath({ rel: 'deploy.ts' });
+// Returns: deployments/hardhat/dai/deploy.ts
+
+// 4. Import and execute the deployment script
+const { default: deployFn } = await import(deployScript);
+// Imports the default export from your deploy.ts file
+
+const deployed = await deployFn(this, deploySpec);
+// Executes your deployment function
+```
+
+### Deployment Script Structure
+
+Each deployment script follows this standard pattern:
+
+```typescript
+// deployments/hardhat/dai/deploy.ts
+import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
+import { DeploySpec, deployComet } from '../../../src/deploy';
+
+export default async function deploy(
+  deploymentManager: DeploymentManager, 
+  deploySpec: DeploySpec
+): Promise<Deployed> {
+  // Your deployment logic here
+  const DAI = await makeToken(/* params */);
+  const deployed = await deployComet(deploymentManager, deploySpec, {
+    baseTokenPriceFeed: daiPriceFeed.address,
+    assetConfigs: [/* configs */],
+  });
+  
+  return deployed;
+}
+```
+
+### Key Benefits
+
+- **Automatic Discovery**: No need to specify script paths manually
+- **Network Isolation**: Each network has its own deployment scripts
+- **Market Separation**: Different markets (DAI, USDC, WETH) have separate scripts
+- **Consistent Interface**: All deployment scripts follow the same pattern
+- **Easy Testing**: Can test different markets by changing the `--deployment` parameter
+
 ## Understanding execution flow
 
 When you run `yarn hardhat deploy --network hardhat --deployment dai`, here's exactly what happens:
@@ -348,6 +436,7 @@ This execution flow ensures that:
 - **All contracts are deployed** in the correct order
 - **Dependencies are resolved** automatically
 - **Deployment is idempotent** (can be run multiple times safely)
+
 
 
 ## Custom Governor Implementation
