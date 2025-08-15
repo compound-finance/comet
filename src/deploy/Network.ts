@@ -14,69 +14,16 @@ export async function cloneGov(
   voterAddress = COMP_WHALES.testnet[0],
   adminSigner?: SignerWithAddress
 ): Promise<Deployed> {
-  const trace = deploymentManager.tracer();
-  const admin = adminSigner ?? await deploymentManager.getSigner();
-  const clone = {
-    comp: '0xc00e94cb662c3520282e6f5717214004a7f26888',
-    governorBravoImpl: '0xef3b6e9e13706a8f01fe98fdcf66335dc5cfdeed',
-    governorBravo: '0xc0da02939e1441f497fd74f78ce7decb17b66529',
-  };
-
-  const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
-  const timelock = await deploymentManager.deploy('timelock', 'test/SimpleTimelock.sol', [admin.address]);
-
-  const COMP = await deploymentManager.clone('COMP', clone.comp, [admin.address]);
-
-  const governorImpl = await deploymentManager.clone('governor:implementation', clone.governorBravoImpl, []);
-  const governorProxy = await deploymentManager.clone('governor', clone.governorBravo, [
-    timelock.address,
-    COMP.address,
-    admin.address,
-    governorImpl.address,
-    await governorImpl.MIN_VOTING_PERIOD(),
-    await governorImpl.MIN_VOTING_DELAY(),
-    await governorImpl.MIN_PROPOSAL_THRESHOLD(),
-  ]);
-  const governor = governorImpl.attach(governorProxy.address);
-
-  await deploymentManager.idempotent(
-    async () => (await COMP.balanceOf(admin.address)).gte((await COMP.totalSupply()).div(3)),
-    async () => {
-      trace(`Sending 1/4 of COMP to fauceteer, 1/4 to timelock`);
-      const amount = (await COMP.balanceOf(admin.address)).div(4);
-      trace(await wait(COMP.connect(admin).transfer(fauceteer.address, amount)));
-      trace(await wait(COMP.connect(admin).transfer(timelock.address, amount)));
-      trace(`COMP.balanceOf(${fauceteer.address}): ${await COMP.balanceOf(fauceteer.address)}`);
-      trace(`COMP.balanceOf(${timelock.address}): ${await COMP.balanceOf(timelock.address)}`);
-    }
-  );
-
-  await deploymentManager.idempotent(
-    async () => (await COMP.getCurrentVotes(voterAddress)).eq(0),
-    async () => {
-      trace(`Delegating COMP votes to ${voterAddress}`);
-      trace(await wait(COMP.connect(admin).delegate(voterAddress)));
-      trace(`COMP.getCurrentVotes(${voterAddress}): ${await COMP.getCurrentVotes(voterAddress)}`);
-    }
-  );
-
-  await deploymentManager.idempotent(
-    async () => (await governor.proposalCount()).eq(0),
-    async () => {
-      trace(`Initiating Governor using patched Timelock`);
-      trace(await wait(governor.connect(admin)._initiate(timelock.address)));
-    }
-  );
-
-  await deploymentManager.idempotent(
-    async () => !sameAddress(await timelock.admin(), governor.address),
-    async () => {
-      trace(`Transferring Governor of Timelock to ${governor.address}`);
-      trace(await wait(timelock.connect(admin).setAdmin(governor.address)));
-    }
-  );
-
-  return { COMP, fauceteer, governor, timelock };
+  // Check if BDAG flag is set in deployment manager
+  const useBDAG = deploymentManager.config.bdag;
+  
+  if (useBDAG) {
+    const trace = deploymentManager.tracer();
+    trace(`Using BDAG multisig governor for network: ${deploymentManager.hre.network.name}`);
+    return createMultisigGov(deploymentManager, adminSigner);
+  }
+  
+  return _cloneGov(deploymentManager, voterAddress, adminSigner);
 }
 
 export async function deployNetworkComet(
@@ -339,4 +286,125 @@ export async function deployNetworkComet(
   );
 
   return { comet, configurator, rewards, cometFactory };
+}
+
+async function _cloneGov(
+  deploymentManager: DeploymentManager,
+  voterAddress = COMP_WHALES.testnet[0],
+  adminSigner?: SignerWithAddress
+): Promise<Deployed> {
+  const trace = deploymentManager.tracer();
+  const admin = adminSigner ?? await deploymentManager.getSigner();
+  const clone = {
+    comp: '0xc00e94cb662c3520282e6f5717214004a7f26888',
+    governorBravoImpl: '0xef3b6e9e13706a8f01fe98fdcf66335dc5cfdeed',
+    governorBravo: '0xc0da02939e1441f497fd74f78ce7decb17b66529',
+  };
+
+  const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
+  const timelock = await deploymentManager.deploy('timelock', 'test/SimpleTimelock.sol', [admin.address]);
+
+  const COMP = await deploymentManager.clone('COMP', clone.comp, [admin.address]);
+
+  const governorImpl = await deploymentManager.clone('governor:implementation', clone.governorBravoImpl, []);
+  const governorProxy = await deploymentManager.clone('governor', clone.governorBravo, [
+    timelock.address,
+    COMP.address,
+    admin.address,
+    governorImpl.address,
+    await governorImpl.MIN_VOTING_PERIOD(),
+    await governorImpl.MIN_VOTING_DELAY(),
+    await governorImpl.MIN_PROPOSAL_THRESHOLD(),
+  ]);
+  const governor = governorImpl.attach(governorProxy.address);
+
+  await deploymentManager.idempotent(
+    async () => (await COMP.balanceOf(admin.address)).gte((await COMP.totalSupply()).div(3)),
+    async () => {
+      trace(`Sending 1/4 of COMP to fauceteer, 1/4 to timelock`);
+      const amount = (await COMP.balanceOf(admin.address)).div(4);
+      trace(await wait(COMP.connect(admin).transfer(fauceteer.address, amount)));
+      trace(await wait(COMP.connect(admin).transfer(timelock.address, amount)));
+      trace(`COMP.balanceOf(${fauceteer.address}): ${await COMP.balanceOf(fauceteer.address)}`);
+      trace(`COMP.balanceOf(${timelock.address}): ${await COMP.balanceOf(timelock.address)}`);
+    }
+  );
+
+  await deploymentManager.idempotent(
+    async () => (await COMP.getCurrentVotes(voterAddress)).eq(0),
+    async () => {
+      trace(`Delegating COMP votes to ${voterAddress}`);
+      trace(await wait(COMP.connect(admin).delegate(voterAddress)));
+      trace(`COMP.getCurrentVotes(${voterAddress}): ${await COMP.getCurrentVotes(voterAddress)}`);
+    }
+  );
+
+  await deploymentManager.idempotent(
+    async () => (await governor.proposalCount()).eq(0),
+    async () => {
+      trace(`Initiating Governor using patched Timelock`);
+      trace(await wait(governor.connect(admin)._initiate(timelock.address)));
+    }
+  );
+
+  await deploymentManager.idempotent(
+    async () => !sameAddress(await timelock.admin(), governor.address),
+    async () => {
+      trace(`Transferring Governor of Timelock to ${governor.address}`);
+      trace(await wait(timelock.connect(admin).setAdmin(governor.address)));
+    }
+  );
+
+  return { COMP, fauceteer, governor, timelock };
+}
+
+async function createMultisigGov(
+  deploymentManager: DeploymentManager,
+  adminSigner?: SignerWithAddress
+): Promise<Deployed> {
+  const trace = deploymentManager.tracer();
+  const admin = adminSigner ?? await deploymentManager.getSigner();
+  const clone = {
+    comp: '0xc00e94cb662c3520282e6f5717214004a7f26888',
+    governorBravo: '0xc0da02939e1441f497fd74f78ce7decb17b66529',
+  };
+  
+  const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
+  const timelock = await deploymentManager.deploy('timelock', 'test/SimpleTimelock.sol', [admin.address]);
+  
+  const COMP = await deploymentManager.clone('COMP', clone.comp, [admin.address]);
+
+  // Deploy custom governor implementation
+  const governorImpl = await deploymentManager.deploy(
+    'governor:implementation',
+    'CustomGovernor.sol',
+    [1] // multisigThreshold (1 for single admin, increase for multi-admin)
+  );
+
+  // Deploy governor proxy using ERC1967Proxy (UUPS pattern)
+  const governorProxy = await deploymentManager.deploy(
+    'governor',
+    'vendor/proxy/ERC1967/ERC1967Proxy.sol',
+    [
+      governorImpl.address,
+      governorImpl.interface.encodeFunctionData('initialize', [
+        timelock.address,
+        COMP.address,
+        admin.address
+      ])
+    ]
+  );
+
+  const governor = governorImpl.attach(governorProxy.address);
+
+  // Set timelock admin to governor
+  await deploymentManager.idempotent(
+    async () => !sameAddress(await timelock.admin(), governor.address),
+    async () => {
+      trace(`Transferring Governor of Timelock to ${governor.address}`);
+      trace(await wait(timelock.connect(admin).setAdmin(governor.address)));
+    }
+  );
+
+  return { COMP, fauceteer, governor, timelock };
 }

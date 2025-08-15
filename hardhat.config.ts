@@ -71,7 +71,12 @@ const {
   GOV_NETWORK_PROVIDER = '',
   GOV_NETWORK = '',
   UNICHAIN_QUICKNODE_KEY = '',
-  REMOTE_ACCOUNTS = ''
+  REMOTE_ACCOUNTS = '',
+} = process.env;
+
+
+const {
+  LOCAL_CHAIN_ID
 } = process.env;
 
 function* deriveAccounts(pk: string, n: number = 10) {
@@ -181,6 +186,11 @@ const networkConfigs: NetworkConfig[] = [
     chainId: 1043,
     url: 'https://node-blockdag.spacedev.io/rpc',//"http://13.234.176.105:18545"
   },
+  {
+    network: 'local',
+    chainId: parseInt(LOCAL_CHAIN_ID),
+    url: 'http://127.0.0.1:8545',
+  },
 ];
 
 function getDefaultProviderURL(network: string) {
@@ -264,6 +274,13 @@ const config: HardhatUserConfig = {
         };
         return acc;
       }, {}),
+    },
+    local: {
+      url: "http://127.0.0.1:8545",
+      chainId: parseInt(LOCAL_CHAIN_ID), 
+      accounts: ETH_PK ?
+        [...deriveAccounts(ETH_PK)]
+        : { mnemonic: MNEMONIC },
     },
   },
 
@@ -594,6 +611,12 @@ const config: HardhatUserConfig = {
       {
         name: 'bdag-primordial-dai',
         network: 'bdag-primordial',
+        deployment: 'dai',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'local-dai',
+        network: 'local',
         deployment: 'dai',
         auxiliaryBase: 'mainnet'
       },
