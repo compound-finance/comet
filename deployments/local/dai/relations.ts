@@ -23,6 +23,32 @@ export default {
     network: 'local',
     deployment: '_infrastructure'
   },
+  // Shared Admin & Governance contracts
+  cometAdmin: {
+    artifact: 'contracts/CometProxyAdmin.sol:CometProxyAdmin',
+    network: 'local',
+    deployment: '_infrastructure'
+  },
+  configurator: {
+    artifact: 'contracts/Configurator.sol:Configurator',
+    network: 'local',
+    deployment: '_infrastructure'
+  },
+  'configurator:implementation': {
+    artifact: 'contracts/Configurator.sol:Configurator',
+    network: 'local',
+    deployment: '_infrastructure'
+  },
+  configuratorProxy: {
+    artifact: 'contracts/ConfiguratorProxy.sol:ConfiguratorProxy',
+    network: 'local',
+    deployment: '_infrastructure'
+  },
+  cometFactory: {
+    artifact: 'contracts/CometFactory.sol:CometFactory',
+    network: 'local',
+    deployment: '_infrastructure'
+  },
   // Reference tokens and price feeds from infrastructure
   DAI: {
     artifact: 'contracts/test/FaucetToken.sol:FaucetToken',

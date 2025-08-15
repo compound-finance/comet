@@ -31,6 +31,56 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   // Deploy governance contracts
   const { COMP, fauceteer, governor, timelock } = await cloneGov(deploymentManager);
 
+  // Deploy shared admin and governance contracts
+  const trace = deploymentManager.tracer();
+  const admin = await deploymentManager.getSigner();
+
+  // Deploy CometProxyAdmin (shared across all Comet instances)
+  const proxyAdmin = await deploymentManager.deploy(
+    'cometAdmin',
+    'CometProxyAdmin.sol',
+    [],
+    deploySpec.all
+  );
+
+  // Deploy Configurator implementation
+  const configuratorImpl = await deploymentManager.deploy(
+    'configurator:implementation',
+    'Configurator.sol',
+    [],
+    deploySpec.all
+  );
+
+  // Deploy Configurator proxy
+  const configuratorProxy = await deploymentManager.deploy(
+    'configurator',
+    'ConfiguratorProxy.sol',
+    [
+      configuratorImpl.address, 
+      timelock.address, 
+      (await configuratorImpl.populateTransaction.initialize(timelock.address)).data
+    ],
+    deploySpec.all
+  );
+
+
+  // Deploy CometFactory (shared across all Comet instances)
+  const cometFactory = await deploymentManager.deploy(
+    'cometFactory',
+    'CometFactory.sol',
+    [],
+    deploySpec.all
+  );
+
+  // Transfer proxyAdmin ownership to timelock
+  await deploymentManager.idempotent(
+    async () => (await proxyAdmin.owner()) !== timelock.address,
+    async () => {
+      trace(`Transferring ownership of CometProxyAdmin to ${timelock.address}`);
+      trace(await wait(proxyAdmin.connect(admin).transferOwnership(timelock.address)));
+    }
+  );
+
   // Deploy test tokens
   const DAI = await makeToken(deploymentManager, 'DAI', 'DAI', 18);
   const WETH = await makeToken(deploymentManager, 'WETH', 'Wrapped Ether', 18);
@@ -46,11 +96,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const linkPriceFeed = await makePriceFeed(deploymentManager, 'linkPriceFeed', 15, 8); // $15 price
   const uniPriceFeed = await makePriceFeed(deploymentManager, 'uniPriceFeed', 10, 8); // $10 price
 
-  // Mint tokens to fauceteer
-  const trace = deploymentManager.tracer();
-  const signer = await deploymentManager.getSigner();
-
-  trace(`Attempting to mint tokens to fauceteer as ${signer.address}...`);
+  trace(`Attempting to mint tokens to fauceteer as ${admin.address}...`);
 
   // Mint tokens to fauceteer
   const tokenConfigs = [
@@ -68,7 +114,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
         async () => {
           trace(`Minting ${units} ${name} to fauceteer`);
           const amount = exp(units, await token.decimals());
-          trace(await wait(token.connect(signer).allocateTo(fauceteer.address, amount)));
+          trace(await wait(token.connect(admin).allocateTo(fauceteer.address, amount)));
           trace(`token.balanceOf(${fauceteer.address}): ${await token.balanceOf(fauceteer.address)}`);
         }
       );
@@ -83,6 +129,12 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     governor,
     timelock,
     COMP,
+    
+    // Shared Admin & Governance
+    cometAdmin:proxyAdmin,
+    configuratorImpl,
+    configuratorProxy,
+    cometFactory,
     
     // Tokens
     DAI,
