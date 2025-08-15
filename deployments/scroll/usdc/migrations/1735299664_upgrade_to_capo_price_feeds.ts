@@ -13,42 +13,30 @@ export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
     return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
 }
 
-const ETH_USD_PRICE_FEED = '0x13e3Ee699D1909E989722E753853AE30b17e08c5';
-const WSTETH_ADDRESS = '0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb';
+const ETH_USD_PRICE_FEED = '0x6bF14CB0A831078629D993FDeBcB182b21A8774C';
+const WSTETH_ADDRESS = '0xf610A9dfB7C89644979b4A0f27063E9e7d7Cda32';
 const FEED_DECIMALS = 8;
 
-const WSTETH_STETH_PRICE_FEED_ADDRESS = '0xe59EBa0D492cA53C6f46015EEa00517F2707dc77';
-const STETH_ETH_PRICE_FEED_ADDRESS = '0x14d2d3a82AeD4019FddDfe07E8bdc485fb0d2249';
+const WSTETH_STETH_PRICE_FEED_ADDRESS = '0xe428fbdbd61CC1be6C273dC0E27a1F43124a86F3';
 
 let newWstETHToUSDPriceFeed: string;
+
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
     const { governor } = await deploymentManager.getContracts();
-    const rateProviderWstEth = await deploymentManager.existing('wstEth:priceFeed', WSTETH_STETH_PRICE_FEED_ADDRESS, 'scroll', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
-    console.log(`wstETH address: ${rateProviderWstEth.address}`);
-    
+    const rateProviderWstEth = await deploymentManager.existing('wstETH:_rateProvider', WSTETH_STETH_PRICE_FEED_ADDRESS, 'scroll', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
+  
     const [, currentRatioWstEth] = await rateProviderWstEth.latestRoundData();
     const now = (await ethers.provider.getBlock("latest"))!.timestamp;
-    
-    const _wstETHToETHPriceFeed = await deploymentManager.deploy(
-      'wstETH:priceFeed',
-      'pricefeeds/MultiplicativePriceFeed.sol',
-      [
-        WSTETH_STETH_PRICE_FEED_ADDRESS, // wstETH / stETH price feed
-        STETH_ETH_PRICE_FEED_ADDRESS,    // stETH / ETH price feed
-        8,                               // decimals
-        'wstETH / ETH price feed'        // description
-      ]
-    );
      
     const wstEthCapoPriceFeed = await deploymentManager.deploy(
-        'wstETH:capoPriceFeed',
+        'wstETH:priceFeed',
         'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
             [
                 governor.address,
                 ETH_USD_PRICE_FEED,
-                _wstETHToETHPriceFeed.address, // wstETH / ETH price feed
-                "wstETH:capoPriceFeed",
+                WSTETH_STETH_PRICE_FEED_ADDRESS,
+                "wstETH:priceFeed",
                 FEED_DECIMALS,
                 3600,
                 {
@@ -56,12 +44,9 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
                     snapshotTimestamp: now - 3600,
                     maxYearlyRatioGrowthPercent: exp(0.01, 4)
                 }
-            ]
+            ],
+            true
         );
-
-    console.log(`Deployed wstETH capo price feed at ${wstEthCapoPriceFeed.address}`);
-
-    newWstETHToUSDPriceFeed = wstEthCapoPriceFeed.address;
      
     return {
       wstEthCapoPriceFeedAddress: wstEthCapoPriceFeed.address,
@@ -71,19 +56,35 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async enact(deploymentManager: DeploymentManager, govDeploymentManager, {
     wstEthCapoPriceFeedAddress
   }) {
-
     const trace = deploymentManager.tracer();
-
-    const { configurator, comet, bridgeReceiver, l2Timelock } = await deploymentManager.getContracts();
-
+    
+    const wstETH = await deploymentManager.existing(
+      'wstETH',
+      WSTETH_ADDRESS,
+      'scroll',
+      'contracts/ERC20.sol:ERC20'
+    );
+    
+    const wstETHPricefeed = await deploymentManager.existing(
+      'wstETH:priceFeed',
+      wstEthCapoPriceFeedAddress,
+      'scroll'
+    );
+    
+    newWstETHToUSDPriceFeed = wstETHPricefeed.address;
+    
     const {
-      arbitrumInbox,
-      timelock,
-      governor,
-      cometAdmin
+      comet,
+      cometAdmin,
+      configurator,
+      bridgeReceiver,
+    } = await deploymentManager.getContracts();
+    
+    const { 
+      governor, 
+      scrollMessenger 
     } = await govDeploymentManager.getContracts();
-
-
+    
     const updateWstEthPriceFeedCalldata = await calldata(
       configurator.populateTransaction.updateAssetPriceFeed(
         comet.address,
@@ -91,15 +92,12 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         wstEthCapoPriceFeedAddress
       )
     );
-
-    const deployAndUpgradeToCalldata = await calldata(
-      cometAdmin.populateTransaction.deployAndUpgradeTo(
-        configurator.address,
-        comet.address
-      )
+    
+    const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(
+      ['address', 'address'],
+      [configurator.address, comet.address]
     );
-
-
+    
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
@@ -107,57 +105,40 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
           configurator.address,
           cometAdmin.address
         ],
+        [0, 0],
         [
-          0,
-          0,
-        ],
-        [
-          'updateAssetPriceFeed',
-          'deployAndUpgradeTo'
+          'updateAssetPriceFeed(address,address,address)',
+          'deployAndUpgradeTo(address,address)',
         ],
         [
           updateWstEthPriceFeedCalldata,
           deployAndUpgradeToCalldata
         ],
-      ]
+      ],
     );
-
-    const createRetryableTicketGasParams = await estimateL2Transaction(
-      {
-        from: applyL1ToL2Alias(timelock.address),
-        to: bridgeReceiver.address,
-        data: l2ProposalData
-      },
-      deploymentManager
-    );
-    const refundAddress = l2Timelock.address;
-
+    
     const mainnetActions = [
-      // 1. Sends the proposal to the L2
       {
-        contract: arbitrumInbox,
-        signature: 'createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,bytes)',
+        contract: scrollMessenger,
+        signature: 'sendMessage(address,uint256,bytes,uint256)',
         args: [
-          bridgeReceiver.address,                           // address to,
-          0,                                                // uint256 l2CallValue,
-          createRetryableTicketGasParams.maxSubmissionCost, // uint256 maxSubmissionCost,
-          refundAddress,                                    // address excessFeeRefundAddress,
-          refundAddress,                                    // address callValueRefundAddress,
-          createRetryableTicketGasParams.gasLimit,          // uint256 gasLimit,
-          createRetryableTicketGasParams.maxFeePerGas,      // uint256 maxFeePerGas,
-          l2ProposalData,                                   // bytes calldata data
+          bridgeReceiver.address, 
+          0, 
+          l2ProposalData, 
+          1_000_000
         ],
-        value: createRetryableTicketGasParams.deposit
+        value: exp(0.1, 18)
       },
     ];
+    
+    const description = 'tmp'
 
-    const description = 'tmp';
     const txn = await deploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
       )
     );
-
+    
     const event = txn.events.find(
       (event) => event.event === 'ProposalCreated'
     );

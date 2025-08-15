@@ -18,7 +18,7 @@ const RSETH_ORACLE = '0x349A73444b1a310BAe67ef67973022020d70020d';
 const RSETH_ADDRESS = '0xa1290d69c65a6fe4df752f95823fae25cb99e5a7';
 
 //2. ezETH
-const EZETH_ADDRESS = '0xE95A203B1a91a908F9B9CE46459d101078c2c3cb';
+const EZETH_ADDRESS = '0xbf5495Efe5DB9ce00f80364C8B423567e58d2110';
 const EZETH_RATE_PROVIDER = '0x387dBc0fB00b26fb085aa658527D5BE98302c84C';
 
 
@@ -30,13 +30,11 @@ let newEzEthToETHPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
-
-    const { comet } = await deploymentManager.getContracts();
-    console.log(`Comet address: ${comet.address}`);
     const { governor } = await deploymentManager.getContracts();
     const now = (await ethers.provider.getBlock("latest"))!.timestamp;
+
     const constantPriceFeed = await deploymentManager.deploy(
-        'eth:constantPriceFeed',
+        'ETH:priceFeed',
         'pricefeeds/ConstantPriceFeed.sol',
         [
             8,
@@ -45,16 +43,16 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     );
 
     //1. rsEth
-    const rateProviderRsEth = await deploymentManager.existing('rsEth:priceFeed', RSETH_ORACLE, 'mainnet', 'contracts/capo/contracts/interfaces/ILRTOracle.sol:ILRTOracle') as ILRTOracle;
+    const rateProviderRsEth = await deploymentManager.existing('rsETH:_priceFeed', RSETH_ORACLE, 'mainnet', 'contracts/capo/contracts/interfaces/ILRTOracle.sol:ILRTOracle') as ILRTOracle;
     const currentRatioRsEth = await rateProviderRsEth.rsETHPrice();
     const rsEthCapoPriceFeed = await deploymentManager.deploy(
-      'rsETH:capoPriceFeed',
+      'rsETH:priceFeed',
       'capo/contracts/RsETHCorrelatedAssetsPriceOracle.sol',
       [
         governor.address,
         constantPriceFeed.address,
         RSETH_ORACLE,
-        "rsETH CAPO",
+        "rsETH:priceFeed",
         FEED_DECIMALS,
         3600,
         {
@@ -62,23 +60,22 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
           snapshotTimestamp: now - 3600,
           maxYearlyRatioGrowthPercent: exp(0.01, 4)
         }
-      ]
+      ],
+      true 
     );
-    console.log(`Deployed rsETH capo price feed at ${rsEthCapoPriceFeed.address}`);
-    newRsEthToETHPriceFeed = rsEthCapoPriceFeed.address;
 
     //2. ezEth
-    const rateProviderEzEth = await deploymentManager.existing('ezEth:priceFeed', EZETH_RATE_PROVIDER, 'mainnet', 'contracts/IRateProvider.sol:IRateProvider') as IRateProvider;
+    const rateProviderEzEth = await deploymentManager.existing('ezETH:_priceFeed', EZETH_RATE_PROVIDER, 'mainnet', 'contracts/IRateProvider.sol:IRateProvider') as IRateProvider;
     const currentRatioEzEth = await rateProviderEzEth.getRate();
     const ezEthCapoPriceFeed = await deploymentManager.deploy(
-      'ezETH:capoPriceFeed',
+      'ezETH:priceFeed',
       'capo/contracts/RateBasedCorrelatedAssetsPriceOracle.sol',
       [
         governor.address,
         constantPriceFeed.address,
         rateProviderEzEth.address,
         ethers.constants.AddressZero,
-        'ezETH:capoPriceFeed',
+        'ezETH:priceFeed',
         FEED_DECIMALS,
         3600,
         RATE_DECIMALS,
@@ -88,9 +85,8 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
           maxYearlyRatioGrowthPercent: exp(0.01, 4)
         }
       ],
+      true
     )
-    console.log(`Deployed ezETH capo price feed at ${ezEthCapoPriceFeed.address}`);
-    newEzEthToETHPriceFeed = ezEthCapoPriceFeed.address;
 
     return {
       rsEthCapoPriceFeedAddress: rsEthCapoPriceFeed.address,
@@ -102,6 +98,9 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     rsEthCapoPriceFeedAddress,
     ezEthCapoPriceFeedAddress
   }) {
+    newRsEthToETHPriceFeed = rsEthCapoPriceFeedAddress;
+    newEzEthToETHPriceFeed = ezEthCapoPriceFeedAddress;
+    
     const trace = deploymentManager.tracer();
 
     const {

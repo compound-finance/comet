@@ -30,8 +30,8 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
     const { governor } = await deploymentManager.getContracts();
     
-    const rateProviderWstEth = await deploymentManager.existing('wstEth:priceFeed', WSTETH_STETH_PRICE_FEED_ADDRESS, 'arbitrum', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
-
+    //1. wstEth
+    const rateProviderWstEth = await deploymentManager.existing('wstETH:_rateProvider', WSTETH_STETH_PRICE_FEED_ADDRESS, 'arbitrum', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioWstEth] = await rateProviderWstEth.latestRoundData();
     const now = (await deploymentManager.hre.ethers.provider.getBlock('latest'))!.timestamp;
     
@@ -54,7 +54,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         governor.address,
         ETH_USD_PRICE_FEED,
         _wstETHToETHPriceFeed.address,
-        'wstETH:capoPriceFeed',
+        'wstETH:priceFeed',
         FEED_DECIMALS,
         3600,
         {
@@ -66,7 +66,8 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       true
     );
     
-    const rateProviderEzEth = await deploymentManager.existing('ezEth:priceFeed', EZETH_TO_ETH_PRICE_FEED_ADDRESS, 'arbitrum', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
+    //2. ezEth
+    const rateProviderEzEth = await deploymentManager.existing('ezETH:_priceFeed', EZETH_TO_ETH_PRICE_FEED_ADDRESS, 'arbitrum', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioEzEth] = await rateProviderEzEth.latestRoundData();
     const ezEthCapoPriceFeed = await deploymentManager.deploy(
       'ezETH:priceFeed',
@@ -75,7 +76,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         governor.address,
         ETH_USD_PRICE_FEED,
         EZETH_TO_ETH_PRICE_FEED_ADDRESS,
-        'ezETH:capoPriceFeed',
+        'ezETH:priceFeed',
         FEED_DECIMALS,
         3600,
         {

@@ -8,6 +8,7 @@ import { utils } from 'ethers';
 import { applyL1ToL2Alias, estimateL2Transaction } from '../../../../scenario/utils/arbitrumUtils';
 import { Numeric } from '../../../../test/helpers';
 import { AggregatorV3Interface, ILRTOracle, IWstETH } from '../../../../build/types';
+import { truncate } from 'node:fs/promises';
 
 export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
     return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
@@ -39,32 +40,32 @@ const FEED_DECIMALS = 8;
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
     const { governor } = await deploymentManager.getContracts();
-    
-    const rateProviderWstEth = await deploymentManager.existing('wstEth:priceFeed', WSTETH_STETH_PRICE_FEED_ADDRESS, 'base', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
-    
+    const now = (await deploymentManager.hre.ethers.provider.getBlock('latest'))!.timestamp;
+
+    //1. wstEth
+    const rateProviderWstEth = await deploymentManager.existing('wstETH:_rateProvider', WSTETH_STETH_PRICE_FEED_ADDRESS, 'base', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioWstEth] = await rateProviderWstEth.latestRoundData();
-    const now = (await ethers.provider.getBlock("latest"))!.timestamp;
-    
+   
     const _wstETHToETHPriceFeed = await deploymentManager.deploy(
-      'wstETH:priceFeed',
+      'wstETH:_priceFeed',
       'pricefeeds/MultiplicativePriceFeed.sol',
       [
         WSTETH_STETH_PRICE_FEED_ADDRESS, // wstETH / stETH price feed
         STETH_ETH_PRICE_FEED_ADDRESS,    // stETH / ETH price feed
         8,                               // decimals
         'wstETH / ETH price feed'        // description
-      ]
+      ],
+      true
     );
 
-
     const wstEthCapoPriceFeed = await deploymentManager.deploy(
-        'wstETH:capoPriceFeed',
+        'wstETH:priceFeed',
         'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
             [
                 governor.address,
                 ETH_USD_PRICE_FEED,
                 _wstETHToETHPriceFeed.address,
-                "wstETH:capoPriceFeed",
+                "wstETH:priceFeed",
                 FEED_DECIMALS,
                 3600,
                 {
@@ -72,25 +73,21 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
                     snapshotTimestamp: now - 3600,
                     maxYearlyRatioGrowthPercent: exp(0.01, 4)
                 }
-            ]
+            ],
+            true
         );
 
-    console.log(`Deployed wstETH capo price feed at ${wstEthCapoPriceFeed.address}`);
-
-    newWstETHToETHPriceFeed = wstEthCapoPriceFeed.address;
-    
-    const rateProviderEzEth = await deploymentManager.existing('ezEth:priceFeed', EZETH_TO_ETH_PRICE_FEED_ADDRESS, 'base', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
-    
+    //2. ezEth
+    const rateProviderEzEth = await deploymentManager.existing('ezETH:_rateProvider', EZETH_TO_ETH_PRICE_FEED_ADDRESS, 'base', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioEzEth] = await rateProviderEzEth.latestRoundData();
-
     const ezEthCapoPriceFeed = await deploymentManager.deploy(
-      'ezETH:capoPriceFeed',
+      'ezETH:priceFeed',
       'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
       [
         governor.address,
         ETH_USD_PRICE_FEED,
         EZETH_TO_ETH_PRICE_FEED_ADDRESS,
-        'ezETH:capoPriceFeed',
+        'ezETH:priceFeed',
          FEED_DECIMALS,
         3600,
         {
@@ -99,24 +96,19 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
           maxYearlyRatioGrowthPercent: exp(0.01, 4)
         }
       ],
+      true
     )
-
-    console.log(`Deployed ezETH capo price feed at ${ezEthCapoPriceFeed.address}`);
-
-    newEzETHToETHPriceFeed = ezEthCapoPriceFeed.address;
     
-    const rateProviderRsEth = await deploymentManager.existing('rsEth:priceFeed', WRSETH_ORACLE, 'base', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
-
+    const rateProviderRsEth = await deploymentManager.existing('rsETH:_rateProvider', WRSETH_ORACLE, 'base', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioWrsEth] = await rateProviderRsEth.latestRoundData();
-
     const rsEthCapoPriceFeed = await deploymentManager.deploy(
-      'rsETH:capoPriceFeed',
+      'rsETH:priceFeed',
       'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
       [
         governor.address,
         ETH_USD_PRICE_FEED,
         WRSETH_ORACLE,
-        "rsETH CAPO",
+        "rsETH:priceFeed",
         FEED_DECIMALS,
         3600,
         {
@@ -124,24 +116,21 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
           snapshotTimestamp: now - 3600,
           maxYearlyRatioGrowthPercent: exp(0.01, 4)
         }
-      ]
+      ],
+      true
     );
 
-    console.log(`Deployed rsETH capo price feed at ${rsEthCapoPriceFeed.address}`);
-
-    newWrsEthToETHPriceFeed = rsEthCapoPriceFeed.address;
   
-    const rateProviderWeEth = await deploymentManager.existing('weEth:priceFeed', WEETH_STETH_PRICE_FEED_ADDRESS, 'base', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
+    const rateProviderWeEth = await deploymentManager.existing('weETH:_rateProvider', WEETH_STETH_PRICE_FEED_ADDRESS, 'base', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioWeEth] = await rateProviderWeEth.latestRoundData();
-
     const weEthCapoPriceFeed = await deploymentManager.deploy(
-      'weETH:capoPriceFeed',
+      'weETH:priceFeed',
       'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
       [
         governor.address,
         ETH_USD_PRICE_FEED,
         WEETH_STETH_PRICE_FEED_ADDRESS,
-        'weETH:capoPriceFeed',
+        'weETH:priceFeed',
         FEED_DECIMALS,
         3600,
         {
@@ -149,12 +138,9 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
           snapshotTimestamp: now - 3600,
           maxYearlyRatioGrowthPercent: exp(0.01, 4)
         }
-      ]
+      ],
+      true
     );
-
-    console.log(`Deployed weETH capo price feed at ${weEthCapoPriceFeed.address}`);
-
-    newWeEthToETHPriceFeed = weEthCapoPriceFeed.address;
 
     return {
       wstEthCapoPriceFeedAddress: wstEthCapoPriceFeed.address,
@@ -171,17 +157,24 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     weEthCapoPriceFeedAddress
   }) {
 
+    newWstETHToETHPriceFeed = wstEthCapoPriceFeedAddress;
+    newEzETHToETHPriceFeed = ezEthCapoPriceFeedAddress;
+    newWrsEthToETHPriceFeed = rsEthCapoPriceFeedAddress;
+    newWeEthToETHPriceFeed = weEthCapoPriceFeedAddress;
+
     const trace = deploymentManager.tracer();
 
-    const { configurator, comet, bridgeReceiver, l2Timelock } = await deploymentManager.getContracts();
+    const { 
+      configurator, 
+      comet, 
+      bridgeReceiver, 
+      cometAdmin 
+    } = await deploymentManager.getContracts();
 
     const {
-      arbitrumInbox,
-      timelock,
-      governor,
-      cometAdmin
+      governor, 
+      baseL1CrossDomainMessenger
     } = await govDeploymentManager.getContracts();
-
 
     const updateEzEthPriceFeedCalldata = await calldata(
       configurator.populateTransaction.updateAssetPriceFeed(
@@ -215,13 +208,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       )
     );
 
-    const deployAndUpgradeToCalldata = await calldata(
-      cometAdmin.populateTransaction.deployAndUpgradeTo(
-        configurator.address,
-        comet.address
-      )
+    const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(
+      ['address', 'address'],
+      [configurator.address, comet.address]
     );
-
 
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
@@ -233,19 +223,13 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
           configurator.address,
           cometAdmin.address
         ],
+        [0, 0, 0, 0, 0],
         [
-          0,
-          0,
-          0,
-          0,
-          0
-        ],
-        [
-          'updateAssetPriceFeed',
-          'updateAssetPriceFeed',
-          'updateAssetPriceFeed',
-          'updateAssetPriceFeed',
-          'deployAndUpgradeTo'
+          'updateAssetPriceFeed(address,address,address)',
+          'updateAssetPriceFeed(address,address,address)',
+          'updateAssetPriceFeed(address,address,address)',
+          'updateAssetPriceFeed(address,address,address)',
+          'deployAndUpgradeTo(address,address)'
         ],
         [
           updateEzEthPriceFeedCalldata,
@@ -257,37 +241,21 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       ]
     );
 
-    const createRetryableTicketGasParams = await estimateL2Transaction(
-      {
-        from: applyL1ToL2Alias(timelock.address),
-        to: bridgeReceiver.address,
-        data: l2ProposalData
-      },
-      deploymentManager
-    );
-    const refundAddress = l2Timelock.address;
-
     const mainnetActions = [
-      // 1. Sends the proposal to the L2
       {
-        contract: arbitrumInbox,
-        signature: 'createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,bytes)',
+        contract: baseL1CrossDomainMessenger,
+        signature: 'sendMessage(address,bytes,uint32)',
         args: [
-          bridgeReceiver.address,                           // address to,
-          0,                                                // uint256 l2CallValue,
-          createRetryableTicketGasParams.maxSubmissionCost, // uint256 maxSubmissionCost,
-          refundAddress,                                    // address excessFeeRefundAddress,
-          refundAddress,                                    // address callValueRefundAddress,
-          createRetryableTicketGasParams.gasLimit,          // uint256 gasLimit,
-          createRetryableTicketGasParams.maxFeePerGas,      // uint256 maxFeePerGas,
-          l2ProposalData,                                   // bytes calldata data
-        ],
-        value: createRetryableTicketGasParams.deposit
+          bridgeReceiver.address, 
+          l2ProposalData, 
+          3_000_000
+        ]
       },
     ];
 
-    const description = 'tmp';
-    const txn = await deploymentManager.retry(async () =>
+    const description = 'Upgrade to CAPO price feeds for ezETH, wstETH, rsETH, and weETH on Base';
+    
+    const txn = await govDeploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
       )

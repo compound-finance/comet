@@ -22,26 +22,20 @@ let newWstETHToUSDPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
-
-    const { comet } = await deploymentManager.getContracts();
-    console.log(`Comet address: ${comet.address}`);
     const { governor } = await deploymentManager.getContracts();
+    const now = (await deploymentManager.hre.ethers.provider.getBlock('latest'))!.timestamp;
 
-    const wstETH = await deploymentManager.existing('wstEth', WSTETH_ADDRESS, 'base', 'contracts/IWstETH.sol:IWstETH') as IWstETH;
-    console.log(`wstETH address: ${wstETH.address}`);
-
+    const wstETH = await deploymentManager.existing('wstETH', WSTETH_ADDRESS, 'base', 'contracts/IWstETH.sol:IWstETH') as IWstETH;
     const currentRatioWstEth = await wstETH.stEthPerToken();
-    const now = (await ethers.provider.getBlock("latest"))!.timestamp;
-
     const wstEthCapoPriceFeed = await deploymentManager.deploy(
-        'wstETH:capoPriceFeed',
+        'wstETH:priceFeed',
         'capo/contracts/WstETHCorrelatedAssetsPriceOracle.sol',
             [
                 governor.address,
                 ETH_USD_PRICE_FEED,
                 wstETH.address,
                 WSTETH_RATE_PROVIDER,
-                "wstETH:capoPriceFeed",
+                "wstETH:priceFeed",
                 FEED_DECIMALS,
                 3600,
                 {
@@ -49,13 +43,9 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
                     snapshotTimestamp: now - 3600,
                     maxYearlyRatioGrowthPercent: exp(0.01, 4)
                 }
-            ]
+            ],
+            true
         );
-        
-    console.log(`Deployed wstETH capo price feed at ${wstEthCapoPriceFeed.address}`);
-
-    newWstETHToUSDPriceFeed = wstEthCapoPriceFeed.address;
-   
 
     return {
       wstEthCapoPriceFeedAddress: wstEthCapoPriceFeed.address
@@ -65,6 +55,8 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
  async enact(deploymentManager: DeploymentManager, _, {
      wstEthCapoPriceFeedAddress
    }) {
+
+     newWstETHToUSDPriceFeed = wstEthCapoPriceFeedAddress;
      const trace = deploymentManager.tracer();
  
      const {

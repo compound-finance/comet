@@ -40,42 +40,42 @@ let newRETHToETHPriceFeed: string;
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
 
-    const { comet } = await deploymentManager.getContracts();
-    console.log(`Comet address: ${comet.address}`);
     const { governor } = await deploymentManager.getContracts();
     const constantPriceFeed = await deploymentManager.deploy(
-        'eth:constantPriceFeed',
+        'ETH:priceFeed',
         'pricefeeds/ConstantPriceFeed.sol',
         [
             8,
             exp(1, 8)
-        ]
+        ],
+        true
     );
     
     //1. wstETH
-    const rateProviderWstEth = await deploymentManager.existing('contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface', WSTETH_STETH_PRICE_FEED_ADDRESS) as AggregatorV3Interface;
+    const rateProviderWstEth = await deploymentManager.existing('wstETH:_rateProvider', WSTETH_STETH_PRICE_FEED_ADDRESS, 'arbitrum', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioWstEth] = await rateProviderWstEth.latestRoundData();
-    const now = (await ethers.provider.getBlock("latest"))!.timestamp;
+    const now = (await deploymentManager.hre.ethers.provider.getBlock('latest'))!.timestamp;
     
     const _wstETHToETHPriceFeed = await deploymentManager.deploy(
-      'wstETH:priceFeed',
+      'wstETH:_priceFeed',
       'pricefeeds/MultiplicativePriceFeed.sol',
       [
         WSTETH_STETH_PRICE_FEED_ADDRESS, // wstETH / stETH price feed
         STETH_ETH_PRICE_FEED_ADDRESS,    // stETH / ETH price feed
         8,                               // decimals
         'wstETH / ETH price feed'        // description
-      ]
+      ],
+      true
     );
      
     const wstEthCapoPriceFeed = await deploymentManager.deploy(
-        'wstETH:capoPriceFeed',
+        'wstETH:priceFeed',
         'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
             [
                 governor.address,
                 constantPriceFeed.address,
                 _wstETHToETHPriceFeed.address,
-                "wstETH:capoPriceFeed",
+                "wstETH:priceFeed",
                 FEED_DECIMALS,
                 3600,
                 {
@@ -83,52 +83,45 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
                     snapshotTimestamp: now - 3600,
                     maxYearlyRatioGrowthPercent: exp(0.01, 4)
                 }
-            ]
+            ],
+            true
         );
 
-    newWstETHToETHPriceFeed = wstEthCapoPriceFeed.address;
-    console.log(`Deployed wstETH capo price feed at ${wstEthCapoPriceFeed.address}`);
-
-
     //2. ezETH
-    const rateProviderEzEth = await ethers.getContractAt('contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface', EZETH_TO_ETH_PRICE_FEED_ADDRESS) as AggregatorV3Interface;
-        console.log(rateProviderEzEth);
-        console.log(`ezETH address: ${rateProviderEzEth.address}`);
+    const rateProviderEzEth = await deploymentManager.existing('ezETH:_rateProvider', EZETH_TO_ETH_PRICE_FEED_ADDRESS, 'arbitrum', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioEzEth] = await rateProviderEzEth.latestRoundData();
 
     const ezEthCapoPriceFeed = await deploymentManager.deploy(
-      'ezETH:capoPriceFeed',
+      'ezETH:priceFeed',
       'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
       [
         governor.address,
         constantPriceFeed.address,
         EZETH_TO_ETH_PRICE_FEED_ADDRESS,
-        'ezETH:capoPriceFeed',
+        'ezETH:priceFeed',
         FEED_DECIMALS,
         3600,
         {
           snapshotRatio: currentRatioEzEth,
           snapshotTimestamp: now - 3600,
           maxYearlyRatioGrowthPercent: exp(0.01, 4)
-        }
+        },
       ],
+      true
     )
-
-    newEzETHToETHPriceFeed = ezEthCapoPriceFeed.address;
-    console.log(`Deployed ezETH capo price feed at ${ezEthCapoPriceFeed.address}`);
  
     //3. rsETH
-    const rsEthRateProvider = await ethers.getContractAt('contracts/IRateProvider.sol:IRateProvider', RSETH_ORACLE) as IRateProvider;
+    const rsEthRateProvider = await deploymentManager.existing('rsETH:_rateProvider', RSETH_ORACLE, 'arbitrum','contracts/IRateProvider.sol:IRateProvider') as IRateProvider; 
     const currentRatioRsEth = await rsEthRateProvider.getRate();
     const rsEthCapoPriceFeed = await deploymentManager.deploy(
-      'rsETH:capoPriceFeed',
+      'rsETH:priceFeed',
       'capo/contracts/RateBasedCorrelatedAssetsPriceOracle.sol',
       [
         governor.address,
         constantPriceFeed.address,
         RSETH_ORACLE,
         ethers.constants.AddressZero,
-        "rsETH CAPO",
+        "rsETH:priceFeed",
         FEED_DECIMALS,
         3600,
         RATE_DECIMALS,
@@ -136,49 +129,44 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
           snapshotRatio: currentRatioRsEth,
           snapshotTimestamp: now - 3600,
           maxYearlyRatioGrowthPercent: exp(0.01, 4)
-        }
-      ]
+        },
+      ],
+      true
     );
-    newRsETHToETHPriceFeed = rsEthCapoPriceFeed.address;
-    console.log(`Deployed rsETH capo price feed at ${rsEthCapoPriceFeed.address}`);
-
+  
     //4. weEth
-    //const weETH = await ethers.getContractAt('contracts/IRateProvider.sol:IRateProvider', WEETH_ADDRESS) as IRateProvider;
-    const rateProviderWeEth = await ethers.getContractAt('contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface', WEETH_RATE_PROVIDER) as AggregatorV3Interface;
+    const rateProviderWeEth = await deploymentManager.existing('weETH:_rateProvider', WEETH_RATE_PROVIDER, 'arbitrum', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioWeEth] = await rateProviderWeEth.latestRoundData();
-    
-    //const currentRatioWeEth = await weETH.getRate();
     const weEthCapoPriceFeed = await deploymentManager.deploy(
-      'weETH:capoPriceFeed',
+      'weETH:priceFeed',
       'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
       [
         governor.address,
         constantPriceFeed.address,
         WEETH_RATE_PROVIDER,
-        'weETH:capoPriceFeed',
+        'weETH:priceFeed',
         FEED_DECIMALS,
         3600,
         {
           snapshotRatio: currentRatioWeEth,
           snapshotTimestamp: now - 3600,
           maxYearlyRatioGrowthPercent: exp(0.01, 4)
-        }
-      ]
+        },
+      ],
+      true
     );
-    newWeETHToETHPriceFeed = weEthCapoPriceFeed.address;
-    console.log(`Deployed weETH capo price feed at ${weEthCapoPriceFeed.address}`);
     
     //5. rETH
-    const rateProviderREth = await ethers.getContractAt('contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface', RETH_RATE_PROVIDER) as AggregatorV3Interface;
+    const rateProviderREth = await deploymentManager.existing('rETH:_rateProvider', RETH_RATE_PROVIDER, 'arbitrum', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioREth] = await rateProviderREth.latestRoundData();
     const rEthCapoPriceFeed = await deploymentManager.deploy(
-      'rETH:capoPriceFeed',
+      'rETH:priceFeed',
       'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
       [
         governor.address,
         constantPriceFeed.address,
         RETH_RATE_PROVIDER,
-        'rETH:capoPriceFeed',
+        'rETH:priceFeed',
         FEED_DECIMALS,
         3600,
         {
@@ -186,12 +174,9 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
           snapshotTimestamp: now - 3600,
           maxYearlyRatioGrowthPercent: exp(0.01, 4)
         }
-      ]
+      ],
+      true
     );
-
-    newRETHToETHPriceFeed = rEthCapoPriceFeed.address;
-
-    console.log(`Deployed rETH capo price feed at ${rEthCapoPriceFeed.address}`);
     
     return {
       wstEthCapoPriceFeedAddress: wstEthCapoPriceFeed.address,
@@ -210,15 +195,20 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     rEthCapoPriceFeedAddress
   }) {
 
+    newEzETHToETHPriceFeed = ezEthCapoPriceFeedAddress;
+    newWstETHToETHPriceFeed = wstEthCapoPriceFeedAddress;
+    newRsETHToETHPriceFeed = rsEthCapoPriceFeedAddress;
+    newWeETHToETHPriceFeed = weEthCapoPriceFeedAddress;
+    newRETHToETHPriceFeed = rEthCapoPriceFeedAddress;
+    
     const trace = deploymentManager.tracer();
 
-    const { configurator, comet, bridgeReceiver, timelock: l2Timelock } = await deploymentManager.getContracts();
+    const { configurator, comet, bridgeReceiver, timelock: l2Timelock, cometAdmin} = await deploymentManager.getContracts();
 
     const {
       arbitrumInbox,
       timelock,
-      governor,
-      cometAdmin
+      governor
     } = await govDeploymentManager.getContracts();
 
 
@@ -290,12 +280,12 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
           0
         ],
         [
-          'updateAssetPriceFeed',
-          'updateAssetPriceFeed',
-          'updateAssetPriceFeed',
-          'updateAssetPriceFeed',
-          'updateAssetPriceFeed',
-          'deployAndUpgradeTo'
+          'updateAssetPriceFeed(address,address,address)',
+          'updateAssetPriceFeed(address,address,address)',
+          'updateAssetPriceFeed(address,address,address)',
+          'updateAssetPriceFeed(address,address,address)',
+          'updateAssetPriceFeed(address,address,address)',
+          'deployAndUpgradeTo(address,address)'
         ],
         [
           updateEzEthPriceFeedCalldata,

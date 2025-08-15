@@ -12,22 +12,16 @@ export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
     return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
 }
 
-const WSTETH_ADDRESS = '0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb';
-const WSTETH_STETH_PRICE_FEED_ADDRESS = '0xe59EBa0D492cA53C6f46015EEa00517F2707dc77';
-const STETH_ETH_PRICE_FEED_ADDRESS = '0x14d2d3a82AeD4019FddDfe07E8bdc485fb0d2249';
+const WSTETH_ADDRESS = '0xc02fe7317d4eb8753a02c35fe019786854a92001';
+const WSTETH_STETH_PRICE_FEED_ADDRESS = '0x24c8964338Deb5204B096039147B8e8C3AEa42Cc';
 
-const EZETH_ADDRESS = '0xE95A203B1a91a908F9B9CE46459d101078c2c3cb';
-const EZETH_ETH_RATE_PROVIDER = '0xFAD40C0e2BeF93c6a822015863045CAAeAAde4d3';
+const EZETH_ADDRESS = '0x2416092f143378750bb29b79ed961ab195cceea5';
+const EZETH_ETH_RATE_PROVIDER = '0xa0f2EF6ceC437a4e5F6127d6C51E1B0d3A746911';
 
-const WEETH_ADDRESS = '0x5A7fACB970D094B6C7FF1df0eA68D99E6e73CBFF'
-const WEETH_TO_ETH_RATE_PROVIDER = '0x72EC6bF88effEd88290C66DCF1bE2321d80502f5';
-
-// Note: WRSETH_ADDRESS is referenced in enact but not defined in constants
-// You'll need to add this constant if wrseth is actually being used
-// const WRSETH_ADDRESS = '0x...'; // Add the actual address
+const WEETH_ADDRESS = '0x7dcc39b4d1c53cb31e1abc0e358b43987fef80f7'
+const WEETH_TO_ETH_RATE_PROVIDER = '0xBf3bA2b090188B40eF83145Be0e9F30C6ca63689';
 
 const FEED_DECIMALS = 8;
-const RATE_DECIMALS = 18;
 
 let newWstETHToETHPriceFeed: string;
 let newWeEthToETHPriceFeed: string;
@@ -36,41 +30,28 @@ let newEzEthToETHPriceFeed: string;
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
     const { governor } = await deploymentManager.getContracts();
-
-    const rateProviderWstEth = await deploymentManager.existing('wstEth:priceFeed', WSTETH_STETH_PRICE_FEED_ADDRESS, 'unichain', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
-    console.log(`wstETH rate provider address: ${rateProviderWstEth.address}`);
-    
-    const [, currentRatioWstEth] = await rateProviderWstEth.latestRoundData();
     const now = (await ethers.provider.getBlock("latest"))!.timestamp;
-    
+
+    const rateProviderWstEth = await deploymentManager.existing('wstETH:_rateProvider', WSTETH_STETH_PRICE_FEED_ADDRESS, 'unichain', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
+    const [, currentRatioWstEth] = await rateProviderWstEth.latestRoundData();
     const constantPriceFeed = await deploymentManager.deploy(
-        'eth:constantPriceFeed',
+        'ETH:priceFeed',
         'pricefeeds/ConstantPriceFeed.sol',
         [
             8,
             exp(1, 8)
-        ]
-    );
-
-    const _wstETHToETHPriceFeed = await deploymentManager.deploy(
-      'wstETH:priceFeed',
-      'pricefeeds/MultiplicativePriceFeed.sol',
-      [
-        WSTETH_STETH_PRICE_FEED_ADDRESS, // wstETH / stETH price feed
-        STETH_ETH_PRICE_FEED_ADDRESS,    // stETH / ETH price feed
-        8,                               // decimals
-        'wstETH / ETH price feed'        // description
-      ]
+        ],
+        true
     );
      
     const wstEthCapoPriceFeed = await deploymentManager.deploy(
-        'wstETH:capoPriceFeed',
+        'wstETH:priceFeed',
         'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
             [
                 governor.address,
                 constantPriceFeed.address,
-                _wstETHToETHPriceFeed.address, // wstETH / ETH price feed
-                "wstETH:capoPriceFeed",
+                WSTETH_STETH_PRICE_FEED_ADDRESS, // wstETH / ETH price feed
+                "wstETH:priceFeed",
                 FEED_DECIMALS,
                 3600,
                 {
@@ -78,62 +59,53 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
                     snapshotTimestamp: now - 3600,
                     maxYearlyRatioGrowthPercent: exp(0.01, 4)
                 }
-            ]
+            ],
+            true
         );
-      
 
-    console.log(`Deployed wstETH capo price feed at ${wstEthCapoPriceFeed.address}`);
-    newWstETHToETHPriceFeed = wstEthCapoPriceFeed.address;
-
-    const rateProviderEzEth = await deploymentManager.existing('ezEth:priceFeed', EZETH_ETH_RATE_PROVIDER, 'unichain', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
+    const rateProviderEzEth = await deploymentManager.existing('ezEth:_priceFeed', EZETH_ETH_RATE_PROVIDER, 'unichain', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioEzEth] = await rateProviderEzEth.latestRoundData();
-
     const ezEthCapoPriceFeed = await deploymentManager.deploy(
-      'ezETH:capoPriceFeed',
+      'ezETH:priceFeed',
       'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
       [
         governor.address,
         constantPriceFeed.address,
         rateProviderEzEth.address,
-        'ezETH:capoPriceFeed',
+        'ezETH:priceFeed',
         FEED_DECIMALS,
         3600,
-        RATE_DECIMALS,
         {
           snapshotRatio: currentRatioEzEth,
           snapshotTimestamp: now - 3600,
           maxYearlyRatioGrowthPercent: exp(0.01, 4)
         }
       ],
+      true
     );
 
-    console.log(`Deployed ezETH capo price feed at ${ezEthCapoPriceFeed.address}`);
-    newEzEthToETHPriceFeed = ezEthCapoPriceFeed.address;
 
-    const weethRateProvider = await deploymentManager.existing('weeth:priceFeed', WEETH_TO_ETH_RATE_PROVIDER, 'unichain', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
+    const weethRateProvider = await deploymentManager.existing('weETH:_priceFeed', WEETH_TO_ETH_RATE_PROVIDER, 'unichain', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioWeeth] = await weethRateProvider.latestRoundData();
     const weethCapoPriceFeed = await deploymentManager.deploy(
-      'weeth:capoPriceFeed',
+      'weETH:priceFeed',
       'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
       [
         governor.address,
         constantPriceFeed.address,
         weethRateProvider.address,
-        'weeth:capoPriceFeed',
+        'weeth:priceFeed',
         FEED_DECIMALS,
         3600,
-        RATE_DECIMALS,
         {
           snapshotRatio: currentRatioWeeth,
           snapshotTimestamp: now - 3600,
           maxYearlyRatioGrowthPercent: exp(0.01, 4)
         }
       ],
+      true
     );
-    
-    console.log(`Deployed weETH capo price feed at ${weethCapoPriceFeed.address}`);
-    newWeEthToETHPriceFeed = weethCapoPriceFeed.address;
-     
+
     return {
       wstEthCapoPriceFeedAddress: wstEthCapoPriceFeed.address,
       weethCapoPriceFeedAddress: weethCapoPriceFeed.address,
@@ -146,6 +118,11 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     weethCapoPriceFeedAddress,
     ezEthCapoPriceFeedAddress
   }) {
+
+    newEzEthToETHPriceFeed = ezEthCapoPriceFeedAddress;
+    newWeEthToETHPriceFeed = weethCapoPriceFeedAddress;
+    newWstETHToETHPriceFeed = wstEthCapoPriceFeedAddress;
+
     const trace = deploymentManager.tracer();
     const { utils } = ethers;
 
@@ -208,10 +185,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
           0
         ],
         [
-          'updateAssetPriceFeed',
-          'updateAssetPriceFeed',
-          'updateAssetPriceFeed',
-          'deployAndUpgradeTo'
+          'updateAssetPriceFeed(address,address,address)',
+          'updateAssetPriceFeed(address,address,address)',
+          'updateAssetPriceFeed(address,address,address)',
+          'deployAndUpgradeTo(address,address)'
         ],
         [
           updateWstEthPriceFeedCalldata,
@@ -231,6 +208,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
           l2ProposalData,        // calldata
           3_000_000              // gas limit for L2 execution
         ],
+        value: exp(0.1, 18)
       },
     ];
 

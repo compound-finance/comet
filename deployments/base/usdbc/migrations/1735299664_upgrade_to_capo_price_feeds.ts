@@ -24,25 +24,20 @@ let newCbEthToUsdPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
-
-    const { comet } = await deploymentManager.getContracts();
-    console.log(`Comet address: ${comet.address}`);
     const { governor } = await deploymentManager.getContracts();
+    const now = (await deploymentManager.hre.ethers.provider.getBlock('latest'))!.timestamp;
 
-    const rateProviderCbEth = await deploymentManager.existing('cbEth:priceFeed', CBETH_ETH_PRICE_FEED, 'base','contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
-
+    //1. cbEth
+    const rateProviderCbEth = await deploymentManager.existing('cbEth:_priceFeed', CBETH_ETH_PRICE_FEED, 'base','contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioWstEth] = await rateProviderCbEth.latestRoundData();
-    const now = (await ethers.provider.getBlock("latest"))!.timestamp;
-    
-    
     const cbEthCapoPriceFeed = await deploymentManager.deploy(
-    'wstETH:capoPriceFeed',
+    'wstETH:priceFeed',
     'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
         [
             governor.address,
             ETH_USD_PRICE_FEED,
             CBETH_ETH_PRICE_FEED,
-            "wstETH:capoPriceFeed",
+            "wstETH:priceFeed",
             FEED_DECIMALS,
             3600,
             {
@@ -50,10 +45,9 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
                 snapshotTimestamp: now - 3600,
                 maxYearlyRatioGrowthPercent: exp(0.01, 4)
             }
-        ]
+        ],
+        true
     );
-    console.log(`Deployed wstETH capo price feed at ${cbEthCapoPriceFeed.address}`);
-    newCbEthToUsdPriceFeed = cbEthCapoPriceFeed.address;
 
     return {
       cbEthCapoPriceFeedAddress: cbEthCapoPriceFeed.address
@@ -63,6 +57,8 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async enact(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, {
     cbEthCapoPriceFeedAddress
   }) {
+
+    newCbEthToUsdPriceFeed = cbEthCapoPriceFeedAddress;
 
     const trace = deploymentManager.tracer();
 
