@@ -46,6 +46,7 @@ import unichainWETHRelationConfigMap from './deployments/unichain/weth/relations
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
 import roninRelationConfigMap from './deployments/ronin/weth/relations';
 import roninWronRelationConfigMap from './deployments/ronin/wron/relations';
+import localDaiRelationConfigMap from './deployments/local/dai/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -431,6 +432,9 @@ const config: HardhatUserConfig = {
       'ronin': {
         weth: roninRelationConfigMap,
         wron: roninWronRelationConfigMap
+      },
+      'local': {
+        dai: localDaiRelationConfigMap
       }
     },
   },
