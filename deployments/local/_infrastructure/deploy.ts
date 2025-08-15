@@ -72,6 +72,14 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     deploySpec.all
   );
 
+  // Deploy CometRewards (shared across all Comet instances)
+  const rewards = await deploymentManager.deploy(
+    'rewards',
+    'CometRewards.sol',
+    [timelock.address],
+    deploySpec.all
+  );
+
   // Transfer proxyAdmin ownership to timelock
   await deploymentManager.idempotent(
     async () => (await proxyAdmin.owner()) !== timelock.address,
@@ -131,10 +139,11 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     COMP,
     
     // Shared Admin & Governance
-    cometAdmin:proxyAdmin,
+    cometAdmin: proxyAdmin,
     configuratorImpl,
     configuratorProxy,
     cometFactory,
+    rewards,
     
     // Tokens
     DAI,
