@@ -179,10 +179,12 @@ export async function deployNetworkComet(
   // If we deploy a new proxy, we initialize it to the current/new impl
   // If its an existing proxy, the impl we got for the alias must already be current
   // In other words, we shan't have deployed an impl in the last step unless there was no proxy too
+  
+  //ATTENTION! cometAdmin.address should be replaced for governor (timelock)
   const configuratorProxy = await deploymentManager.deploy(
     'configurator',
     'ConfiguratorProxy.sol',
-    [configuratorImpl.address, cometAdmin.address, (await configuratorImpl.populateTransaction.initialize(admin.address)).data],
+    [configuratorImpl.address, governor, (await configuratorImpl.populateTransaction.initialize(admin.address)).data],
     maybeForce()
   );
 
@@ -216,8 +218,9 @@ export async function deployNetworkComet(
   // If we aren't admin, we'll need proposals to configure things
   const amAdmin = sameAddress(await cometAdmin.owner(), admin.address);
 
+  //ATTENTION! cometAdmin should not be used to get the implementation of the configurator
   // Get the current impl addresses for the proxies, and determine if we've configurated
-  const $configuratorImpl = await cometAdmin.getProxyImplementation(configurator.address);
+  const $configuratorImpl = configuratorImpl.address;
   const $cometImpl = await cometAdmin.getProxyImplementation(comet.address);
   const isTmpImpl = sameAddress($cometImpl, tmpCometImpl.address);
 
