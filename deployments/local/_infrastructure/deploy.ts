@@ -52,7 +52,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   );
 
   // Deploy Configurator proxy
-  const configuratorProxy = await deploymentManager.deploy(
+  const configurator = await deploymentManager.deploy(
     'configurator',
     'ConfiguratorProxy.sol',
     [
@@ -140,9 +140,8 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     
     // Shared Admin & Governance
     cometAdmin,
-    configuratorImpl,
-    configuratorProxy,
     cometFactory,
+    configurator,
     rewards,
     
     // Tokens

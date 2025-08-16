@@ -28,4 +28,21 @@ export default {
       }
     }
   },
+  // Fix configurator relations with missing alias fields
+  configurator: {
+    ...baseRelationConfig.configurator,
+    relations: {
+      ...baseRelationConfig.configurator.relations,
+      cometFactory: {
+        field: async (configurator, { comet }) => {
+          // Only try to get factory if comet exists
+          if (!comet || comet.length === 0) {
+            return null;
+          }
+          return configurator.factory(comet[0].address);
+        },
+        alias: 'cometFactory'
+      }
+    }
+  },
 }; 
