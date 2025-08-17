@@ -20,9 +20,6 @@ jobs:
       - name: Install dependencies
         run: forge install
 
-      - name: Init submodules
-        run: git submodule init --recursive
-
       - name: Run tests
         run: forge test -vvv --via-ir --optimizer-runs 1
         env:
