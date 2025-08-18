@@ -32,7 +32,17 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
     const { governor } = await deploymentManager.getContracts();
     const now = (await ethers.provider.getBlock("latest"))!.timestamp;
+
     const wstETHToETHPriceFeed = await deploymentManager.fromDep('wstETH:priceFeed', 'mainnet', 'weth');
+     const constantPriceFeed = await deploymentManager.deploy(
+          'ETH:priceFeed',
+          'pricefeeds/ConstantPriceFeed.sol',
+          [
+            8,
+            exp(1, 8)
+          ],
+          true
+        );
 
     //1. rsEth
     const rateProviderRsEth = await deploymentManager.existing('rsETH:_priceFeed', RSETH_ORACLE, 'mainnet', 'contracts/capo/contracts/interfaces/ILRTOracle.sol:ILRTOracle') as ILRTOracle;

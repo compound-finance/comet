@@ -20,14 +20,13 @@ const WSTETH_RATE_PROVIDER = '0x86392dC19c0b719886221c78AB11eb8Cf5c52812';
 const FEED_DECIMALS = 8;
 
 let newWstETHToUSDPriceFeed: string;
-let newWusdmToUSDPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
     const { governor } = await deploymentManager.getContracts();
     const now = (await deploymentManager.hre.ethers.provider.getBlock('latest'))!.timestamp;
 
-    const wstETH = await deploymentManager.existing('wstETH', WSTETH_ADDRESS, 'base', 'contracts/IWstETH.sol:IWstETH') as IWstETH;
+    const wstETH = await deploymentManager.existing('wstETH', WSTETH_ADDRESS, 'mainnet', 'contracts/IWstETH.sol:IWstETH') as IWstETH;
     const currentRatioWstEth = await wstETH.stEthPerToken();
     const wstEthCapoPriceFeed = await deploymentManager.deploy(
         'wstETH:priceFeed',
@@ -48,6 +47,8 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
             ],
             true
         );
+
+        console.log('Deployed '+wstEthCapoPriceFeed.address)
 
     return {
       wstEthCapoPriceFeedAddress: wstEthCapoPriceFeed.address

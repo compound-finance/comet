@@ -27,7 +27,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     const now = (await deploymentManager.hre.ethers.provider.getBlock('latest'))!.timestamp;
 
     //1. wstETH
-    const wstETH = await deploymentManager.existing('wstETH', WSTETH_ADDRESS, 'base', 'contracts/IWstETH.sol:IWstETH') as IWstETH;
+    const wstETH = await deploymentManager.existing('wstETH', WSTETH_ADDRESS, 'mainnet', 'contracts/IWstETH.sol:IWstETH') as IWstETH;
     const currentRatioWstEth = await wstETH.stEthPerToken();
     const wstEthCapoPriceFeed = await deploymentManager.deploy(
         'wstETH:priceFeed',
