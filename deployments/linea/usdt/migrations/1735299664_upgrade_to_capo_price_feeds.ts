@@ -98,7 +98,6 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       [
         [
           configurator.address,
-          configurator.address,
           cometAdmin.address
         ],
         [

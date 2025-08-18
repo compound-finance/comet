@@ -219,12 +219,16 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         [
           configurator.address,
           configurator.address,
+          configurator.address,
+          configurator.address,
           cometAdmin.address
         ],
         [
           0,
           0,
           0,
+          0,
+          0
         ],
         [
           'updateAssetPriceFeed(address,address,address)',
@@ -236,6 +240,8 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         [
           updateEzEthPriceFeedCalldata,
           updateWstEthPriceFeedCalldata,
+          updateWeEthPriceFeedCalldata,
+          updateWrsethPriceFeedCalldata,
           deployAndUpgradeToCalldata
         ],
       ]

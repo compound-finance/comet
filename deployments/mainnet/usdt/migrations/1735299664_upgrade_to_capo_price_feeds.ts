@@ -14,12 +14,17 @@ export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
 }
 
 const ETH_USD_PRICE_FEED = '0x7c7FdFCa295a787ded12Bb5c1A49A8D2cC20E3F8';
+
 const WSTETH_ADDRESS = '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0';
 const WSTETH_RATE_PROVIDER = '0x86392dC19c0b719886221c78AB11eb8Cf5c52812';
+
+const SFRAX_ADDRESS = '0xA663B02CF0a4b149d2aD41910CB81e23e1c41c32';
+const FRAX_TO_USD_PRICE_FEED_ADDRESS = '0xB9E1E3A9feFf48998E45Fa90847ed4D467E8BcfD';
 
 const FEED_DECIMALS = 8;
 
 let newWstETHToUSDPriceFeed: string;
+let newSFraxToUSDPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
@@ -48,17 +53,37 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
             true
         );
 
-        console.log('Deployed '+wstEthCapoPriceFeed.address)
+
+    const sFraxCapoPriceFeed = await deploymentManager.deploy(
+        'wusdm:capoPriceFeed',
+        'capo/contracts/ERC4626CorrelatedAssetsPriceOracle.sol',
+        [
+          governor.address,
+          FRAX_TO_USD_PRICE_FEED_ADDRESS,
+          SFRAX_ADDRESS,
+          'sFRAX:capoPriceFeed',
+          FEED_DECIMALS,
+          3600,
+          {
+            snapshotRatio: currentRatioWstEth,
+            snapshotTimestamp: now - 3600,
+            maxYearlyRatioGrowthPercent: exp(0.01, 4)
+          }
+        ]
+      );
 
     return {
-      wstEthCapoPriceFeedAddress: wstEthCapoPriceFeed.address
+      wstEthCapoPriceFeedAddress: wstEthCapoPriceFeed.address,
+      sFraxCapoPriceFeedAddress: sFraxCapoPriceFeed.address
     };
   },
 
  async enact(deploymentManager: DeploymentManager, _, {
-     wstEthCapoPriceFeedAddress
+     wstEthCapoPriceFeedAddress,
+     sFraxCapoPriceFeedAddress
    }) {
      newWstETHToUSDPriceFeed = wstEthCapoPriceFeedAddress;
+     newSFraxToUSDPriceFeed = sFraxCapoPriceFeedAddress;
 
      const trace = deploymentManager.tracer();
  
@@ -75,6 +100,12 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
          contract: configurator,
          signature: 'updateAssetPriceFeed(address,address,address)',
          args: [comet.address, WSTETH_ADDRESS, wstEthCapoPriceFeedAddress],
+       },
+        // 2. Deploy and upgrade to a new version of Comet
+       {
+         contract: configurator,
+         signature: 'updateAssetPriceFeed(address,address,address)',
+         args: [comet.address, SFRAX_ADDRESS, sFraxCapoPriceFeedAddress],
        },
        // 2. Deploy and upgrade to a new version of Comet
        {
@@ -121,5 +152,22 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       
     expect(wstETHInCometInfo.priceFeed).to.eq(newWstETHToUSDPriceFeed);
     expect(wstETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newWstETHToUSDPriceFeed); 
+
+
+    const sFraxIndexInComet = await configurator.getAssetIndex(
+      comet.address,
+      SFRAX_ADDRESS
+    ); 
+
+    const sFraxInCometInfo = await comet.getAssetInfoByAddress(
+      SFRAX_ADDRESS
+    );
+
+    const sFraxInConfiguratorInfoWETHComet = (
+      await configurator.getConfiguration(comet.address)
+    ).assetConfigs[sFraxIndexInComet];
+
+    expect(sFraxInCometInfo.priceFeed).to.eq(newSFraxToUSDPriceFeed);
+    expect(sFraxInConfiguratorInfoWETHComet.priceFeed).to.eq(newSFraxToUSDPriceFeed);
   },
 });
