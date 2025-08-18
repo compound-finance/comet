@@ -34,7 +34,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     const now = (await ethers.provider.getBlock("latest"))!.timestamp;
 
     const wstETHToETHPriceFeed = await deploymentManager.fromDep('wstETH:priceFeed', 'mainnet', 'weth');
-     const constantPriceFeed = await deploymentManager.deploy(
+    const constantPriceFeed = await deploymentManager.deploy(
           'ETH:priceFeed',
           'pricefeeds/ConstantPriceFeed.sol',
           [
@@ -44,6 +44,17 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
           true
         );
 
+    const ethToWstETHPriceFeed = await deploymentManager.deploy(
+      'USDC:priceFeed',
+      'pricefeeds/ReverseMultiplicativePriceFeed.sol',
+      [
+        constantPriceFeed.address,  // USDC / USD price feed
+        wstETHToETHPriceFeed.address, // USD / ETH price feed
+        8,                            // decimals
+        'USDC / USD  USD / ETH',      // description
+      ]
+    );
+
     //1. rsEth
     const rateProviderRsEth = await deploymentManager.existing('rsETH:_priceFeed', RSETH_ORACLE, 'mainnet', 'contracts/capo/contracts/interfaces/ILRTOracle.sol:ILRTOracle') as ILRTOracle;
     const currentRatioRsEth = await rateProviderRsEth.rsETHPrice();
@@ -52,7 +63,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'capo/contracts/RsETHCorrelatedAssetsPriceOracle.sol',
       [
         governor.address,
-        wstETHToETHPriceFeed.address,
+        ethToWstETHPriceFeed.address,
         RSETH_ORACLE,
         "rsETH:priceFeed",
         FEED_DECIMALS,
