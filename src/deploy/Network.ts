@@ -404,7 +404,7 @@ async function createBDAGGov(
   const governorImpl = await deploymentManager.deploy(
     'governor:implementation',
     'CustomGovernor.sol',
-    [1] // multisigThreshold (1 for single admin, increase for multi-admin)
+    [1, [admin.address]] // multisigThreshold and admins array
   );
 
   // Deploy governor proxy using ERC1967Proxy (UUPS pattern)
@@ -415,8 +415,7 @@ async function createBDAGGov(
       governorImpl.address,
       governorImpl.interface.encodeFunctionData('initialize', [
         timelock.address,
-        COMP.address,
-        admin.address
+        COMP.address
       ])
     ]
   );
@@ -446,8 +445,8 @@ async function deployBDAGNetworkComet(
 ): Promise<Deployed> {
   //TODO: proxy and comet ext if they dont exist
   await deployCometProxy(deploymentManager, deploySpec, configOverrides, withAssetList, adminSigner);
-  //await deployCometExt(deploymentManager, deploySpec, configOverrides, withAssetList, adminSigner);
-  //await proposeComet(deploymentManager, deploySpec, configOverrides, withAssetList, adminSigner);
+  await deployCometExt(deploymentManager, deploySpec, configOverrides, withAssetList, adminSigner);
+  await proposeComet(deploymentManager, deploySpec, configOverrides, withAssetList, adminSigner);
   const comet = await deploymentManager.getContractOrThrow('comet');
   return { comet };
 }
@@ -468,15 +467,22 @@ async function deployCometProxy(
 
   const cometAdmin = await deploymentManager.getContractOrThrow('cometAdmin');
 
-  // Deploy a temporary implementation first
+  const {
+    governor,
+    baseToken,
+    baseTokenPriceFeed,
+    baseMinForRewards,
+  } = await getConfiguration(deploymentManager, configOverrides);
+
+  // Temporary implementation first
   const tmpCometImpl = await deploymentManager.deploy(
     'comet:implementation',
     'Comet.sol',
     [{
-      governor: "0x0000000000000000000000000000000000000000",
+      governor: governor,
       pauseGuardian: "0x0000000000000000000000000000000000000000",
-      baseToken: "0x0000000000000000000000000000000000000000",
-      baseTokenPriceFeed: "0x0000000000000000000000000000000000000000",
+      baseToken,
+      baseTokenPriceFeed,
       extensionDelegate: "0x0000000000000000000000000000000000000000",
       supplyKink: 0,
       supplyPerYearInterestRateSlopeLow: 0,
@@ -490,10 +496,10 @@ async function deployCometProxy(
       trackingIndexScale: 0,
       baseTrackingSupplySpeed: 0,
       baseTrackingBorrowSpeed: 0,
-      baseMinForRewards: 0,
+      baseMinForRewards,
       baseBorrowMin: 0,
       targetReserves: 0,
-      assetConfigs: []
+      assetConfigs: [],
     }],
     maybeForce(),
   );
@@ -690,7 +696,6 @@ async function createCometProposal(
   );
   
   // Action 4: setRewardConfig (if rewardTokenAddress is provided)
-  // TODO: Check if rewardConfig is already set for this comet before adding to proposal
   if (rewardTokenAddress !== undefined) {
     const rewards = await deploymentManager.getContractOrThrow('rewards');
     targets.push(rewards.address);

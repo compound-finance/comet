@@ -19,7 +19,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
     uint public proposalCount;
 
     /// @notice The maximum number of actions that can be included in a proposal
-    uint public proposalMaxOperations = 10;
+    uint public constant proposalMaxOperations = 10;
 
     /// @notice The official record of all proposals ever proposed
     mapping (uint => Proposal) public _proposals;
@@ -32,7 +32,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
     /// @notice The latest proposal for each proposer
     mapping (address => uint) public latestProposalIds;
 
-    /// @notice Mapping of admin addresses
+    /// @notice Mapping of admin addresses (set in constructor)
     mapping (address => bool) public admins;
 
     /// @notice Number of admins required to approve a proposal (immutable)
@@ -51,32 +51,30 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
     event ProposalApproved(uint proposalId, address admin);
 
     /**
-     * @notice Constructor to set immutable multisig threshold
+     * @notice Constructor to set immutable multisig threshold and admins
      * @param threshold_ The multisig threshold (immutable)
+     * @param admins_ The array of admin addresses
      */
-    constructor(uint threshold_) {
+    constructor(uint threshold_, address[] memory admins_) {
         multisigThreshold = threshold_;
+        for (uint i = 0; i < admins_.length; i++) {
+            admins[admins_[i]] = true;
+        }
     }
 
     /**
      * @notice Initialize the governor (called by proxy)
      * @param timelock_ The timelock contract address
      * @param token_ The governance token address
-     * @param initialAdmin_ The initial admin address
      */
     function initialize(
         address timelock_,
-        address token_,
-        address initialAdmin_
+        address token_
     ) external {
         require(timelock == Timelock(payable(0)), "CustomGovernor::initialize: already initialized");
         
         timelock = Timelock(payable(timelock_));
         token = token_;
-        
-        // Set initial admin
-        admins[initialAdmin_] = true;
-        emit GovernorAdminChanged(initialAdmin_, true);
     }
 
     function propose(
@@ -181,17 +179,6 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
         }
 
         emit ProposalCanceled(proposalId);
-    }
-
-    /**
-     * @notice Add or remove an admin
-     * @param admin The address to add or remove
-     * @param isAdmin Whether to add (true) or remove (false) the admin
-     */
-    function setAdmin(address admin, bool isAdmin) external {
-        require(admins[msg.sender], "CustomGovernor::setAdmin: only admins can manage admins");
-        admins[admin] = isAdmin;
-        emit GovernorAdminChanged(admin, isAdmin);
     }
 
     /**
