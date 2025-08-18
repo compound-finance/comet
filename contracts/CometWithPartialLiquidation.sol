@@ -1094,6 +1094,20 @@ contract CometWithPartialLiquidation is CometMainInterface {
                 }
 
                 emit AbsorbCollateral(absorber, account, asset, seizeAmount, value);
+
+                uint256 absDebt = debt < 0 ? uint256(-debt) : 0;
+                uint256 remainingDebtValue = (absDebt > deltaValue) ? (absDebt - deltaValue) : 0;
+
+                if (accumulatedLiquidity == 0) {
+                    break;
+                }
+
+                uint256 currentHF = (remainingDebtValue * FACTOR_SCALE) / accumulatedLiquidity;
+
+                if (currentHF <= targetHF) {
+                    break;
+                }
+
             }
             unchecked { i++; }
         }
