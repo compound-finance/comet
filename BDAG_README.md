@@ -447,7 +447,7 @@ This section describes how the system automatically chooses between Governor Bra
 
 The system uses a **flag-based approach** to automatically select the appropriate governor:
 
-- **`--bdag` flag**: Uses custom multisig governor (`createMultisigGov`)
+- **`--bdag` flag**: Uses custom multisig governor (`createBDAGGov`)
 - **No flag**: Uses standard Governor Bravo (`_cloneGov`)
 
 ### Step 1: Custom Governor Contract ✅
@@ -458,7 +458,7 @@ The system uses a **flag-based approach** to automatically select the appropriat
 
 ### Step 2: Flag-Based Governor Selection ✅
 - Modified `cloneGov()` function in `src/deploy/Network.ts` to check `deploymentManager.config.bdag`
-- If BDAG flag is set: uses `createMultisigGov()` (custom governor)
+- If BDAG flag is set: uses `createBDAGGov()` (custom governor)
 - If no flag: uses `_cloneGov()` (standard Governor Bravo)
 - No changes needed to deployment scripts - automatic selection
 
