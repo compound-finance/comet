@@ -37,6 +37,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
 
     /// @notice Number of admins required to approve a proposal (immutable)
     uint public immutable multisigThreshold;
+    
 
     /// @notice Mapping of proposal approvals by admins
     mapping (uint => mapping (address => bool)) public proposalApprovals;
@@ -51,30 +52,34 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
     event ProposalApproved(uint proposalId, address admin);
 
     /**
-     * @notice Constructor to set immutable multisig threshold and admins
+     * @notice Constructor to set immutable multisig threshold
      * @param threshold_ The multisig threshold (immutable)
-     * @param admins_ The array of admin addresses
      */
-    constructor(uint threshold_, address[] memory admins_) {
+    constructor(uint threshold_) {
         multisigThreshold = threshold_;
-        for (uint i = 0; i < admins_.length; i++) {
-            admins[admins_[i]] = true;
-        }
     }
 
     /**
      * @notice Initialize the governor (called by proxy)
      * @param timelock_ The timelock contract address
      * @param token_ The governance token address
+     * @param admins_ The array of admin addresses
      */
     function initialize(
         address timelock_,
-        address token_
+        address token_,
+        address[] memory admins_
     ) external {
         require(timelock == Timelock(payable(0)), "CustomGovernor::initialize: already initialized");
         
         timelock = Timelock(payable(timelock_));
         token = token_;
+        
+        // Set admins
+        for (uint i = 0; i < admins_.length; i++) {
+            admins[admins_[i]] = true;
+            emit GovernorAdminChanged(admins_[i], true);
+        }
     }
 
     function propose(
@@ -188,6 +193,17 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
      */
     function isAdmin(address admin) external view returns (bool) {
         return admins[admin];
+    }
+
+    /**
+     * @notice Add or remove an admin
+     * @param admin The address to add or remove
+     * @param isAdmin Whether to add (true) or remove (false) the admin
+     */
+    function setAdmin(address admin, bool isAdmin) external {
+        require(admins[msg.sender], "CustomGovernor::setAdmin: only admins can manage admins");
+        admins[admin] = isAdmin;
+        emit GovernorAdminChanged(admin, isAdmin);
     }
 
     /**

@@ -404,7 +404,7 @@ async function createBDAGGov(
   const governorImpl = await deploymentManager.deploy(
     'governor:implementation',
     'CustomGovernor.sol',
-    [1, [admin.address]] // multisigThreshold and admins array
+    [1] // multisigThreshold
   );
 
   // Deploy governor proxy using ERC1967Proxy (UUPS pattern)
@@ -415,7 +415,8 @@ async function createBDAGGov(
       governorImpl.address,
       governorImpl.interface.encodeFunctionData('initialize', [
         timelock.address,
-        COMP.address
+        COMP.address,
+        [admin.address] // Pass admins array
       ])
     ]
   );
