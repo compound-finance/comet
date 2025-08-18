@@ -445,14 +445,14 @@ async function deployBDAGNetworkComet(
   adminSigner?: SignerWithAddress,
 ): Promise<Deployed> {
   //TODO: proxy and comet ext if they dont exist
-  await deployCometProxy(deploymentManager, deploySpec, configOverrides, withAssetList, adminSigner);
-  await deployCometExt(deploymentManager, deploySpec, configOverrides, withAssetList, adminSigner);
-  await proposeComet(deploymentManager, deploySpec, configOverrides, withAssetList, adminSigner);
+  await deployOrRetrieveCometProxy(deploymentManager, deploySpec, configOverrides, withAssetList, adminSigner);
+  await deployOrRetrieveCometExt(deploymentManager, deploySpec, configOverrides, withAssetList, adminSigner);
+  await proposeCometImpl(deploymentManager, deploySpec, configOverrides, withAssetList, adminSigner);
   const comet = await deploymentManager.getContractOrThrow('comet');
   return { comet };
 }
 
-async function deployCometProxy(
+async function deployOrRetrieveCometProxy(
   deploymentManager: DeploymentManager,
   deploySpec: DeploySpec = { all: true },
   configOverrides: ProtocolConfiguration = {},
@@ -460,8 +460,13 @@ async function deployCometProxy(
   adminSigner?: SignerWithAddress,
 ): Promise<Deployed> {
 
-  function maybeForce(flag?: boolean): boolean {
-    return deploySpec.all || flag;
+  const trace = deploymentManager.tracer();
+
+  // Check if 'comet' already exists in cache
+  const existingComet = await deploymentManager.contract('comet');
+  if (existingComet) {
+    trace(`Comet proxy already exists in cache: ${existingComet.address}`);
+    return { cometProxy: existingComet };
   }
 
   /* Deploy contracts */
@@ -502,28 +507,34 @@ async function deployCometProxy(
       targetReserves: 0,
       assetConfigs: [],
     }],
-    maybeForce(),
+    deploySpec.all,
   );
 
   const cometProxy = await deploymentManager.deploy(
     'comet',
     'vendor/proxy/transparent/TransparentUpgradeableProxy.sol',
     [tmpCometImpl.address, cometAdmin.address, []],
-    maybeForce(),
+    deploySpec.all,
   );
 
   return { cometProxy };
 
 }
 
-async function deployCometExt(
+async function deployOrRetrieveCometExt(
   deploymentManager: DeploymentManager,
-  deploySpec: DeploySpec,
+  deploySpec: DeploySpec = { all: true },
   configOverrides: ProtocolConfiguration,
   withAssetList: boolean,
   adminSigner?: SignerWithAddress
 ): Promise<Contract> {
   const trace = deploymentManager.tracer();
+
+  const existingCometExt = await deploymentManager.contract('comet:implementation:implementation');
+  if (existingCometExt) {
+    trace(`CometExt already exists in cache: ${existingCometExt.address}`);
+    return existingCometExt;
+  }
   
   const {
     name,
@@ -534,10 +545,6 @@ async function deployCometExt(
     name32: deploymentManager.hre.ethers.utils.formatBytes32String(name),
     symbol32: deploymentManager.hre.ethers.utils.formatBytes32String(symbol)
   };
-
-  function maybeForce(flag?: boolean): boolean {
-    return deploySpec.all || flag;
-  }
   
   trace(`Deploying CometExt with configuration: ${JSON.stringify(extConfiguration)}`);
   
@@ -545,7 +552,7 @@ async function deployCometExt(
       'comet:implementation:implementation',
       'CometExt.sol',
       [extConfiguration],
-      maybeForce(deploySpec.cometExt)
+      deploySpec.all
   );
   
   trace(`CometExt deployed at: ${cometExt.address}`);
@@ -553,7 +560,7 @@ async function deployCometExt(
   return cometExt;
 }
 
-async function proposeComet(
+async function proposeCometImpl(
   deploymentManager: DeploymentManager,
   deploySpec: DeploySpec = { all: true },
   configOverrides: ProtocolConfiguration = {},
