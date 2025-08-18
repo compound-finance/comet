@@ -207,19 +207,6 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
     }
 
     /**
-     * @notice Approve a proposal (multisig functionality)
-     * @param proposalId The proposal to approve
-     */
-    function approveProposal(uint proposalId) external {
-        require(admins[msg.sender], "CustomGovernor::approveProposal: only admins can approve");
-        require(!proposalApprovals[proposalId][msg.sender], "CustomGovernor::approveProposal: already approved");
-        
-        proposalApprovals[proposalId][msg.sender] = true;
-        proposalApprovalCounts[proposalId]++;
-        emit ProposalApproved(proposalId, msg.sender);
-    }
-
-    /**
      * @notice Get the number of approvals for a proposal
      * @param proposalId The proposal to check
      * @return Number of approvals
@@ -235,6 +222,19 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
      */
     function hasEnoughApprovals(uint proposalId) external view returns (bool) {
         return proposalApprovalCounts[proposalId] >= multisigThreshold;
+    }
+
+    function castVote(uint proposalId, uint8 support) external returns (uint) {
+        // For multisig, castVote acts as approveProposal
+        // support parameter is ignored, any call to castVote counts as approval
+        require(admins[msg.sender], "CustomGovernor::castVote: only admins can vote");
+        require(!proposalApprovals[proposalId][msg.sender], "CustomGovernor::castVote: already voted");
+        
+        proposalApprovals[proposalId][msg.sender] = true;
+        proposalApprovalCounts[proposalId]++;
+        emit ProposalApproved(proposalId, msg.sender);
+        
+        return 1; // Return 1 to indicate successful vote
     }
 
     function state(uint proposalId) public view returns (IGovernorBravo.ProposalState) {
@@ -274,10 +274,6 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
     function votingDelay() external pure returns (uint256) { return 0; }
     function votingPeriod() external pure returns (uint256) { return 0; }
     function proposalEta(uint256 proposalId) external view returns (uint256) { return _proposals[proposalId].eta; }
-    function castVote(uint proposalId, uint8 support) external pure returns (uint) {
-        // For multisig, voting is not used - just return 0 for interface compliance
-        return 0;
-    }
 
     // UUPS Upgrade functionality
     /**
