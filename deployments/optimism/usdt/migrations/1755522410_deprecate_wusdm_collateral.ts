@@ -5,26 +5,14 @@ import { proposal, exp } from '../../../../src/deploy';
 import { utils } from 'ethers';
 
 const WUSDM_ADDRESS = '0x57F5E098CaD7A3D1Eed53991D4d66C45C9AF7812';
-
-let newPriceFeedAddress;
+const CONSTANT_PRICE_FEED = '0x8671d5e3a10639a573bACffEF448CA076b2d5cD7';
 
 export default migration('1755522410_deprecate_wusdm_collateral', {
-  async prepare(
-    deploymentManager: DeploymentManager
-  ) {
-    const _wUSDMPriceFeed = await deploymentManager.deploy(
-      'WETH:priceFeed',
-      'pricefeeds/ConstantPriceFeed.sol',
-      [
-        8, // decimals
-        1  // constantPrice
-      ],
-      true
-    );
-    return { wUSDMPriceFeedAddress: _wUSDMPriceFeed.address };
+  async prepare() {
+    return {};
   },
 
-  enact: async (deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, { wUSDMPriceFeedAddress }) => {
+  enact: async (deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager) => {
     const trace = deploymentManager.tracer();
 
     const wUSDM = await deploymentManager.existing(
@@ -34,11 +22,10 @@ export default migration('1755522410_deprecate_wusdm_collateral', {
       'contracts/ERC20.sol:ERC20'
     );
 
-    newPriceFeedAddress = wUSDMPriceFeedAddress;
 
     const newAssetConfig = {
       asset: wUSDM.address,
-      priceFeed: wUSDMPriceFeedAddress,
+      priceFeed: CONSTANT_PRICE_FEED,
       decimals: await wUSDM.decimals(),
       borrowCollateralFactor: 0,
       liquidateCollateralFactor: exp(0.0001, 18),
@@ -141,7 +128,7 @@ The first proposal action updates wUSDM's configuration to deprecate it from cUS
     const wUSDMAssetInfo = await comet.getAssetInfoByAddress(WUSDM_ADDRESS);
     const wUSDMAssetIndex = wUSDMAssetInfo.offset;
     expect(0).to.be.equal(wUSDMAssetInfo.supplyCap);
-    expect(newPriceFeedAddress).to.be.equal(wUSDMAssetInfo.priceFeed);
+    expect(CONSTANT_PRICE_FEED).to.be.equal(wUSDMAssetInfo.priceFeed);
     expect(1).to.be.equal(await comet.getPrice(wUSDMAssetInfo.priceFeed));
     expect(0).to.be.equal(wUSDMAssetInfo.borrowCollateralFactor);
     expect(exp(0.0001, 18)).to.be.equal(wUSDMAssetInfo.liquidateCollateralFactor);
@@ -150,7 +137,7 @@ The first proposal action updates wUSDM's configuration to deprecate it from cUS
     // 2. Compare proposed asset config with Configurator asset config
     const configuratorWUSDMAssetConfig = (await configurator.getConfiguration(comet.address)).assetConfigs[wUSDMAssetIndex];
     expect(0).to.be.equal(configuratorWUSDMAssetConfig.supplyCap);
-    expect(newPriceFeedAddress).to.be.equal(configuratorWUSDMAssetConfig.priceFeed);
+    expect(CONSTANT_PRICE_FEED).to.be.equal(configuratorWUSDMAssetConfig.priceFeed);
     expect(1).to.be.equal(await comet.getPrice(configuratorWUSDMAssetConfig.priceFeed));
     expect(0).to.be.equal(configuratorWUSDMAssetConfig.borrowCollateralFactor);
     expect(exp(0.0001, 18)).to.be.equal(configuratorWUSDMAssetConfig.liquidateCollateralFactor);
