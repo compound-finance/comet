@@ -32,7 +32,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
     const { governor } = await deploymentManager.getContracts();
     const now = (await ethers.provider.getBlock("latest"))!.timestamp;
-
+    
     const wstETHToETHPriceFeed = await deploymentManager.fromDep('wstETH:priceFeed', 'mainnet', 'weth');
     const constantPriceFeed = await deploymentManager.deploy(
           'ETH:priceFeed',
