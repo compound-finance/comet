@@ -217,13 +217,19 @@ export default migration('1755522406_deprecate_wusdm_collateral', {
       },
     ];
 
-    const description = `# Deprecate wUSDM from cUSDCv3 on Arbitrum, and cUSDCv3 and cUSDTv3 on Optimism
+    const description = `# Deprecate wUSDM from Arbitrum and Optimism markets
+
 ## Proposal summary
+
 WOOF! proposes to deprecate wUSDM from cUSDCv3 on Arbitrum network, and cUSDCv3 and cUSDTv3 on Optimism, since deprecation of USDM itself and its Chainlink oracle.
-In order to achieve this price feed will be updated to a new one, which will return the smallest acceptable price - 0.00000001 (1e-8), and the supply cup will be set to 0 to prevent further deposits. This proposal takes the governance steps recommended and necessary to update a Compound III USDC market on Arbitrum, and a Compound III USDC and USDT market on Optimism. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario).
+In order to achieve this price feed on both networks will be updated to a new one, which will return the smallest acceptable price - 0.00000001 (1e-8), and the supply cup will be set to 0 to prevent further deposits. This proposal takes the governance steps recommended and necessary to update a Compound III USDC market on Arbitrum, and a Compound III USDC and USDT market on Optimism. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario).
 Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1014).
+
+
 ## Proposal Actions
+
 The first proposal action updates wUSDM's configuration to deprecate it from cUSDCv3 on Arbitrum. This sends the encoded 'updateAsset' and 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Arbitrum.
+
 The second proposal action updates wUSDM's configuration to deprecate it from cUSDCv3 and cUSDTv3 on Optimism. This sends the encoded 'updateAsset' and 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Optimism.`;
 
     const txn = await deploymentManager.retry(async () =>
