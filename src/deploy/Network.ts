@@ -720,17 +720,7 @@ async function createCometProposal(
     trace(`4. setRewardConfig(${cometProxy.address}, ${rewardTokenAddress})`);
   }
   
-  const proposalId = await governor.connect(admin).propose(
-    targets,
-    values,
-    calldatas,
-    description
-  );
-  
-  trace(`Proposal created with ID: ${proposalId}`);
-  
   return {
-    proposalId,
     targets,
     values,
     calldatas,
