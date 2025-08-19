@@ -15,7 +15,6 @@ import 'hardhat-gas-reporter';
 import './tasks/deployment_manager/task.ts';
 import './tasks/spider/task.ts';
 import './tasks/scenario/task.ts';
-import './tasks/governor/task.ts';
 
 // Relation Config
 import relationConfigMap from './deployments/relations';
