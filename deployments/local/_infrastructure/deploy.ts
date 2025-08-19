@@ -57,7 +57,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     'ConfiguratorProxy.sol',
     [
       configuratorImpl.address, 
-      timelock.address, 
+      cometAdmin.address, 
       (await configuratorImpl.populateTransaction.initialize(timelock.address)).data
     ],
     deploySpec.all
