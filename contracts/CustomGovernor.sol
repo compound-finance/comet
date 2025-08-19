@@ -19,7 +19,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
     uint public proposalCount;
 
     /// @notice The maximum number of actions that can be included in a proposal
-    uint public proposalMaxOperations = 10;
+    uint public constant proposalMaxOperations = 10;
 
     /// @notice The official record of all proposals ever proposed
     mapping (uint => Proposal) public _proposals;
@@ -32,11 +32,12 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
     /// @notice The latest proposal for each proposer
     mapping (address => uint) public latestProposalIds;
 
-    /// @notice Mapping of admin addresses
+    /// @notice Mapping of admin addresses (set in constructor)
     mapping (address => bool) public admins;
 
     /// @notice Number of admins required to approve a proposal (immutable)
     uint public immutable multisigThreshold;
+    
 
     /// @notice Mapping of proposal approvals by admins
     mapping (uint => mapping (address => bool)) public proposalApprovals;
@@ -62,21 +63,23 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
      * @notice Initialize the governor (called by proxy)
      * @param timelock_ The timelock contract address
      * @param token_ The governance token address
-     * @param initialAdmin_ The initial admin address
+     * @param admins_ The array of admin addresses
      */
     function initialize(
         address timelock_,
         address token_,
-        address initialAdmin_
+        address[] memory admins_
     ) external {
         require(timelock == Timelock(payable(0)), "CustomGovernor::initialize: already initialized");
         
         timelock = Timelock(payable(timelock_));
         token = token_;
         
-        // Set initial admin
-        admins[initialAdmin_] = true;
-        emit GovernorAdminChanged(initialAdmin_, true);
+        // Set admins
+        for (uint i = 0; i < admins_.length; i++) {
+            admins[admins_[i]] = true;
+            emit GovernorAdminChanged(admins_[i], true);
+        }
     }
 
     function propose(
@@ -184,17 +187,6 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
     }
 
     /**
-     * @notice Add or remove an admin
-     * @param admin The address to add or remove
-     * @param isAdmin Whether to add (true) or remove (false) the admin
-     */
-    function setAdmin(address admin, bool isAdmin) external {
-        require(admins[msg.sender], "CustomGovernor::setAdmin: only admins can manage admins");
-        admins[admin] = isAdmin;
-        emit GovernorAdminChanged(admin, isAdmin);
-    }
-
-    /**
      * @notice Check if an address is an admin
      * @param admin The address to check
      * @return Whether the address is an admin
@@ -204,16 +196,14 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
     }
 
     /**
-     * @notice Approve a proposal (multisig functionality)
-     * @param proposalId The proposal to approve
+     * @notice Add or remove an admin
+     * @param admin The address to add or remove
+     * @param isAdmin Whether to add (true) or remove (false) the admin
      */
-    function approveProposal(uint proposalId) external {
-        require(admins[msg.sender], "CustomGovernor::approveProposal: only admins can approve");
-        require(!proposalApprovals[proposalId][msg.sender], "CustomGovernor::approveProposal: already approved");
-        
-        proposalApprovals[proposalId][msg.sender] = true;
-        proposalApprovalCounts[proposalId]++;
-        emit ProposalApproved(proposalId, msg.sender);
+    function setAdmin(address admin, bool isAdmin) external {
+        require(admins[msg.sender], "CustomGovernor::setAdmin: only admins can manage admins");
+        admins[admin] = isAdmin;
+        emit GovernorAdminChanged(admin, isAdmin);
     }
 
     /**
@@ -232,6 +222,19 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
      */
     function hasEnoughApprovals(uint proposalId) external view returns (bool) {
         return proposalApprovalCounts[proposalId] >= multisigThreshold;
+    }
+
+    function castVote(uint proposalId, uint8 support) external returns (uint) {
+        // For multisig, castVote acts as approveProposal
+        // support parameter is ignored, any call to castVote counts as approval
+        require(admins[msg.sender], "CustomGovernor::castVote: only admins can vote");
+        require(!proposalApprovals[proposalId][msg.sender], "CustomGovernor::castVote: already voted");
+        
+        proposalApprovals[proposalId][msg.sender] = true;
+        proposalApprovalCounts[proposalId]++;
+        emit ProposalApproved(proposalId, msg.sender);
+        
+        return 1; // Return 1 to indicate successful vote
     }
 
     function state(uint proposalId) public view returns (IGovernorBravo.ProposalState) {
@@ -271,10 +274,6 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
     function votingDelay() external pure returns (uint256) { return 0; }
     function votingPeriod() external pure returns (uint256) { return 0; }
     function proposalEta(uint256 proposalId) external view returns (uint256) { return _proposals[proposalId].eta; }
-    function castVote(uint proposalId, uint8 support) external pure returns (uint) {
-        // For multisig, voting is not used - just return 0 for interface compliance
-        return 0;
-    }
 
     // UUPS Upgrade functionality
     /**

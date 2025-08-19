@@ -1,7 +1,7 @@
 {
-    "comet": "0xb09bCc172050fBd4562da8b229Cf3E45Dc3045A6",
-    "configurator": "0x5f8e26fAcC23FA4cbd87b8d9Dbbd33D5047abDE1",
-    "rewards": "0x21a59654176f2689d12E828B77a783072CD26680",
-    "cometFactory": "0xA94B7f0465E98609391C623d0560C5720a3f2D33",
-    "fauceteer": "0xe78A0F7E598Cc8b0Bb87894B0F60dD2a88d6a8Ab"
+    "comet": "0xc6e7DF5E7b4f2A278906862b61205850344D4e7d",
+    "configurator": "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1",
+    "rewards": "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44",
+    "cometFactory": "0x68B1D87F95878fE05B998F19b66F4baba5De1aed",
+    "fauceteer": "0x5FbDB2315678afecb367f032d93F642f64180aa3"
 }

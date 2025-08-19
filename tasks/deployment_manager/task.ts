@@ -361,3 +361,54 @@ task('deploy_and_migrate', 'Runs deploy and migration')
       }
 
     });
+
+task('deploy_infrastructure', 'Deploys infrastructure (tokens, price feeds, etc.)')
+  .addFlag('simulate', 'only simulates the blockchain effects')
+  .addFlag('noDeploy', 'skip the actual deploy step')
+  .addFlag('noVerify', 'do not verify any contracts')
+  .addFlag('overwrite', 'overwrites cache')
+  .addFlag('bdag', 'use BDAG specifications')
+  .setAction(async ({ simulate, noDeploy, noVerify, overwrite, bdag }, env) => {
+    const maybeForkEnv = simulate ? await getForkEnv(env, "_infrastructure") : env;
+    const network = env.network.name;
+    const tag = `${network}/${"_infrastructure"}`;
+    const dm = new DeploymentManager(
+      network,
+      "_infrastructure",
+      maybeForkEnv,
+      {
+        writeCacheToDisk: !simulate || overwrite,
+        verificationStrategy: simulate? 'lazy' : 'eager',
+        bdag: bdag,
+      }
+    );
+
+    if (noDeploy) {
+      // Don't run the deploy script
+    } else {
+      try {
+        const overrides = undefined;
+        const delta = await dm.runDeployScript(overrides ?? { allMissing: true });
+        console.log(`[${tag}] Deployed ${dm.counter} infrastructure contracts, spent ${dm.spent} Ξ`);
+        console.log(`[${tag}]\n${dm.diffDelta(delta)}`);
+      } catch (e) {
+        console.log(`[${tag}] Failed to deploy infrastructure with error: ${e}`);
+      }
+    }
+
+    const verify = noVerify ? false : !simulate;
+    const desc = verify ? 'Verify' : 'Would verify';
+    if (noVerify && simulate) {
+      // Don't even print if --no-verify is set with --simulate
+    } else {
+      await dm.verifyContracts(async (address, args) => {
+        if (args.via === 'buildfile') {
+          const { contract: _, ...rest } = args;
+          console.log(`[${tag}] ${desc} ${address}:`, rest);
+        } else {
+          console.log(`[${tag}] ${desc} ${address}:`, args);
+        }
+        return verify;
+      });
+    }
+  });
