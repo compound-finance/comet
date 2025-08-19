@@ -9,12 +9,16 @@ export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
   return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
 }
 
+const WETH_ADDRESS = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 const ETH_USD_PRICE_FEED = '0x7c7FdFCa295a787ded12Bb5c1A49A8D2cC20E3F8';
 const WSTETH_ADDRESS = '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0';
 const FEED_DECIMALS = 8;
 
 let newWstETHPriceFeed: string;
 let oldWstETHPriceFeed: string;
+
+let newWETHPriceFeed: string;
+let oldWETHPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
@@ -44,16 +48,30 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       true
     );
 
+     const wETHPriceFeed = await deploymentManager.deploy(
+      'WETH:priceFeed',
+      'pricefeeds/ScalingPriceFeed.sol',
+      [
+        ETH_USD_PRICE_FEED,
+        8
+      ],
+      true
+    );
+
     return {
-      wstEthCapoPriceFeedAddress: wstEthCapoPriceFeed.address
+      wstEthCapoPriceFeedAddress: wstEthCapoPriceFeed.address,
+      wETHPriceFeedAddress: wETHPriceFeed.address,
     };
   },
 
   async enact(deploymentManager: DeploymentManager, _, {
-    wstEthCapoPriceFeedAddress
+    wstEthCapoPriceFeedAddress,
+    wETHPriceFeedAddress
   }) {
 
     newWstETHPriceFeed = wstEthCapoPriceFeedAddress;
+    newWETHPriceFeed = wETHPriceFeedAddress;
+
     const trace = deploymentManager.tracer();
  
     const {
@@ -64,6 +82,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     } = await deploymentManager.getContracts();
 
     [,, oldWstETHPriceFeed] = await comet.getAssetInfoByAddress(WSTETH_ADDRESS);
+    [,, oldWETHPriceFeed] = await comet.getAssetInfoByAddress(WETH_ADDRESS);
 
     const mainnetActions = [
       // 1. Update wstETH price feed
@@ -72,7 +91,13 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         signature: 'updateAssetPriceFeed(address,address,address)',
         args: [comet.address, WSTETH_ADDRESS, wstEthCapoPriceFeedAddress],
       },
-      // 2. Deploy and upgrade to a new version of Comet
+      // 2. Update WETH price feed
+      {
+        contract: configurator,
+        signature: 'updateAssetPriceFeed(address,address,address)',
+        args: [comet.address, WETH_ADDRESS, wETHPriceFeedAddress],
+      },
+      // 3. Deploy and upgrade to a new version of Comet
       {
         contract: cometAdmin,
         signature: 'deployAndUpgradeTo(address,address)',

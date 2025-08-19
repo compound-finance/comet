@@ -111,19 +111,19 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       ]
     );
   
-      const mainnetActions = [
-        // 1. Sends the proposal to the L2
-        {
-          contract: mantleL1CrossDomainMessenger,
-          signature: 'sendMessage(address,uint256,bytes)',
-          args: [
-            bridgeReceiver.address,  // address to
-            0,                       // uint256 value
-            l2ProposalData          // bytes calldata data
-          ],
-          value: 0
-        },
-      ];
+    const mainnetActions = [
+      // 1. Sends the proposal to the L2
+      {
+        contract: mantleL1CrossDomainMessenger,
+        signature: 'sendMessage(address,uint256,bytes)',
+        args: [
+          bridgeReceiver.address,  // address to
+          0,                       // uint256 value
+          l2ProposalData          // bytes calldata data
+        ],
+        value: 2_500_000
+      },
+    ];
   
       const description = 'tmp';
       const txn = await govDeploymentManager.retry(async () =>

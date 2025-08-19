@@ -276,7 +276,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
   },
 
   async enacted(): Promise<boolean> {
-    return false;
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {
