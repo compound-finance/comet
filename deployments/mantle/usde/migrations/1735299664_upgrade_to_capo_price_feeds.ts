@@ -41,7 +41,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         {
           snapshotRatio: currentRatioWstEth,
           snapshotTimestamp: now - 3600,
-          maxYearlyRatioGrowthPercent: exp(0.01, 4)
+          maxYearlyRatioGrowthPercent: exp(0.0391, 4)
         }
       ],
       true

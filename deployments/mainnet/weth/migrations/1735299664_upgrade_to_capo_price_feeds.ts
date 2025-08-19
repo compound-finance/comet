@@ -81,7 +81,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         {
           snapshotRatio: currentRatioWstEth,
           snapshotTimestamp: now - 3600,
-          maxYearlyRatioGrowthPercent: exp(0.01, 4)
+          maxYearlyRatioGrowthPercent: exp(0.0404, 4)
         }
       ],
       true
@@ -103,7 +103,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         {
           snapshotRatio: currentRatioRsEth,
           snapshotTimestamp: now - 3600,
-          maxYearlyRatioGrowthPercent: exp(0.01, 4)
+          maxYearlyRatioGrowthPercent: exp(0.0554, 4)
         }
       ],
       true
@@ -128,7 +128,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         {
           snapshotRatio: currentRatioWeEth,
           snapshotTimestamp: now - 3600,
-          maxYearlyRatioGrowthPercent: exp(0.01, 4)
+          maxYearlyRatioGrowthPercent: exp(0.0323, 4)
         }
       ],
       true
@@ -150,7 +150,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         {
           snapshotRatio: currentRatioOsEth,
           snapshotTimestamp: now - 3600,
-          maxYearlyRatioGrowthPercent: exp(0.01, 4)
+          maxYearlyRatioGrowthPercent: exp(0.031, 4)
         }
       ],
       true
@@ -175,7 +175,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         {
           snapshotRatio: currentRatioRswEth,
           snapshotTimestamp: now - 3600,
-          maxYearlyRatioGrowthPercent: exp(0.01, 4)
+          maxYearlyRatioGrowthPercent: exp(0.049, 4)
         }
       ],
       true
@@ -198,7 +198,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         {
           snapshotRatio: currentRatioEthx,
           snapshotTimestamp: now - 3600,
-          maxYearlyRatioGrowthPercent: exp(0.01, 4)
+          maxYearlyRatioGrowthPercent: exp(0.034, 4)
         }
       ],
       true
@@ -244,7 +244,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         {
           snapshotRatio: currentRatioEzEth,
           snapshotTimestamp: now - 3600,
-          maxYearlyRatioGrowthPercent: exp(0.01, 4)
+          maxYearlyRatioGrowthPercent: exp(0.0707, 4)
         }
       ],
       true

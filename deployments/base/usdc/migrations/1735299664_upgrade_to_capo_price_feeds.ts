@@ -57,9 +57,9 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
                 FEED_DECIMALS,
                 3600,
                 {
-                    snapshotRatio: currentRatioWstEth,
-                    snapshotTimestamp: now - 3600,
-                    maxYearlyRatioGrowthPercent: exp(0.01, 4)
+                  snapshotRatio: currentRatioWstEth,
+                  snapshotTimestamp: now - 3600,
+                  maxYearlyRatioGrowthPercent: exp(0.0404, 4)
                 }
             ],
             true
