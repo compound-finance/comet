@@ -2,26 +2,24 @@ import { expect } from 'chai';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, proposal } from '../../../../src/deploy';
-import { ethers } from 'hardhat';
-import { Contract } from 'ethers';
 import { utils } from 'ethers';
 import { applyL1ToL2Alias, estimateL2Transaction } from '../../../../scenario/utils/arbitrumUtils';
 import { Numeric } from '../../../../test/helpers';
-import { AggregatorV3Interface, IWstETH } from '../../../../build/types';
+import { AggregatorV3Interface } from '../../../../build/types';
 
 export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
-    return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
+  return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
 }
 
 const ETH_USD_PRICE_FEED = '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612';
 
 const WSTETH_ADDRESS = '0x5979D7b546E38E414F7E9822514be443A4800529';
 const WSTETH_STETH_PRICE_FEED_ADDRESS = '0xB1552C5e96B312d0Bf8b554186F846C40614a540';
-const STETH_ETH_PRICE_FEED_ADDRESS = '0xded2c52b75B24732e9107377B7Ba93eC1fFa4BAf';
 
 const FEED_DECIMALS = 8;
 
-let newWstETHToETHPriceFeed: string;
+let newWstETHPriceFeed: string;
+let oldWstETHPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
@@ -30,36 +28,24 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     const rateProviderWstEth = await deploymentManager.existing('wstETH:_rateProvider', WSTETH_STETH_PRICE_FEED_ADDRESS, 'arbitrum', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioWstEth] = await rateProviderWstEth.latestRoundData();
     const now = (await deploymentManager.hre.ethers.provider.getBlock('latest'))!.timestamp;
-    
-    const _wstETHToETHPriceFeed = await deploymentManager.deploy(
-      'wstETH:_priceFeed',
-      'pricefeeds/MultiplicativePriceFeed.sol',
-      [
-        WSTETH_STETH_PRICE_FEED_ADDRESS, // wstETH / stETH price feed
-        STETH_ETH_PRICE_FEED_ADDRESS,    // stETH / ETH price feed
-        8,                               // decimals
-        'wstETH / ETH price feed'        // description
-      ],
-      true
-    );
 
     const wstEthCapoPriceFeed = await deploymentManager.deploy(
-    'wstETH:priceFeed',
-    'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
-        [
-            governor.address,
-            ETH_USD_PRICE_FEED,
-            _wstETHToETHPriceFeed.address,
-            "wstETH:priceFeed",
-            FEED_DECIMALS,
-            3600,
-            {
-                snapshotRatio: currentRatioWstEth,
-                snapshotTimestamp: now - 3600,
-                maxYearlyRatioGrowthPercent: exp(0.0404, 4)
-            }
-        ],
-        true
+      'wstETH:priceFeed',
+      'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
+      [
+        governor.address,
+        ETH_USD_PRICE_FEED,
+        WSTETH_STETH_PRICE_FEED_ADDRESS,
+        'wstETH:priceFeed',
+        FEED_DECIMALS,
+        3600,
+        {
+          snapshotRatio: currentRatioWstEth,
+          snapshotTimestamp: now - 3600,
+          maxYearlyRatioGrowthPercent: exp(0.0404, 4)
+        }
+      ],
+      true
     );
 
     return {
@@ -71,17 +57,25 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     wstEthCapoPriceFeedAddress
   }) {
 
-    newWstETHToETHPriceFeed = wstEthCapoPriceFeedAddress;
+    newWstETHPriceFeed = wstEthCapoPriceFeedAddress;
 
     const trace = deploymentManager.tracer();
 
-    const { configurator, comet, bridgeReceiver, timelock: l2Timelock, cometAdmin} = await deploymentManager.getContracts();
+    const {
+      configurator,
+      comet,
+      bridgeReceiver,
+      timelock: l2Timelock,
+      cometAdmin
+    } = await deploymentManager.getContracts();
 
     const {
       arbitrumInbox,
       timelock,
       governor
     } = await govDeploymentManager.getContracts();
+
+    [,, oldWstETHPriceFeed] = await comet.getAssetInfoByAddress(WSTETH_ADDRESS);
 
     const updateWstEthPriceFeedCalldata = await calldata(
       configurator.populateTransaction.updateAssetPriceFeed(
@@ -169,23 +163,25 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
   },
 
   async verify(deploymentManager: DeploymentManager) {
-        const { comet, configurator } = await deploymentManager.getContracts();
+    const { comet, configurator } = await deploymentManager.getContracts();
     
-        const wstETHIndexInComet = await configurator.getAssetIndex(
-          comet.address,
-          WSTETH_ADDRESS
-        );
+    const wstETHIndexInComet = await configurator.getAssetIndex(
+      comet.address,
+      WSTETH_ADDRESS
+    );
     
-        // 1. & 2. & 3. Check if the price feeds are set correctly.
-        const wstETHInCometInfo = await comet.getAssetInfoByAddress(
-          WSTETH_ADDRESS
-        );
+    // 1. & 2. & 3. Check if the price feeds are set correctly.
+    const wstETHInCometInfo = await comet.getAssetInfoByAddress(
+      WSTETH_ADDRESS
+    );
     
-        const wstETHInConfiguratorInfoWETHComet = (
-          await configurator.getConfiguration(comet.address)
-        ).assetConfigs[wstETHIndexInComet];
-      
-        expect(wstETHInCometInfo.priceFeed).to.eq(newWstETHToETHPriceFeed);
-        expect(wstETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newWstETHToETHPriceFeed);
-      },
+    const wstETHInConfiguratorInfoWETHComet = (
+      await configurator.getConfiguration(comet.address)
+    ).assetConfigs[wstETHIndexInComet];
+
+    expect(wstETHInCometInfo.priceFeed).to.eq(newWstETHPriceFeed);
+    expect(wstETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newWstETHPriceFeed);
+
+    expect(await comet.getPrice(newWstETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldWstETHPriceFeed), 1e6);
+  },
 });

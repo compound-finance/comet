@@ -11,7 +11,6 @@ export default {
       }
     }
   },
-  
   'AppProxyUpgradeable': {
     artifact: 'contracts/ERC20.sol:ERC20',
   },

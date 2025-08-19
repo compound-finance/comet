@@ -1,26 +1,23 @@
 import { expect } from 'chai';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
-import { calldata, proposal } from '../../../../src/deploy';
+import { proposal } from '../../../../src/deploy';
 import { ethers } from 'hardhat';
-import { Contract } from 'ethers';
-import { utils } from 'ethers';
-import { applyL1ToL2Alias, estimateL2Transaction } from '../../../../scenario/utils/arbitrumUtils';
+import { constants } from 'ethers';
 import { Numeric } from '../../../../test/helpers';
-import { AggregatorV3Interface, ILRTOracle, IRateProvider, IWstETH } from '../../../../build/types';
+import { ILRTOracle, IRateProvider } from '../../../../build/types';
 
 export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
-    return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
+  return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
 }
 
 //1. rsETH
-const RSETH_ORACLE = '0x349A73444b1a310BAe67ef67973022020d70020d';
 const RSETH_ADDRESS = '0xa1290d69c65a6fe4df752f95823fae25cb99e5a7';
+const RSETH_ORACLE = '0x349A73444b1a310BAe67ef67973022020d70020d';
 
 //2. ezETH
 const EZETH_ADDRESS = '0xbf5495Efe5DB9ce00f80364C8B423567e58d2110';
 const EZETH_RATE_PROVIDER = '0x387dBc0fB00b26fb085aa658527D5BE98302c84C';
-
 
 const FEED_DECIMALS = 8;
 const RATE_DECIMALS = 18;
@@ -31,28 +28,21 @@ let newEzEthToETHPriceFeed: string;
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
     const { governor } = await deploymentManager.getContracts();
-    const now = (await ethers.provider.getBlock("latest"))!.timestamp;
+    const now = (await ethers.provider.getBlock('latest'))!.timestamp;
     
     const wstETHToETHPriceFeed = await deploymentManager.fromDep('wstETH:priceFeed', 'mainnet', 'weth');
-    const constantPriceFeed = await deploymentManager.deploy(
-          'ETH:priceFeed',
-          'pricefeeds/ConstantPriceFeed.sol',
-          [
-            8,
-            exp(1, 8)
-          ],
-          true
-        );
+    const constantPriceFeed = await deploymentManager.fromDep('WETH:priceFeed', 'mainnet', 'weth');
 
     const ethToWstETHPriceFeed = await deploymentManager.deploy(
-      'USDC:priceFeed',
+      'wstETH:reversePriceFeed',
       'pricefeeds/ReverseMultiplicativePriceFeed.sol',
       [
-        constantPriceFeed.address,  // USDC / USD price feed
-        wstETHToETHPriceFeed.address, // USD / ETH price feed
+        constantPriceFeed.address,    // ETH price feed
+        wstETHToETHPriceFeed.address, // wstETH / ETH price feed
         8,                            // decimals
-        'USDC / USD  USD / ETH',      // description
-      ]
+        'ETH / wstETH price feed',    // description
+      ],
+      true
     );
 
     //1. rsEth
@@ -65,13 +55,13 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         governor.address,
         ethToWstETHPriceFeed.address,
         RSETH_ORACLE,
-        "rsETH:priceFeed",
+        'rsETH:priceFeed',
         FEED_DECIMALS,
         3600,
         {
           snapshotRatio: currentRatioRsEth,
           snapshotTimestamp: now - 3600,
-          maxYearlyRatioGrowthPercent: exp(0.0554, 4)
+          maxYearlyRatioGrowthPercent: exp(0.0554, 4) // 5.54%
         }
       ],
       true 
@@ -87,7 +77,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         governor.address,
         constantPriceFeed.address,
         rateProviderEzEth.address,
-        ethers.constants.AddressZero,
+        constants.AddressZero,
         'ezETH:priceFeed',
         FEED_DECIMALS,
         3600,
@@ -95,11 +85,11 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         {
           snapshotRatio: currentRatioEzEth,
           snapshotTimestamp: now - 3600,
-          maxYearlyRatioGrowthPercent: exp(0.0707, 4)
+          maxYearlyRatioGrowthPercent: exp(0.0707, 4) // 7.07%
         }
       ],
       true
-    )
+    );
 
     return {
       rsEthCapoPriceFeedAddress: rsEthCapoPriceFeed.address,
@@ -144,7 +134,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       },
     ];
 
-    const description = ''
+    const description = '';
 
     const txn = await deploymentManager.retry(async () =>
       trace(

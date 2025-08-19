@@ -12,22 +12,26 @@ export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
 
 //1. wstETH
 const WSTETH_ADDRESS = '0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0';
-const WSTETH_RATE_PROVIDER = '0x86392dC19c0b719886221c78AB11eb8Cf5c52812';
+
 //2. rsETH
-const RSETH_ORACLE = '0x349A73444b1a310BAe67ef67973022020d70020d';
 const RSETH_ADDRESS = '0xa1290d69c65a6fe4df752f95823fae25cb99e5a7';
+const RSETH_ORACLE = '0x349A73444b1a310BAe67ef67973022020d70020d';
+
 //3. weETH
 const WEETH_ADDRESS = '0xcd5fe23c85820f7b72d0926fc9b05b43e359b7ee';
 const WEETH_RATE_PROVIDER = '0x5c9C449BbC9a6075A2c061dF312a35fd1E05fF22';
-//4. oETH
+
+//4. osETH
 const OSETH_ADDRESS = '0xf1c9acdc66974dfb6decb12aa385b9cd01190e38';
 const OSETH_PRICE_FEED_ADDRESS = '0x8023518b2192FB5384DAdc596765B3dD1cdFe471';
+
 //5. rswETH
 const RSWETH_ADDRESS = '0xFAe103DC9cf190eD75350761e95403b7b8aFa6c0';
-const RSWETH_RATE_PROVIDER = '0xb613CfebD0b6e95abDDe02677d6bC42394FdB857';
+
 //6. ETHx
 const ETHX_ADDRESS = '0xA35b1B31Ce002FBF2058D22F30f95D405200A15b';
 const ETHX_PRICE_FEED_ADDRESS = '0xdd487947c579af433AeeF038Bf1573FdBB68d2d3';
+
 //7. cbETh
 const CBETH_ADDRESS = '0xBe9895146f7AF43049ca1c1AE358B0541Ea49704';
 const CBETH_ETH_PRICE_FEED = '0xF017fcB346A1885194689bA23Eff2fE6fA5C483b';
@@ -53,15 +57,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
     const { governor } = await deploymentManager.getContracts();
     const now = (await deploymentManager.hre.ethers.provider.getBlock('latest'))!.timestamp;
-    const constantPriceFeed = await deploymentManager.deploy(
-      'eth:constantPriceFeed',
-      'pricefeeds/ConstantPriceFeed.sol',
-      [
-        8,
-        exp(1, 8)
-      ],
-      true
-    );
+    const constantPriceFeed = await deploymentManager.fromDep('WETH:priceFeed', 'mainnet', 'weth');
 
     //1. wstEth
     const wstETH = await deploymentManager.existing('wstETH', WSTETH_ADDRESS, 'mainnet', 'contracts/IWstETH.sol:IWstETH') as IWstETH;
@@ -74,7 +70,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         governor.address,
         constantPriceFeed.address,
         wstETH.address,
-        WSTETH_RATE_PROVIDER,
+        constants.AddressZero,
         'wstETH:capoPriceFeed',
         FEED_DECIMALS,
         3600,
@@ -97,7 +93,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         governor.address,
         constantPriceFeed.address,
         RSETH_ORACLE,
-        'rsETH CAPO',
+        'rsETH:priceFeed',
         FEED_DECIMALS,
         3600,
         {
@@ -157,9 +153,9 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     );
 
     //5. rswETH
-    const rateProviderRswEth = await deploymentManager.existing('rswETH:_rateProvider', RSWETH_RATE_PROVIDER, 'mainnet', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
+    const rateProviderRswEth = await deploymentManager.existing('rswETH:_rateProvider', RSWETH_ADDRESS, 'mainnet', 'contracts/capo/contracts/interfaces/IRateProvider.sol:IRateProvider') as IRateProvider;
   
-    const [, currentRatioRswEth] = await rateProviderRswEth.latestRoundData();
+    const currentRatioRswEth = await rateProviderRswEth.getRate();
     const rswETHCapoPriceFeed = await deploymentManager.deploy(
       'rswETH:priceFeed',
       'capo/contracts/RateBasedCorrelatedAssetsPriceOracle.sol',
@@ -167,7 +163,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         governor.address,
         constantPriceFeed.address,
         RSWETH_ADDRESS,
-        RSWETH_RATE_PROVIDER,
+        constants.AddressZero,
         'rswETH:priceFeed',
         FEED_DECIMALS,
         3600,
@@ -283,14 +279,6 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     newEzEthToETHPriceFeed = ezEthCapoPriceFeedAddress;
     
     const trace = deploymentManager.tracer();
-    newWstETHToETHPriceFeed = wstEthCapoPriceFeedAddress;
-    newRsEthToETHPriceFeed = rsEthCapoPriceFeedAddress;
-    newWeEthToETHPriceFeed = weEthCapoPriceFeedAddress;
-    newOsEthToETHPriceFeed = osEthCapoPriceFeedAddress;
-    newRswEthToETHPriceFeed = rswEthCapoPriceFeedAddress;
-    newEthXToETHPriceFeed = ethXCapoPriceFeedAddress;
-    newCbEthToETHPriceFeed = cbEthCapoPriceFeedAddress;
-    newEzEthToETHPriceFeed = ezEthCapoPriceFeedAddress;
 
     const {
       governor,

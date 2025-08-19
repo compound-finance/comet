@@ -24,7 +24,6 @@ export async function fetchQuery(
   MAX_SEARCH_BLOCKS = 40000,
   BLOCK_SPAN = 2048
 ): Promise<{ recentLogs: Event[], blocksDelta: number }> {
-  
   if (originalBlock - fromBlock > MAX_SEARCH_BLOCKS) {
     throw(new Error(`No events found within ${MAX_SEARCH_BLOCKS} blocks for ${contract.address}`));
   }
