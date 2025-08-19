@@ -22,8 +22,11 @@ const EZETH_RATE_PROVIDER = '0x387dBc0fB00b26fb085aa658527D5BE98302c84C';
 const FEED_DECIMALS = 8;
 const RATE_DECIMALS = 18;
 
-let newRsEthToETHPriceFeed: string;
-let newEzEthToETHPriceFeed: string;
+let newRsEthPriceFeed: string;
+let newEzEthPriceFeed: string;
+
+let oldRsEthPriceFeed: string;
+let oldEzEthPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
@@ -101,8 +104,8 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     rsEthCapoPriceFeedAddress,
     ezEthCapoPriceFeedAddress
   }) {
-    newRsEthToETHPriceFeed = rsEthCapoPriceFeedAddress;
-    newEzEthToETHPriceFeed = ezEthCapoPriceFeedAddress;
+    newRsEthPriceFeed = rsEthCapoPriceFeedAddress;
+    newEzEthPriceFeed = ezEthCapoPriceFeedAddress;
     
     const trace = deploymentManager.tracer();
 
@@ -112,6 +115,9 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       cometAdmin,
       configurator,
     } = await deploymentManager.getContracts();
+
+    [,, oldRsEthPriceFeed] = await comet.getAssetInfoByAddress(RSETH_ADDRESS);
+    [,, oldEzEthPriceFeed] = await comet.getAssetInfoByAddress(EZETH_ADDRESS);
 
     const mainnetActions = [
       // 1. Update rsETH price feed
@@ -168,8 +174,8 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     const rsEthInConfiguratorInfoWETHComet = (
       await configurator.getConfiguration(comet.address)
     ).assetConfigs[rsEthIndexInComet];
-    expect(rsEthInCometInfo.priceFeed).to.eq(newRsEthToETHPriceFeed);
-    expect(rsEthInConfiguratorInfoWETHComet.priceFeed).to.eq(newRsEthToETHPriceFeed);
+    expect(rsEthInCometInfo.priceFeed).to.eq(newRsEthPriceFeed);
+    expect(rsEthInConfiguratorInfoWETHComet.priceFeed).to.eq(newRsEthPriceFeed);
 
     const ezEthIndexInComet = await configurator.getAssetIndex(
       comet.address,
@@ -182,10 +188,12 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
 
     const ezEthInConfiguratorInfoWETHComet = (
       await configurator.getConfiguration(comet.address)
-    ).assetConfigs[ezEthIndexInComet];  
-    
-    expect(ezEthInCometInfo.priceFeed).to.eq(newEzEthToETHPriceFeed);
-    expect(ezEthInConfiguratorInfoWETHComet.priceFeed).to.eq(newEzEthToETHPriceFeed);
+    ).assetConfigs[ezEthIndexInComet];
 
+    expect(ezEthInCometInfo.priceFeed).to.eq(newEzEthPriceFeed);
+    expect(ezEthInConfiguratorInfoWETHComet.priceFeed).to.eq(newEzEthPriceFeed);
+
+    expect(await comet.getPrice(newRsEthPriceFeed)).to.eq(await comet.getPrice(oldRsEthPriceFeed));
+    expect(await comet.getPrice(newEzEthPriceFeed)).to.eq(await comet.getPrice(oldEzEthPriceFeed));
   },
 });

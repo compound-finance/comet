@@ -18,8 +18,11 @@ const FRAX_TO_USD_PRICE_FEED_ADDRESS = '0xB9E1E3A9feFf48998E45Fa90847ed4D467E8Bc
 
 const FEED_DECIMALS = 8;
 
-let newWstETHToUSDPriceFeed: string;
-let newSFraxToUSDPriceFeed: string;
+let newWstETHPriceFeed: string;
+let newSFraxPriceFeed: string;
+
+let oldWstETHPriceFeed: string;
+let oldSFraxPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
@@ -79,8 +82,8 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     wstEthCapoPriceFeedAddress,
     sFraxCapoPriceFeedAddress
   }) {
-    newWstETHToUSDPriceFeed = wstEthCapoPriceFeedAddress;
-    newSFraxToUSDPriceFeed = sFraxCapoPriceFeedAddress;
+    newWstETHPriceFeed = wstEthCapoPriceFeedAddress;
+    newSFraxPriceFeed = sFraxCapoPriceFeedAddress;
 
     const trace = deploymentManager.tracer();
  
@@ -90,7 +93,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       cometAdmin,
       configurator,
     } = await deploymentManager.getContracts();
- 
+
+    [,, oldWstETHPriceFeed] = await comet.getAssetInfoByAddress(WSTETH_ADDRESS);
+    [,, oldSFraxPriceFeed] = await comet.getAssetInfoByAddress(SFRAX_ADDRESS);
+
     const mainnetActions = [
       // 1. Update wstETH price feed
       {
@@ -147,8 +153,8 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       await configurator.getConfiguration(comet.address)
     ).assetConfigs[wstETHIndexInComet];
       
-    expect(wstETHInCometInfo.priceFeed).to.eq(newWstETHToUSDPriceFeed);
-    expect(wstETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newWstETHToUSDPriceFeed); 
+    expect(wstETHInCometInfo.priceFeed).to.eq(newWstETHPriceFeed);
+    expect(wstETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newWstETHPriceFeed);
 
 
     const sFraxIndexInComet = await configurator.getAssetIndex(
@@ -164,7 +170,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       await configurator.getConfiguration(comet.address)
     ).assetConfigs[sFraxIndexInComet];
 
-    expect(sFraxInCometInfo.priceFeed).to.eq(newSFraxToUSDPriceFeed);
-    expect(sFraxInConfiguratorInfoWETHComet.priceFeed).to.eq(newSFraxToUSDPriceFeed);
+    expect(sFraxInCometInfo.priceFeed).to.eq(newSFraxPriceFeed);
+    expect(sFraxInConfiguratorInfoWETHComet.priceFeed).to.eq(newSFraxPriceFeed);
+
+    expect(await comet.getPrice(newWstETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldWstETHPriceFeed), 1e6);
+    expect(await comet.getPrice(newSFraxPriceFeed)).to.eq(await comet.getPrice(oldSFraxPriceFeed));
   },
 });
