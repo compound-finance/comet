@@ -55,7 +55,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
 
 
     const sFraxCapoPriceFeed = await deploymentManager.deploy(
-        'wusdm:capoPriceFeed',
+        'sFRAX:priceFeed',
         'capo/contracts/ERC4626CorrelatedAssetsPriceOracle.sol',
         [
           governor.address,

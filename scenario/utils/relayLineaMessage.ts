@@ -58,14 +58,14 @@ export default async function relayLineaMessage(
   
     // getLogs version:
     const realMsgEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
-      fromBlock: (startingBlockNumber - 50000),
+      fromBlock: (startingBlockNumber - 20000),
       toBlock: 'latest',
       address: lineaMessageService.address,
       topics: filter.topics!
     });
   
     const realHashEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
-      fromBlock: (startingBlockNumber - 50000),
+      fromBlock: (startingBlockNumber - 20000),
       toBlock: 'latest',
       address: lineaMessageService.address,
       topics: filterRollingHash.topics!
@@ -75,14 +75,14 @@ export default async function relayLineaMessage(
     rollingHashUpdatedEvents = [...realHashEvents, ...tenderlyHashEvents];
   } else {
     messageSentEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
-      fromBlock: (startingBlockNumber - 50000),
+      fromBlock: (startingBlockNumber - 20000),
       toBlock: 'latest',
       address: lineaMessageService.address,
       topics: filter.topics!
     });
   
     rollingHashUpdatedEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
-      fromBlock: (startingBlockNumber - 50000),
+      fromBlock: (startingBlockNumber - 20000),
       toBlock: 'latest',
       address: lineaMessageService.address,
       topics: filterRollingHash.topics!

@@ -46,7 +46,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       );
 
     //1. wstEth
-    const rateProviderWstEth = await deploymentManager.existing('wstETH:_rateProvider', WSTETH_STETH_PRICE_FEED_ADDRESS, 'arbitrum', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
+    const rateProviderWstEth = await deploymentManager.existing('wstETH:_rateProvider', WSTETH_STETH_PRICE_FEED_ADDRESS, 'linea', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioWstEth] = await rateProviderWstEth.latestRoundData();
     
   
@@ -70,7 +70,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     );
     
     //2. ezEth
-    const rateProviderEzEth = await deploymentManager.existing('ezETH:_priceFeed', EZETH_TO_ETH_PRICE_FEED_ADDRESS, 'arbitrum', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
+    const rateProviderEzEth = await deploymentManager.existing('ezETH:_priceFeed', EZETH_TO_ETH_PRICE_FEED_ADDRESS, 'linea', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioEzEth] = await rateProviderEzEth.latestRoundData();
     const ezEthCapoPriceFeed = await deploymentManager.deploy(
       'ezETH:priceFeed',
@@ -92,7 +92,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     );
 
     //3. weEth
-    const weethRateProvider = await deploymentManager.existing('weETH:_priceFeed', WEETH_TO_ETH_RATE_PROVIDER, 'unichain', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
+    const weethRateProvider = await deploymentManager.existing('weETH:_priceFeed', WEETH_TO_ETH_RATE_PROVIDER, 'linea', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioWeeth] = await weethRateProvider.latestRoundData();
         
     const weethCapoPriceFeed = await deploymentManager.deploy(
@@ -115,7 +115,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       );
 
     //4. wrsEth
-    const wrsethRateProvider = await deploymentManager.existing('wrsETH:_priceFeed', WRSETH_ETH_RATE_PROVIDER, 'optimism', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
+    const wrsethRateProvider = await deploymentManager.existing('wrsETH:_priceFeed', WRSETH_ETH_RATE_PROVIDER, 'linea', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioWrseth] = await wrsethRateProvider.latestRoundData();
     const wrsethCapoPriceFeed = await deploymentManager.deploy(
         'wrsETH:priceFeed',
