@@ -70,7 +70,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     } = await deploymentManager.getContracts();
   
     const {
-      lineaMessageService,
+      mantleL1CrossDomainMessenger,
       governor,
     } = await govDeploymentManager.getContracts();
   
@@ -114,7 +114,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       const mainnetActions = [
         // 1. Sends the proposal to the L2
         {
-          contract: lineaMessageService,
+          contract: mantleL1CrossDomainMessenger,
           signature: 'sendMessage(address,uint256,bytes)',
           args: [
             bridgeReceiver.address,  // address to
