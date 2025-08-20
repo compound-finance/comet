@@ -51,7 +51,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         ETH_USD_PRICE_FEED,
         wstETH.address,
         constantPriceFeed.address,
-        'wstETH:priceFeed',
+        'wstETH / USD',
         FEED_DECIMALS,
         3600,
         {
@@ -71,7 +71,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         governor.address,
         FRAX_TO_USD_PRICE_FEED_ADDRESS,
         SFRAX_ADDRESS,
-        'sFRAX:capoPriceFeed',
+        'sFRAX / USD',
         FEED_DECIMALS,
         3600,
         {
