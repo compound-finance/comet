@@ -171,7 +171,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         signature: 'setBaseTokenPriceFeed(address,address)',
         args: [comet.address, USDT_USD_OEV_PRICE_FEED],
       },
-      // 2. Deploy and upgrade to a new version of Comet
+      // 7. Deploy and upgrade to a new version of Comet
       {
         contract: cometAdmin,
         signature: 'deployAndUpgradeTo(address,address)',
@@ -183,7 +183,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
 
 ## Proposal summary
 
-This proposal updates existing price feeds for wstETH, sFRAX, wBTC, WETH, LINK and USDT market on Mainnet implementing CAPO and OEV.
+This proposal updates existing price feeds for wstETH, sFRAX, wBTC, WETH, LINK and USDT on the USDT market on Mainnet implementing CAPO and OEV.
 CAPO is a price oracle adapter designed to support assets that grow gradually relative to a base asset - such as liquid staking tokens that accumulate yield over time. It provides a mechanism to track this expected growth while protecting downstream protocol from sudden or manipulated price spikes.
 OEV utilizes Chainlink's SVR oracle solution that allows to recapture the non-toxic Maximal Extractable Value (MEV) derived from their use of Chainlink Price Feeds.
 Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1015),  [forum discussion for CAPO](https://www.comp.xyz/t/woof-correlated-assets-price-oracle-capo/6245) and [forum discussion for OEV](https://www.comp.xyz/t/request-for-proposal-rfp-oracle-extractable-value-oev-solution-for-compound-protocol/6786).
