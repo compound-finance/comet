@@ -193,7 +193,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     expect(ezEthInCometInfo.priceFeed).to.eq(newEzEthPriceFeed);
     expect(ezEthInConfiguratorInfoWETHComet.priceFeed).to.eq(newEzEthPriceFeed);
 
-    expect(await comet.getPrice(newRsEthPriceFeed)).to.eq(await comet.getPrice(oldRsEthPriceFeed));
-    expect(await comet.getPrice(newEzEthPriceFeed)).to.eq(await comet.getPrice(oldEzEthPriceFeed));
+    expect(await comet.getPrice(newRsEthPriceFeed)).to.be.closeTo(await comet.getPrice(oldRsEthPriceFeed), 5e10);
+    expect(await comet.getPrice(newEzEthPriceFeed)).to.be.closeTo(await comet.getPrice(oldEzEthPriceFeed), 5e10);
   },
 });

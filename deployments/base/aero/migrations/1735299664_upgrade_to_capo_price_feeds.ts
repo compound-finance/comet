@@ -23,6 +23,7 @@ const STETH_ETH_PRICE_FEED_ADDRESS = '0xf586d0728a47229e747d824a939000Cf21dEF5A0
 const FEED_DECIMALS = 8;
 
 let newWstETHToAeroPriceFeed: string;
+let oldWstETHToETHPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
@@ -32,17 +33,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     //1. wstEth
     const rateProviderWstEth = await deploymentManager.existing('wstEth:priceFeed', WSTETH_STETH_PRICE_FEED_ADDRESS, 'base', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioWstEth] = await rateProviderWstEth.latestRoundData();
-    const ethToAeroPriceFeed = await deploymentManager.deploy(
-      'wstETH:priceFeed',
-      'pricefeeds/ReverseMultiplicativePriceFeed.sol',
-      [
-        ETH_USD_PRICE_FEED,
-        AERO_USD_PRICE_FEED, // USD / AERO price feed
-        8,                                            // decimals
-        'ETH / USD / AERO price feed' // description
-      ],
-      true
-    );
+
 
     const _wstETHToETHPriceFeed = await deploymentManager.deploy(
       'wstETH:priceFeed',
@@ -61,7 +52,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
         [
             governor.address,
-            ethToAeroPriceFeed.address,
+            ETH_USD_PRICE_FEED,
             _wstETHToETHPriceFeed.address,
             "wstETH:capoPriceFeed",
             FEED_DECIMALS,
@@ -126,6 +117,8 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       ]
     );
 
+    [,, oldWstETHToETHPriceFeed] = await comet.getAssetInfoByAddress(WSTETH_ADDRESS);
+
     const mainnetActions = [
       {
         contract: baseL1CrossDomainMessenger,
@@ -175,5 +168,6 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         
       expect(wstETHInCometInfo.priceFeed).to.eq(newWstETHToAeroPriceFeed);
       expect(wstETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newWstETHToAeroPriceFeed);
+      expect(await comet.getPrice(newWstETHToAeroPriceFeed)).to.be.closeTo(await comet.getPrice(oldWstETHToETHPriceFeed), 40e8);
     },
 });

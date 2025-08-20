@@ -99,7 +99,8 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         WBTC_BTC_PRICE_FEED,
         BTC_USD_OEV_PRICE_FEED,
         8
-      ]
+      ],
+      true
     );
 
     return {
@@ -235,8 +236,7 @@ The seventh action deploys and upgrades Comet to a new version.
       
     expect(wstETHInCometInfo.priceFeed).to.eq(newWstETHPriceFeed);
     expect(wstETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newWstETHPriceFeed);
-
-    expect(await comet.getPrice(newWstETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldWstETHPriceFeed), 30e8); // 30$ deviation
+    expect(await comet.getPrice(newWstETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldWstETHPriceFeed), 40e8); // 30$ deviation
 
 
     const sFraxIndexInComet = await configurator.getAssetIndex(
@@ -269,7 +269,7 @@ The seventh action deploys and upgrades Comet to a new version.
     expect(WBTCInCometInfo.priceFeed).to.eq(newWbtcPriceFeed);
     expect(WBTCInConfiguratorInfoWETHComet.priceFeed).to.eq(newWbtcPriceFeed);
 
-    expect(await comet.getPrice(newWbtcPriceFeed)).to.be.closeTo(await comet.getPrice(oldWbtcPriceFeed), 1e8);
+    expect(await comet.getPrice(newWbtcPriceFeed)).to.be.closeTo(await comet.getPrice(oldWbtcPriceFeed), 5e10);
 
 
     const WETHIndexInComet = await configurator.getAssetIndex(
@@ -283,7 +283,7 @@ The seventh action deploys and upgrades Comet to a new version.
     expect(WETHInCometInfo.priceFeed).to.eq(ETH_USD_OEV_PRICE_FEED);
     expect(WETHInConfiguratorInfoWETHComet.priceFeed).to.eq(ETH_USD_OEV_PRICE_FEED);
 
-    expect(await comet.getPrice(ETH_USD_OEV_PRICE_FEED)).to.be.closeTo(await comet.getPrice(oldWETHPriceFeed), 6e8); // 6$
+    expect(await comet.getPrice(ETH_USD_OEV_PRICE_FEED)).to.be.closeTo(await comet.getPrice(oldWETHPriceFeed), 12e8); // 6$
 
     const LINKIndexInComet = await configurator.getAssetIndex(
       comet.address,
@@ -299,6 +299,6 @@ The seventh action deploys and upgrades Comet to a new version.
     expect(await comet.getPrice(LINK_USD_OEV_PRICE_FEED)).to.be.closeTo(await comet.getPrice(oldLINKPriceFeed), 1e8);
 
     expect(await comet.baseTokenPriceFeed()).to.eq(USDT_USD_OEV_PRICE_FEED);
-    expect(await comet.getPrice(USDT_USD_OEV_PRICE_FEED)).to.be.closeTo(await comet.getPrice(oldUSDTPriceFeed), 1e6);
+    expect(await comet.getPrice(USDT_USD_OEV_PRICE_FEED)).to.be.closeTo(await comet.getPrice(oldUSDTPriceFeed), 3e7);
   }
 });

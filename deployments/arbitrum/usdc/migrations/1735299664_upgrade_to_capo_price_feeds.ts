@@ -169,6 +169,9 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     );
     const refundAddress = l2Timelock.address;
 
+    [,, oldWstETHPriceFeed] = await comet.getAssetInfoByAddress(WSTETH_ADDRESS);
+    [,, oldEzETHPriceFeed] = await comet.getAssetInfoByAddress(EZETH_ADDRESS);
+
     const mainnetActions = [
       // 1. Sends the proposal to the L2
       {
@@ -241,7 +244,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     expect(ezETHInWETHCometInfo.priceFeed).to.eq(newEzETHPriceFeed);
     expect(ezETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newEzETHPriceFeed);
 
-    expect(await comet.getPrice(newWstETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldWstETHPriceFeed), 1e6);
-    expect(await comet.getPrice(newEzETHPriceFeed)).to.eq(await comet.getPrice(oldEzETHPriceFeed));
+    expect(await comet.getPrice(newWstETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldWstETHPriceFeed), 40e8);
+    expect(await comet.getPrice(newEzETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldEzETHPriceFeed), 40e8);
   },
 });

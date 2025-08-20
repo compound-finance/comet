@@ -30,13 +30,18 @@ let newEzETHToETHPriceFeed: string;
 let newWeEthToETHPriceFeed: string;
 let newWrsethToETHPriceFeed: string;
 
+let oldWstETHToETHPriceFeed: string;
+let oldEzETHToETHPriceFeed: string;
+let oldWeEthToETHPriceFeed: string
+let oldWrsethToETHPriceFeed: string;
+
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
     const { governor } = await deploymentManager.getContracts();
     const now = (await deploymentManager.hre.ethers.provider.getBlock('latest'))!.timestamp;
 
     const constantPriceFeed = await deploymentManager.deploy(
-      'eth:constantPriceFeed',
+      'WETH:priceFeed',
       'pricefeeds/ConstantPriceFeed.sol',
       [
         8,
@@ -247,6 +252,11 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       ]
     );
 
+    [,, oldWstETHToETHPriceFeed] = await comet.getAssetInfoByAddress(WSTETH_ADDRESS);
+    [,, oldEzETHToETHPriceFeed] = await comet.getAssetInfoByAddress(EZETH_ADDRESS);
+    [,, oldWeEthToETHPriceFeed] = await comet.getAssetInfoByAddress(WEETH_ADDRESS);
+    [,, oldWrsethToETHPriceFeed] = await comet.getAssetInfoByAddress(WRSETH_ADDRESS);
+
     const mainnetActions = [
       // 1. Sends the proposal to the L2
       {
@@ -313,6 +323,11 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     
     expect(wstETHInCometInfo.priceFeed).to.eq(newWstETHToETHPriceFeed);
     expect(wstETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newWstETHToETHPriceFeed);
+
+    expect(await comet.getPrice(newWstETHToETHPriceFeed)).to.be.closeTo(
+      await comet.getPrice(oldWstETHToETHPriceFeed),
+      1e8
+    );
       
     const ezETHInWETHCometInfo = await comet.getAssetInfoByAddress(
       EZETH_ADDRESS
@@ -324,6 +339,11 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     expect(ezETHInWETHCometInfo.priceFeed).to.eq(newEzETHToETHPriceFeed);
     expect(ezETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newEzETHToETHPriceFeed);
 
+    expect(await comet.getPrice(newEzETHToETHPriceFeed)).to.be.closeTo(
+      await comet.getPrice(oldEzETHToETHPriceFeed),
+      1e8
+    );
+
     const weEthInCometInfo = await comet.getAssetInfoByAddress(
       WEETH_ADDRESS
     );
@@ -333,6 +353,11 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     expect(weEthInCometInfo.priceFeed).to.eq(newWeEthToETHPriceFeed);
     expect(weEthInConfiguratorInfoWETHComet.priceFeed).to.eq(newWeEthToETHPriceFeed);
 
+    expect(await comet.getPrice(newWeEthToETHPriceFeed)).to.be.closeTo(
+      await comet.getPrice(oldWeEthToETHPriceFeed),
+      1e8
+    );
+
     const wrsethInCometInfo = await comet.getAssetInfoByAddress(
       WRSETH_ADDRESS
     );
@@ -341,5 +366,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     ).assetConfigs[wrsethIndexInComet];
     expect(wrsethInCometInfo.priceFeed).to.eq(newWrsethToETHPriceFeed);
     expect(wrsethInConfiguratorInfoWETHComet.priceFeed).to.eq(newWrsethToETHPriceFeed);
+
+    expect(await comet.getPrice(newWrsethToETHPriceFeed)).to.be.closeTo(
+      await comet.getPrice(oldWrsethToETHPriceFeed),
+      1e8
+    );
   },
 });

@@ -3,11 +3,9 @@ import { DeploymentManager } from '../../../../plugins/deployment_manager/Deploy
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, proposal } from '../../../../src/deploy';
 import { ethers } from 'hardhat';
-import { Contract } from 'ethers';
 import { utils } from 'ethers';
-import { applyL1ToL2Alias, estimateL2Transaction } from '../../../../scenario/utils/arbitrumUtils';
 import { Numeric } from '../../../../test/helpers';
-import { AggregatorV3Interface, ILRTOracle, IWstETH } from '../../../../build/types';
+import { AggregatorV3Interface } from '../../../../build/types';
 
 export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
     return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
@@ -21,6 +19,9 @@ const WSTETH_STETH_PRICE_FEED_ADDRESS = '0xe59EBa0D492cA53C6f46015EEa00517F2707d
 const STETH_ETH_PRICE_FEED_ADDRESS = '0x14d2d3a82AeD4019FddDfe07E8bdc485fb0d2249';
 
 let newWstETHToUSDPriceFeed: string;
+let oldWstETHToUSDPriceFeed: string;
+
+
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
@@ -124,6 +125,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       ]
     );
     
+    [,, oldWstETHToUSDPriceFeed ] = await comet.getAssetInfoByAddress(WSTETH_ADDRESS);
     const mainnetActions = [
       {
         contract: opL1CrossDomainMessenger,
@@ -169,5 +171,6 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       
       expect(wstETHInCometInfo.priceFeed).to.eq(newWstETHToUSDPriceFeed);
       expect(wstETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newWstETHToUSDPriceFeed);
+      expect(await comet.getPrice(newWstETHToUSDPriceFeed)).to.be.closeTo(await comet.getPrice(oldWstETHToUSDPriceFeed), 40e8);
     },
 });

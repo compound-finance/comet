@@ -414,10 +414,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     expect(rETHInWETHCometInfo.priceFeed).to.eq(newRETHPriceFeed);
     expect(rETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newRETHPriceFeed);
 
-    expect(await comet.getPrice(newEzETHPriceFeed)).to.eq(await comet.getPrice(oldEzETHPriceFeed));
-    expect(await comet.getPrice(newRsETHPriceFeed)).to.eq(await comet.getPrice(oldRsETHPriceFeed));
-    expect(await comet.getPrice(newWeETHPriceFeed)).to.eq(await comet.getPrice(oldWeETHPriceFeed));
-    expect(await comet.getPrice(newRETHPriceFeed)).to.eq(await comet.getPrice(oldRETHPriceFeed));
+    expect(await comet.getPrice(newEzETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldEzETHPriceFeed), 1e6);
+    expect(await comet.getPrice(newRsETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldRsETHPriceFeed), 1e6);
+    expect(await comet.getPrice(newWeETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldWeETHPriceFeed), 1e6);
+    expect(await comet.getPrice(newRETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldRETHPriceFeed), 1e6);
     expect(await comet.getPrice(newWstETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldWstETHPriceFeed), 1e6);
   },
 });

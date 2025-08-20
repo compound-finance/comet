@@ -21,6 +21,7 @@ const CBETH_ETH_PRICE_FEED = '0x806b4Ac04501c29769051e42783cF04dCE41440b';
 const FEED_DECIMALS = 8;
 
 let newCbEthToUsdPriceFeed: string;
+let oldCbEthToUsdPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
@@ -100,6 +101,8 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       ]
     );
 
+    [,,oldCbEthToUsdPriceFeed] = await comet.getAssetInfoByAddress(CBETH_ADDRESS);
+
     const mainnetActions = [
       {
         contract: baseL1CrossDomainMessenger,
@@ -149,5 +152,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
           
     expect(cbETHInCometInfo.priceFeed).to.eq(newCbEthToUsdPriceFeed);
     expect(cbETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newCbEthToUsdPriceFeed);
+
+    expect(await comet.getPrice(newCbEthToUsdPriceFeed)).to.be.closeTo(await comet.getPrice(oldCbEthToUsdPriceFeed), 40e8);
   },
 });

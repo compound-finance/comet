@@ -18,6 +18,7 @@ const ETH_TO_USD_PRICE_FEED_ADDRESS = '0x61A31634B4Bb4B9C2556611f563Ed86cE2D4643
 const FEED_DECIMALS = 8;
 
 let newMETHToUSDPriceFeed: string;
+let oldMETHToUSDPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
@@ -110,7 +111,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         ],
       ]
     );
-  
+    
+     
+    [,, oldMETHToUSDPriceFeed] = await comet.getAssetInfoByAddress(METH_ADDRESS);
+
     const mainnetActions = [
       // 1. Sends the proposal to the L2
       {
@@ -160,5 +164,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
 
     expect(mETHInCometInfo.priceFeed).to.eq(newMETHToUSDPriceFeed);
     expect(mETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newMETHToUSDPriceFeed);
+
+    expect(await comet.getPrice(newMETHToUSDPriceFeed)).to.be.closeTo(await comet.getPrice(oldMETHToUSDPriceFeed), 5e10);
   },
 });

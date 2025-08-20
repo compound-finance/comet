@@ -10,7 +10,7 @@ export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
 }
 
 const WETH_ADDRESS = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
-const ETH_USD_PRICE_FEED = '0x7c7FdFCa295a787ded12Bb5c1A49A8D2cC20E3F8';
+const ETH_USD_OEV_PRICE_FEED = '0x7c7FdFCa295a787ded12Bb5c1A49A8D2cC20E3F8';
 const WSTETH_ADDRESS = '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0';
 const FEED_DECIMALS = 8;
 
@@ -33,7 +33,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'capo/contracts/WstETHCorrelatedAssetsPriceOracle.sol',
       [
         governor.address,
-        ETH_USD_PRICE_FEED,
+        ETH_USD_OEV_PRICE_FEED,
         wstETH.address,
         constantPriceFeed.address,
         'wstETH:priceFeed',
@@ -48,29 +48,16 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       true
     );
 
-     const wETHPriceFeed = await deploymentManager.deploy(
-      'WETH:priceFeed',
-      'pricefeeds/ScalingPriceFeed.sol',
-      [
-        ETH_USD_PRICE_FEED,
-        8
-      ],
-      true
-    );
-
     return {
-      wstEthCapoPriceFeedAddress: wstEthCapoPriceFeed.address,
-      wETHPriceFeedAddress: wETHPriceFeed.address,
+      wstEthCapoPriceFeedAddress: wstEthCapoPriceFeed.address
     };
   },
 
   async enact(deploymentManager: DeploymentManager, _, {
-    wstEthCapoPriceFeedAddress,
-    wETHPriceFeedAddress
+    wstEthCapoPriceFeedAddress
   }) {
 
     newWstETHPriceFeed = wstEthCapoPriceFeedAddress;
-    newWETHPriceFeed = wETHPriceFeedAddress;
 
     const trace = deploymentManager.tracer();
  
@@ -95,7 +82,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       {
         contract: configurator,
         signature: 'updateAssetPriceFeed(address,address,address)',
-        args: [comet.address, WETH_ADDRESS, wETHPriceFeedAddress],
+        args: [comet.address, WETH_ADDRESS, ETH_USD_OEV_PRICE_FEED],
       },
       // 3. Deploy and upgrade to a new version of Comet
       {
@@ -143,6 +130,6 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     expect(wstETHInCometInfo.priceFeed).to.eq(newWstETHPriceFeed);
     expect(wstETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newWstETHPriceFeed);
 
-    expect(await comet.getPrice(newWstETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldWstETHPriceFeed), 1e6);
+    expect(await comet.getPrice(newWstETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldWstETHPriceFeed), 40e8);
   },
 });

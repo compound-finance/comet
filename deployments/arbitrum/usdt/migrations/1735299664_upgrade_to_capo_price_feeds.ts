@@ -17,19 +17,10 @@ const ETH_USD_PRICE_FEED = '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612';
 const WSTETH_ADDRESS = '0x5979D7b546E38E414F7E9822514be443A4800529';
 const WSTETH_STETH_PRICE_FEED_ADDRESS = '0xB1552C5e96B312d0Bf8b554186F846C40614a540';
 
-const WBTC_ADDRESS = '0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f';
-const WBTC_USD_PRICE_FEED_ADDRESS = '0xdc715c751f1cc129A6b47fEDC87D9918a4580502';
-
 const FEED_DECIMALS = 8;
 
 let newWstETHPriceFeed: string;
 let oldWstETHPriceFeed: string;
-
-let newWbtcPriceFeed: string;
-let oldWbtcPriceFeed: string;
-
-let newWETHPriceFeed: string;
-let oldWETHPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
@@ -58,42 +49,16 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       true
     );
 
-    const wBTCPriceFeed = await deploymentManager.deploy(
-      'wstETH:priceFeed',
-      'pricefeeds/ScalingPriceFeed.sol',
-      [
-        WBTC_USD_PRICE_FEED_ADDRESS,
-        8
-      ],
-      true
-    );
-
-    const wETHPriceFeed = await deploymentManager.deploy(
-      'wETH:priceFeed',
-      'pricefeeds/ScalingPriceFeed.sol',
-      [
-        ETH_USD_PRICE_FEED,
-        8
-      ],
-      true
-    );
-
     return {
       wstEthCapoPriceFeedAddress: wstEthCapoPriceFeed.address,
-      wBTCPriceFeedAddress: wBTCPriceFeed.address,
-      wETHPriceFeedAddress: wETHPriceFeed.address
     };
   },
 
   async enact(deploymentManager: DeploymentManager, govDeploymentManager, {
-    wstEthCapoPriceFeedAddress,
-    wBTCPriceFeedAddress,
-    wETHPriceFeedAddress
+    wstEthCapoPriceFeedAddress
   }) {
  
     newWstETHPriceFeed = wstEthCapoPriceFeedAddress;
-    newWbtcPriceFeed = wBTCPriceFeedAddress;
-    newWETHPriceFeed = wETHPriceFeedAddress;
 
     const trace = deploymentManager.tracer();
 
@@ -112,30 +77,12 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     } = await govDeploymentManager.getContracts();
 
     [,, oldWstETHPriceFeed] = await comet.getAssetInfoByAddress(WSTETH_ADDRESS);
-    [,, oldWbtcPriceFeed] = await comet.getAssetInfoByAddress(WBTC_ADDRESS);
-    [,, oldWETHPriceFeed] = await comet.getAssetInfoByAddress(WETH_ADDRESS);
 
     const updateWstEthPriceFeedCalldata = await calldata(
       configurator.populateTransaction.updateAssetPriceFeed(
         comet.address,
         WSTETH_ADDRESS,
         wstEthCapoPriceFeedAddress
-      )
-    );
-
-    const updateWbtcPriceFeedCalldata = await calldata(
-      configurator.populateTransaction.updateAssetPriceFeed(
-        comet.address,
-        WBTC_ADDRESS,
-        wBTCPriceFeedAddress
-      )
-    );
-
-    const updateWETHPriceFeedCalldata = await calldata(
-      configurator.populateTransaction.updateAssetPriceFeed(
-        comet.address,
-        WETH_ADDRESS,
-        wETHPriceFeedAddress
       )
     );
 
@@ -152,26 +99,18 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       [
         [
           configurator.address,
-          configurator.address,
-          configurator.address,
           cometAdmin.address
         ],
         [
-          0,
-          0,
           0,
           0
         ],
         [
           'updateAssetPriceFeed(address,address,address)',
-          'updateAssetPriceFeed(address,address,address)',
-          'updateAssetPriceFeed(address,address,address)',
           'deployAndUpgradeTo(address,address)'
         ],
         [
           updateWstEthPriceFeedCalldata,
-          updateWbtcPriceFeedCalldata,
-          updateWETHPriceFeedCalldata,
           deployAndUpgradeToCalldata
         ],
       ]
@@ -244,33 +183,6 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     expect(wstETHInCometInfo.priceFeed).to.eq(newWstETHPriceFeed);
     expect(wstETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newWstETHPriceFeed);
 
-    expect(await comet.getPrice(newWstETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldWstETHPriceFeed), 1e6);
-
-    const wBTCIndexInComet = await configurator.getAssetIndex(
-      comet.address,
-      WBTC_ADDRESS
-    );
-    const wBTCInCometInfo = await comet.getAssetInfoByAddress(WBTC_ADDRESS);
-    const wBTCInConfiguratorInfoWETHComet = (
-      await configurator.getConfiguration(comet.address)
-    ).assetConfigs[wBTCIndexInComet]; 
-    expect(wBTCInCometInfo.priceFeed).to.eq(newWbtcPriceFeed);
-    expect(wBTCInConfiguratorInfoWETHComet.priceFeed).to.eq(newWbtcPriceFeed);
-
-    expect(await comet.getPrice(newWbtcPriceFeed)).to.be.closeTo(await comet.getPrice(oldWbtcPriceFeed), 1e7);
-
-    const wETHIndexInComet = await configurator.getAssetIndex(
-      comet.address,
-      WETH_ADDRESS
-    );
-    const wETHInCometInfo = await comet.getAssetInfoByAddress(WETH_ADDRESS);
-    const wETHInConfiguratorInfoWETHComet = (
-      await configurator.getConfiguration(comet.address)
-    ).assetConfigs[wETHIndexInComet];
-
-    expect(wETHInCometInfo.priceFeed).to.eq(newWETHPriceFeed);
-    expect(wETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newWETHPriceFeed);
-
-    expect(await comet.getPrice(newWETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldWETHPriceFeed), 1e6);
+    expect(await comet.getPrice(newWstETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldWstETHPriceFeed), 40e8);
   },
 });

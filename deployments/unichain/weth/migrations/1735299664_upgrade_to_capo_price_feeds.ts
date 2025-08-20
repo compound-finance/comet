@@ -27,6 +27,10 @@ let newWstETHToETHPriceFeed: string;
 let newWeEthToETHPriceFeed: string;
 let newEzEthToETHPriceFeed: string;
 
+let oldWstETHToETHPriceFeed: string;
+let oldWeETHToETHPriceFeed: string;
+let oldEzEthToETHPriceFeed: string;
+
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
     const { governor } = await deploymentManager.getContracts();
@@ -199,6 +203,11 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       ]
     );
 
+    [,, oldWstETHToETHPriceFeed] = await comet.getAssetInfoByAddress(WSTETH_ADDRESS);
+    [,, oldWeETHToETHPriceFeed] = await comet.getAssetInfoByAddress(WEETH_ADDRESS);
+    [,, oldEzEthToETHPriceFeed] = await comet.getAssetInfoByAddress(EZETH_ADDRESS);
+
+
     const mainnetActions = [
       {
         contract: unichainL1CrossDomainMessenger,
@@ -249,6 +258,8 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
             
       expect(wstETHInCometInfo.priceFeed).to.eq(newWstETHToETHPriceFeed);
       expect(wstETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newWstETHToETHPriceFeed);
+
+      expect(await comet.getPrice(newWstETHToETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldWstETHToETHPriceFeed), 5e10);
   
       const weEthIndexInComet = await configurator.getAssetIndex(
         comet.address,
@@ -263,6 +274,8 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       ).assetConfigs[weEthIndexInComet];    
       expect(weEthInCometInfo.priceFeed).to.eq(newWeEthToETHPriceFeed);
       expect(weEthInConfiguratorInfoWETHComet.priceFeed).to.eq(newWeEthToETHPriceFeed);
+
+      expect(await comet.getPrice(newWeEthToETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldWeETHToETHPriceFeed), 5e10);
   
       const ezEthIndexInComet = await configurator.getAssetIndex(
         comet.address,
@@ -277,5 +290,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
   
       expect(ezEthInCometInfo.priceFeed).to.eq(newEzEthToETHPriceFeed);
       expect(ezEthInConfiguratorInfoWETHComet.priceFeed).to.eq(newEzEthToETHPriceFeed);
+
+      expect(await comet.getPrice(newEzEthToETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldEzEthToETHPriceFeed), 5e10);
     },
 });
