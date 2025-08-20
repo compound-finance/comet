@@ -3,7 +3,6 @@ import { DeploymentManager } from '../../../../plugins/deployment_manager/Deploy
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, proposal } from '../../../../src/deploy';
 import { utils } from 'ethers';
-import { applyL1ToL2Alias, estimateL2Transaction } from '../../../../scenario/utils/arbitrumUtils';
 import { Numeric } from '../../../../test/helpers';
 import { AggregatorV3Interface } from '../../../../build/types';
 
@@ -144,7 +143,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
   },
 
   async enacted(): Promise<boolean> {
-    return true;
+    return false;
   },
 
   async verify(deploymentManager: DeploymentManager) {

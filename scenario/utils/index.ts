@@ -52,6 +52,40 @@ export enum ComparisonOp {
   EQ,
 }
 
+const usedSigners = new Map<string, string[]>();
+
+export async function getSignerForProposal(
+  dm: DeploymentManager,
+  gm: DeploymentManager
+) {
+  const network = dm.network;
+  const deployment = dm.deployment;
+  const key = `${network}-${deployment}`;
+  if (!usedSigners.has(key)) {
+    usedSigners.set(key, []);
+  }
+  const signers = usedSigners.get(key);
+  if(signers.length == 0){
+    const signer = (await gm.getSigners())[0];
+    signers.push(signer.address);
+    return signer;
+  } else {
+    const signerAddress = COMP_WHALES[gm.network][signers.length];
+    console.log(signerAddress);
+    signers.push(signerAddress);
+    // impersonate
+    await gm.hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [signerAddress],
+    });
+    await gm.hre.network.provider.request({
+      method: 'hardhat_setBalance',
+      params: [signerAddress, (BigNumber.from(exp(1, 18))).toHexString()],
+    });
+    return await gm.getSigner(signerAddress);
+  }
+}
+
 export const max = (...args) => args.reduce((m, e) => (e > m ? e : m));
 export const min = (...args) => args.reduce((m, e) => (e < m ? e : m));
 

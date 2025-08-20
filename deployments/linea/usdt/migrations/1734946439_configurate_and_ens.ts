@@ -12,18 +12,17 @@ const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
 
 const lineaCOMPAddress = '0x0ECE76334Fb560f2b1a49A60e38Cf726B02203f0';
+const mainnetUsdtAddress = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
+const cUSDTAddress = '0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9';
 
-const WETHAmountToBridge = exp(25, 18);
+const USDTAmountToBridge = exp(100_000, 6);
 
-export default migration('1737020138_configurate_and_ens', {
+export default migration('1734946439_configurate_and_ens', {
   prepare: async (_deploymentManager: DeploymentManager) => {
     return {};
   },
 
-  enact: async (
-    deploymentManager: DeploymentManager,
-    govDeploymentManager: DeploymentManager
-  ) => {
+  enact: async (deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager) => {
     const trace = deploymentManager.tracer();
     
     const cometFactory = await deploymentManager.fromDep('cometFactory', 'linea', 'usdc');
@@ -33,16 +32,30 @@ export default migration('1737020138_configurate_and_ens', {
       cometAdmin,
       configurator,
       rewards,
-      timelock: l2Timelock,
-      WETH
     } = await deploymentManager.getContracts();
 
     const {
       lineaMessageService,
+      lineaL1TokenBridge,
       governor
     } = await govDeploymentManager.getContracts();
 
     const configuration = await getConfigurationStruct(deploymentManager);
+
+    const _reduceReservesCalldata = utils.defaultAbiCoder.encode(
+      ['uint256'],
+      [USDTAmountToBridge]
+    );
+  
+    const zeroApproveCalldata = utils.defaultAbiCoder.encode(
+      ['address', 'uint256'],
+      [lineaL1TokenBridge.address, 0]
+    );
+
+    const approveCalldata = utils.defaultAbiCoder.encode(
+      ['address', 'uint256'],
+      [lineaL1TokenBridge.address, USDTAmountToBridge]
+    );
 
     const setFactoryCalldata = await calldata(
       configurator.populateTransaction.setFactory(comet.address, cometFactory.address)
@@ -58,39 +71,22 @@ export default migration('1737020138_configurate_and_ens', {
       ['address', 'address'],
       [comet.address, lineaCOMPAddress]
     );
-    const sweepNativeTokenCalldata = await calldata(bridgeReceiver.populateTransaction.sweepNativeToken(l2Timelock.address));
-    const transferCalldata = await calldata(WETH.populateTransaction.transfer(comet.address, WETHAmountToBridge));
-
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
-        [
-          configurator.address,
-          configurator.address,
-          cometAdmin.address,
-          rewards.address,
-          bridgeReceiver.address,
-          WETH.address,
-          WETH.address
-        ],
-        [0, 0, 0, 0, 0, WETHAmountToBridge, 0],
+        [configurator.address, configurator.address, cometAdmin.address, rewards.address],
+        [0, 0, 0, 0],
         [
           'setFactory(address,address)',
           'setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))',
           'deployAndUpgradeTo(address,address)',
-          'setRewardConfig(address,address)',
-          'sweepNativeToken(address)',
-          'deposit()',
-          'transfer(address,uint256)'
+          'setRewardConfig(address,address)'
         ],
         [
           setFactoryCalldata,
           setConfigurationCalldata,
           deployAndUpgradeToCalldata,
-          setRewardConfigCalldata,
-          sweepNativeTokenCalldata,
-          '0x',
-          transferCalldata
+          setRewardConfigCalldata
         ]
       ]
     );
@@ -98,7 +94,7 @@ export default migration('1737020138_configurate_and_ens', {
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);
     const subdomainHash = utils.namehash(ENSSubdomain);
     const officialMarketsJSON = JSON.parse(await ENSResolver.text(subdomainHash, ENSTextRecordKey));
-    const newMarketObject = { baseSymbol: 'WETH', cometAddress: comet.address };
+    const newMarketObject = { baseSymbol: 'USDT', cometAddress: comet.address };
 
     if (officialMarketsJSON[59144]) {
       officialMarketsJSON[59144].push(newMarketObject);
@@ -112,9 +108,32 @@ export default migration('1737020138_configurate_and_ens', {
         contract: lineaMessageService,
         signature: 'sendMessage(address,uint256,bytes)',
         args: [bridgeReceiver.address, 0, l2ProposalData],
-        value: WETHAmountToBridge
       },
-      // 2. Update the list of official markets
+      // 2. Get USDT reserves from cUSDT contract
+      {
+        target: cUSDTAddress,
+        signature: '_reduceReserves(uint256)',
+        calldata: _reduceReservesCalldata
+      },
+      // 3. Reset approve of USDT from Timelock's to Gateway
+      {
+        target: mainnetUsdtAddress,
+        signature: 'approve(address,uint256)',
+        calldata: zeroApproveCalldata
+      },
+      // 4. Approve the USDT gateway to take Timelock's USDT for bridging
+      {
+        target: mainnetUsdtAddress,
+        signature: 'approve(address,uint256)',
+        calldata: approveCalldata
+      },
+      // 5. Bridge USDT from mainnet to Linea Comet
+      {
+        contract: lineaL1TokenBridge,
+        signature: 'bridgeToken(address,uint256,address)',
+        args: [mainnetUsdtAddress, USDTAmountToBridge, comet.address]
+      },
+      // 6. Update the list of official markets
       {
         target: ENSResolverAddress,
         signature: 'setText(bytes32,string,string)',
@@ -125,26 +144,7 @@ export default migration('1737020138_configurate_and_ens', {
       }
     ];
 
-    const description = `# Initialize cWETHv3 on Linea network
-
-## Proposal summary
-
-WOOF! proposes the deployment of Compound III to the Linea network. This proposal takes the governance steps recommended and necessary to initialize a Compound III WETH market on Linea; upon execution, cWETHv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-linea/4460/20).
-
-Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/982), [deploy market GitHub action run](https://github.com/woof-software/comet/actions/runs/15211470652) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-linea/4460).
-
-
-## wrsETH Price Feed
-
-[wrsETH/ETH exchange rate](https://lineascan.build/address/0xEEDF0B095B5dfe75F3881Cb26c19DA209A27463a#readContract) price oracle has a wrong label. The information is confirmed with ChainLink and Kelp teams internally.
-
-
-## Proposal Actions
-
-The first proposal action sends ether to the Linea Timelock so it can be wrapped and used to seed the reserves, sets the Comet configuration and deploys a new Comet implementation on Linea. This sends the encoded 'setFactory', 'setConfiguration', 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Linea.
-
-The second action updates the ENS TXT record 'v3-official-markets' on 'v3-additional-grants.compound-community-licenses.eth', updating the official markets JSON to include the new Linea cWETHv3 market.`;
-
+    const description = '# Initialize cUSDTv3 on Linea network\n\n## Proposal summary\n\nWOOF! proposes the deployment of Compound III to the Linea network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDT market on Linea; upon execution, cUSDTv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-linea/4460/19).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/982), [deploy market GitHub action run](https://github.com/woof-software/comet/actions/runs/15211082351) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-linea/4460).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Linea. This sends the encoded `setFactory`, `setConfiguration`, `deployAndUpgradeTo` calls across the bridge to the governance receiver on Linea.\n\nThe second action reduces Compound’s [cUSDT](https://etherscan.io/address/0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9) reserves and transfers it to Timelock, in order to seed the market reserves for the Linea cUSDTv3 Comet.\n\nThe third action approves 0 USDT from Timelock to [LineaL1TokenBridge](https://etherscan.io/address/0x051F1D88f0aF5763fB888eC4378b4D8B29ea3319) to reset potential previous approves.\n\nThe fourth action approves 100K USDT to [LineaL1TokenBridge](https://etherscan.io/address/0x051F1D88f0aF5763fB888eC4378b4D8B29ea3319) to take Timelock\'s USDT on Mainnet, in order to seed the market reserves through the bridge.\n\nThe fifth action bridges USDT from mainnet via Linea`s bridge contract and sends it to Comet on Linea.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Linea cUSDTv3 market.';
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(mainnetActions, description))))
     );
@@ -159,11 +159,7 @@ The second action updates the ENS TXT record 'v3-official-markets' on 'v3-additi
     return false;
   },
 
-  async verify(
-    deploymentManager: DeploymentManager,
-    govDeploymentManager: DeploymentManager,
-    preMigrationBlockNumber: number
-  ) {
+  async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, preMigrationBlockNumber: number) {
     await deploymentManager.spider(); // Pull in Linea COMP now that reward config has been set
 
     const {
@@ -173,24 +169,24 @@ The second action updates the ENS TXT record 'v3-official-markets' on 'v3-additi
 
     // 1.
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
+
+    const secondsPerYear = 31_536_000; // 365 * 24 * 60 * 60
     expect(stateChanges).to.deep.equal({
-      ezETH: {
-        supplyCap: exp(4830, 18)
+      WETH: {
+        supplyCap: exp(270, 18)
       },
       wstETH: {
-        supplyCap: exp(260, 18)
+        supplyCap: exp(60, 18)
       },
       WBTC: {
-        supplyCap: exp(5, 8)
+        supplyCap: exp(4, 8)
       },
-      weETH: {
-        supplyCap: exp(3550, 18)
-      },
-      wrsETH: {
-        supplyCap: exp(500, 18)
-      },
-      baseTrackingSupplySpeed: exp(6 / 86400, 15, 18), // 69444444444
-      baseTrackingBorrowSpeed: exp(4 / 86400, 15, 18), // 46296296296
+      baseTrackingSupplySpeed: exp(2 / 86400, 15, 18), // 23148148148
+      baseTrackingBorrowSpeed: exp(1 / 86400, 15, 18), // 11574074074
+      supplyPerSecondRateSlopeLow: exp(0.036 / secondsPerYear, 18, 18),  // 11415525114
+      supplyPerSecondInterestRateSlopeHigh: exp(3.196 / secondsPerYear, 18, 18),  // 101344495180
+      borrowPerSecondInterestRateSlopeLow: exp(0.02778 / secondsPerYear, 18, 18),  // 880898021
+      borrowPerSecondInterestRateSlopeHigh: exp(3.6 / secondsPerYear, 18, 18),  // 114155251141
     });
 
     const config = await rewards.rewardConfig(comet.address);
@@ -199,7 +195,7 @@ The second action updates the ENS TXT record 'v3-official-markets' on 'v3-additi
     expect(config.shouldUpscale).to.be.equal(true);
 
     // 2. & 3.
-    expect(await comet.getReserves()).to.be.equal(WETHAmountToBridge);
+    expect(await comet.getReserves()).to.be.equal(USDTAmountToBridge);
 
     // 6.
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);
@@ -329,7 +325,7 @@ The second action updates the ENS TXT record 'v3-official-markets' on 'v3-additi
           cometAddress: '0x8D38A3d6B3c3B7d96D6536DA7Eef94A9d7dbC991'
         },
         {
-          baseSymbol: 'WETH',
+          baseSymbol: 'USDT',
           cometAddress: comet.address
         }
       ],

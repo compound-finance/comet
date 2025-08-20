@@ -3,9 +3,9 @@ import { DeploymentManager } from '../../../../plugins/deployment_manager/Deploy
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, proposal } from '../../../../src/deploy';
 import { utils } from 'ethers';
-import { applyL1ToL2Alias, estimateL2Transaction } from '../../../../scenario/utils/arbitrumUtils';
 import { Numeric } from '../../../../test/helpers';
 import { AggregatorV3Interface } from '../../../../build/types';
+import { getSignerForProposal } from '../../../../scenario/utils/index';
 
 export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
   return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
@@ -36,14 +36,14 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     const now = (await deploymentManager.hre.ethers.provider.getBlock('latest'))!.timestamp;
 
     const constantPriceFeed = await deploymentManager.deploy(
-        'eth:constantPriceFeed',
-        'pricefeeds/ConstantPriceFeed.sol',
-        [
-          8,
-          exp(1, 8)
-        ],
-        true
-      );
+      'eth:constantPriceFeed',
+      'pricefeeds/ConstantPriceFeed.sol',
+      [
+        8,
+        exp(1, 8)
+      ],
+      true
+    );
 
     //1. wstEth
     const rateProviderWstEth = await deploymentManager.existing('wstETH:_rateProvider', WSTETH_STETH_PRICE_FEED_ADDRESS, 'linea', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
@@ -96,45 +96,45 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     const [, currentRatioWeeth] = await weethRateProvider.latestRoundData();
         
     const weethCapoPriceFeed = await deploymentManager.deploy(
-        'weETH:priceFeed',
-        'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
-        [
-          governor.address,
-          constantPriceFeed.address,
-          weethRateProvider.address,
-          'weeth:priceFeed',
-          FEED_DECIMALS,
-          3600,
-          {
-            snapshotRatio: currentRatioWeeth,
-            snapshotTimestamp: now - 3600,
-            maxYearlyRatioGrowthPercent: exp(0.0323, 4)
-          }
-        ],
-        true
-      );
+      'weETH:priceFeed',
+      'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
+      [
+        governor.address,
+        constantPriceFeed.address,
+        weethRateProvider.address,
+        'weeth:priceFeed',
+        FEED_DECIMALS,
+        3600,
+        {
+          snapshotRatio: currentRatioWeeth,
+          snapshotTimestamp: now - 3600,
+          maxYearlyRatioGrowthPercent: exp(0.0323, 4)
+        }
+      ],
+      true
+    );
 
     //4. wrsEth
     const wrsethRateProvider = await deploymentManager.existing('wrsETH:_priceFeed', WRSETH_ETH_RATE_PROVIDER, 'linea', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioWrseth] = await wrsethRateProvider.latestRoundData();
     const wrsethCapoPriceFeed = await deploymentManager.deploy(
+      'wrsETH:priceFeed',
+      'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
+      [
+        governor.address,
+        constantPriceFeed.address,
+        wrsethRateProvider.address,
         'wrsETH:priceFeed',
-        'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
-        [
-          governor.address,
-          constantPriceFeed.address,
-          wrsethRateProvider.address,
-          'wrsETH:priceFeed',
-          FEED_DECIMALS,
-          3600,
-          {
-            snapshotRatio: currentRatioWrseth,
-            snapshotTimestamp: now - 3600,
-            maxYearlyRatioGrowthPercent: exp(0.0554, 4)
-          }
-        ],
-        true
-      );
+        FEED_DECIMALS,
+        3600,
+        {
+          snapshotRatio: currentRatioWrseth,
+          snapshotTimestamp: now - 3600,
+          maxYearlyRatioGrowthPercent: exp(0.0554, 4)
+        }
+      ],
+      true
+    );
 
     
     return {
@@ -262,11 +262,11 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     ];
 
     const description = 'tmp';
+    const signer = await getSignerForProposal(deploymentManager, govDeploymentManager);
     const txn = await govDeploymentManager.retry(async () =>
-      trace(
-        await governor.propose(...(await proposal(mainnetActions, description)))
-      )
+      trace(await governor.connect(signer).propose(...(await proposal(mainnetActions, description))))
     );
+
 
     const event = txn.events.find(
       (event) => event.event === 'ProposalCreated'
@@ -276,7 +276,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
   },
 
   async enacted(): Promise<boolean> {
-    return true;
+    return false;
   },
 
   async verify(deploymentManager: DeploymentManager) {
