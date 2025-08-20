@@ -101,8 +101,6 @@ describe('CometWithPartialLiquidation', function () {
       }
     });
   });
-// ... existing code ...
-
 it('should demonstrate partial liquidation with excessive collateral', async () => {
   const params = {
     supplyInterestRateBase: 0,
