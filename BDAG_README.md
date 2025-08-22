@@ -120,6 +120,115 @@ export MARKET=weth && yarn hardhat test test/deployment-verification-test.ts --n
 - **Comprehensive verification**: Checks all critical deployment configurations
 - **Clear error messages**: Shows exactly what's wrong if verification fails
 
+## Hardhat Config
+
+The Hardhat configuration (`hardhat.config.ts`) is the central configuration file that defines networks, deployments, and their relationships. Understanding this configuration is crucial for proper deployment and testing.
+
+### Network Configuration
+
+Each network in the configuration includes:
+- **Chain ID**: Unique identifier for the blockchain
+- **RPC URL**: Endpoint for interacting with the network
+- **Accounts**: Signers for deployment and testing
+
+```typescript
+// Example network configuration
+{
+  network: 'bdag-primordial',
+  chainId: 1043,
+  url: 'https://node-blockdag.spacedev.io/rpc',
+}
+```
+
+### Deployment Manager Configuration
+
+The `deploymentManager` section maps networks to their available deployments and relation configurations:
+
+```typescript
+deploymentManager: {
+  relationConfigMap, // Base relation configuration
+  networks: {
+    'bdag-primordial': {
+      dai: bdagPrimordialDaiRelationConfigMap,
+      _infrastructure: bdagPrimordialInfrastructureRelationConfigMap
+    },
+    'local': {
+      dai: localDaiRelationConfigMap,
+      _infrastructure: localInfrastructureRelationConfigMap
+    }
+  }
+}
+```
+
+### Relation Configuration Maps
+
+Each deployment requires a `RelationConfigMap` that defines:
+- **Contract relationships**: How contracts reference each other
+- **Field mappings**: How to extract data from contracts
+- **Alias templates**: Naming conventions for discovered contracts
+
+**Required Files:**
+- `deployments/{network}/{deployment}/relations.ts` - Network-specific relations
+- `deployments/relations.ts` - Base relations (shared across networks)
+- `deployments/relations.market.ts` - Market-specific relations
+- `deployments/relations.infra.ts` - Infrastructure-specific relations
+
+### Auxiliary Base Networks
+
+The `auxiliaryBase` parameter specifies which network to use as a **source for contract cloning**. This is crucial for governance contracts and tokens that need to be cloned from existing deployments.
+
+#### What is Auxiliary Base?
+
+```typescript
+// In hardhat.config.ts scenario configuration
+{
+  name: 'bdag-primordial-dai',
+  network: 'bdag-primordial',
+  deployment: 'dai',
+  auxiliaryBase: 'mainnet'  // ← This network provides source contracts
+}
+```
+
+**Purpose**: When deploying to a new network, you often need to clone existing contracts (like governance tokens, price feeds, or other verified contracts) from a trusted source network.
+
+#### Cloning Mechanism
+
+The cloning process uses the `auxiliaryBase` network to fetch contract bytecode and data:
+
+```typescript
+// From src/deploy/Network.ts
+const clone = {
+  comp: '0xc00e94cb662c3520282e6f5717214004a7f26888', // Mainnet COMP address
+  governorBravoImpl: '0xef3b6e9e13706a8f01fe98fdcf66335dc5cfdeed', // Mainnet Governor implementation
+  governorBravo: '0xc0da02939e1441f497fd74f78ce7decb17b66529', // Mainnet Governor proxy
+};
+
+// Clone COMP token from mainnet
+const COMP = await deploymentManager.clone('COMP', clone.comp, [admin.address]);
+```
+
+**What Gets Cloned:**
+- **Contract Bytecode**: The actual contract code
+- **Storage Layout**: Contract state structure
+- **Constructor Arguments**: Initial parameters (if any)
+- **Verification Data**: For block explorer verification
+
+#### Benefits of Auxiliary Base
+
+1. **Security**: Use audited, verified contracts from trusted networks
+2. **Consistency**: Ensure governance tokens and contracts behave identically
+3. **Efficiency**: Avoid re-deploying complex contracts
+4. **Verification**: Leverage existing contract verification on source networks
+
+#### Configuration Requirements
+
+When setting up a new network, you must configure:
+
+1. **Network Entry**: Add network to `networkConfigs` array
+2. **Deployment Manager**: Add network to `deploymentManager.networks`
+3. **Relation Configs**: Create network-specific relation configuration files
+4. **Scenario Configuration**: Add scenario with appropriate `auxiliaryBase`
+
 ## Testing Market on Specific Blockchain
 
 You can test your deployed market on any blockchain network using the same test commands. Here's how to test on different networks:
@@ -222,94 +331,6 @@ yarn hardhat deploy --bdag --network local --deployment dai
 ## How Deployment Scripts Are Executed
 
 When you run `yarn hardhat deploy --deployment dai`, the system automatically finds and executes the correct deployment script. Here's how this works:
-
-### Deployment Script Resolution
-
-The deployment system uses a **path-based resolution** to find the right deployment script:
-
-1. **Command Line Parameters**: `--deployment dai` specifies which market to deploy
-2. **Network Context**: `--network hardhat` determines the blockchain network
-3. **Path Construction**: System builds path: `deployments/{network}/{deployment}/deploy.ts`
-4. **Script Execution**: The found script is imported and executed
-
-### Example Path Resolution
-
-```bash
-# Command
-yarn hardhat deploy --network hardhat --deployment dai
-
-# Resolves to script path
-deployments/hardhat/dai/deploy.ts
-```
-
-### How the System Finds Your Script
-
-The DeploymentManager creates a Cache object with the network and deployment parameters, which handles all path resolution:
-
-```typescript
-// 1. DeploymentManager constructor creates Cache
-const dm = new DeploymentManager(
-  network,        // 'hardhat'
-  deployment,     // 'dai'
-  env,
-  config
-);
-
-// 2. Cache constructor stores network and deployment
-this.cache = new Cache(
-  this.network,    // 'hardhat'
-  this.deployment, // 'dai'
-  config.writeCacheToDisk ?? false,
-  config.baseDir
-);
-
-// 3. Cache.getFilePath() uses stored network/deployment to build path
-const deployScript = this.cache.getFilePath({ rel: 'deploy.ts' });
-// Returns: deployments/hardhat/dai/deploy.ts
-
-// 4. Import and execute the deployment script
-const { default: deployFn } = await import(deployScript);
-// Imports the default export from your deploy.ts file
-
-const deployed = await deployFn(this, deploySpec);
-// Executes your deployment function
-```
-
-### Deployment Script Structure
-
-Each deployment script follows this standard pattern:
-
-```typescript
-// deployments/hardhat/dai/deploy.ts
-import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
-import { DeploySpec, deployComet } from '../../../src/deploy';
-
-export default async function deploy(
-  deploymentManager: DeploymentManager, 
-  deploySpec: DeploySpec
-): Promise<Deployed> {
-  // Your deployment logic here
-  const DAI = await makeToken(/* params */);
-  const deployed = await deployComet(deploymentManager, deploySpec, {
-    baseTokenPriceFeed: daiPriceFeed.address,
-    assetConfigs: [/* configs */],
-  });
-  
-  return deployed;
-}
-```
-
-### Key Benefits
-
-- **Automatic Discovery**: No need to specify script paths manually
-- **Network Isolation**: Each network has its own deployment scripts
-- **Market Separation**: Different markets (DAI, USDC, WETH) have separate scripts
-- **Consistent Interface**: All deployment scripts follow the same pattern
-- **Easy Testing**: Can test different markets by changing the `--deployment` parameter
-
-## Understanding execution flow
-
-When you run `yarn hardhat deploy --network hardhat --deployment dai`, here's exactly what happens:
 
 ### 1. Command Line Execution
 ```bash
@@ -437,6 +458,205 @@ This execution flow ensures that:
 - **Dependencies are resolved** automatically
 - **Deployment is idempotent** (can be run multiple times safely)
 
+### Deployment Script Resolution
+
+The deployment system uses a **path-based resolution** to find the right deployment script:
+
+1. **Command Line Parameters**: `--deployment dai` specifies which market to deploy
+2. **Network Context**: `--network hardhat` determines the blockchain network
+3. **Path Construction**: System builds path: `deployments/{network}/{deployment}/deploy.ts`
+4. **Script Execution**: The found script is imported and executed
+
+### Example Path Resolution
+
+```bash
+# Command
+yarn hardhat deploy --network hardhat --deployment dai
+
+# Resolves to script path
+deployments/hardhat/dai/deploy.ts
+```
+
+### How the System Finds Your Script
+
+The DeploymentManager creates a Cache object with the network and deployment parameters, which handles all path resolution:
+
+```typescript
+// 1. DeploymentManager constructor creates Cache
+const dm = new DeploymentManager(
+  network,        // 'hardhat'
+  deployment,     // 'dai'
+  env,
+  config
+);
+
+// 2. Cache constructor stores network and deployment
+this.cache = new Cache(
+  this.network,    // 'hardhat'
+  this.deployment, // 'dai'
+  config.writeCacheToDisk ?? false,
+  config.baseDir
+);
+
+// 3. Cache.getFilePath() uses stored network/deployment to build path
+const deployScript = this.cache.getFilePath({ rel: 'deploy.ts' });
+// Returns: deployments/hardhat/dai/deploy.ts
+
+// 4. Import and execute the deployment script
+const { default: deployFn } = await import(deployScript);
+// Imports the default export from your deploy.ts file
+
+const deployed = await deployFn(this, deploySpec);
+// Executes your deployment function
+```
+
+### Deployment Script Structure
+
+Each deployment script follows this standard pattern:
+
+```typescript
+// deployments/hardhat/dai/deploy.ts
+import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
+import { DeploySpec, deployComet } from '../../../src/deploy';
+
+export default async function deploy(
+  deploymentManager: DeploymentManager, 
+  deploySpec: DeploySpec
+): Promise<Deployed> {
+  // Your deployment logic here
+  const DAI = await makeToken(/* params */);
+  const deployed = await deployComet(deploymentManager, deploySpec, {
+    baseTokenPriceFeed: daiPriceFeed.address,
+    assetConfigs: [/* configs */],
+  });
+  
+  return deployed;
+}
+```
+
+### Key Benefits
+
+- **Automatic Discovery**: No need to specify script paths manually
+- **Network Isolation**: Each network has its own deployment scripts
+- **Market Separation**: Different markets (DAI, USDC, WETH) have separate scripts
+- **Consistent Interface**: All deployment scripts follow the same pattern
+- **Easy Testing**: Can test different markets by changing the `--deployment` parameter
+
+## Understanding execution flow
+
+When you run the deployment commands, here's exactly what happens:
+
+**1. Deploy Infrastructure:**
+```bash
+DEBUG=* yarn hardhat deploy_infrastructure --network local --bdag
+```
+*Note: Dont forget to configure the [market]/configuration.json accordingly (price feeds, etc.)*
+
+**2. Deploy Market:**
+```bash
+DEBUG=* yarn hardhat deploy --network local --deployment dai --bdag
+```
+
+**3. Governance Flow:**
+```bash
+# Check proposal status
+yarn hardhat governor:status --network local --proposal-id 1 --deployment dai
+
+# Approve proposal
+yarn hardhat governor:approve --network local --proposal-id 1 --deployment dai
+
+# Note: The amount of approvements will depend on the threshold the governor has
+
+# Queue proposal
+yarn hardhat governor:queue --network local --proposal-id 1 --deployment dai
+
+# Execute proposal with specific execution type for log parsing
+yarn hardhat governor:execute --network local --proposal-id 1 --deployment dai --execution-type comet-impl-in-configuration
+```
+
+**You will see output like this:**
+
+✅ Proposal 1 executed successfully!
+   Transaction hash: 0x...
+📋 Extracted Logs:
+{
+  "txHash": "0x...",
+  "blockNumber": 123,
+  "logsCount": 5,
+  "executionType": "comet-impl-in-configuration",
+  "parsedLogs": {
+    "cometDeployed": {
+      "cometProxy": "0x67d269191c92Caf3cD7723F116c85e6E9bf55933",
+      "newComet": "0x8aCd85898458400f7Db866d53FCFF6f0D49741FF",
+      "eventName": "CometDeployed"
+    }
+  }
+}
+
+```bash
+**Important**: The `newComet` value is the implementation address that will be used in the next step.
+
+# Propose upgrade to new implementation (after previous proposal is executed)
+
+yarn hardhat governor:propose-upgrade --network local --deployment dai --implementation 0x...
+
+# The upgrade proposal will need to go through the same governance flow:
+# 1. Check proposal status: yarn hardhat governor:status --network local --proposal-id 2 --deployment dai
+# 2. Approve proposal: yarn hardhat governor:approve --network local --proposal-id 2 --deployment dai
+# 3. Queue proposal: yarn hardhat governor:queue --network local --proposal-id 2 --deployment dai
+# 4. Execute proposal: yarn hardhat governor:execute --network local --proposal-id 2 --deployment dai --execution-type comet-upgrade
+# 5. Refresh roots: yarn hardhat spider --network local --deployment dai
+
+
+## ⚠️ Important: Spider Implementation Mismatch Resolution
+
+**Expected Behavior**: When running spider after a deployment, you may encounter an error indicating that the implementation does not match. This is **normal and expected** behavior.
+
+### Resolution Steps:
+
+1. **Update `aliases.json`**: 
+   - Locate the `comet:implementation` entry in your deployment's `aliases.json` file
+   - Update the address to match the actual deployed implementation address
+
+2. **Update `roots.json`** (if needed):
+   - Check if `roots.json` also needs to be updated with the correct implementation address
+
+3. **Re-run spider**:
+   ```bash
+   yarn hardhat spider --network <network> --deployment <deployment>
+   ```
+
+4. **Verify success**: After these updates, running spider again should complete without errors.
+
+5. **Mint tokens to CometReward** (if needed):
+   **Note**: This step is only required if you need to distribute reward tokens to users. The CometReward contract manages the distribution of COMP tokens to users based on their supply/borrow activity. A `mint-rewards` task WILL be created in governor: `governor:fill-comet-reward`. 
+
+### Why This Happens:
+This occurs because the spider process compares the expected implementation address (from configuration) with the actual deployed implementation address. When they don't match (which is common after deployments), spider reports this as an error to ensure data consistency.
+
+### Example:
+```bash
+# First run (may show implementation mismatch error)
+yarn hardhat spider --network local --deployment dai
+
+# Update aliases.json and roots.json with correct addresses
+# Then re-run (should succeed)
+yarn hardhat spider --network local --deployment dai
+```
+
+```
+
+**4. Test deployment** 
+
+```bash
+export MARKET=dai && yarn hardhat test test/deployment-verification-test.ts --network local
+```
+
+## Available Execution Types
+
+The `--execution-type` parameter determines which logs to extract and analyze during proposal execution.
+
+Possible values `comet-impl-in-configuration` |`comet-upgrade`
 
 
 ## Custom Governor Implementation
@@ -497,3 +717,69 @@ yarn hardhat deploy --deployment dai
 - **Flexible Control**: Can override with `--bdag` flag
 - **Clear Logging**: Shows which governor is being used
 - **Backward Compatible**: Maintains existing functionality
+
+### Why Custom Governor uses UUPS
+
+**Security Argument**: UUPS was chosen over Transparent Proxy because in Transparent Proxy we would need to choose a proxyAdmin owner, and there is no other admin that can govern the governor. If an EOA controls the proxy admin, all future security would be compromised. UUPS ensures the governor contract itself manages upgrades, maintaining security regardless of who controls the proxy admin.
+
+
+## SimpleTimelock with Governor Integration
+
+The **SimpleTimelock** is used for governance execution, where the **Governor** handles signature encoding:
+
+**Governor**: Includes function signature in calldata
+```solidity
+// Governor encodes the complete function call including signature
+bytes memory callData = abi.encodeWithSignature("functionName(params)", ...);
+```
+
+**SimpleTimelock**: Uses pre-encoded calldata directly
+```solidity
+bytes memory callData = data; // signature already included in data from governor
+```
+
+**Why**: The Governor is responsible for creating properly encoded function calls, so the SimpleTimelock can execute them directly without additional signature handling.
+
+**Impact**: Clean separation of concerns - Governor handles call encoding, SimpleTimelock handles execution timing and authorization.
+
+
+
+## Reconfigure Comet
+
+Comet has a **critical restriction** on reconfiguring markets:
+
+```solidity
+if (oldConfiguration.baseToken != address(0) &&
+    (oldConfiguration.baseToken != newConfiguration.baseToken ||
+     oldConfiguration.trackingIndexScale != newConfiguration.trackingIndexScale))
+    revert ConfigurationAlreadyExists();
+```
+
+### Rules
+
+**✅ Allowed**: Keep base token AND tracking index scale the same
+- Asset configurations, collateral factors, supply caps, price feeds
+
+**❌ Blocked**: Change base token OR tracking index scale
+- Base token changes (USDC → DAI)
+- Tracking index scale changes (1e18 → 1e6)
+
+### Tracking Index Scale
+
+Precision multiplier for calculations:
+```solidity
+1e18  // 18 decimals (WETH)
+1e6   // 6 decimals (USDC)
+1e8   // 8 decimals (WBTC)
+```
+
+### Examples
+
+**✅ Works**: Same base token + scale, different assets
+**❌ Fails**: Different base token or scale
+
+### Why
+
+Prevents breaking user balances and accounting errors.
+
+**Impact**: Proposals must match existing base token and tracking index scale.

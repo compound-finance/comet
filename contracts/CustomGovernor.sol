@@ -113,7 +113,8 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
         proposalCalldatas[newProposal.id] = calldatas;
         latestProposalIds[newProposal.proposer] = newProposal.id;
 
-        // Create signatures array (empty for now)
+        //ATTENTION:Signatures could be calculated but they can be extracted from the calldatas
+        //dont need to emit this in the event
         string[] memory signatures = new string[](targets.length);
 
         emit ProposalCreated(newProposal.id, msg.sender, targets, values, signatures, calldatas, 0, 0, description);
@@ -134,11 +135,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
         bytes[] memory calldatas = proposalCalldatas[proposalId];
         
         for (uint i = 0; i < targets.length; i++) {
-            string memory signature = "";
-            if (calldatas[i].length >= 4) {
-                signature = string(abi.encodePacked(calldatas[i][0], calldatas[i][1], calldatas[i][2], calldatas[i][3]));
-            }
-            _queueOrRevertInternal(targets[i], values[i], signature, calldatas[i], eta);
+            _queueOrRevertInternal(targets[i], values[i], "", calldatas[i], eta);
         }
         proposal.eta = eta;
         emit ProposalQueued(proposalId, eta);
@@ -154,11 +151,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
         bytes[] memory calldatas = proposalCalldatas[proposalId];
         
         for (uint i = 0; i < targets.length; i++) {
-            string memory signature = "";
-            if (calldatas[i].length >= 4) {
-                signature = string(abi.encodePacked(calldatas[i][0], calldatas[i][1], calldatas[i][2], calldatas[i][3]));
-            }
-            timelock.executeTransaction{value: values[i]}(targets[i], values[i], signature, calldatas[i], proposal.eta);
+            timelock.executeTransaction{value: values[i]}(targets[i], values[i], "", calldatas[i], proposal.eta);
         }
         emit ProposalExecuted(proposalId);
     }
@@ -176,11 +169,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
         bytes[] memory calldatas = proposalCalldatas[proposalId];
         
         for (uint i = 0; i < targets.length; i++) {
-            string memory signature = "";
-            if (calldatas[i].length >= 4) {
-                signature = string(abi.encodePacked(calldatas[i][0], calldatas[i][1], calldatas[i][2], calldatas[i][3]));
-            }
-            timelock.cancelTransaction(targets[i], values[i], signature, calldatas[i], proposal.eta);
+            timelock.cancelTransaction(targets[i], values[i], "", calldatas[i], proposal.eta);
         }
 
         emit ProposalCanceled(proposalId);
@@ -256,8 +245,9 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
     }
 
     function _queueOrRevertInternal(address target, uint value, string memory signature, bytes memory data, uint eta) internal {
-        require(!timelock.queuedTransactions(keccak256(abi.encode(target, value, signature, data, eta))), "CustomGovernor::_queueOrRevertInternal: identical proposal action already queued at eta");
-        timelock.queueTransaction(target, value, signature, data, eta);
+        //ATTENTION: signature is not used in the timelock contract
+        require(!timelock.queuedTransactions(keccak256(abi.encode(target, value, "", data, eta))), "CustomGovernor::_queueOrRevertInternal: identical proposal action already queued at eta");
+        timelock.queueTransaction(target, value, "", data, eta);
     }
 
     function proposals(uint256 proposalId) external view returns (Proposal memory) { return _proposals[proposalId]; }

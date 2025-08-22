@@ -22,22 +22,22 @@ describe('Deployment Verification', function () {
     console.log(`🔍 Testing deployment on network: ${networkName}, market: ${market}`);
     
     // Load the deployed contracts from aliases.json
-    const aliasesPath = `../deployments/${networkName}/${market}/aliases.json`;
-    const aliases = require(aliasesPath);
+    const rootsPath = `../deployments/${networkName}/${market}/roots.json`;
+    const roots = require(rootsPath);
     const contracts: any = {};
     
     // Load each contract from aliases
-    if (aliases.comet) {
-      contracts.comet = await ethers.getContractAt('CometHarnessInterface', aliases.comet);
+    if (roots.comet) {
+      contracts.comet = await ethers.getContractAt('CometHarnessInterface', roots.comet);
     }
-    if (aliases.governor) {
-      contracts.governor = await ethers.getContractAt('IGovernorBravo', aliases.governor);
+    if (roots.governor) {
+      contracts.governor = await ethers.getContractAt('IGovernorBravo', roots.governor);
     }
-    if (aliases.timelock) {
-      contracts.timelock = await ethers.getContractAt('Timelock', aliases.timelock);
+    if (roots.timelock) {
+      contracts.timelock = await ethers.getContractAt('Timelock', roots.timelock);
     }
-    if (aliases.COMP) {
-      contracts.COMP = await ethers.getContractAt('IComp', aliases.COMP);
+    if (roots.COMP) {
+      contracts.COMP = await ethers.getContractAt('IComp', roots.COMP);
     }
     
     deployedContracts = contracts;

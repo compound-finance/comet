@@ -2,6 +2,7 @@
   "name": "Compound DAI",
   "symbol": "cDAIv3",
   "baseToken": "DAI",
+  "baseTokenPriceFeed": "0xf0Ab8717140Ab0E92e6D2bF31163bf4ABfb25A2f",
   "borrowMin": "1000e6",
   "storeFrontPriceFactor": 0.5,
   "targetReserves": "5000000e6",
@@ -21,7 +22,23 @@
     "baseBorrowSpeed": "0.0011458333333333333e15",
     "baseMinForRewards": "1000000e6"
   },
-  "rewardToken": "GOLD",
-  "assets": {}
+  "rewardToken": "COMP",
+  "assets": {
+    "WBTC": {
+      "priceFeed": "0x9B68814F58EEB9eDf8453f0db333F4D52f96dBcf",
+      "decimals": "8",
+      "borrowCF": 0.75,
+      "liquidateCF": 0.8,
+      "liquidationFactor": 0.85,
+      "supplyCap": "7500e8"
+    },
+    "WETH": {
+      "priceFeed": "0xf9e3F254D266a95c0f2c22BEdEdfA0D39E4FEa58",
+      "decimals": "18",
+      "borrowCF": 0.80,
+      "liquidateCF": 0.90,
+      "liquidationFactor": 0.95,
+      "supplyCap": "11000e18"
+    }
+  }
 }
-  

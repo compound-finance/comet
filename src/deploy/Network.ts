@@ -3,6 +3,7 @@ import { Deployed, DeploymentManager } from '../../plugins/deployment_manager';
 import { DeploySpec, ProtocolConfiguration, wait, COMP_WHALES } from './index';
 import { getConfiguration } from './NetworkConfiguration';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { extractProposalIdFromLogs } from './helpers';
 
 export function sameAddress(a: string, b: string) {
   return BigInt(a) === BigInt(b);
@@ -445,11 +446,13 @@ async function deployBDAGNetworkComet(
   adminSigner?: SignerWithAddress,
 ): Promise<Deployed> {
   //TODO: proxy and comet ext if they dont exist
-  await deployOrRetrieveCometProxy(deploymentManager, deploySpec, configOverrides, withAssetList, adminSigner);
   await deployOrRetrieveCometExt(deploymentManager, deploySpec, configOverrides, withAssetList, adminSigner);
+  await deployOrRetrieveCometProxy(deploymentManager, deploySpec, configOverrides, withAssetList, adminSigner);
   await proposeCometImpl(deploymentManager, deploySpec, configOverrides, withAssetList, adminSigner);
-  const comet = await deploymentManager.getContractOrThrow('comet');
-  return { comet };
+  
+  const contracts = await deploymentManager.contracts();
+  const deployed = Object.fromEntries(contracts);
+  return {...deployed};
 }
 
 async function deployOrRetrieveCometProxy(
@@ -472,6 +475,7 @@ async function deployOrRetrieveCometProxy(
   /* Deploy contracts */
 
   const cometAdmin = await deploymentManager.getContractOrThrow('cometAdmin');
+  const cometExtension = await deploymentManager.getContractOrThrow('comet:implementation:implementation');
 
   const {
     governor,
@@ -485,11 +489,13 @@ async function deployOrRetrieveCometProxy(
     'comet:implementation',
     'Comet.sol',
     [{
-      governor: governor,
-      pauseGuardian: "0x0000000000000000000000000000000000000000",
+      //Configured values
+      governor,
       baseToken,
       baseTokenPriceFeed,
-      extensionDelegate: "0x0000000000000000000000000000000000000000",
+      extensionDelegate: cometExtension.address,
+      //Default values
+      pauseGuardian: "0x0000000000000000000000000000000000000000",
       supplyKink: 0,
       supplyPerYearInterestRateSlopeLow: 0,
       supplyPerYearInterestRateSlopeHigh: 0,
@@ -630,8 +636,6 @@ async function proposeCometImpl(
     cometProxy,
     cometFactory,
     configuration,
-    admin,
-    rewardTokenAddress
   );
 
   // Send transaction to governor to submit the proposal
@@ -648,9 +652,27 @@ async function proposeCometImpl(
     proposalData.description
   );
   
+  // Trace proposal details
+  trace(`Proposal targets: ${JSON.stringify(proposalData.targets)}`);
+  trace(`Proposal values: ${JSON.stringify(proposalData.values)}`);
+  trace(`Proposal calldatas: ${JSON.stringify(proposalData.calldatas)}`);
+  trace(`Proposal description: ${proposalData.description}`);
+  trace(`Governor address: ${proposalData.governor}`);
+  trace(`Configurator address: ${proposalData.configurator}`);
+  trace(`Comet proxy address: ${proposalData.cometProxy}`);
+  trace(`Comet factory address: ${proposalData.cometFactory}`);
+  
+  
   const receipt = await tx.wait();
   trace(`Proposal submitted! Transaction hash: ${receipt.transactionHash}`);
-  trace(`Proposal ID: ${await governorContract.proposalCount()}`);
+  
+  // Extract proposal ID from ProposalCreated event
+  const proposalId = extractProposalIdFromLogs(governorContract, receipt);
+  if (proposalId !== null) {
+    trace(`Proposal ID: ${proposalId}`);
+  } else {
+    trace(`Warning: Could not find ProposalCreated event in logs`);
+  }
 
   return { proposal: proposalData, configurator, cometProxy, cometFactory, tx: receipt };
 }
@@ -661,8 +683,6 @@ async function createCometProposal(
   cometProxy: any,
   cometFactory: any,
   configuration: any,
-  admin: any,
-  rewardTokenAddress?: string
 ) {
   const trace = deploymentManager.tracer();
   
@@ -702,20 +722,6 @@ async function createCometProposal(
       cometProxy.address
     ])
   );
-  
-  // Action 4: setRewardConfig (if rewardTokenAddress is provided)
-  if (rewardTokenAddress !== undefined) {
-    const rewards = await deploymentManager.getContractOrThrow('rewards');
-    targets.push(rewards.address);
-    values.push(0);
-    calldatas.push(
-      rewards.interface.encodeFunctionData('setRewardConfig', [
-        cometProxy.address,
-        rewardTokenAddress
-      ])
-    );
-  }
-  
   // Create the proposal
   const description = "Deploy and configure Comet implementation";
   
@@ -723,9 +729,6 @@ async function createCometProposal(
   trace(`1. setFactory(${cometProxy.address}, ${cometFactory.address})`);
   trace(`2. setConfiguration(${cometProxy.address}, [configuration])`);
   trace(`3. deploy(${cometProxy.address})`);
-  if (rewardTokenAddress !== undefined) {
-    trace(`4. setRewardConfig(${cometProxy.address}, ${rewardTokenAddress})`);
-  }
   
   return {
     targets,

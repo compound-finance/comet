@@ -15,6 +15,7 @@ import 'hardhat-gas-reporter';
 import './tasks/deployment_manager/task.ts';
 import './tasks/spider/task.ts';
 import './tasks/scenario/task.ts';
+import './tasks/governor/task.ts';
 
 // Relation Config
 import relationConfigMap from './deployments/relations';
@@ -48,6 +49,8 @@ import roninRelationConfigMap from './deployments/ronin/weth/relations';
 import roninWronRelationConfigMap from './deployments/ronin/wron/relations';
 import localDaiRelationConfigMap from './deployments/local/dai/relations';
 import localInfrastructureRelationConfigMap from './deployments/local/_infrastructure/relations';
+import bdagPrimordialDaiRelationConfigMap from './deployments/bdag-primordial/dai/relations';
+import bdagPrimordialInfrastructureRelationConfigMap from './deployments/bdag-primordial/_infrastructure/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -437,6 +440,10 @@ const config: HardhatUserConfig = {
       'local': {
         dai: localDaiRelationConfigMap,
         _infrastructure: localInfrastructureRelationConfigMap
+      },
+      'bdag-primordial': {
+        dai: bdagPrimordialDaiRelationConfigMap,
+        _infrastructure: bdagPrimordialInfrastructureRelationConfigMap
       }
     },
   },

@@ -1,4 +1,4 @@
-import baseRelationConfig from '../../relations';
+import baseRelationConfig from '../../relations.market';
 
 export default {
   ...baseRelationConfig,

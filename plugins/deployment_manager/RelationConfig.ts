@@ -2,13 +2,13 @@ import { Contract, utils } from 'ethers';
 import { DeploymentManagerConfig } from './type-extensions';
 import { Address, Alias } from './Types';
 
-export type Ctx = { [aliasTemplate: string]: Contract[] };
+export type Ctx = { [aliasTemplate: string]: Contract[] } & { comet?: Contract[] };
 
 export type AliasFunction = (contract: Contract, context: Ctx, i: number, path: Contract[]) => Promise<string>;
 export type AliasTemplate = string | AliasFunction;
 export type AliasRender = { template: AliasTemplate, i: number };
 
-export type FieldFunction = (parent: Contract, context: Ctx) => Promise<string | string[]>;
+export type FieldFunction = (parent: Contract, context: Ctx | { comet?: Contract[] }) => Promise<string | string[]>;
 export interface FieldKey {
   key?: string;
   slot?: string;
