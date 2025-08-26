@@ -3,7 +3,6 @@ import { DeploymentManager } from '../../../../plugins/deployment_manager/Deploy
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, proposal } from '../../../../src/deploy';
 import { utils } from 'ethers';
-import { applyL1ToL2Alias, estimateL2Transaction } from '../../../../scenario/utils/arbitrumUtils';
 import { Numeric } from '../../../../test/helpers';
 import { AggregatorV3Interface } from '../../../../build/types';
 
@@ -22,25 +21,25 @@ let oldMETHToUSDPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
-    const { governor } = await deploymentManager.getContracts();
-    
-    //1. wstEth
-    const rateProviderMEth = await deploymentManager.existing('wstETH:_rateProvider', METH_TO_ETH_PRICE_FEED_ADDRESS, 'mantle', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
-    const [, currentRatioWstEth] = await rateProviderMEth.latestRoundData();
+    const { timelock } = await deploymentManager.getContracts();
+
+    //1. mEth
+    const rateProviderMEth = await deploymentManager.existing('mETH:_rateProvider', METH_TO_ETH_PRICE_FEED_ADDRESS, 'mantle', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
+    const [, currentRatioMEth] = await rateProviderMEth.latestRoundData();
     const now = (await deploymentManager.hre.ethers.provider.getBlock('latest'))!.timestamp;
 
     const mEthCapoPriceFeed = await deploymentManager.deploy(
-      'wstETH:priceFeed',
+      'mETH:priceFeed',
       'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
       [
-        governor.address,
+        timelock.address,
         ETH_TO_USD_PRICE_FEED_ADDRESS,
         METH_TO_ETH_PRICE_FEED_ADDRESS,
-        'wstETH:priceFeed',
+        'mETH / USD capo price feed',
         FEED_DECIMALS,
         3600,
         {
-          snapshotRatio: currentRatioWstEth,
+          snapshotRatio: currentRatioMEth,
           snapshotTimestamp: now - 3600,
           maxYearlyRatioGrowthPercent: exp(0.0391, 4)
         }
@@ -49,7 +48,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     );
 
     return {
-      wstEthCapoPriceFeedAddress: mEthCapoPriceFeed.address
+      mEthCapoPriceFeedAddress: mEthCapoPriceFeed.address
     };
   },
 
@@ -57,10 +56,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     deploymentManager: DeploymentManager,
     govDeploymentManager: DeploymentManager,
     {
-      wstEthCapoPriceFeedAddress
+      mEthCapoPriceFeedAddress
     }
   ) => {
-    newMETHToUSDPriceFeed = wstEthCapoPriceFeedAddress;
+    newMETHToUSDPriceFeed = mEthCapoPriceFeedAddress;
     const trace = deploymentManager.tracer();
   
     const {
@@ -79,7 +78,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       configurator.populateTransaction.updateAssetPriceFeed(
         comet.address,
         METH_ADDRESS,
-        wstEthCapoPriceFeedAddress
+        mEthCapoPriceFeedAddress
       )
     );
   
@@ -119,28 +118,27 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       // 1. Sends the proposal to the L2
       {
         contract: mantleL1CrossDomainMessenger,
-        signature: 'sendMessage(address,uint256,bytes)',
+        signature: 'sendMessage(address,bytes,uint32)',
         args: [
           bridgeReceiver.address,  // address to
-          0,                       // uint256 value
-          l2ProposalData          // bytes calldata data
+          l2ProposalData,          // bytes calldata data
+          2_500_000                // uint32 value
         ],
-        value: 2_500_000
       },
     ];
   
-      const description = 'tmp';
-      const txn = await govDeploymentManager.retry(async () =>
-        trace(
-          await governor.propose(...(await proposal(mainnetActions, description)))
-        )
-      );
+    const description = 'tmp';
+    const txn = await govDeploymentManager.retry(async () =>
+      trace(
+        await governor.propose(...(await proposal(mainnetActions, description)))
+      )
+    );
   
-      const event = txn.events.find(
-        (event) => event.event === 'ProposalCreated'
-      );
-      const [proposalId] = event.args;
-      trace(`Created proposal ${proposalId}.`);
+    const event = txn.events.find(
+      (event) => event.event === 'ProposalCreated'
+    );
+    const [proposalId] = event.args;
+    trace(`Created proposal ${proposalId}.`);
   },
 
   async enacted(): Promise<boolean> {
@@ -165,6 +163,6 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     expect(mETHInCometInfo.priceFeed).to.eq(newMETHToUSDPriceFeed);
     expect(mETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newMETHToUSDPriceFeed);
 
-    expect(await comet.getPrice(newMETHToUSDPriceFeed)).to.be.closeTo(await comet.getPrice(oldMETHToUSDPriceFeed), 5e10);
+    expect(await comet.getPrice(newMETHToUSDPriceFeed)).to.be.equal(await comet.getPrice(oldMETHToUSDPriceFeed));
   },
 });

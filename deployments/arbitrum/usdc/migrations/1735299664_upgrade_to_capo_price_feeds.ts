@@ -29,7 +29,7 @@ let oldEzETHPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
-    const { governor } = await deploymentManager.getContracts();
+    const { timelock } = await deploymentManager.getContracts();
     
     //1. wstEth
     const rateProviderWstEth = await deploymentManager.existing('wstETH:_rateProvider', WSTETH_STETH_PRICE_FEED_ADDRESS, 'arbitrum', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
@@ -40,10 +40,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'wstETH:priceFeed',
       'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
       [
-        governor.address,
+        timelock.address,
         ETH_USD_PRICE_FEED,
         WSTETH_STETH_PRICE_FEED_ADDRESS,
-        'wstETH:priceFeed',
+        'wstETH / USD capo price feed',
         FEED_DECIMALS,
         3600,
         {
@@ -62,10 +62,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'ezETH:priceFeed',
       'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
       [
-        governor.address,
+        timelock.address,
         ETH_USD_PRICE_FEED,
         EZETH_TO_ETH_PRICE_FEED_ADDRESS,
-        'ezETH:priceFeed',
+        'ezETH / USD capo price feed',
         FEED_DECIMALS,
         3600,
         {

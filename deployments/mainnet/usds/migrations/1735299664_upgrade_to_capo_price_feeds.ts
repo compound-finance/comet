@@ -17,12 +17,11 @@ const FEED_DECIMALS = 8;
 let newWstETHPriceFeed: string;
 let oldWstETHPriceFeed: string;
 
-let newWETHPriceFeed: string;
 let oldWETHPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
-    const { governor } = await deploymentManager.getContracts();
+    const { timelock } = await deploymentManager.getContracts();
     const now = (await deploymentManager.hre.ethers.provider.getBlock('latest'))!.timestamp;
 
     const wstETH = await deploymentManager.existing('wstETH', WSTETH_ADDRESS, 'base', 'contracts/IWstETH.sol:IWstETH') as IWstETH;
@@ -32,11 +31,11 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'wstETH:priceFeed',
       'capo/contracts/WstETHCorrelatedAssetsPriceOracle.sol',
       [
-        governor.address,
+        timelock.address,
         ETH_USD_OEV_PRICE_FEED,
         wstETH.address,
         constantPriceFeed.address,
-        'wstETH:priceFeed',
+        'wstETH / USD capo price feed',
         FEED_DECIMALS,
         3600,
         {
@@ -131,5 +130,23 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     expect(wstETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newWstETHPriceFeed);
 
     expect(await comet.getPrice(newWstETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldWstETHPriceFeed), 40e8);
+
+    const wethIndexInComet = await configurator.getAssetIndex(
+      comet.address,
+      WETH_ADDRESS
+    );
+
+    const wethInCometInfo = await comet.getAssetInfoByAddress(
+      WETH_ADDRESS
+    );
+
+    const wethInConfiguratorInfoWETHComet = (
+      await configurator.getConfiguration(comet.address)
+    ).assetConfigs[wethIndexInComet];
+
+    expect(wethInCometInfo.priceFeed).to.eq(ETH_USD_OEV_PRICE_FEED);
+    expect(wethInConfiguratorInfoWETHComet.priceFeed).to.eq(ETH_USD_OEV_PRICE_FEED);
+
+    expect(await comet.getPrice(ETH_USD_OEV_PRICE_FEED)).to.be.equal(await comet.getPrice(oldWETHPriceFeed));
   },
 });

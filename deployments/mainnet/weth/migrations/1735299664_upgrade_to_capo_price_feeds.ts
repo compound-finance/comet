@@ -62,7 +62,7 @@ let oldEzEthPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
-    const { governor } = await deploymentManager.getContracts();
+    const { timelock } = await deploymentManager.getContracts();
     const now = (await deploymentManager.hre.ethers.provider.getBlock('latest'))!.timestamp;
     const constantPriceFeed = await deploymentManager.fromDep('WETH:priceFeed', 'mainnet', 'weth');
 
@@ -74,11 +74,11 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'wstETH:priceFeed',
       'capo/contracts/WstETHCorrelatedAssetsPriceOracle.sol',
       [
-        governor.address,
+        timelock.address,
         constantPriceFeed.address,
         wstETH.address,
         constants.AddressZero,
-        'wstETH:capoPriceFeed',
+        'wstETH / ETH capo price feed',
         FEED_DECIMALS,
         3600,
         {
@@ -97,10 +97,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'rsETH:priceFeed',
       'capo/contracts/RsETHCorrelatedAssetsPriceOracle.sol',
       [
-        governor.address,
+        timelock.address,
         constantPriceFeed.address,
         RSETH_ORACLE,
-        'rsETH:priceFeed',
+        'rsETH / ETH capo price feed',
         FEED_DECIMALS,
         3600,
         {
@@ -120,11 +120,11 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'weETH:priceFeed',
       'capo/contracts/RateBasedCorrelatedAssetsPriceOracle.sol',
       [
-        governor.address,
+        timelock.address,
         constantPriceFeed.address,
         WEETH_ADDRESS,
         constants.AddressZero,
-        'weETH:priceFeed',
+        'weETH / ETH capo price feed',
         FEED_DECIMALS,
         3600,
         RATE_DECIMALS,
@@ -144,10 +144,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'oETH:priceFeed',
       'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
       [
-        governor.address,
+        timelock.address,
         constantPriceFeed.address,
         OSETH_PRICE_FEED_ADDRESS,
-        'oETH:priceFeed',
+        'oETH / ETH capo price feed',
         FEED_DECIMALS,
         3600,
         {
@@ -167,11 +167,11 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'rswETH:priceFeed',
       'capo/contracts/RateBasedCorrelatedAssetsPriceOracle.sol',
       [
-        governor.address,
+        timelock.address,
         constantPriceFeed.address,
         RSWETH_ADDRESS,
         constants.AddressZero,
-        'rswETH:priceFeed',
+        'rswETH / ETH capo price feed',
         FEED_DECIMALS,
         3600,
         RATE_DECIMALS,
@@ -192,10 +192,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'ETHx:priceFeed',
       'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
       [
-        governor.address,
+        timelock.address,
         constantPriceFeed.address,
         ETHX_PRICE_FEED_ADDRESS,
-        'ETHx:priceFeed',
+        'ETHx / ETH capo price feed',
         FEED_DECIMALS,
         3600,
         {
@@ -214,10 +214,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     //   'cbETH:priceFeed',
     //   'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
     //   [
-    //     governor.address,
+    //     timelock.address,
     //     constantPriceFeed.address,
     //     rateProviderCbEth.address,
-    //     'ezETH:priceFeed',
+    //     'cbETH / ETH capo price feed',
     //     FEED_DECIMALS,
     //     3600,
     //     {
@@ -236,11 +236,11 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'ezETH:priceFeed',
       'capo/contracts/RateBasedCorrelatedAssetsPriceOracle.sol',
       [
-        governor.address,
+        timelock.address,
         constantPriceFeed.address,
         rateProviderEzEth.address,
         constants.AddressZero,
-        'ezETH:priceFeed',
+        'ezETH / ETH capo price feed',
         FEED_DECIMALS,
         3600,
         RATE_DECIMALS,

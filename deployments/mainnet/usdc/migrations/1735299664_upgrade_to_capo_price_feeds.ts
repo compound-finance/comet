@@ -44,7 +44,7 @@ let oldLinkPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
-    const { governor } = await deploymentManager.getContracts();
+    const { timelock } = await deploymentManager.getContracts();
     const now = (await deploymentManager.hre.ethers.provider.getBlock('latest'))!.timestamp;
 
     const wstETH = await deploymentManager.existing('wstETH', WSTETH_ADDRESS, 'mainnet', 'contracts/IWstETH.sol:IWstETH') as IWstETH;
@@ -54,11 +54,11 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'wstETH:priceFeed',
       'capo/contracts/WstETHCorrelatedAssetsPriceOracle.sol',
       [
-        governor.address,
+        timelock.address,
         ETH_USD_OEV_PRICE_FEED,
         wstETH.address,
         constantPriceFeed.address,
-        'wstETH:capoPriceFeed',
+        'wstETH / USD capo price feed',
         FEED_DECIMALS,
         3600,
         {
@@ -87,10 +87,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'rsETH:priceFeed',
       'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
       [
-        governor.address,
+        timelock.address,
         ETH_USD_OEV_PRICE_FEED,
         rsEthRateProvider.address,
-        'rsETH:priceFeed',
+        'rsETH / USD capo price feed',
         FEED_DECIMALS,
         3600,
         {

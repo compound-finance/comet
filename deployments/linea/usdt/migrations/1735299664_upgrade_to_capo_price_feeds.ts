@@ -24,7 +24,7 @@ let oldWstETHToUSDPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
-    const { governor } = await deploymentManager.getContracts();
+    const { timelock } = await deploymentManager.getContracts();
     const now = (await deploymentManager.hre.ethers.provider.getBlock('latest'))!.timestamp;
 
     //1. wstEth
@@ -36,10 +36,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'wstETH:priceFeed',
       'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
       [
-        governor.address,
+        timelock.address,
         ETH_USD_PRICE_FEED,
         WSTETH_STETH_PRICE_FEED_ADDRESS,
-        'wstETH:priceFeed',
+        'wstETH / USD capo price feed',
         FEED_DECIMALS,
         3600,
         {

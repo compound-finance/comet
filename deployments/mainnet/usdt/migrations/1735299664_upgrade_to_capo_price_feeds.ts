@@ -45,7 +45,7 @@ let oldUSDTPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
-    const { governor } = await deploymentManager.getContracts();
+    const { timelock } = await deploymentManager.getContracts();
     const now = (await deploymentManager.hre.ethers.provider.getBlock('latest'))!.timestamp;
 
     const wstETH = await deploymentManager.existing('wstETH', WSTETH_ADDRESS, 'mainnet', 'contracts/IWstETH.sol:IWstETH') as IWstETH;
@@ -55,11 +55,11 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'wstETH:priceFeed',
       'capo/contracts/WstETHCorrelatedAssetsPriceOracle.sol',
       [
-        governor.address,
+        timelock.address,
         ETH_USD_OEV_PRICE_FEED,
         wstETH.address,
         constantPriceFeed.address,
-        'wstETH / USD',
+        'wstETH / USD capo price feed',
         FEED_DECIMALS,
         3600,
         {
@@ -71,15 +71,14 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       true
     );
 
-
     const sFraxCapoPriceFeed = await deploymentManager.deploy(
       'sFRAX:priceFeed',
       'capo/contracts/ERC4626CorrelatedAssetsPriceOracle.sol',
       [
-        governor.address,
+        timelock.address,
         FRAX_TO_USD_PRICE_FEED,
         SFRAX_ADDRESS,
-        'sFRAX / USD',
+        'sFRAX / USD capo price feed',
         FEED_DECIMALS,
         3600,
         {
@@ -90,7 +89,6 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       ],
       true
     );
-
 
     const wbtcScalingPriceFeed = await deploymentManager.deploy(
       'WBTC:priceFeed',

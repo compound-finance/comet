@@ -30,7 +30,7 @@ let oldEzEthPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
-    const { governor } = await deploymentManager.getContracts();
+    const { timelock } = await deploymentManager.getContracts();
     const now = (await ethers.provider.getBlock('latest'))!.timestamp;
     
     const wstETHToETHPriceFeed = await deploymentManager.fromDep('wstETH:priceFeed', 'mainnet', 'weth');
@@ -55,10 +55,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'rsETH:priceFeed',
       'capo/contracts/RsETHCorrelatedAssetsPriceOracle.sol',
       [
-        governor.address,
+        timelock.address,
         ethToWstETHPriceFeed.address,
         RSETH_ORACLE,
-        'rsETH:priceFeed',
+        'rsETH / wstETH capo price feed',
         FEED_DECIMALS,
         3600,
         {
@@ -77,11 +77,11 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'ezETH:priceFeed',
       'capo/contracts/RateBasedCorrelatedAssetsPriceOracle.sol',
       [
-        governor.address,
+        timelock.address,
         constantPriceFeed.address,
         rateProviderEzEth.address,
         constants.AddressZero,
-        'ezETH:priceFeed',
+        'ezETH / wstETH capo price feed',
         FEED_DECIMALS,
         3600,
         RATE_DECIMALS,

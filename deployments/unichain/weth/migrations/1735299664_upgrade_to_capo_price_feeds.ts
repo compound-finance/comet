@@ -35,7 +35,7 @@ let oldEzEthToETHPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
-    const { governor } = await deploymentManager.getContracts();
+    const { timelock } = await deploymentManager.getContracts();
     const now = (await deploymentManager.hre.ethers.provider.getBlock('latest'))!.timestamp;
 
     const rateProviderWstEth = await deploymentManager.existing('wstETH:_rateProvider', WSTETH_STETH_PRICE_FEED_ADDRESS, 'unichain', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
@@ -46,10 +46,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'wstETH:priceFeed',
       'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
       [
-        governor.address,
+        timelock.address,
         constantPriceFeed.address,
         WSTETH_STETH_PRICE_FEED_ADDRESS, // wstETH / ETH price feed
-        'wstETH:priceFeed',
+        'wstETH / ETH capo price feed',
         FEED_DECIMALS,
         3600,
         {
@@ -67,10 +67,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'ezETH:priceFeed',
       'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
       [
-        governor.address,
+        timelock.address,
         constantPriceFeed.address,
         rateProviderEzEth.address,
-        'ezETH:priceFeed',
+        'ezETH / ETH capo price feed',
         FEED_DECIMALS,
         3600,
         {
@@ -89,10 +89,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'weETH:priceFeed',
       'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
       [
-        governor.address,
+        timelock.address,
         constantPriceFeed.address,
         weethRateProvider.address,
-        'weETH:priceFeed',
+        'weETH / ETH capo price feed',
         FEED_DECIMALS,
         3600,
         {
@@ -110,10 +110,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'rsETH:priceFeed',
       'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
       [
-        governor.address,
+        timelock.address,
         constantPriceFeed.address,
         rsEthRateProvider.address,
-        'rsETH:priceFeed',
+        'rsETH / ETH capo price feed',
         FEED_DECIMALS,
         3600,
         {
