@@ -391,6 +391,7 @@ async function createBDAGGov(
 ): Promise<Deployed> {
   const trace = deploymentManager.tracer();
   const admin = adminSigner ?? await deploymentManager.getSigner();
+  const governorSigners = process.env.GOV_SIGNERS?.split(',') ?? [admin.address];
   const clone = {
     comp: '0xc00e94cb662c3520282e6f5717214004a7f26888',
     governorBravo: '0xc0da02939e1441f497fd74f78ce7decb17b66529',
@@ -401,7 +402,7 @@ async function createBDAGGov(
   
   const COMP = await deploymentManager.clone('COMP', clone.comp, [admin.address]);
 
-  const GOVERNOR_FACTORY = 'CustomGovernor'
+  const GOVERNOR_FACTORY = 'CustomGovernor';
   
   // Deploy custom governor implementation
   let governorImpl = await deploymentManager.deploy(
@@ -426,7 +427,7 @@ async function createBDAGGov(
       governorImpl.interface.encodeFunctionData('initialize', [
         timelock.address,
         COMP.address,
-        [admin.address] // Pass admins array
+        governorSigners // Pass admins array
       ])
     ]
   );
@@ -504,7 +505,7 @@ async function deployOrRetrieveCometProxy(
       baseTokenPriceFeed,
       extensionDelegate: cometExtension.address,
       //Default values
-      pauseGuardian: "0x0000000000000000000000000000000000000000",
+      pauseGuardian: '0x0000000000000000000000000000000000000000',
       supplyKink: 0,
       supplyPerYearInterestRateSlopeLow: 0,
       supplyPerYearInterestRateSlopeHigh: 0,
@@ -564,10 +565,10 @@ async function deployOrRetrieveCometExt(
   trace(`Deploying CometExt with configuration: ${JSON.stringify(extConfiguration)}`);
   
   const cometExt = await deploymentManager.deploy(
-      'comet:implementation:implementation',
-      'CometExt.sol',
-      [extConfiguration],
-      deploySpec.all
+    'comet:implementation:implementation',
+    'CometExt.sol',
+    [extConfiguration],
+    deploySpec.all
   );
   
   trace(`CometExt deployed at: ${cometExt.address}`);
@@ -732,7 +733,7 @@ async function createCometProposal(
     ])
   );
   // Create the proposal
-  const description = "Deploy and configure Comet implementation";
+  const description = 'Deploy and configure Comet implementation';
   
   trace(`Creating proposal with ${targets.length} actions:`);
   trace(`1. setFactory(${cometProxy.address}, ${cometFactory.address})`);
