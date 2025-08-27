@@ -48,6 +48,7 @@ import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
 import roninRelationConfigMap from './deployments/ronin/weth/relations';
 import roninWronRelationConfigMap from './deployments/ronin/wron/relations';
 import localDaiRelationConfigMap from './deployments/local/dai/relations';
+import localUsdcRelationConfigMap from './deployments/local/usdc/relations';
 import localInfrastructureRelationConfigMap from './deployments/local/_infrastructure/relations';
 import bdagPrimordialDaiRelationConfigMap from './deployments/bdag-primordial/dai/relations';
 import bdagPrimordialInfrastructureRelationConfigMap from './deployments/bdag-primordial/_infrastructure/relations';
@@ -439,6 +440,7 @@ const config: HardhatUserConfig = {
       },
       'local': {
         dai: localDaiRelationConfigMap,
+        usdc: localUsdcRelationConfigMap,
         _infrastructure: localInfrastructureRelationConfigMap
       },
       'bdag-primordial': {
@@ -625,13 +627,16 @@ const config: HardhatUserConfig = {
         name: 'bdag-primordial-dai',
         network: 'bdag-primordial',
         deployment: 'dai',
-        auxiliaryBase: 'mainnet'
       },
       {
         name: 'local-dai',
         network: 'local',
         deployment: 'dai',
-        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'local-usdc',
+        network: 'local',
+        deployment: 'usdc',
       },
     ],
   },

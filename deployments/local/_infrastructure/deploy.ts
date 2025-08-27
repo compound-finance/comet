@@ -19,7 +19,7 @@ async function makePriceFeed(
   initialPrice: number,
   decimals: number
 ): Promise<SimplePriceFeed> {
-  return deploymentManager.deploy(alias, 'test/SimplePriceFeed.sol', [initialPrice * 1e8, decimals]);
+  return deploymentManager.deploy(alias, 'test/SimplePriceFeed.sol', [initialPrice * decimals, decimals]);
 }
 
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: any): Promise<Deployed> {
@@ -39,8 +39,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const cometAdmin = await deploymentManager.deploy(
     'cometAdmin',
     'CometProxyAdmin.sol',
-    [],
-    deploySpec.all
+    []
   );
 
   // Deploy Configurator implementation
@@ -48,7 +47,6 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     'configurator:implementation',
     'Configurator.sol',
     [],
-    deploySpec.all
   );
 
   // Deploy Configurator proxy
@@ -59,8 +57,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
       configuratorImpl.address, 
       cometAdmin.address, 
       (await configuratorImpl.populateTransaction.initialize(timelock.address)).data
-    ],
-    deploySpec.all
+    ]
   );
 
 
@@ -69,7 +66,6 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     'cometFactory',
     'CometFactory.sol',
     [],
-    deploySpec.all
   );
 
   // Deploy CometRewards (shared across all Comet instances)
@@ -77,7 +73,6 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     'rewards',
     'CometRewards.sol',
     [timelock.address],
-    deploySpec.all
   );
 
   // Transfer cometAdmin ownership to timelock
@@ -91,6 +86,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
 
   // Deploy test tokens
   const DAI = await makeToken(deploymentManager, 'DAI', 'DAI', 18);
+  const USDC = await makeToken(deploymentManager, 'USDC', 'USDC', 6);
   const WETH = await makeToken(deploymentManager, 'WETH', 'Wrapped Ether', 18);
   const WBTC = await makeToken(deploymentManager, 'WBTC', 'Wrapped Bitcoin', 8);
   const LINK = await makeToken(deploymentManager, 'LINK', 'Chainlink', 18);
@@ -98,6 +94,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
 
   // Deploy price feeds using makePriceFeed function
   const daiPriceFeed = await makePriceFeed(deploymentManager, 'daiPriceFeed', 1, 8); // $1.00 price
+  const usdcPriceFeed = await makePriceFeed(deploymentManager, 'usdcPriceFeed', 1, 8); // $1.00 price
   const wethPriceFeed = await makePriceFeed(deploymentManager, 'wethPriceFeed', 2000, 8); // $2000 price
   const wbtcPriceFeed = await makePriceFeed(deploymentManager, 'wbtcPriceFeed', 40000, 8); // $40000 price
   const compPriceFeed = await makePriceFeed(deploymentManager, 'compPriceFeed', 50, 8); // $50 price
@@ -109,6 +106,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   // Mint tokens to fauceteer
   const tokenConfigs = [
     { token: DAI, units: 1e8, name: 'DAI' },
+    { token: USDC, units: 1e6, name: 'USDC' },
     { token: WETH, units: 1e6, name: 'WETH' },
     { token: WBTC, units: 1e4, name: 'WBTC' },
     { token: LINK, units: 1e7, name: 'LINK' },
@@ -146,6 +144,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     
     // Tokens
     DAI,
+    USDC,
     WETH,
     WBTC,
     LINK,
@@ -153,6 +152,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     
     // Price Feeds
     daiPriceFeed,
+    usdcPriceFeed,
     wethPriceFeed,
     wbtcPriceFeed,
     compPriceFeed,
