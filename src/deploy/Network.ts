@@ -4,6 +4,7 @@ import { DeploySpec, ProtocolConfiguration, wait, COMP_WHALES } from './index';
 import { getConfiguration } from './NetworkConfiguration';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { extractProposalIdFromLogs } from './helpers';
+import { ethers } from 'hardhat';
 
 export function sameAddress(a: string, b: string) {
   return BigInt(a) === BigInt(b);
@@ -385,16 +386,40 @@ async function _deployNetworkComet(
 
 /* BDAG Gov */
 
+interface GovConfig {
+  governorSigners: string[];
+  multisigThreshold: number;
+}
+
+function validateGovEnvironmentVariables(): GovConfig {
+  const governorSigners = process.env.GOV_SIGNERS?.split(',');
+  if (!governorSigners) {
+    throw new Error('GOV_SIGNERS should be set in the environment file');
+  }
+  if (governorSigners.some(signer => !ethers.utils.isAddress(signer))) {
+    throw new Error('GOV_SIGNERS should be a comma separated list of valid addresses');
+  }
+  if (!process.env.MULTISIG_THRESHOLD) {
+    throw new Error('MULTISIG_THRESHOLD should be set in the environment file');
+  }
+  const multisigThreshold = parseInt(process.env.MULTISIG_THRESHOLD);
+  if (isNaN(multisigThreshold) || multisigThreshold <= 0) {
+    throw new Error('MULTISIG_THRESHOLD should be a positive integer');
+  }
+  
+  return { governorSigners, multisigThreshold };
+}
+
 async function createBDAGGov(
   deploymentManager: DeploymentManager,
   adminSigner?: SignerWithAddress
 ): Promise<Deployed> {
+  const { governorSigners, multisigThreshold } = validateGovEnvironmentVariables();
+
   const trace = deploymentManager.tracer();
   const admin = adminSigner ?? await deploymentManager.getSigner();
-  const governorSigners = process.env.GOV_SIGNERS?.split(',') ?? [admin.address];
   const clone = {
-    comp: '0xc00e94cb662c3520282e6f5717214004a7f26888',
-    governorBravo: '0xc0da02939e1441f497fd74f78ce7decb17b66529',
+    comp: '0xc00e94cb662c3520282e6f5717214004a7f26888'
   };
   
   const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
@@ -408,7 +433,7 @@ async function createBDAGGov(
   let governorImpl = await deploymentManager.deploy(
     'governor:implementation',
     `${GOVERNOR_FACTORY}.sol`,
-    [1] // multisigThreshold
+    [multisigThreshold] // multisigThreshold
   );
   
   //This is a workaround because the second time

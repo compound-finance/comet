@@ -523,6 +523,24 @@ When you run the deployment commands, here's exactly what happens:
 ```bash
 DEBUG=* yarn hardhat deploy_infrastructure --network local --bdag
 ```
+
+**⚠️ Required Environment Variables for BDAG Infrastructure:**
+Before deploying BDAG infrastructure, you must set these environment variables in your `.env` file:
+
+```bash
+# Comma-separated list of admin addresses for the multisig governor
+GOV_SIGNERS=0x1234...,0x5678...,0x9abc...
+
+# Number of required approvals for governance proposals (must be positive integer)
+MULTISIG_THRESHOLD=2
+```
+
+**Example:**
+```bash
+GOV_SIGNERS=0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6,0x1234567890123456789012345678901234567890
+MULTISIG_THRESHOLD=2
+```
+
 *Note: Dont forget to configure the [market]/configuration.json accordingly (price feeds, etc.)*
 
 **2. Deploy Market:**
