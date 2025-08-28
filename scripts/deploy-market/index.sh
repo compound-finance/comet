@@ -38,14 +38,14 @@ show_help() {
     echo "Options:"
     echo "  -n, --network <network>     Network to deploy to (default: local)"
     echo "  -d, --deployment <market>   Market to deploy (default: dai)"
-    echo "  -b, --bdag                  Use BDAG custom governor"
+    
 echo "  -c, --clean                 Clean deployment cache before deploying"
     
     echo "  -h, --help                  Show this help message"
     echo ""
     echo "Examples:"
-    echo "  # Deploy DAI market on local network with BDAG governor"
-    echo "  ./scripts/deploy-market.sh -n local -d dai -b"
+    echo "  # Deploy DAI market on local network"
+    echo "  ./scripts/deploy-market.sh -n local -d dai"
     echo ""
     echo "  # Deploy USDC market on polygon network"
 echo "  ./scripts/deploy-market.sh -n polygon -d usdc"
@@ -88,7 +88,7 @@ build_project() {
 # Parse command line arguments
 NETWORK="local"
 DEPLOYMENT="dai"
-BDAG_FLAG=""
+
 CLEAN_FLAG=""
 
 
@@ -102,10 +102,7 @@ while [[ $# -gt 0 ]]; do
             DEPLOYMENT="$2"
             shift 2
             ;;
-        -b|--bdag)
-            BDAG_FLAG="--bdag"
-            shift
-            ;;
+
         -c|--clean)
             CLEAN_FLAG="--clean"
             shift
@@ -129,9 +126,7 @@ main() {
     print_info "Network: $NETWORK"
     print_info "Deployment: $DEPLOYMENT"
     
-    if [[ -n "$BDAG_FLAG" ]]; then
-        print_info "Using BDAG custom governor"
-    fi
+    print_info "Using BDAG custom governor"
     
     if [[ -n "$CLEAN_FLAG" ]]; then
         print_info "Clean mode enabled"
@@ -148,10 +143,9 @@ main() {
     # Run the deployment script
     print_info "Executing deployment script..."
     
-    yarn ts-node scripts/deploy-market.ts \
+    yarn ts-node scripts/deploy-market/index.ts \
         --network "$NETWORK" \
         --deployment "$DEPLOYMENT" \
-        $BDAG_FLAG \
         $CLEAN_FLAG
     
     print_success "Deployment script completed"

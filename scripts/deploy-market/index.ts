@@ -8,7 +8,6 @@ import * as path from 'path';
 interface DeployOptions {
   network: string;
   deployment: string;
-  bdag?: boolean;
   clean?: boolean;
 }
 
@@ -130,15 +129,13 @@ class MarketDeployer {
   }
 
   private async deployInfrastructure(): Promise<void> {
-    const bdagFlag = this.options.bdag ? '--bdag' : '';
-    const command = `yarn hardhat deploy_infrastructure --network ${this.options.network} ${bdagFlag}`;
+    const command = `yarn hardhat deploy_infrastructure --network ${this.options.network} --bdag`;
     
     await this.runCommand(command, 'Deploying infrastructure');
   }
 
   private async deployMarket(): Promise<void> {
-    const bdagFlag = this.options.bdag ? '--bdag' : '';
-    const command = `yarn hardhat deploy --network ${this.options.network} --deployment ${this.options.deployment} ${bdagFlag}`;
+    const command = `yarn hardhat deploy --network ${this.options.network} --deployment ${this.options.deployment} --bdag`;
     
     await this.runCommand(command, 'Deploying market');
   }
@@ -279,11 +276,7 @@ class MarketDeployer {
     try {
       this.log(`\n🚀 Starting market deployment for ${this.options.deployment} on ${this.options.network}`, 'info');
       
-      if (this.options.bdag) {
-        this.log(`🔧 Using BDAG custom governor`, 'info');
-      } else {
-        this.log(`🔧 Using standard Governor Bravo`, 'info');
-      }
+      this.log(`🔧 Using BDAG custom governor`, 'info');
 
       if (this.options.clean) {
         this.log(`🧹 Clean mode enabled`, 'info');
@@ -345,9 +338,7 @@ function parseArguments(): DeployOptions {
       case '--deployment':
         options.deployment = args[++i];
         break;
-      case '--bdag':
-        options.bdag = true;
-        break;
+
       case '--clean':
         options.clean = true;
         break;
@@ -372,14 +363,14 @@ Usage: yarn ts-node scripts/deploy-market.ts [options]
 Options:
   --network <network>     Network to deploy to (default: local)
   --deployment <market>   Market to deploy (default: dai)
-  --bdag                  Use BDAG custom governor instead of Governor Bravo
+
   --clean                 Clean deployment cache before deploying
 
   --help, -h             Show this help message
 
 Examples:
-  # Deploy DAI market on local network with BDAG governor
-  yarn ts-node scripts/deploy-market.ts --network local --deployment dai --bdag
+  # Deploy DAI market on local network
+  yarn ts-node scripts/deploy-market.ts --network local --deployment dai
 
   # Deploy USDC market on polygon network
   yarn ts-node scripts/deploy-market.ts --network polygon --deployment usdc

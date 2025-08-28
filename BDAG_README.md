@@ -545,7 +545,7 @@ scripts/deploy-market/
 **TypeScript Script:**
 ```bash
 # Deploy DAI market on local network with BDAG governor
-yarn ts-node scripts/deploy-market/index.ts --network local --deployment dai --bdag
+yarn ts-node scripts/deploy-market/index.ts --network local --deployment dai
 
 # Deploy USDC market on polygon network
 yarn ts-node scripts/deploy-market/index.ts --network polygon --deployment usdc
