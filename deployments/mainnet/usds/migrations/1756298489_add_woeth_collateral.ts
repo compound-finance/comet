@@ -5,27 +5,14 @@ import { exp, proposal } from '../../../../src/deploy';
 
 const WOETH_ADDRESS = '0xDcEe70654261AF21C44c093C300eD3Bb97b78192';
 
-let newPriceFeedAddress: string;
+const WOETH_TO_USD_PRICE_FEED = '0x1738FCAe8D5A6aEf39985dF31Fe60e5Dc5e1a7b3';
 
 export default migration('1756298489_add_woeth_collateral', {
-  async prepare(deploymentManager: DeploymentManager) {
-    const wethPricefeed = await deploymentManager.fromDep('WETH:priceFeed', 'mainnet', 'usds');
-    const wOETHPriceFeed = await deploymentManager.deploy(
-      'wOETH:priceFeed',
-      'pricefeeds/PriceFeedWith4626Support.sol',
-      [
-        WOETH_ADDRESS,            // wOETH / OETH price feed
-        wethPricefeed.address,    // ETH / USD price feed (we consider oETH / ETH as 1:1)
-        8,                        // decimals
-        'wOETH / USD price feed', // description
-      ],
-      true
-    );
-
-    return { wOETHPriceFeedAddress: wOETHPriceFeed.address };
+  async prepare() {
+    return {};
   },
 
-  async enact(deploymentManager: DeploymentManager, _, { wOETHPriceFeedAddress }) {
+  async enact(deploymentManager: DeploymentManager) {
 
     const trace = deploymentManager.tracer();
 
@@ -37,11 +24,9 @@ export default migration('1756298489_add_woeth_collateral', {
     );
     const wOETHPriceFeed = await deploymentManager.existing(
       'wOETH:priceFeed',
-      wOETHPriceFeedAddress,
+      WOETH_TO_USD_PRICE_FEED,
       'mainnet'
     );
-
-    newPriceFeedAddress = wOETHPriceFeedAddress;
 
     const {
       governor,
@@ -120,7 +105,7 @@ The second action deploys and upgrades Comet to a new version.`;
     );
     const wOETHAssetConfig = {
       asset: wOETH.address,
-      priceFeed: newPriceFeedAddress,
+      priceFeed: WOETH_TO_USD_PRICE_FEED,
       decimals: await wOETH.decimals(),
       borrowCollateralFactor: exp(0.75, 18),
       liquidateCollateralFactor: exp(0.8, 18),
