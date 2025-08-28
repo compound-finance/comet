@@ -39,6 +39,14 @@
       "liquidateCF": 0.90,
       "liquidationFactor": 0.95,
       "supplyCap": "11000e18"
+    },
+    "LINK": {
+      "priceFeed": "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44",
+      "decimals": "18",
+      "borrowCF": 0.50,
+      "liquidateCF": 0.70,
+      "liquidationFactor": 0.95,
+      "supplyCap": "11000e18"
     }
   }
 }

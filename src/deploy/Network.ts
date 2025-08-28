@@ -705,8 +705,10 @@ async function proposeCometImpl(
   const proposalId = extractProposalIdFromLogs(governorContract, receipt);
   if (proposalId !== null) {
     trace(`Proposal ID: ${proposalId}`);
+    console.log(`Proposal ID: ${proposalId}`);
   } else {
     trace(`Warning: Could not find ProposalCreated event in logs`);
+    console.log(`Warning: Could not find ProposalCreated event in logs`);
   }
 
   return { proposal: proposalData, configurator, cometProxy, cometFactory, tx: receipt };
