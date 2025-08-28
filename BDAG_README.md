@@ -217,23 +217,15 @@ You can test your deployed market on any blockchain network using the same test 
 ### Testing on Local Network
 
 ```bash
+# Deploy with BDAG infrastructure on local network
+DEBUG=* yarn hardhat deploy_infrastructure --network local --bdag
+
 # Deploy with BDAG governor on local network
 yarn hardhat deploy --bdag --network local --deployment dai
 
 # Run deployment verification test
 export MARKET=dai && yarn hardhat test test/deployment-verification-test.ts --network local
 
-# Run basic tests against local deployment
-yarn hardhat test test/sanity-test.ts --network local
-
-# Test core functionality
-yarn hardhat test test/supply-test.ts --network local
-yarn hardhat test test/withdraw-test.ts --network local
-yarn hardhat test test/balance-test.ts --network local
-
-# Test advanced features
-yarn hardhat test test/rewards-test.ts --network local
-yarn hardhat test test/absorb-test.ts --network local
 ```
 
 ### Testing on Other Networks
