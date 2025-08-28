@@ -318,7 +318,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
      * @param newImplementation The address of the new implementation
      */
     function upgradeTo(address newImplementation) external {
-        require(msg.sender == address(this), "CustomGovernor::upgradeTo: only self can call");
+        require(msg.sender == address(timelock), "CustomGovernor::upgradeTo: only timelock can call");
         _upgradeToAndCallUUPS(newImplementation, bytes(""), false);
     }
 
@@ -328,7 +328,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
      * @param data The initialization data
      */
     function upgradeToAndCall(address newImplementation, bytes calldata data) external {
-        require(msg.sender == address(this), "CustomGovernor::upgradeToAndCall: only self can call");
+        require(msg.sender == address(timelock), "CustomGovernor::upgradeToAndCall: only timelock can call");
         _upgradeToAndCallUUPS(newImplementation, data, true);
     }
 

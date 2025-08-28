@@ -217,23 +217,15 @@ You can test your deployed market on any blockchain network using the same test 
 ### Testing on Local Network
 
 ```bash
+# Deploy with BDAG infrastructure on local network
+DEBUG=* yarn hardhat deploy_infrastructure --network local --bdag
+
 # Deploy with BDAG governor on local network
 yarn hardhat deploy --bdag --network local --deployment dai
 
 # Run deployment verification test
 export MARKET=dai && yarn hardhat test test/deployment-verification-test.ts --network local
 
-# Run basic tests against local deployment
-yarn hardhat test test/sanity-test.ts --network local
-
-# Test core functionality
-yarn hardhat test test/supply-test.ts --network local
-yarn hardhat test test/withdraw-test.ts --network local
-yarn hardhat test test/balance-test.ts --network local
-
-# Test advanced features
-yarn hardhat test test/rewards-test.ts --network local
-yarn hardhat test test/absorb-test.ts --network local
 ```
 
 ### Testing on Other Networks
@@ -600,6 +592,24 @@ If you prefer to run the process manually, here's exactly what happens:
 ```bash
 DEBUG=* yarn hardhat deploy_infrastructure --network local --bdag
 ```
+
+**⚠️ Required Environment Variables for BDAG Infrastructure:**
+Before deploying BDAG infrastructure, you must set these environment variables in your `.env` file:
+
+```bash
+# Comma-separated list of admin addresses for the multisig governor
+GOV_SIGNERS=0x1234...,0x5678...,0x9abc...
+
+# Number of required approvals for governance proposals (must be positive integer)
+MULTISIG_THRESHOLD=2
+```
+
+**Example:**
+```bash
+GOV_SIGNERS=0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6,0x1234567890123456789012345678901234567890
+MULTISIG_THRESHOLD=2
+```
+
 *Note: Dont forget to configure the [market]/configuration.json accordingly (price feeds, etc.)*
 
 **2. Deploy Market:**
