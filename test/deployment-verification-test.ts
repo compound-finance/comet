@@ -31,7 +31,7 @@ describe('Deployment Verification', function () {
       contracts.comet = await ethers.getContractAt('CometHarnessInterface', roots.comet);
     }
     if (roots.governor) {
-      contracts.governor = await ethers.getContractAt('IGovernorBravo', roots.governor);
+      contracts.governor = await ethers.getContractAt('CustomGovernor', roots.governor);
     }
     if (roots.timelock) {
       contracts.timelock = await ethers.getContractAt('Timelock', roots.timelock);
@@ -91,27 +91,60 @@ describe('Deployment Verification', function () {
     }
   });
 
-  it('should have correct custom governor configuration (if using BDAG)', async function () {
+  it('should validate BDAG governor environment configuration matches deployed contract', async function () {
+    const { governor } = deployedContracts;
+    const customGovernor = governor as any;
+    
+    const deployedThreshold = await customGovernor.multisigThreshold();
+    
+    // Get environment variables
+    const envSigners = process.env.GOV_SIGNERS;
+    const envThreshold = process.env.MULTISIG_THRESHOLD;
+    
+    if (!envSigners || !envThreshold) {
+      throw new Error('GOV_SIGNERS and MULTISIG_THRESHOLD environment variables must be set for BDAG governor validation');
+    }
+    
+    const envSignersArray = envSigners.split(',').map(s => s.trim());
+    const envThresholdNum = parseInt(envThreshold);
+    
+    expect(envSignersArray.length).to.be.gt(0);
+    expect(envThresholdNum).to.be.gt(0);
+    expect(envThresholdNum).to.not.be.NaN;
+    
+    expect(deployedThreshold).to.equal(envThresholdNum);
+    
+    for (let i = 0; i < envSignersArray.length; i++) {
+      const envAddress = envSignersArray[i];
+      
+      expect(ethers.utils.isAddress(envAddress)).to.be.true;
+      
+      const isAdmin = await customGovernor.admins(envAddress);
+      expect(isAdmin).to.be.true;
+    }
+  });
+
+  it('should validate BDAG governor admin addresses are not zero or contract address', async function () {
     const { governor } = deployedContracts;
     
-    // Check if this is a custom governor by looking for custom functions
-    try {
-      // Try to call a custom governor function - cast to any to access custom functions
-      const customGovernor = governor as any;
-      await customGovernor.multisigThreshold();
+    const customGovernor = governor as any;
+    await customGovernor.multisigThreshold;
+    
+    const envSigners = process.env.GOV_SIGNERS;
+    if (!envSigners) {
+      throw new Error('GOV_SIGNERS environment variable not set');
+    }
+    
+    const envSignersArray = envSigners.split(',').map(s => s.trim());
+    
+    for (let i = 0; i < envSignersArray.length; i++) {
+      const adminAddress = envSignersArray[i];
       
-      // If successful, this is a custom governor - verify its configuration
-      expect(await customGovernor.multisigThreshold()).to.be.gt(0);
+      expect(adminAddress).to.not.equal(ethers.constants.AddressZero);
       
-      // Verify at least one admin is set
-      const adminCount = await customGovernor.getAdminCount();
-      expect(adminCount).to.be.gt(0);
+      expect(adminAddress).to.not.equal(governor.address);
       
-      console.log('✅ Custom BDAG governor detected and verified');
-      
-    } catch (error) {
-      // This is a standard Governor Bravo - skip custom governor checks
-      console.log('ℹ️  Standard Governor Bravo detected - skipping custom governor checks');
+      expect(ethers.utils.isAddress(adminAddress)).to.be.true;
     }
   });
 
