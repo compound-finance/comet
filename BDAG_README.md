@@ -605,6 +605,15 @@ MULTISIG_THRESHOLD=2
 
 # Timelock delay in seconds before transactions can be executed (must be non-negative integer)
 TIMELOCK_DELAY=0
+
+# Grace period in seconds after delay expires (must be positive integer)
+GRACE_PERIOD=1209600
+
+# Minimum delay in seconds (must be non-negative integer)
+MINIMUM_DELAY=0
+
+# Maximum delay in seconds (must be positive integer)
+MAXIMUM_DELAY=2592000
 ```
 
 **Example:**
@@ -612,12 +621,21 @@ TIMELOCK_DELAY=0
 GOV_SIGNERS=0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6,0x1234567890123456789012345678901234567890
 MULTISIG_THRESHOLD=2
 TIMELOCK_DELAY=0
+GRACE_PERIOD=1209600
+MINIMUM_DELAY=0
+MAXIMUM_DELAY=2592000
 ```
 
 **Delay Configuration Examples:**
 - **`TIMELOCK_DELAY=0`**: No delay - transactions execute immediately (development/testing)
 - **`TIMELOCK_DELAY=86400`**: 24-hour delay (1 day = 24 * 60 * 60 seconds)
 - **`TIMELOCK_DELAY=604800`**: 7-day delay (1 week = 7 * 24 * 60 * 60 seconds)
+
+**Additional Timelock Configuration:**
+- **`GRACE_PERIOD=1209600`**: 14-day grace period (2 weeks = 14 * 24 * 60 * 60 seconds)
+- **`MINIMUM_DELAY=0`**: No minimum delay requirement (development/testing)
+- **`MINIMUM_DELAY=86400`**: 24-hour minimum delay (production security)
+- **`MAXIMUM_DELAY=2592000`**: 30-day maximum delay (1 month = 30 * 24 * 60 * 60 seconds)
 
 *Note: Dont forget to configure the [market]/configuration.json accordingly (price feeds, etc.)*
 

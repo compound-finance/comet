@@ -390,6 +390,9 @@ interface GovConfig {
   governorSigners: string[];
   multisigThreshold: number;
   timelockDelay: number;
+  gracePeriod: number;
+  minimumDelay: number;
+  maximumDelay: number;
 }
 
 function validateGovEnvironmentVariables(): GovConfig {
@@ -416,19 +419,52 @@ function validateGovEnvironmentVariables(): GovConfig {
     throw new Error('TIMELOCK_DELAY should be a non-negative integer');
   }
   
-  return { governorSigners, multisigThreshold, timelockDelay };
+  if (!process.env.GRACE_PERIOD) {
+    throw new Error('GRACE_PERIOD should be set in the environment file');
+  }
+  const gracePeriod = parseInt(process.env.GRACE_PERIOD);
+  if (isNaN(gracePeriod) || gracePeriod <= 0) {
+    throw new Error('GRACE_PERIOD should be a positive integer');
+  }
+  
+  if (!process.env.MINIMUM_DELAY) {
+    throw new Error('MINIMUM_DELAY should be set in the environment file');
+  }
+  const minimumDelay = parseInt(process.env.MINIMUM_DELAY);
+  if (isNaN(minimumDelay) || minimumDelay < 0) {
+    throw new Error('MINIMUM_DELAY should be a non-negative integer');
+  }
+  
+  if (!process.env.MAXIMUM_DELAY) {
+    throw new Error('MAXIMUM_DELAY should be set in the environment file');
+  }
+  const maximumDelay = parseInt(process.env.MAXIMUM_DELAY);
+  if (isNaN(maximumDelay) || maximumDelay <= 0) {
+    throw new Error('MAXIMUM_DELAY should be a positive integer');
+  }
+  
+  // Validate that timelock delay is within bounds
+  if (timelockDelay < minimumDelay) {
+    throw new Error('TIMELOCK_DELAY must be greater than or equal to MINIMUM_DELAY');
+  }
+  if (timelockDelay > maximumDelay) {
+    throw new Error('TIMELOCK_DELAY must be less than or equal to MAXIMUM_DELAY');
+  }
+  
+  return { governorSigners, multisigThreshold, timelockDelay, gracePeriod, minimumDelay, maximumDelay };
 }
 
 async function createBDAGGov(
   deploymentManager: DeploymentManager,
   adminSigner?: SignerWithAddress
 ): Promise<Deployed> {
-  const { governorSigners, multisigThreshold, timelockDelay } = validateGovEnvironmentVariables();
+  const { governorSigners, multisigThreshold, timelockDelay, gracePeriod, minimumDelay, maximumDelay } = validateGovEnvironmentVariables();
 
   const trace = deploymentManager.tracer();
   const admin = adminSigner ?? await deploymentManager.getSigner();
+  const timelockArgs = [admin.address, timelockDelay, gracePeriod, minimumDelay, maximumDelay];
   const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
-  const timelock = await deploymentManager.deploy('timelock', 'test/SimpleTimelock.sol', [admin.address, timelockDelay]);
+  const timelock = await deploymentManager.deploy('timelock', 'vendor/Timelock.sol', timelockArgs);
   
   const COMP = await deploymentManager.deploy('COMP', './Comp.sol', [admin.address]);
 
