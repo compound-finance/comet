@@ -190,21 +190,21 @@ describe('Deployment Verification', function () {
     expect(implementation).to.not.equal(comet.address);
   });
 
-  it('should have governor holding total COMP supply', async function () {
-    const { governor, COMP } = deployedContracts;
+  it('should have timelock holding total COMP supply', async function () {
+    const { timelock, COMP } = deployedContracts;
     
     // Get total supply of COMP tokens
     const totalSupply = await COMP.totalSupply();
     expect(totalSupply).to.be.gt(0);
     
-    // Get governor's balance of COMP tokens
-    const governorBalance = await COMP.balanceOf(governor.address);
-    expect(governorBalance).to.be.gt(0);
+    // Get timelock's balance of COMP tokens
+    const timelockBalance = await COMP.balanceOf(timelock.address);
+    expect(timelockBalance).to.be.gt(0);
     
-    // Verify governor holds the total supply
-    expect(governorBalance).to.equal(totalSupply);
+    // Verify timelock holds the total supply
+    expect(timelockBalance).to.equal(totalSupply);
     
-    console.log(`✅ Governor holds ${ethers.utils.formatEther(governorBalance)} COMP tokens (total supply)`);
+    console.log(`✅ Timelock holds ${ethers.utils.formatEther(timelockBalance)} COMP tokens (total supply)`);
   });
 });
 

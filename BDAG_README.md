@@ -517,39 +517,25 @@ export default async function deploy(
 
 ## Understanding execution flow
 
-**🎯 Automated Solution**: We have created an automated script that handles the entire deployment and upgrade process. You can skip the manual steps below and use our script instead.
+**🎯 Automated Solutions**: We have created automated scripts that handle the entire deployment, upgrade, and funding process. You can skip the manual steps below and use our scripts instead.
 
-**⚠️ Important Note**: These scripts are designed to work when the deployer is the only admin in the governor and the timelock delay is set to 0. This script is ideal for initial deployments and development phases before the governance system is configured for production use with multiple admins and security delays.
+**⚠️ Important Note**: These scripts are designed to work when the deployer is the only admin in the governor and the timelock delay is set to 0. This is ideal for initial deployments and development phases before the governance system is configured for production use with multiple admins and security delays.
 
-### **Automated Deployment Script**
+### **Available Automated Scripts**
 
-We've created a comprehensive deployment script that automates the entire process:
+#### **1. Market Deployment Script**
 
-#### **Script Location:**
+**Script Location:**
 ```
 scripts/deploy-market/
 ├── index.ts    # TypeScript deployment script
 └── index.sh    # Shell wrapper script
 ```
 
-#### **Usage Examples:**
-
-**TypeScript Script:**
+**Usage:**
 ```bash
 # Deploy DAI market on local network with BDAG governor
-yarn ts-node scripts/deploy-market/index.ts --network local --deployment dai
-
-# Deploy USDC market on polygon network
-yarn ts-node scripts/deploy-market/index.ts --network polygon --deployment usdc
-
-# Deploy with clean cache (fresh deployment)
-yarn ts-node scripts/deploy-market/index.ts --network local --deployment dai --clean
-```
-
-**Shell Script (Simpler):**
-```bash
-# Deploy DAI market on local network with BDAG governor
-./scripts/deploy-market/index.sh -n local -d dai -b
+./scripts/deploy-market/index.sh -n local -d dai
 
 # Deploy USDC market on polygon network
 ./scripts/deploy-market/index.sh -n polygon -d usdc
@@ -558,8 +544,7 @@ yarn ts-node scripts/deploy-market/index.ts --network local --deployment dai --c
 ./scripts/deploy-market/index.sh -n local -d dai -c
 ```
 
-#### **What the Script Automates:**
-
+**What it Automates:**
 ✅ **Infrastructure Deployment** - Deploys governance contracts  
 ✅ **Configuration Updates** - Prompts for market configuration  
 ✅ **Market Deployment** - Deploys the Comet market  
@@ -568,20 +553,37 @@ yarn ts-node scripts/deploy-market/index.ts --network local --deployment dai --c
 ✅ **Verification Testing** - Runs deployment verification tests  
 ✅ **Spider Integration** - Handles root refreshing with retry logic  
 
-#### **Market Upgrades:**
+#### **2. Comet Reward Funding Script**
 
-**For market upgrades, simply run the same script again:**
-```bash
-# The script will detect existing deployment and handle upgrades
-yarn ts-node scripts/deploy-market/index.ts --network local --deployment dai --bdag
+**Script Location:**
+```
+scripts/comet-reward-funding/
+├── index.ts    # TypeScript funding script
+└── index.sh    # Shell wrapper script
 ```
 
-The script automatically:
-- Detects if infrastructure already exists
-- Prompts for new implementation addresses
-- Handles upgrade proposal governance
-- Manages spider retries for implementation mismatches
+**Usage:**
+```bash
+# Fund CometRewards on local network (amount will be asked interactively)
+./scripts/comet-reward-funding/index.sh -n local
 
+# Fund CometRewards on polygon network (amount will be asked interactively)
+./scripts/comet-reward-funding/index.sh -n polygon
+```
+
+**What it Automates:**
+✅ **Interactive Amount Input** - Prompts user for COMP token amount  
+✅ **Proposal Creation** - Creates governance proposal to transfer COMP tokens  
+✅ **Governance Flow** - Handles proposal approval, queueing, and execution  
+✅ **Log Parsing** - Extracts and displays Transfer event details  
+
+#### **Market Upgrades:**
+
+**For market upgrades, simply run the same script explained in Market Deployment Script:**
+```bash
+# The script will detect existing deployment and handle upgrades
+yarn ts-node scripts/deploy-market/index.ts --network local --deployment dai
+```
 ---
 
 ### **Manual Execution (Step-by-Step)**
@@ -631,18 +633,18 @@ DEBUG=* yarn hardhat deploy --network local --deployment dai --bdag
 **3. Governance Flow:**
 ```bash
 # Check proposal status
-yarn hardhat governor:status --network local --proposal-id 1 --deployment dai
+yarn hardhat governor:status --network local --proposal-id 1
 
 # Approve proposal
-yarn hardhat governor:approve --network local --proposal-id 1 --deployment dai
+yarn hardhat governor:approve --network local --proposal-id 1
 
 # Note: The amount of approvements will depend on the threshold the governor has
 
 # Queue proposal
-yarn hardhat governor:queue --network local --proposal-id 1 --deployment dai
+yarn hardhat governor:queue --network local --proposal-id 1
 
 # Execute proposal with specific execution type for log parsing
-yarn hardhat governor:execute --network local --proposal-id 1 --deployment dai --execution-type comet-impl-in-configuration
+yarn hardhat governor:execute --network local --proposal-id 1 --execution-type comet-impl-in-configuration
 ```
 
 **You will see output like this:**
@@ -672,10 +674,10 @@ yarn hardhat governor:execute --network local --proposal-id 1 --deployment dai -
 yarn hardhat governor:propose-upgrade --network local --deployment dai --implementation 0x...
 
 # The upgrade proposal will need to go through the same governance flow:
-# 1. Check proposal status: yarn hardhat governor:status --network local --proposal-id 2 --deployment dai
-# 2. Approve proposal: yarn hardhat governor:approve --network local --proposal-id 2 --deployment dai
-# 3. Queue proposal: yarn hardhat governor:queue --network local --proposal-id 2 --deployment dai
-# 4. Execute proposal: yarn hardhat governor:execute --network local --proposal-id 2 --deployment dai --execution-type comet-upgrade
+# 1. Check proposal status: yarn hardhat governor:status --network local --proposal-id 2
+# 2. Approve proposal: yarn hardhat governor:approve --network local --proposal-id 2
+# 3. Queue proposal: yarn hardhat governor:queue --network local --proposal-id 2
+# 4. Execute proposal: yarn hardhat governor:execute --network local --proposal-id 2 --execution-type comet-upgrade
 # 5. Refresh roots: yarn hardhat spider --network local --deployment dai
 
 ## ⚠️ Important: Spider Implementation Mismatch Resolution
@@ -715,8 +717,20 @@ yarn hardhat governor:propose-upgrade --network local --deployment dai --impleme
 ```bash
 export MARKET=dai && yarn hardhat test test/deployment-verification-test.ts --network local
 ```
-**5. Mint tokens to CometReward**
-   **Note**: This step is only required if you need to distribute reward tokens to users. The CometReward contract manages the distribution of COMP tokens to users based on their supply/borrow activity. A `mint-rewards` task WILL be created in governor: `governor:fund-comet-rewards`. 
+**5. Fund CometRewards with COMP tokens**
+   **Note**: This step is only required if you need to distribute reward tokens to users. The CometRewards contract manages the distribution of COMP tokens to users based on their supply/borrow activity. Use the `governor:fund-comet-rewards` task to create a governance proposal that transfers COMP tokens from the timelock to the CometRewards contract.
+
+   **Usage:**
+   ```bash
+   # Propose to fund CometRewards with 1000 COMP tokens (amount in wei)
+   yarn hardhat governor:fund-comet-rewards --network local --amount 1000000000000000000000
+
+   # The proposal will need to go through the same governance flow:
+   # 1. Check proposal status: yarn hardhat governor:status --network local --proposal-id 3
+   # 2. Approve proposal: yarn hardhat governor:approve --network local --proposal-id 3
+   # 3. Queue proposal: yarn hardhat governor:queue --network local --proposal-id 3
+   # 4. Execute proposal: yarn hardhat governor:execute --network local --proposal-id 3 --execution-type comet-reward-funding
+   ``` 
 
 ## Deployment Caching and BlockDAG Networks
 
@@ -726,7 +740,7 @@ The deployment system uses caching to avoid re-deploying existing contracts. For
 
 The `--execution-type` parameter determines which logs to extract and analyze during proposal execution.
 
-Possible values `comet-impl-in-configuration` |`comet-upgrade`
+Possible values `comet-impl-in-configuration` | `comet-upgrade` | `comet-reward-funding`
 
 
 ## Custom Governor Implementation

@@ -159,7 +159,7 @@ class MarketDeployer {
     
     // Check proposal status
     await this.runCommand(
-      `yarn hardhat governor:status --network ${this.options.network} --proposal-id ${proposalId} --deployment ${this.options.deployment}`,
+      `yarn hardhat governor:status --network ${this.options.network} --proposal-id ${proposalId}`,
       'Checking proposal status'
     );
     
@@ -168,19 +168,19 @@ class MarketDeployer {
     if (shouldProcessGovernance) {
       // Approve proposal
       await this.runCommand(
-        `yarn hardhat governor:approve --network ${this.options.network} --proposal-id ${proposalId} --deployment ${this.options.deployment}`,
+        `yarn hardhat governor:approve --network ${this.options.network} --proposal-id ${proposalId}`,
         'Approving proposal'
       );
       
       // Queue proposal
       await this.runCommand(
-        `yarn hardhat governor:queue --network ${this.options.network} --proposal-id ${proposalId} --deployment ${this.options.deployment}`,
+        `yarn hardhat governor:queue --network ${this.options.network} --proposal-id ${proposalId}`,
         'Queueing proposal'
       );
       
       // Execute proposal
       await this.runCommand(
-        `yarn hardhat governor:execute --network ${this.options.network} --proposal-id ${proposalId} --deployment ${this.options.deployment} --execution-type comet-impl-in-configuration`,
+        `yarn hardhat governor:execute --network ${this.options.network} --proposal-id ${proposalId} --execution-type comet-impl-in-configuration`,
         'Executing proposal'
       );
     }
@@ -238,7 +238,7 @@ class MarketDeployer {
       
       // Check upgrade proposal status
       await this.runCommand(
-        `yarn hardhat governor:status --network ${this.options.network} --proposal-id ${upgradeProposalId} --deployment ${this.options.deployment}`,
+        `yarn hardhat governor:status --network ${this.options.network} --proposal-id ${upgradeProposalId}`,
         'Checking upgrade proposal status'
       );
       
@@ -247,19 +247,19 @@ class MarketDeployer {
       if (shouldProcessUpgradeGovernance) {
         // Approve upgrade proposal
         await this.runCommand(
-          `yarn hardhat governor:approve --network ${this.options.network} --proposal-id ${upgradeProposalId} --deployment ${this.options.deployment}`,
+          `yarn hardhat governor:approve --network ${this.options.network} --proposal-id ${upgradeProposalId}`,
           'Approving upgrade proposal'
         );
         
         // Queue upgrade proposal
         await this.runCommand(
-          `yarn hardhat governor:queue --network ${this.options.network} --proposal-id ${upgradeProposalId} --deployment ${this.options.deployment}`,
+          `yarn hardhat governor:queue --network ${this.options.network} --proposal-id ${upgradeProposalId}`,
           'Queueing upgrade proposal'
         );
         
         // Execute upgrade proposal
         await this.runCommand(
-          `yarn hardhat governor:execute --network ${this.options.network} --proposal-id ${upgradeProposalId} --deployment ${this.options.deployment} --execution-type comet-upgrade`,
+          `yarn hardhat governor:execute --network ${this.options.network} --proposal-id ${upgradeProposalId} --execution-type comet-upgrade`,
           'Executing upgrade proposal'
         );
         

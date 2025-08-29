@@ -5,13 +5,14 @@ import queueProposal from "../../src/governor/QueueProposal";
 import executeProposal from "../../src/governor/ExecuteProposal";
 import getProposalStatus from "../../src/governor/GetProposalStatus";
 import proposeCometUpgradeTask from "../../src/governor/ProposeCometUpgrade";
+import fundCometRewardsTask from "../../src/governor/FundCometRewards";
 
 // Helper function to create deployment manager
-async function createDeploymentManager(hre: any, deployment: string) {
+async function createDeploymentManager(hre: any, deployment?: string) {
   const network = hre.network.name;
   const dm = new DeploymentManager(
     network,
-    deployment,
+    deployment ?? '_infrastructure',
     hre,
     {
       writeCacheToDisk: true,
@@ -28,10 +29,9 @@ async function createDeploymentManager(hre: any, deployment: string) {
 // Task to approve a proposal
 task("governor:approve", "Approve a proposal")
   .addParam("proposalId", "The proposal ID to approve")
-  .addParam("deployment", "The deployment to use")
   .setAction(async (taskArgs, hre) => {
     // Create deployment manager
-    await createDeploymentManager(hre, taskArgs.deployment);
+    await createDeploymentManager(hre);
     
     const proposalId = parseInt(taskArgs.proposalId);
     
@@ -49,10 +49,9 @@ task("governor:approve", "Approve a proposal")
 // Task to queue a proposal
 task("governor:queue", "Queue a proposal")
   .addParam("proposalId", "The proposal ID to queue")
-  .addParam("deployment", "The deployment to use")
   .setAction(async (taskArgs, hre) => {
     // Create deployment manager
-    await createDeploymentManager(hre, taskArgs.deployment);
+    await createDeploymentManager(hre);
     
     const proposalId = parseInt(taskArgs.proposalId);
     
@@ -71,10 +70,9 @@ task("governor:queue", "Queue a proposal")
 task("governor:execute", "Execute a proposal")
   .addParam("proposalId", "The proposal ID to execute")
   .addParam("executionType", "The execution type (comet-impl-in-configuration, comet-upgrade)")
-  .addParam("deployment", "The deployment to use")
   .setAction(async (taskArgs, hre) => {
 
-    await createDeploymentManager(hre, taskArgs.deployment);
+    await createDeploymentManager(hre);
     
     const proposalId = parseInt(taskArgs.proposalId);
     const executionType = taskArgs.executionType;
@@ -93,10 +91,9 @@ task("governor:execute", "Execute a proposal")
 // Task to check proposal status
 task("governor:status", "Check proposal status")
   .addParam("proposalId", "The proposal ID to check")
-  .addParam("deployment", "The deployment to use")
   .setAction(async (taskArgs, hre) => {
     // Create deployment manager
-    await createDeploymentManager(hre, taskArgs.deployment);
+    await createDeploymentManager(hre);
     
     const proposalId = parseInt(taskArgs.proposalId);
     
@@ -117,9 +114,9 @@ task("governor:propose-upgrade", "Propose a Comet implementation upgrade")
   .addParam("deployment", "The deployment to use")
   .setAction(async (taskArgs, hre) => {
     // Create deployment manager
-    const deployment = taskArgs.deployment;
     const newImplementationAddress = taskArgs.implementation;
-
+    const deployment = taskArgs.deployment;
+    
     await createDeploymentManager(hre, deployment);
     
     console.log(`Proposing Comet upgrade to ${newImplementationAddress}...`);
@@ -129,6 +126,25 @@ task("governor:propose-upgrade", "Propose a Comet implementation upgrade")
       return result;
     } catch (error) {
       console.error(`❌ Failed to propose Comet upgrade:`, error);
+      throw error;
+    }
+  }); 
+
+// Task to propose funding CometRewards
+task("governor:fund-comet-rewards", "Propose to fund CometRewards contract with COMP tokens")
+  .addParam("amount", "The amount of COMP tokens to transfer (in wei, e.g., '1000000000000000000000' for 1000 COMP)")
+  .setAction(async (taskArgs, hre) => {
+    const amount = taskArgs.amount;
+
+    await createDeploymentManager(hre);
+    
+    console.log(`Proposing to fund CometRewards with ${amount} COMP tokens...`);
+    
+    try {
+      const result = await fundCometRewardsTask(hre, amount);
+      return result;
+    } catch (error) {
+      console.error(`❌ Failed to propose CometRewards funding:`, error);
       throw error;
     }
   }); 

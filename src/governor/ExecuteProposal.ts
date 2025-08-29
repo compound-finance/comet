@@ -102,10 +102,17 @@ async function extractLogsFromTransaction(
         break;
         
       case 'comet-upgrade':
-        // TODO: Add specific log parsing for reward configuration execution
-        trace('Parsing logs for reward configuration execution...');
+        trace('Parsing logs for comet upgrade execution...');
         break;
-        
+
+      case 'comet-reward-funding':
+        trace('Parsing logs for comet reward funding execution...');
+        const transferData = extractTokenTransferEvent(receipt, trace);
+        if (transferData) {
+          extractedLogs.parsedLogs.tokenTransfer = transferData;
+        }
+        break;
+
       default:
         // Default log parsing
         trace('Parsing logs with default strategy...');
@@ -160,6 +167,50 @@ function extractCometDeployedEvent(receipt: any, trace: any): any {
     };
   } else {
     trace('No CometDeployed event found in transaction logs');
+    return null;
+  }
+}
+
+/**
+ * Extracts Transfer event from COMP token transaction logs
+ * @param receipt Transaction receipt containing logs
+ * @param trace Tracer function for logging
+ * @returns Parsed Transfer event data or null if not found
+ */
+function extractTokenTransferEvent(receipt: any, trace: any): any {
+  trace('Parsing logs for COMP token transfer...');
+  // Create interface for COMP token to parse Transfer event
+  const compInterface = new ethers.utils.Interface([
+    'event Transfer(address indexed from, address indexed to, uint256 amount)'
+  ]);
+  
+  // Look for Transfer events in the logs
+  const transferEvents = receipt.logs
+    .map((log: any) => {
+      try {
+        return compInterface.parseLog(log);
+      } catch (error) {
+        return null; // Not a Transfer event
+      }
+    })
+    .filter((parsedLog: any) => parsedLog !== null && parsedLog.name === 'Transfer');
+  
+  if (transferEvents.length > 0) {
+    const transferEvent = transferEvents[0];
+    const from = transferEvent.args.from;
+    const to = transferEvent.args.to;
+    const amount = transferEvent.args.amount;
+    
+    trace(`Found Transfer event: from=${from}, to=${to}, amount=${amount}`);
+    
+    return {
+      from,
+      to,
+      amount: amount.toString(),
+      eventName: 'Transfer'
+    };
+  } else {
+    trace('No Transfer event found in transaction logs');
     return null;
   }
 }
