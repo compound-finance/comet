@@ -389,6 +389,7 @@ async function _deployNetworkComet(
 interface GovConfig {
   governorSigners: string[];
   multisigThreshold: number;
+  timelockDelay: number;
 }
 
 function validateGovEnvironmentVariables(): GovConfig {
@@ -407,19 +408,27 @@ function validateGovEnvironmentVariables(): GovConfig {
     throw new Error('MULTISIG_THRESHOLD should be a positive integer');
   }
   
-  return { governorSigners, multisigThreshold };
+  if (!process.env.TIMELOCK_DELAY) {
+    throw new Error('TIMELOCK_DELAY should be set in the environment file');
+  }
+  const timelockDelay = parseInt(process.env.TIMELOCK_DELAY);
+  if (isNaN(timelockDelay) || timelockDelay < 0) {
+    throw new Error('TIMELOCK_DELAY should be a non-negative integer');
+  }
+  
+  return { governorSigners, multisigThreshold, timelockDelay };
 }
 
 async function createBDAGGov(
   deploymentManager: DeploymentManager,
   adminSigner?: SignerWithAddress
 ): Promise<Deployed> {
-  const { governorSigners, multisigThreshold } = validateGovEnvironmentVariables();
+  const { governorSigners, multisigThreshold, timelockDelay } = validateGovEnvironmentVariables();
 
   const trace = deploymentManager.tracer();
   const admin = adminSigner ?? await deploymentManager.getSigner();
   const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
-  const timelock = await deploymentManager.deploy('timelock', 'test/SimpleTimelock.sol', [admin.address]);
+  const timelock = await deploymentManager.deploy('timelock', 'test/SimpleTimelock.sol', [admin.address, timelockDelay]);
   
   const COMP = await deploymentManager.deploy('COMP', './Comp.sol', [admin.address]);
 
