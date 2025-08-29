@@ -124,6 +124,34 @@ describe('Deployment Verification', function () {
     }
   });
 
+  it('should validate BDAG timelock delay configuration matches deployed contract', async function () {
+    const { timelock } = deployedContracts;
+    
+    // Get environment variable
+    const envDelay = process.env.TIMELOCK_DELAY;
+    
+    if (!envDelay) {
+      throw new Error('TIMELOCK_DELAY environment variable must be set for BDAG timelock validation');
+    }
+    
+    const envDelayNum = parseInt(envDelay);
+    
+    // Validate environment variable
+    expect(envDelayNum).to.not.be.NaN;
+    expect(envDelayNum).to.be.gte(0);
+    
+    // Get deployed timelock delay
+    const deployedDelay = await timelock.delay();
+    
+    // Verify deployed delay matches environment configuration
+    expect(deployedDelay).to.equal(envDelayNum);
+    
+    // Additional validation: ensure delay is properly set
+    expect(deployedDelay).to.be.gte(0);
+    
+    console.log(`✅ Timelock delay validation passed: ${deployedDelay} seconds (${envDelayNum} from env)`);
+  });
+
   it('should validate BDAG governor admin addresses are not zero or contract address', async function () {
     const { governor } = deployedContracts;
     
