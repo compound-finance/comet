@@ -418,14 +418,10 @@ async function createBDAGGov(
 
   const trace = deploymentManager.tracer();
   const admin = adminSigner ?? await deploymentManager.getSigner();
-  const clone = {
-    comp: '0xc00e94cb662c3520282e6f5717214004a7f26888'
-  };
-  
   const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
   const timelock = await deploymentManager.deploy('timelock', 'test/SimpleTimelock.sol', [admin.address]);
   
-  const COMP = await deploymentManager.clone('COMP', clone.comp, [admin.address]);
+  const COMP = await deploymentManager.deploy('COMP', './Comp.sol', [admin.address]);
 
   const GOVERNOR_FACTORY = 'CustomGovernor';
   
@@ -465,6 +461,16 @@ async function createBDAGGov(
     async () => {
       trace(`Transferring Governor of Timelock to ${governor.address}`);
       trace(await wait(timelock.connect(admin).setAdmin(governor.address)));
+    }
+  );
+
+  //Transfer COMP tokens if who deploys has any
+  const compBalance = await COMP.balanceOf(admin.address);
+  await deploymentManager.idempotent(
+    async () => compBalance>0,
+    async () => {
+      trace(`Transferring COMP tokens to the Governor ${governor.address}`);
+      trace(await wait(COMP.connect(admin).transfer(governor.address, compBalance)));
     }
   );
 

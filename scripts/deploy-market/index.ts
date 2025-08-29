@@ -278,6 +278,9 @@ class MarketDeployer {
       
       this.log(`🔧 Using BDAG custom governor`, 'info');
 
+      // Build project before deployment
+      await this.runCommand('yarn build', 'Building project');
+
       if (this.options.clean) {
         this.log(`🧹 Clean mode enabled`, 'info');
         await this.cleanDeployment();

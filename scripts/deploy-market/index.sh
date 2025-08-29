@@ -78,12 +78,7 @@ check_requirements() {
     print_success "Requirements check passed"
 }
 
-# Function to build the project
-build_project() {
-    print_info "Building project..."
-    yarn build
-    print_success "Project built successfully"
-}
+
 
 # Parse command line arguments
 NETWORK="local"
@@ -136,9 +131,6 @@ main() {
     
     # Check requirements
     check_requirements
-    
-    # Build project
-    build_project
     
     # Run the deployment script
     print_info "Executing deployment script..."

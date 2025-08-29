@@ -161,6 +161,23 @@ describe('Deployment Verification', function () {
     // Verify implementation is different from proxy address
     expect(implementation).to.not.equal(comet.address);
   });
+
+  it('should have governor holding total COMP supply', async function () {
+    const { governor, COMP } = deployedContracts;
+    
+    // Get total supply of COMP tokens
+    const totalSupply = await COMP.totalSupply();
+    expect(totalSupply).to.be.gt(0);
+    
+    // Get governor's balance of COMP tokens
+    const governorBalance = await COMP.balanceOf(governor.address);
+    expect(governorBalance).to.be.gt(0);
+    
+    // Verify governor holds the total supply
+    expect(governorBalance).to.equal(totalSupply);
+    
+    console.log(`✅ Governor holds ${ethers.utils.formatEther(governorBalance)} COMP tokens (total supply)`);
+  });
 });
 
 // Helper function to get proxy admin for a contract
