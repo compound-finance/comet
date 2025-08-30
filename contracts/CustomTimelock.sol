@@ -37,6 +37,7 @@ contract CustomTimelock is ICustomTimelock {
         emit NewDelay(delay);
     }
 
+    // This function is only used to change the admin one time on the first deployment, after that, it will be unusable.
     function setAdmin(address admin_) public {
         require(msg.sender == admin, "Timelock::setAdmin: Call must come from admin.");
         admin = admin_;
