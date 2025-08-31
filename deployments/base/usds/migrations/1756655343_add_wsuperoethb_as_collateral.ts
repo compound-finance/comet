@@ -88,7 +88,7 @@ export default migration('1756655343_add_wsuperoethb_as_collateral', {
 
 WOOF! proposes to add wsuperOETHb into cUSDSv3 on Base network. This proposal takes the governance steps recommended and necessary to update a Compound III USDS market on Base. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/add-wsuperoethb-market-to-base-stablecoin-markets-usdc-usds/7101/2).
 
-Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1020) and [forum discussion](https://www.comp.xyz/t/add-wsuperoethb-market-to-base-stablecoin-markets-usdc-usds/7101).
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1021) and [forum discussion](https://www.comp.xyz/t/add-wsuperoethb-market-to-base-stablecoin-markets-usdc-usds/7101).
 
 
 ## Proposal Actions
