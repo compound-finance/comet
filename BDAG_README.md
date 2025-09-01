@@ -830,6 +830,8 @@ bytes memory callData = data; // signature already included in data from governo
 
 **Impact**: Clean separation of concerns - Governor handles call encoding, SimpleTimelock handles execution timing and authorization.
 
+**Note**: The `setAdmin()` function in the CustomTimelock contract is only used to change the admin one time on the first deployment, after that, it will be unusable. This is specific to how the timelock is used with the governor as admin in this particular deployment setup.
+
 
 
 ## Reconfigure Comet

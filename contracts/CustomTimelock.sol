@@ -14,7 +14,7 @@ contract CustomTimelock is ICustomTimelock {
 
     mapping (bytes32 => bool) public queuedTransactions;
 
-    constructor(address admin_, uint delay_, uint gracePeriod_, uint minimumDelay_, uint maxiumumDelay_) public {
+    constructor(address admin_, uint delay_, uint gracePeriod_, uint minimumDelay_, uint maxiumumDelay_) {
         require(delay_ >= minimumDelay_, "Timelock::constructor: Delay must exceed minimum delay.");
         require(delay_ <= maxiumumDelay_, "Timelock::setDelay: Delay must not exceed maximum delay.");
 
@@ -26,6 +26,8 @@ contract CustomTimelock is ICustomTimelock {
         delay = delay_;
     }
 
+    receive() external payable { }
+    
     fallback() external payable { }
 
     function setDelay(uint delay_) public {
@@ -37,7 +39,6 @@ contract CustomTimelock is ICustomTimelock {
         emit NewDelay(delay);
     }
 
-    // This function is only used to change the admin one time on the first deployment, after that, it will be unusable.
     function setAdmin(address admin_) public {
         require(msg.sender == admin, "Timelock::setAdmin: Call must come from admin.");
         admin = admin_;
