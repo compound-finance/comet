@@ -3,7 +3,7 @@ import { DeploymentManager } from '../../../../plugins/deployment_manager/Deploy
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { proposal } from '../../../../src/deploy';
 import { Numeric } from '../../../../test/helpers';
-import { IWstETH, AggregatorV3Interface } from '../../../../build/types';
+import { IWstETH, AggregatorV3Interface, IRateProvider } from '../../../../build/types';
 
 export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
   return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
@@ -24,9 +24,12 @@ const RSETH_TO_ETH_PRICE_FEED = '0x9d2F2f96B24C444ee32E57c04F7d944bcb8c8549';
 
 const WSTETH_ADDRESS = '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0';
 
+const WEETH_ADDRESS = '0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee';
+
 const USDC_USD_OEV_PRICE_FEED = '0xe13fafe4FB769e0f4a1cB69D35D21EF99188EFf7';
 
 const FEED_DECIMALS = 8;
+const RATE_DECIMALS = 18;
 
 let newWstETHPriceFeed: string;
 let oldWstETHPriceFeed: string;
@@ -40,7 +43,8 @@ let oldRsEthPriceFeed: string;
 let oldWETHPriceFeed: string;
 let oldLinkPriceFeed: string;
 
-
+let newWeEthPriceFeed: string;
+let oldWeEthPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
@@ -102,11 +106,35 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       true
     );
 
+    const rateProviderWeETH = await deploymentManager.existing('weETH:_rateProvider', WEETH_ADDRESS, 'mainnet', 'contracts/capo/contracts/interfaces/IRateProvider.sol:IRateProvider') as IRateProvider;
+
+    const currentRatioWeETH = await rateProviderWeETH.getRate();
+    const weETHCapoPriceFeed = await deploymentManager.deploy(
+      'weETH:priceFeed',
+      'capo/contracts/RateBasedCorrelatedAssetsPriceOracle.sol',
+      [
+        timelock.address,
+        constantPriceFeed.address,
+        WEETH_ADDRESS,
+        ETH_USD_OEV_PRICE_FEED,
+        'weETH / ETH capo price feed',
+        FEED_DECIMALS,
+        3600,
+        RATE_DECIMALS,
+        {
+          snapshotRatio: currentRatioWeETH,
+          snapshotTimestamp: now - 3600,
+          maxYearlyRatioGrowthPercent: exp(0.0323, 4) // 3.23%
+        }
+      ],
+      true
+    );
 
     return {
       wstEthCapoPriceFeedAddress: wstEthCapoPriceFeed.address,
       wbtcPriceFeedAddress: wbtcScalingPriceFeed.address,
       rsEthCapoPriceFeedAddress: rsEthCapoPriceFeed.address,
+      weEthPriceFeedAddress: weETHCapoPriceFeed.address,
     };
   },
 
@@ -114,11 +142,13 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     wstEthCapoPriceFeedAddress,
     wbtcPriceFeedAddress,
     rsEthCapoPriceFeedAddress,
+    weEthPriceFeedAddress
   }) {
 
     newWstETHPriceFeed = wstEthCapoPriceFeedAddress;
     newWbtcPriceFeed = wbtcPriceFeedAddress;
     newRsEthPriceFeed = rsEthCapoPriceFeedAddress;
+    newWeEthPriceFeed = weEthPriceFeedAddress;
 
     const trace = deploymentManager.tracer();
  
@@ -133,6 +163,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     [,, oldWbtcPriceFeed] = await comet.getAssetInfoByAddress(WBTC_ADDRESS);
     [,, oldWETHPriceFeed] = await comet.getAssetInfoByAddress(WETH_ADDRESS);
     [,, oldLinkPriceFeed] = await comet.getAssetInfoByAddress(LINK_ADDRESS);
+    [,, oldWeEthPriceFeed] = await comet.getAssetInfoByAddress(WEETH_ADDRESS);
     oldRsEthPriceFeed = '0x92014e7f331dFaB2848A5872AA8b2E7b6f3cE8B4'; // not yet added, pending execution
 
     const mainnetActions = [
@@ -166,13 +197,19 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         signature: 'updateAssetPriceFeed(address,address,address)',
         args: [comet.address, RSETH_ADDRESS, rsEthCapoPriceFeedAddress],
       },
-      // 6. Update USDC price feed
+      // 6. Update weETH price feed
+      {
+        contract: configurator,
+        signature: 'updateAssetPriceFeed(address,address,address)',
+        args: [comet.address, WEETH_ADDRESS, weEthPriceFeedAddress],
+      },
+      // 7. Update USDC price feed
       {
         contract: configurator,
         signature: 'setBaseTokenPriceFeed(address,address)',
         args: [comet.address, USDC_USD_OEV_PRICE_FEED],
       },
-      // 7. Deploy and upgrade Comet
+      // 8. Deploy and upgrade Comet
       {
         contract: cometAdmin,
         signature: 'deployAndUpgradeTo(address,address)',
@@ -180,11 +217,11 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       },
     ];
  
-    const description = `# Update wstETH, wBTC, WETH, rsETH, LINK and USDC price feeds in cUSDCv3 on Mainnet with CAPO and OEV implementation.
+    const description = `# Update wstETH, wBTC, WETH, rsETH, LINK, weETH and USDC price feeds in cUSDCv3 on Mainnet with CAPO and OEV implementation.
 
 ## Proposal summary
 
-This proposal updates existing price feeds for wstETH, wBTC, WETH, rsETH, LINK and USDC on the USDC market on Mainnet implementing CAPO and OEV.
+This proposal updates existing price feeds for wstETH, wBTC, WETH, rsETH, LINK, weETH and USDC on the USDC market on Mainnet implementing CAPO and OEV.
 CAPO is a price oracle adapter designed to support assets that grow gradually relative to a base asset - such as liquid staking tokens that accumulate yield over time. It provides a mechanism to track this expected growth while protecting downstream protocol from sudden or manipulated price spikes.
 OEV utilizes Chainlink's SVR oracle solution that allows to recapture the non-toxic Maximal Extractable Value (MEV) derived from their use of Chainlink Price Feeds.
 Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1015),  [forum discussion for CAPO](https://www.comp.xyz/t/woof-correlated-assets-price-oracle-capo/6245) and [forum discussion for OEV](https://www.comp.xyz/t/request-for-proposal-rfp-oracle-extractable-value-oev-solution-for-compound-protocol/6786).
@@ -197,8 +234,9 @@ The second action updates WBTC price feed to OEV.
 The third action updates WETH price feed to OEV.
 The fourth action updates LINK price feed to OEV.
 The fifth action updates rSETH price feed to CAPO + OEV.
-The sixth action updates USDC price feed to OEV.
-The seventh action deploys and upgrades Comet to a new version.
+The sixth action updates weETH price feed to OEV.
+The seventh action updates USDC price feed to OEV.
+The eighth action deploys and upgrades Comet to a new version.
 `;
 
  
@@ -266,7 +304,7 @@ The seventh action deploys and upgrades Comet to a new version.
 
     expect(wETHInCometInfo.priceFeed).to.eq(ETH_USD_OEV_PRICE_FEED);
     expect(wETHInConfiguratorInfoWETHComet.priceFeed).to.eq(ETH_USD_OEV_PRICE_FEED);
-    expect(await comet.getPrice(ETH_USD_OEV_PRICE_FEED)).to.be.closeTo(await comet.getPrice(oldWETHPriceFeed), 12e8);
+    expect(await comet.getPrice(ETH_USD_OEV_PRICE_FEED)).to.be.closeTo(await comet.getPrice(oldWETHPriceFeed), 18e8);
 
     const linkIndexInComet = await configurator.getAssetIndex(
       comet.address,
@@ -292,6 +330,19 @@ The seventh action deploys and upgrades Comet to a new version.
 
     expect(rsEthInCometInfo.priceFeed).to.eq(newRsEthPriceFeed);
     expect(rsEthInConfiguratorInfoWETHComet.priceFeed).to.eq(newRsEthPriceFeed);
-    expect(await comet.getPrice(newRsEthPriceFeed)).to.be.closeTo(await comet.getPrice(oldRsEthPriceFeed), 10e8);
+    expect(await comet.getPrice(newRsEthPriceFeed)).to.be.closeTo(await comet.getPrice(oldRsEthPriceFeed), 18e8);
+
+    const weETHIndexInComet = await configurator.getAssetIndex(
+      comet.address,
+      WEETH_ADDRESS
+    );
+    const weETHInCometInfo = await comet.getAssetInfoByAddress(WEETH_ADDRESS);
+    const weETHInConfiguratorInfoWETHComet = (
+      await configurator.getConfiguration(comet.address)
+    ).assetConfigs[weETHIndexInComet];
+
+    expect(weETHInCometInfo.priceFeed).to.eq(newWeEthPriceFeed);
+    expect(weETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newWeEthPriceFeed);
+    expect(await comet.getPrice(newWeEthPriceFeed)).to.be.closeTo(await comet.getPrice(oldWeEthPriceFeed), 18e8);
   },
 });
