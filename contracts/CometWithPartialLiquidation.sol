@@ -1066,6 +1066,8 @@ contract CometWithPartialLiquidation is CometMainInterface {
             basePrice,
             uint64(baseScale)
         );
+
+        uint256 remainingDebt = debt < 0 ? uint256(-debt) : 0;
         uint256 deltaValue = 0;
         uint256 targetHF = IHealthFactorHolder(extensionDelegate).healthFactor(address(this));
         uint256 currentHF = 0;
@@ -1079,12 +1081,12 @@ contract CometWithPartialLiquidation is CometMainInterface {
                 uint256 collateralValue = mulPrice(seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale);
                 uint256 collaterizationValue = mulFactor(collateralValue, assetInfo.borrowCollateralFactor);
                 uint256 seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor);
-                uint256 expectedHF = (uint256(debt) - deltaValue - seizedValue) / (totalCollaterizedValue - collaterizationValue);
+                uint256 expectedHF = (remainingDebt - deltaValue - seizedValue) / (totalCollaterizedValue - collaterizationValue);
                 if (expectedHF >= targetHF) { // we need to seize only part of collateral
                     /// target HF = (debt - delta * LF) / (collateral value - delta) * CF
                     /// =>
                     /// delta = (debt - THF * CF* collateral value) / (CF * THF - LF)
-                    seizedValue = (uint256(debt) - deltaValue - targetHF * collaterizationValue) / (assetInfo.borrowCollateralFactor * targetHF - assetInfo.liquidationFactor);
+                    seizedValue = (remainingDebt- deltaValue - mulFactor(targetHF, collaterizationValue)) / (mulFactor(assetInfo.borrowCollateralFactor, targetHF) - assetInfo.liquidationFactor);
                     seizeAmount = divPrice(seizedValue, getPrice(assetInfo.priceFeed), assetInfo.scale);
                     currentHF = targetHF;
                 } else {

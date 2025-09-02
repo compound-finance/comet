@@ -41,6 +41,8 @@ import {
   CometWithPartialLiquidation,
   CometWithPartialLiquidation__factory,
   CometFactoryWithPartialLiquidation__factory,
+  CometHarnessPartialLiquidation__factory,
+  CometHarnessInterfacePartialLiquidation,
 } from '../build/types';
 import { BigNumber } from 'ethers';
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
@@ -108,6 +110,7 @@ export type Protocol = {
   reward: string;
   comet: Comet;
   cometWithExtendedAssetList: CometWithExtendedAssetList;
+  cometWithPartialLiquidation: CometHarnessInterfacePartialLiquidation;
   assetListFactory: AssetListFactory;
   tokens: {
     [symbol: string]: FaucetToken | NonStandardFaucetFeeToken;
@@ -360,10 +363,30 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   const cometWithExtendedAssetList = await CometFactoryWithExtendedAssetList.deploy(config);
   await cometWithExtendedAssetList.deployed();
 
+  // Deploy CometHarnessPartialLiquidation
+  // For CometHarnessPartialLiquidation, we need a simple health factor holder as extensionDelegate
+  let extensionDelegatePartialLiquidation = opts.extensionDelegate;
+  if (extensionDelegatePartialLiquidation === undefined) {
+    const SimpleHealthFactorHolderFactory = (await ethers.getContractFactory('SimpleHealthFactorHolder')) as any;
+    extensionDelegatePartialLiquidation = await SimpleHealthFactorHolderFactory.deploy(assetListFactory.address);
+    await extensionDelegatePartialLiquidation.deployed();
+  }
+  
+  // Create config for CometHarnessPartialLiquidation with correct extensionDelegate
+  const configPartialLiquidation = {
+    ...config,
+    extensionDelegate: extensionDelegatePartialLiquidation.address,
+  };
+  
+  const CometFactoryPartialLiquidation = (await ethers.getContractFactory('CometHarnessPartialLiquidation')) as CometHarnessPartialLiquidation__factory;
+  const cometWithPartialLiquidation = await CometFactoryPartialLiquidation.deploy(configPartialLiquidation);
+  await cometWithPartialLiquidation.deployed();
+
   if (opts.start) await ethers.provider.send('evm_setNextBlockTimestamp', [opts.start]);
   await comet.initializeStorage();
 
   await cometWithExtendedAssetList.initializeStorage();
+  await cometWithPartialLiquidation.initializeStorage();
 
   const baseTokenBalance = opts.baseTokenBalance;
   if (baseTokenBalance) {
@@ -381,6 +404,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     reward,
     comet: await ethers.getContractAt('CometHarnessInterface', comet.address) as Comet,
     cometWithExtendedAssetList: await ethers.getContractAt('CometHarnessInterfaceExtendedAssetList', cometWithExtendedAssetList.address) as CometWithExtendedAssetList,
+    cometWithPartialLiquidation: await ethers.getContractAt('CometHarnessInterfacePartialLiquidation', cometWithPartialLiquidation.address) as CometHarnessInterfacePartialLiquidation,
     assetListFactory: assetListFactory,
     tokens,
     unsupportedToken,
@@ -401,6 +425,7 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     reward,
     comet,
     cometWithExtendedAssetList,
+    cometWithPartialLiquidation,
     assetListFactory,
     tokens,
     unsupportedToken,
@@ -436,8 +461,8 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
 
   // Deploy CometFactoryWithPartialLiquidation
   const CometFactoryFactoryWithPartialLiquidation = (await ethers.getContractFactory('CometFactoryWithPartialLiquidation')) as CometFactoryWithPartialLiquidation__factory;
-  const cometFactoryWithPartialLiquidation = await CometFactoryFactoryWithPartialLiquidation.deploy();
-  await cometFactoryWithPartialLiquidation.deployed();
+  const cometFactoryWithPartialLiquidationFactory = await CometFactoryFactoryWithPartialLiquidation.deploy();
+  await cometFactoryWithPartialLiquidationFactory.deployed();
 
   // Deploy Configurator
   const ConfiguratorFactory = (await ethers.getContractFactory('ConfiguratorPartialLiquidation')) as ConfiguratorPartialLiquidation__factory;
@@ -504,8 +529,8 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   
   // Deploy Comet with Partial Liquidation
   const CometWithPartialLiquidationFactory = (await ethers.getContractFactory('CometWithPartialLiquidation')) as CometWithPartialLiquidation__factory;
-  const cometWithPartialLiquidation = await CometWithPartialLiquidationFactory.deploy(configuration);
-  await cometWithPartialLiquidation.deployed();
+  const cometWithPartialLiquidationContract = await CometWithPartialLiquidationFactory.deploy(configuration);
+  await cometWithPartialLiquidationContract.deployed();
 
   
   // Deploy Comet proxy
@@ -518,9 +543,9 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   await cometProxy.deployed();
 
   const cometProxyWithPartialLiquidation = await CometProxy.deploy(
-    cometWithPartialLiquidation.address,
+    cometWithPartialLiquidationContract.address,
     proxyAdmin.address,
-    (await cometWithPartialLiquidation.populateTransaction.initializeStorage()).data,
+    (await cometWithPartialLiquidationContract.populateTransaction.initializeStorage()).data,
   );
   await cometProxyWithPartialLiquidation.deployed();
 
@@ -530,8 +555,8 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   await configuratorAsProxy.setFactory(cometProxy.address, cometFactory.address);
 
   await configuratorAsProxy.setConfiguration(cometProxyWithPartialLiquidation.address, configuration);
-  await configuratorAsProxy.setFactory(cometProxyWithPartialLiquidation.address, cometFactoryWithPartialLiquidation.address);
-  await configuratorAsProxy.setHealthFactor(cometProxyWithPartialLiquidation.address, exp(1.05, 15));
+  await configuratorAsProxy.setFactory(cometProxyWithPartialLiquidation.address, cometFactoryWithPartialLiquidationFactory.address);
+  await configuratorAsProxy.setHealthFactor(cometProxyWithPartialLiquidation.address, exp(1.05, 18));
 
 
   return {
@@ -721,3 +746,5 @@ function convertToBigInt(arr) {
 export function getGasUsed(tx: TransactionResponseExt): bigint {
   return tx.receipt.gasUsed.mul(tx.receipt.effectiveGasPrice).toBigInt();
 }
+
+
