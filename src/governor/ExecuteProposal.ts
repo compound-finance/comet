@@ -231,43 +231,39 @@ function extractTokenTransferEvent(receipt: any, trace: any): any {
  */
 function extractGovernanceConfigEvent(receipt: any, trace: any): any {
   trace('Parsing logs for governance configuration change...');
-  // Create interface for CustomGovernor to parse GovernorAdminChanged event
+  // Create interface for CustomGovernor to parse GovernanceConfigSet event
   const governorInterface = new ethers.utils.Interface([
-    'event GovernorAdminChanged(address admin, bool isAdmin)'
+    'event GovernanceConfigSet(address[] admins, uint threshold)'
   ]);
   
-  // Look for GovernorAdminChanged events in the logs
-  const adminChangedEvents = receipt.logs
+  // Look for GovernanceConfigSet events in the logs
+  const governanceConfigEvents = receipt.logs
     .map((log: any) => {
       try {
         return governorInterface.parseLog(log);
       } catch (error) {
-        return null; // Not a GovernorAdminChanged event
+        return null; // Not a GovernanceConfigSet event
       }
     })
-    .filter((parsedLog: any) => parsedLog !== null && parsedLog.name === 'GovernorAdminChanged');
+    .filter((parsedLog: any) => parsedLog !== null && parsedLog.name === 'GovernanceConfigSet');
   
-  if (adminChangedEvents.length > 0) {
-    const addedAdmins = adminChangedEvents
-      .filter((event: any) => event.args.isAdmin === true)
-      .map((event: any) => event.args.admin);
+  if (governanceConfigEvents.length > 0) {
+    const governanceConfigEvent = governanceConfigEvents[0];
+    const newAdmins = governanceConfigEvent.args.admins;
+    const newThreshold = governanceConfigEvent.args.threshold;
     
-    const removedAdmins = adminChangedEvents
-      .filter((event: any) => event.args.isAdmin === false)
-      .map((event: any) => event.args.admin);
-    
-    trace(`Found ${adminChangedEvents.length} GovernorAdminChanged events`);
-    trace(`Added admins: ${addedAdmins.join(', ')}`);
-    trace(`Removed admins: ${removedAdmins.join(', ')}`);
+    trace(`Found GovernanceConfigSet event`);
+    trace(`New admins: ${newAdmins.join(', ')}`);
+    trace(`New threshold: ${newThreshold}`);
     
     return {
-      addedAdmins,
-      removedAdmins,
-      totalChanges: adminChangedEvents.length,
-      eventName: 'GovernorAdminChanged'
+      newAdmins,
+      newThreshold,
+      totalAdmins: newAdmins.length,
+      eventName: 'GovernanceConfigSet'
     };
   } else {
-    trace('No GovernorAdminChanged events found in transaction logs');
+    trace('No GovernanceConfigSet events found in transaction logs');
     return null;
   }
 }

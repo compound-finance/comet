@@ -1,4 +1,5 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { extractProposalIdFromLogs } from '../deploy/helpers';
 
 export default async function proposeGovernanceConfigTask(
   hre: HardhatRuntimeEnvironment,
@@ -36,15 +37,11 @@ export default async function proposeGovernanceConfigTask(
     const receipt = await tx.wait();
 
     // Extract proposal ID from the ProposalCreated event
-    const proposalCreatedEvent = receipt.events?.find(
-      (event: any) => event.event === 'ProposalCreated'
-    );
-
-    if (!proposalCreatedEvent) {
-      throw new Error('ProposalCreated event not found in transaction receipt');
+    const proposalId = extractProposalIdFromLogs(governor, receipt);
+    
+    if (!proposalId) {
+      throw new Error('Proposal ID not found in transaction receipt');
     }
-
-    const proposalId = proposalCreatedEvent.args.id;
     
     console.log(`✅ Governance configuration proposal created successfully!`);
     console.log(`   Proposal ID: ${proposalId}`);

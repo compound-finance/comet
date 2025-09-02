@@ -50,30 +50,30 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
     /// @notice An event emitted when an admin approves a proposal
     event ProposalApproved(uint proposalId, address admin);
 
-    /**
-     * @notice Constructor to set immutable multisig threshold
-     * @param threshold_ The multisig threshold (immutable)
-     */
-    constructor(uint threshold_) {
-        multisigThreshold = threshold_;
-    }
+    /// @notice An event emitted when the governance configuration is set
+    event GovernanceConfigSet(address[] admins, uint threshold);
 
     /**
      * @notice Initialize the governor (called by proxy)
      * @param timelock_ The timelock contract address
      * @param token_ The governance token address
      * @param admins_ The array of admin addresses
+     * @param threshold_ The multisig threshold (immutable)
      */
     function initialize(
         address timelock_,
         address token_,
-        address[] memory admins_
+        address[] memory admins_,
+        uint threshold_
     ) external {
         require(timelock == Timelock(payable(0)), "CustomGovernor::initialize: already initialized");
-        
+        require(threshold_ > 0, "CustomGovernor::initialize: threshold must be greater than 0");
+        require(threshold_ <= admins_.length, "CustomGovernor::initialize: threshold cannot be greater than admins length");
+
         timelock = Timelock(payable(timelock_));
         token = token_;
-        
+
+        multisigThreshold = threshold_;
         // Set admins
         for (uint i = 0; i < admins_.length; i++) {
             admins.push(admins_[i]);
@@ -200,6 +200,8 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
         require(threshold_ > 0, "CustomGovernor::setGovernanceConfig: threshold cannot be 0");
         admins = admins_;
         multisigThreshold = threshold_;
+
+        emit GovernanceConfigSet(admins_, threshold_);
     }
 
     /**
