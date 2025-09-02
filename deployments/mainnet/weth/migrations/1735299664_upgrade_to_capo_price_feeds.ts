@@ -39,6 +39,20 @@ const ETHX_PRICE_FEED_ADDRESS = '0xdd487947c579af433AeeF038Bf1573FdBB68d2d3';
 const EZETH_ADDRESS = '0xbf5495Efe5DB9ce00f80364C8B423567e58d2110';
 const EZETH_RATE_PROVIDER = '0x387dBc0fB00b26fb085aa658527D5BE98302c84C';
 
+// 9. WBTC
+const WBTC_ADDRESS = '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599';
+const WBTC_BTC_PRICE_FEED = '0xfdFD9C85aD200c506Cf9e21F1FD8dd01932FBB23';
+const BTC_USD_OEV_PRICE_FEED = '0xdc715c751f1cc129A6b47fEDC87D9918a4580502';
+const ETH_USD_OEV_PRICE_FEED = '0x7c7FdFCa295a787ded12Bb5c1A49A8D2cC20E3F8';
+
+// 10. cbBTC
+const CBBTC_ADDRESS = '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf';
+const CBBTC_USD_ADDRESS = '0x2665701293fCbEB223D11A08D826563EDcCE423A';
+
+// 11. tBTC
+const TBTC_ADDRESS = '0x18084fbA666a33d37592fA2633fD49a74DD93a88';
+const TBTC_USD_ADDRESS = '0x8350b7De6a6a2C1368E7D4Bd968190e13E354297';
+
 const FEED_DECIMALS = 8;
 const RATE_DECIMALS = 18;
 
@@ -50,6 +64,9 @@ let newRswEthPriceFeed: string;
 let newEthXPriceFeed: string;
 //let newCbEthPriceFeed: string;
 let newEzEthPriceFeed: string;
+let newWbtcPriceFeed: string;
+let newCbBtcPriceFeed: string;
+let newTBtcPriceFeed: string;
 
 let oldWstETHPriceFeed: string;
 let oldRsEthPriceFeed: string;
@@ -59,6 +76,9 @@ let oldRswEthPriceFeed: string;
 let oldEthXPriceFeed: string;
 //let oldCbEthPriceFeed: string;
 let oldEzEthPriceFeed: string;
+let oldWbtcPriceFeed: string;
+let oldCbBtcPriceFeed: string;
+let oldTBtcPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
@@ -253,6 +273,54 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       true
     );
 
+    const oevWbtcToUsdPriceFeed = await deploymentManager.deploy(
+      'WBTC:_priceFeed',
+      'pricefeeds/MultiplicativePriceFeed.sol',
+      [
+        WBTC_BTC_PRICE_FEED,    // WBTC / BTC price feed
+        BTC_USD_OEV_PRICE_FEED, // BTC / USD price feed 
+        8,                      // decimals
+        'WBTC / USD price feed'
+      ],
+      true
+    );
+
+    const oevWbtcToEthPriceFeed = await deploymentManager.deploy(
+      'WBTC:priceFeed',
+      'pricefeeds/ReverseMultiplicativePriceFeed.sol',
+      [
+        oevWbtcToUsdPriceFeed.address, // WBTC / USD price feed
+        ETH_USD_OEV_PRICE_FEED,        // ETH / USD price feed (reversed)
+        8,                             // decimals
+        'WBTC / ETH price feed'
+      ],
+      true
+    );
+
+    const cbBtcPriceFeed = await deploymentManager.deploy(
+      'cbBTC:priceFeed',
+      'pricefeeds/ReverseMultiplicativePriceFeed.sol',
+      [
+        CBBTC_USD_ADDRESS,        // cbBTC / USD price feed
+        ETH_USD_OEV_PRICE_FEED,  // ETH / USD price feed (reversed)
+        8,                       // decimals
+        'cbBTC / ETH price feed'
+      ],
+      true
+    );
+
+    const tBtcPriceFeed = await deploymentManager.deploy(
+      'tBTC:priceFeed',
+      'pricefeeds/ReverseMultiplicativePriceFeed.sol',
+      [
+        TBTC_USD_ADDRESS,        // tBTC / USD price feed
+        ETH_USD_OEV_PRICE_FEED,  // ETH / USD price feed (reversed)
+        8,                       // decimals
+        'tBTC / ETH price feed'
+      ],
+      true
+    );
+
     return {
       wstEthCapoPriceFeedAddress: wstEthCapoPriceFeed.address,
       rsEthCapoPriceFeedAddress: rsEthCapoPriceFeed.address,
@@ -261,7 +329,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       rswEthCapoPriceFeedAddress: rswETHCapoPriceFeed.address,
       ethXCapoPriceFeedAddress: ethXCapoPriceFeed.address,
       //cbEthCapoPriceFeedAddress: cbEthCapoPriceFeed.address,
-      ezEthCapoPriceFeedAddress: ezEthCapoPriceFeed.address
+      ezEthCapoPriceFeedAddress: ezEthCapoPriceFeed.address,
+      wbtcPriceFeedAddress: oevWbtcToEthPriceFeed.address,
+      cbBtcPriceFeedAddress: cbBtcPriceFeed.address,
+      tBtcPriceFeedAddress: tBtcPriceFeed.address,
     };
   },
 
@@ -273,7 +344,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     rswEthCapoPriceFeedAddress,
     ethXCapoPriceFeedAddress,
     //cbEthCapoPriceFeedAddress,
-    ezEthCapoPriceFeedAddress
+    ezEthCapoPriceFeedAddress,
+    wbtcPriceFeedAddress,
+    cbBtcPriceFeedAddress,
+    tBtcPriceFeedAddress,
   }) {
 
     newWstETHPriceFeed = wstEthCapoPriceFeedAddress;
@@ -284,6 +358,9 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     newEthXPriceFeed = ethXCapoPriceFeedAddress;
     //newCbEthPriceFeed = cbEthCapoPriceFeedAddress;
     newEzEthPriceFeed = ezEthCapoPriceFeedAddress;
+    newWbtcPriceFeed = wbtcPriceFeedAddress;
+    newCbBtcPriceFeed = cbBtcPriceFeedAddress;
+    newTBtcPriceFeed = tBtcPriceFeedAddress;
     
     const trace = deploymentManager.tracer();
 
@@ -302,6 +379,9 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     [,, oldEthXPriceFeed] = await comet.getAssetInfoByAddress(ETHX_ADDRESS);
     //[,, oldCbEthPriceFeed] = await comet.getAssetInfoByAddress(CBETH_ADDRESS);
     [,, oldEzEthPriceFeed] = await comet.getAssetInfoByAddress(EZETH_ADDRESS);
+    [,, oldWbtcPriceFeed] = await comet.getAssetInfoByAddress(WBTC_ADDRESS);
+    [,, oldCbBtcPriceFeed] = await comet.getAssetInfoByAddress(CBBTC_ADDRESS);
+    [,, oldTBtcPriceFeed] = await comet.getAssetInfoByAddress(TBTC_ADDRESS);
 
     const mainnetActions = [
       // 1. Update wstETH price feed
@@ -352,7 +432,25 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         signature: 'updateAssetPriceFeed(address,address,address)',
         args: [comet.address, EZETH_ADDRESS, ezEthCapoPriceFeedAddress],
       },
-      // 9. Deploy and upgrade to a new version of Comet
+      // 9. Update WBTC price feed
+      {
+        contract: configurator,
+        signature: 'updateAssetPriceFeed(address,address,address)',
+        args: [comet.address, WBTC_ADDRESS, wbtcPriceFeedAddress],
+      },
+      // 10. cbBTC price feed
+      {
+        contract: configurator,
+        signature: 'updateAssetPriceFeed(address,address,address)',
+        args: [comet.address, CBBTC_ADDRESS, cbBtcPriceFeedAddress],
+      },
+      // 11. tBTC price feed
+      {
+        contract: configurator,
+        signature: 'updateAssetPriceFeed(address,address,address)',
+        args: [comet.address, TBTC_ADDRESS, tBtcPriceFeedAddress],
+      },
+      // 12. Deploy and upgrade to a new version of Comet
       {
         contract: cometAdmin,
         signature: 'deployAndUpgradeTo(address,address)',
@@ -469,7 +567,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     ).assetConfigs[ethXIndexInComet];
 
     expect(ethXInCometInfo.priceFeed).to.eq(newEthXPriceFeed);
-    expect(ethXInConfiguratorInfoWETHComet.priceFeed).to.eq(newEthXPriceFeed); 
+    expect(ethXInConfiguratorInfoWETHComet.priceFeed).to.eq(newEthXPriceFeed);
 
     // const cbEthIndexInComet = await configurator.getAssetIndex(
     //   comet.address,
@@ -500,14 +598,62 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     expect(ezEthInCometInfo.priceFeed).to.eq(newEzEthPriceFeed);
     expect(ezEthInConfiguratorInfoWETHComet.priceFeed).to.eq(newEzEthPriceFeed);
 
+    const wbtcAssetIndex = await configurator.getAssetIndex(
+      comet.address,
+      WBTC_ADDRESS
+    );
+
+    const wbtcInCometInfo = await comet.getAssetInfoByAddress(
+      WBTC_ADDRESS
+    );
+    const wbtcInConfiguratorInfoWETHComet = (
+      await configurator.getConfiguration(comet.address)
+    ).assetConfigs[wbtcAssetIndex];
+
+    expect(wbtcInCometInfo.priceFeed).to.eq(newWbtcPriceFeed);
+    expect(wbtcInConfiguratorInfoWETHComet.priceFeed).to.eq(newWbtcPriceFeed);    
+
+    const cbBtcIndexInComet = await configurator.getAssetIndex(
+      comet.address,
+      CBBTC_ADDRESS
+    );
+
+    const cbBtcInCometInfo = await comet.getAssetInfoByAddress(
+      CBBTC_ADDRESS
+    );
+    const cbBtcInConfiguratorInfoWETHComet = (
+      await configurator.getConfiguration(comet.address)
+    ).assetConfigs[cbBtcIndexInComet];
+
+    expect(cbBtcInCometInfo.priceFeed).to.eq(newCbBtcPriceFeed);
+    expect(cbBtcInConfiguratorInfoWETHComet.priceFeed).to.eq(newCbBtcPriceFeed);
+
+    const tBtcIndexInComet = await configurator.getAssetIndex(
+      comet.address,
+      TBTC_ADDRESS
+    );
+
+    const tBtcInCometInfo = await comet.getAssetInfoByAddress(
+      TBTC_ADDRESS
+    );
+    const tBtcInConfiguratorInfoWETHComet = (
+      await configurator.getConfiguration(comet.address)
+    ).assetConfigs[tBtcIndexInComet];
+
+    expect(tBtcInCometInfo.priceFeed).to.eq(newTBtcPriceFeed);
+    expect(tBtcInConfiguratorInfoWETHComet.priceFeed).to.eq(newTBtcPriceFeed);
+
     // Verify old price feeds
-    expect(await comet.getPrice(newWstETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldWstETHPriceFeed), 1e8);
-    expect(await comet.getPrice(newRsEthPriceFeed)).to.be.closeTo(await comet.getPrice(oldRsEthPriceFeed), 1e8);
-    expect(await comet.getPrice(newWeEthPriceFeed)).to.be.closeTo(await comet.getPrice(oldWeEthPriceFeed), 1e8);
-    expect(await comet.getPrice(newOsEthPriceFeed)).to.be.closeTo(await comet.getPrice(oldOsEthPriceFeed), 1e8);
-    expect(await comet.getPrice(newRswEthPriceFeed)).to.be.closeTo(await comet.getPrice(oldRswEthPriceFeed), 1e8);
-    expect(await comet.getPrice(newEthXPriceFeed)).to.be.closeTo(await comet.getPrice(oldEthXPriceFeed), 1e8);
+    expect(await comet.getPrice(newWstETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldWstETHPriceFeed), 1e6);
+    expect(await comet.getPrice(newRsEthPriceFeed)).to.be.equal(await comet.getPrice(oldRsEthPriceFeed));
+    expect(await comet.getPrice(newWeEthPriceFeed)).to.be.equal(await comet.getPrice(oldWeEthPriceFeed));
+    expect(await comet.getPrice(newOsEthPriceFeed)).to.be.equal(await comet.getPrice(oldOsEthPriceFeed));
+    expect(await comet.getPrice(newRswEthPriceFeed)).to.be.equal(await comet.getPrice(oldRswEthPriceFeed));
+    expect(await comet.getPrice(newEthXPriceFeed)).to.be.equal(await comet.getPrice(oldEthXPriceFeed));
     // expect(await comet.getPrice(newCbEthPriceFeed)).to.be.closeTo(await comet.getPrice(oldCbEthPriceFeed), 1e8);
-    expect(await comet.getPrice(newEzEthPriceFeed)).to.be.closeTo(await comet.getPrice(oldEzEthPriceFeed), 1e8);  
+    expect(await comet.getPrice(newEzEthPriceFeed)).to.be.equal(await comet.getPrice(oldEzEthPriceFeed));
+    expect(await comet.getPrice(newWbtcPriceFeed)).to.be.closeTo(await comet.getPrice(oldWbtcPriceFeed), 5e7);
+    expect(await comet.getPrice(newCbBtcPriceFeed)).to.be.closeTo(await comet.getPrice(oldCbBtcPriceFeed), 5e7);
+    expect(await comet.getPrice(newTBtcPriceFeed)).to.be.closeTo(await comet.getPrice(oldTBtcPriceFeed), 5e7);
   },
 });
