@@ -1,4 +1,4 @@
-import baseRelationConfig from '../../relations.infra';
+import baseRelationConfig from '../../relations.bdag';
 
 export default {
   ...baseRelationConfig,

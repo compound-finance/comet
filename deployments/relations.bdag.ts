@@ -18,11 +18,16 @@ export default {
       }
     }
   },
-  //Override because the reward in the cometrewards can be set later
+  'governor:implementation': {
+    artifact: 'contracts/CustomGovernor.sol:CustomGovernor',
+  },
+  // Override rewards relation to handle infrastructure deployment (no comet yet)
   rewards: {
     relations: {
       rewardToken: {
-        field: async (rewards, { comet }) => {
+        field: async (rewards, context) => {
+          // If no comet exists yet (infrastructure deployment), return null
+          const comet = context.comet;
           if (!comet || comet.length === 0) {
             return null;
           }
@@ -33,7 +38,16 @@ export default {
       },
     },
   },
-  //Override because the cometfactory in the configurator can be set later
+  // Fix cometAdmin relation with missing alias field
+  cometAdmin: {
+    relations: {
+      timelock: {
+        field: async (cometAdmin) => cometAdmin.owner(),
+        alias: 'timelock'
+      }
+    }
+  },
+  // Fix configurator relations with missing alias fields
   configurator: {
     ...baseRelationConfig.configurator,
     relations: {
@@ -44,7 +58,7 @@ export default {
           if (!comet || comet.length === 0) {
             return null;
           }
-          return await configurator.factory(comet[0].address);
+          return configurator.factory(comet[0].address);
         },
         alias: 'cometFactory'
       }
