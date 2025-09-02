@@ -5,7 +5,8 @@ import queueProposal from "../../src/governor/QueueProposal";
 import executeProposal from "../../src/governor/ExecuteProposal";
 import getProposalStatus from "../../src/governor/GetProposalStatus";
 import proposeCometUpgradeTask from "../../src/governor/ProposeCometUpgrade";
-import fundCometRewardsTask from "../../src/governor/FundCometRewards";
+import proposeFundCometRewardsTask from "../../src/governor/ProposeFundCometRewards";
+import proposeTimelockDelayChangeTask from "../../src/governor/ProposeTimelockDelayChange";
 
 // Helper function to create deployment manager
 async function createDeploymentManager(hre: any, deployment?: string) {
@@ -141,10 +142,29 @@ task("governor:propose-fund-comet-rewards", "Propose to fund CometRewards contra
     console.log(`Proposing to fund CometRewards with ${amount} COMP tokens...`);
     
     try {
-      const result = await fundCometRewardsTask(hre, amount);
+      const result = await proposeFundCometRewardsTask(hre, amount);
       return result;
     } catch (error) {
       console.error(`❌ Failed to propose CometRewards funding:`, error);
+      throw error;
+    }
+  }); 
+
+// Task to propose timelock delay change
+task("governor:propose-timelock-delay-change", "Propose to change the timelock delay")
+  .addParam("delay", "The new delay value in seconds (e.g., '86400' for 1 day)")
+  .setAction(async (taskArgs, hre) => {
+    const delay = taskArgs.delay;
+
+    await createDeploymentManager(hre);
+    
+    console.log(`Proposing to change timelock delay to ${delay} seconds...`);
+    
+    try {
+      const result = await proposeTimelockDelayChangeTask(hre, delay);
+      return result;
+    } catch (error) {
+      console.error(`❌ Failed to propose timelock delay change:`, error);
       throw error;
     }
   }); 
