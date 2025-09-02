@@ -736,12 +736,12 @@ yarn hardhat governor:propose-upgrade --network local --deployment dai --impleme
 export MARKET=dai && yarn hardhat test test/deployment-verification-test.ts --network local
 ```
 **5. Fund CometRewards with COMP tokens**
-   **Note**: This step is only required if you need to distribute reward tokens to users. The CometRewards contract manages the distribution of COMP tokens to users based on their supply/borrow activity. Use the `governor:fund-comet-rewards` task to create a governance proposal that transfers COMP tokens from the timelock to the CometRewards contract.
+   **Note**: This step is only required if you need to distribute reward tokens to users. The CometRewards contract manages the distribution of COMP tokens to users based on their supply/borrow activity. Use the `governor:propose-fund-comet-rewards` task to create a governance proposal that transfers COMP tokens from the timelock to the CometRewards contract.
 
    **Usage:**
    ```bash
    # Propose to fund CometRewards with 1000 COMP tokens (amount in wei)
-   yarn hardhat governor:fund-comet-rewards --network local --amount 1000000000000000000000
+   yarn hardhat governor:propose-fund-comet-rewards --network local --amount 1000000000000000000000
 
    # The proposal will need to go through the same governance flow:
    # 1. Check proposal status: yarn hardhat governor:status --network local --proposal-id 3
