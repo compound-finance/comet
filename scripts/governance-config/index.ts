@@ -134,14 +134,8 @@ class GovernanceConfigProposer {
       // Approve proposal
       await this.approveProposal(proposalId);
       
-      // Check status after approval
-      await this.checkProposalStatus(proposalId);
-      
       // Queue proposal
       await this.queueProposal(proposalId);
-      
-      // Check status after queueing
-      await this.checkProposalStatus(proposalId);
       
       // Execute proposal
       await this.executeProposal(proposalId);
