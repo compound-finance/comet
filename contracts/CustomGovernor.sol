@@ -55,6 +55,17 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
     event GovernanceConfigSet(address[] admins, uint threshold);
 
     /**
+     * @notice Modifier to validate threshold and admins array
+     * @param admins_ The array of admin addresses
+     * @param threshold_ The multisig threshold
+     */
+    modifier validGovernanceConfig(address[] memory admins_, uint threshold_) {
+        require(threshold_ > 0, "CustomGovernor: threshold must be greater than 0");
+        require(threshold_ <= admins_.length, "CustomGovernor: threshold cannot be greater than admins length");
+        _;
+    }
+
+    /**
      * @notice Constructor to disable initializers
      */
     constructor() {
@@ -73,10 +84,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
         address token_,
         address[] memory admins_,
         uint threshold_
-    ) external initializer {
-        require(threshold_ > 0, "CustomGovernor::initialize: threshold must be greater than 0");
-        require(threshold_ <= admins_.length, "CustomGovernor::initialize: threshold cannot be greater than admins length");
-
+    ) external initializer validGovernanceConfig(admins_, threshold_) {
         timelock = Timelock(payable(timelock_));
         token = token_;
 
@@ -201,10 +209,8 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
      * @param threshold_ new threshold
      * @dev setup a new governance configuration, this function is only callable by the timelock using the proposal execution
      */
-    function setGovernanceConfig(address[] memory admins_, uint threshold_) external {
+    function setGovernanceConfig(address[] memory admins_, uint threshold_) external validGovernanceConfig(admins_, threshold_) {
         require(msg.sender == address(timelock), "CustomGovernor::setGovernanceConfig: only timelock can call");
-        require(threshold_ <= admins_.length, "CustomGovernor::setGovernanceConfig: threshold cannot be greater than admins length");
-        require(threshold_ > 0, "CustomGovernor::setGovernanceConfig: threshold cannot be 0");
         admins = admins_;
         multisigThreshold = threshold_;
 
