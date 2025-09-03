@@ -5,8 +5,9 @@ import queueProposal from '../../src/governor/QueueProposal';
 import executeProposal from '../../src/governor/ExecuteProposal';
 import getProposalStatus from '../../src/governor/GetProposalStatus';
 import proposeCometUpgradeTask from '../../src/governor/ProposeCometUpgrade';
-import fundCometRewardsTask from '../../src/governor/FundCometRewards';
+import proposeFundCometRewardsTask from '../../src/governor/ProposeFundCometRewards';
 import proposeGovernanceConfigTask from '../../src/governor/ProposeGovernanceConfig';
+import proposeTimelockDelayChangeTask from '../../src/governor/ProposeTimelockDelayChange';
 
 // Helper function to create deployment manager
 async function createDeploymentManager(hre: any, deployment?: string) {
@@ -140,7 +141,7 @@ task('governor:propose-upgrade', 'Propose a Comet implementation upgrade')
 
 // Task to propose funding CometRewards
 task('governor:propose-fund-comet-rewards', 'Propose to fund CometRewards contract with COMP tokens')
-  .addParam('amount', 'The amount of COMP tokens to transfer (in wei, e.g., '1000000000000000000000' for 1000 COMP)')
+  .addParam('amount', 'The amount of COMP tokens to transfer (in wei, e.g., "1000000000000000000000" for 1000 COMP)')
   .setAction(async (taskArgs, hre) => {
     const amount = taskArgs.amount;
 
@@ -149,7 +150,7 @@ task('governor:propose-fund-comet-rewards', 'Propose to fund CometRewards contra
     console.log(`Proposing to fund CometRewards with ${amount} COMP tokens...`);
     
     try {
-      const result = await fundCometRewardsTask(hre, amount);
+      const result = await proposeFundCometRewardsTask(hre, amount);
       return result;
     } catch (error) {
       console.error(`❌ Failed to propose CometRewards funding:`, error);
@@ -201,6 +202,25 @@ task('governor:propose-governance-config', 'Propose changes to governance config
       return result;
     } catch (error) {
       console.error(`❌ Failed to propose governance configuration change:`, error);
+      throw error;
+    }
+  }); 
+
+// Task to propose timelock delay change
+task('governor:propose-timelock-delay-change', 'Propose to change the timelock delay')
+  .addParam('delay', "The new delay value in seconds (e.g., '86400' for 1 day)")
+  .setAction(async (taskArgs, hre) => {
+    const delay = taskArgs.delay;
+
+    await createDeploymentManager(hre);
+    
+    console.log(`Proposing to change timelock delay to ${delay} seconds...`);
+    
+    try {
+      const result = await proposeTimelockDelayChangeTask(hre, delay);
+      return result;
+    } catch (error) {
+      console.error(`❌ Failed to propose timelock delay change:`, error);
       throw error;
     }
   }); 

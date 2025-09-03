@@ -121,6 +121,14 @@ async function extractLogsFromTransaction(
         }
         break;
       }
+      case 'timelock-delay-change': {
+        trace('Parsing logs for timelock delay change execution...');
+        const newDelayData = extractNewDelayEvent(receipt, trace);
+        if (newDelayData) {
+          extractedLogs.parsedLogs.newDelay = newDelayData;
+        }
+        break;
+      }
       default:
         // Default log parsing
         trace('Parsing logs with default strategy...');
@@ -265,5 +273,83 @@ function extractGovernanceConfigEvent(receipt: any, trace: any): any {
   } else {
     trace('No GovernanceConfigSet events found in transaction logs');
     return null;
+  }
+}
+  
+/*
+ * Extracts NewDelay event from timelock transaction logs
+ * @param receipt Transaction receipt containing logs
+ * @param trace Tracer function for logging
+ * @returns Parsed NewDelay event data or null if not found
+ */
+function extractNewDelayEvent(receipt: any, trace: any): any {
+  trace('Parsing logs for timelock delay change...');
+  
+  // Debug: Log all logs to see what we're working with
+  trace(`Total logs in transaction: ${receipt.logs.length}`);
+  
+  // Create interface for Timelock contract to parse NewDelay event
+  const timelockInterface = new ethers.utils.Interface([
+    'event NewDelay(uint indexed newDelay)'
+  ]);
+  
+  // Look for NewDelay events in the logs
+  const newDelayEvents = receipt.logs
+    .map((log: any) => {
+      try {
+        const parsed = timelockInterface.parseLog(log);
+        trace(`Successfully parsed log: ${parsed.name}`);
+        return parsed;
+      } catch (error) {
+        return null;
+      }
+    })
+    .filter((parsedLog: any) => parsedLog !== null && parsedLog.name === 'NewDelay');
+  
+  // If still no events found, log all logs for debugging
+  if (newDelayEvents.length === 0) {
+    trace('No NewDelay events found, logging all available logs for debugging...');
+    
+    // Log all log topics and data for debugging
+    receipt.logs.forEach((log: any, index: number) => {
+      trace(`Log ${index}: topic0=${log.topics[0]}, data=${log.data}`);
+    });
+  }
+  
+  if (newDelayEvents.length > 0) {
+    const newDelayEvent = newDelayEvents[0];
+    const delay = newDelayEvent.args.newDelay;
+    
+    trace(`Found NewDelay event: delay=${delay} seconds`);
+    
+    return {
+      delay: delay.toString(),
+      eventName: 'NewDelay',
+      formattedDelay: formatDelay(delay.toString())
+    };
+  } else {
+    trace('No NewDelay event found in transaction logs');
+    return null;
+  }
+}
+
+/**
+ * Formats delay value in seconds to human-readable format
+ * @param delaySeconds Delay value in seconds as string
+ * @returns Formatted delay string
+ */
+function formatDelay(delaySeconds: string): string {
+  const seconds = parseInt(delaySeconds);
+  if (seconds < 60) {
+    return `${seconds} seconds`;
+  } else if (seconds < 3600) {
+    const minutes = Math.floor(seconds / 60);
+    return `${minutes} minutes (${seconds} seconds)`;
+  } else if (seconds < 86400) {
+    const hours = Math.floor(seconds / 3600);
+    return `${hours} hours (${seconds} seconds)`;
+  } else {
+    const days = Math.floor(seconds / 86400);
+    return `${days} days (${seconds} seconds)`;
   }
 }
