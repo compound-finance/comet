@@ -4,8 +4,9 @@ pragma solidity 0.8.15;
 import "./IGovernorBravo.sol";
 import "./vendor/Timelock.sol";
 import "./vendor/proxy/ERC1967/ERC1967Upgrade.sol";
+import "./vendor/proxy/utils/Initializable.sol";
 
-contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
+contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
     /// @notice The name of this contract
     string public constant name = "Custom Governor";
 
@@ -52,11 +53,12 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
     event ProposalApproved(uint proposalId, address admin);
 
     /**
-     * @notice Constructor to set immutable multisig threshold
+     * @notice Constructor to set immutable multisig threshold and disable initializers
      * @param threshold_ The multisig threshold (immutable)
      */
     constructor(uint threshold_) {
         multisigThreshold = threshold_;
+        _disableInitializers();
     }
 
     /**
@@ -69,7 +71,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade {
         address timelock_,
         address token_,
         address[] memory admins_
-    ) external {
+    ) external initializer {
         require(timelock == Timelock(payable(0)), "CustomGovernor::initialize: already initialized");
         
         timelock = Timelock(payable(timelock_));
