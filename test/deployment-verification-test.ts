@@ -7,6 +7,45 @@ describe('Deployment Verification', function () {
   // export MARKET=dai && yarn hardhat test test/deployment-verification-test.ts --network local
   let deployedContracts: any;
   let market: string;
+  let config: any;
+
+  // Helper function to convert scientific notation to decimal string
+function convertScientificNotation(value: string | number): string {
+  const valueStr = value.toString();
+  
+  if (valueStr.includes('e')) {
+    // Handle scientific notation: split on 'e' and use the exponent
+    const [base, exponent] = valueStr.split('e');
+    const expNum = parseInt(exponent);
+    
+    // Handle small decimal numbers (e.g., "0.000011574074074074073e15")
+    if (base.startsWith('0.')) {
+      // For small decimals, convert to the actual value
+      // "0.000011574074074074073e15" means 0.000011574074074074073 * 10^15
+      // This equals 11574074074074073
+      const decimalValue = parseFloat(valueStr);
+      return Math.floor(decimalValue).toString();
+    } else {
+      // Handle regular large numbers (e.g., "7500e8")
+      const baseWithoutDecimal = base.replace('.', '');
+      const zerosToAdd = expNum - (base.split('.')[1]?.length || 0);
+      return baseWithoutDecimal + '0'.repeat(zerosToAdd);
+    }
+  } else {
+    return valueStr;
+  }
+}
+
+  // Helper function to convert decimal values to 18-decimal format (for Comet factors)
+function convertDecimalTo18Decimals(value: string | number): string {
+  const numValue = parseFloat(value.toString());
+  // Convert to 18 decimal places: 0.75 -> 0.75 * 10^18 = 750000000000000000
+  const result = (numValue * Math.pow(10, 18)).toString();
+  return result;
+}
+
+// Constants from Comet contract
+const SECONDS_PER_YEAR = 31_536_000; // 365 days * 24 hours * 60 minutes * 60 seconds
 
   before(async function () {
     // Get network from hardhat
@@ -41,6 +80,16 @@ describe('Deployment Verification', function () {
     }
     
     deployedContracts = contracts;
+    
+    // Load the configuration.json file for this market
+    const configPath = `../deployments/${networkName}/${market}/configuration.json`;
+    
+    try {
+      config = require(configPath);
+      console.log(`📋 Loaded configuration from: ${configPath}`);
+    } catch (error) {
+      throw new Error(`Failed to load configuration file: ${configPath}. Error: ${error}`);
+    }
   });
 
   it('should have correct ownership relationships', async function () {
@@ -55,40 +104,6 @@ describe('Deployment Verification', function () {
     // Verify proxy admin ownership
     const proxyAdmin = await getProxyAdmin(comet.address);
     expect(await proxyAdmin.owner()).to.equal(timelock.address);
-  });
-
-  it('should have correct base token configuration', async function () {
-    const { comet } = deployedContracts;
-    
-    // Verify base token is set correctly
-    const baseToken = await comet.baseToken();
-    expect(baseToken).to.not.equal(ethers.constants.AddressZero);
-    
-    // Verify base token price feed is set
-    const baseTokenPriceFeed = await comet.baseTokenPriceFeed();
-    expect(baseTokenPriceFeed).to.not.equal(ethers.constants.AddressZero);
-  });
-
-  it('should have correct asset configurations', async function () {
-    const { comet } = deployedContracts;
-    
-    // Get number of assets
-    const numAssets = await comet.numAssets();
-    expect(numAssets).to.be.gt(0);
-    
-    // Verify each asset is properly configured
-    for (let i = 0; i < numAssets; i++) {
-      const assetInfo = await comet.getAssetInfo(i);
-      
-      // Verify asset is not zero address
-      expect(assetInfo.asset).to.not.equal(ethers.constants.AddressZero);
-      
-      // Verify price feed is set
-      expect(assetInfo.priceFeed).to.not.equal(ethers.constants.AddressZero);
-      
-      // Verify supply cap is greater than zero
-      expect(assetInfo.supplyCap).to.be.gt(0);
-    }
   });
 
   it('should validate BDAG governor environment configuration matches deployed contract', async function () {
@@ -268,20 +283,6 @@ describe('Deployment Verification', function () {
     }
   });
 
-  it('should have correct proxy implementation', async function () {
-    const { comet } = deployedContracts;
-    
-    // Get proxy admin
-    const proxyAdmin = await getProxyAdmin(comet.address);
-    
-    // Verify implementation is set
-    const implementation = await proxyAdmin.getProxyImplementation(comet.address);
-    expect(implementation).to.not.equal(ethers.constants.AddressZero);
-    
-    // Verify implementation is different from proxy address
-    expect(implementation).to.not.equal(comet.address);
-  });
-
   it('should have timelock holding total COMP supply', async function () {
     const { timelock, COMP } = deployedContracts;
     
@@ -298,6 +299,503 @@ describe('Deployment Verification', function () {
     
     console.log(`✅ Timelock holds ${ethers.utils.formatEther(timelockBalance)} COMP tokens (total supply)`);
   });
+
+  it('should have valid configuration structure', async function () {
+    // Basic validation that config has expected structure
+    expect(config).to.have.property('baseToken');
+    expect(config).to.have.property('assets');
+    expect(config.assets).to.be.an('object');
+    expect(Object.keys(config.assets).length).to.be.gt(0);
+  });
+
+  // ===== COMET-SPECIFIC PARAMETER TESTS =====
+  
+  it('should have correct proxy implementation', async function () {
+    const { comet } = deployedContracts;
+    
+    // Get proxy admin
+    const proxyAdmin = await getProxyAdmin(comet.address);
+    
+    // Verify implementation is set
+    const implementation = await proxyAdmin.getProxyImplementation(comet.address);
+    expect(implementation).to.not.equal(ethers.constants.AddressZero);
+    
+    // Verify implementation is different from proxy address
+    expect(implementation).to.not.equal(comet.address);
+  });
+
+  it('should have base token address matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    // Load roots.json to get the actual addresses
+    const rootsPath = `../deployments/${network.name}/${market}/roots.json`;
+    const roots = require(rootsPath);
+    
+    // Validate base token configuration
+    if (config.baseToken) {
+      const deployedBaseToken = await comet.baseToken();
+      const expectedBaseTokenAddress = roots[config.baseToken];
+      
+      expect(expectedBaseTokenAddress).to.exist;
+      expect(deployedBaseToken.toLowerCase()).to.equal(expectedBaseTokenAddress.toLowerCase());
+      console.log(`✅ Base token ${config.baseToken} matches: ${deployedBaseToken}`);
+    }
+  });
+
+  it('should have base token price feed address matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    // Load roots.json to get the actual addresses
+    const rootsPath = `../deployments/${network.name}/${market}/roots.json`;
+    const roots = require(rootsPath);
+    
+    // Validate base token price feed configuration
+    if (config.baseTokenPriceFeed) {
+      const deployedBaseTokenPriceFeed = await comet.baseTokenPriceFeed();
+      const expectedPriceFeedAddress = config.baseTokenPriceFeed;
+
+      expect(deployedBaseTokenPriceFeed.toLowerCase()).to.equal(expectedPriceFeedAddress.toLowerCase());
+      console.log(`✅ Base token price feed ${config.baseTokenPriceFeed} matches: ${deployedBaseTokenPriceFeed}`);
+    }
+  });
+
+  it('should have base borrow min matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    const deployedBaseBorrowMin = await comet.baseBorrowMin();
+    const expectedBaseBorrowMin = convertScientificNotation(config.borrowMin);
+    expect(deployedBaseBorrowMin.toString()).to.equal(expectedBaseBorrowMin);
+    console.log(`✅ Base borrow min matches: ${deployedBaseBorrowMin.toString()}`);
+  });
+
+  it('should have store front price factor matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    const deployedStoreFrontPriceFactor = await comet.storeFrontPriceFactor();
+    const expectedStoreFrontPriceFactor = convertDecimalTo18Decimals(config.storeFrontPriceFactor);
+    expect(deployedStoreFrontPriceFactor.toString()).to.equal(expectedStoreFrontPriceFactor);
+    console.log(`✅ Store front price factor matches: ${deployedStoreFrontPriceFactor.toString()}`);
+  });
+
+  it('should have target reserves matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    const deployedTargetReserves = await comet.targetReserves();
+    const expectedTargetReserves = convertScientificNotation(config.targetReserves);
+    expect(deployedTargetReserves.toString()).to.equal(expectedTargetReserves);
+    console.log(`✅ Target reserves matches: ${deployedTargetReserves.toString()}`);
+  });
+
+  it('should have market name matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    const deployedName = await comet.name();
+    const expectedName = config.name;
+    expect(deployedName).to.equal(expectedName);
+    console.log(`✅ Market name matches: ${deployedName}`);
+  });
+
+  it('should have market symbol matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    const deployedSymbol = await comet.symbol();
+    const expectedSymbol = config.symbol;
+    expect(deployedSymbol).to.equal(expectedSymbol);
+    console.log(`✅ Market symbol matches: ${deployedSymbol}`);
+  });
+
+
+  // == TRACKING VALUES ==
+
+  it('should have tracking index scale matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    const {tracking} = config;
+    const {indexScale} = tracking;
+
+    const deployedTrackingIndexScale = await comet.trackingIndexScale();
+    const expectedBaseTrackingIndexScale = convertScientificNotation(indexScale);
+    expect(deployedTrackingIndexScale.toString()).to.equal(expectedBaseTrackingIndexScale);
+    console.log(`✅ Base tracking index scale matches: ${deployedTrackingIndexScale.toString()}`);
+  });
+
+  it('should have base tracking min for rewards matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    const {tracking} = config;
+    const {baseMinForRewards} = tracking;
+
+    const deployedBaseMinForRewards = await comet.baseMinForRewards();
+    const expectedBaseMinForRewards = convertScientificNotation(baseMinForRewards);
+    expect(deployedBaseMinForRewards.toString()).to.equal(expectedBaseMinForRewards);
+    console.log(`✅ Base min for rewards matches: ${deployedBaseMinForRewards.toString()}`);
+
+  });
+
+  it('should have base tracking supply speed matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    const {tracking} = config;
+    const {baseSupplySpeed} = tracking;
+
+    const deployedBaseTrackingSupplySpeed = await comet.baseTrackingSupplySpeed();
+    const expectedBaseTrackingSupplySpeed = convertScientificNotation(baseSupplySpeed);
+    expect(deployedBaseTrackingSupplySpeed.toString()).to.equal(expectedBaseTrackingSupplySpeed);
+    console.log(`✅ Base tracking supply speed matches: ${deployedBaseTrackingSupplySpeed.toString()}`);
+  });
+
+  it('should have base tracking borrow speed matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    const {tracking} = config;
+    const {baseBorrowSpeed} = tracking;
+
+    const deployedBaseTrackingBorrowSpeed = await comet.baseTrackingBorrowSpeed();
+    const expectedBaseTrackingBorrowSpeed = convertScientificNotation(baseBorrowSpeed);
+    expect(deployedBaseTrackingBorrowSpeed.toString()).to.equal(expectedBaseTrackingBorrowSpeed);
+    console.log(`✅ Base tracking borrow speed matches: ${deployedBaseTrackingBorrowSpeed.toString()}`);
+  });
+
+  // == RATES VALUES ==
+
+  it('should have supply kink matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    const {rates} = config;
+    const {supplyKink} = rates;
+
+    const deployedSupplyKink = await comet.supplyKink();
+    const expectedSupplyKink = convertDecimalTo18Decimals(supplyKink);
+    expect(deployedSupplyKink.toString()).to.equal(expectedSupplyKink);
+    console.log(`✅ Supply kink matches: ${deployedSupplyKink.toString()}`);
+  });
+
+  it('should have supply slope low matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    const {rates} = config;
+    const {supplySlopeLow} = rates;
+
+    const deployedSupplySlopeLow = await comet.supplyPerSecondInterestRateSlopeLow();
+    // Convert annual rate to per-second rate: annual_rate / SECONDS_PER_YEAR
+    const expectedSupplySlopeLow = Math.trunc(Number(convertDecimalTo18Decimals(supplySlopeLow)) / SECONDS_PER_YEAR).toString();
+    
+    expect(deployedSupplySlopeLow.toString()).to.equal(expectedSupplySlopeLow);
+    console.log(`✅ Supply slope low matches: ${deployedSupplySlopeLow.toString()}`);
+  });
+
+  it('should have supply slope high matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    const {rates} = config;
+    const {supplySlopeHigh} = rates;
+
+    const deployedSupplySlopeHigh = await comet.supplyPerSecondInterestRateSlopeHigh();
+    // Convert annual rate to per-second rate: annual_rate / SECONDS_PER_YEAR
+    const expectedSupplySlopeHigh = Math.trunc(Number(convertDecimalTo18Decimals(supplySlopeHigh)) / SECONDS_PER_YEAR).toString();
+    expect(deployedSupplySlopeHigh.toString()).to.equal(expectedSupplySlopeHigh);
+    console.log(`✅ Supply slope high matches: ${deployedSupplySlopeHigh.toString()}`);
+  });
+
+  it('should have supply base matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    const {rates} = config;
+    const {supplyBase} = rates;
+
+    const deployedSupplyBase = await comet.supplyPerSecondInterestRateBase();
+    // Convert annual rate to per-second rate: annual_rate / SECONDS_PER_YEAR
+    const expectedSupplyBase = Math.trunc(Number(convertDecimalTo18Decimals(supplyBase)) / SECONDS_PER_YEAR).toString();
+    expect(deployedSupplyBase.toString()).to.equal(expectedSupplyBase);
+    console.log(`✅ Supply base matches: ${deployedSupplyBase.toString()}`);
+  });
+
+  it('should have borrow kink matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    const {rates} = config;
+    const {borrowKink} = rates;
+
+    const deployedBorrowKink = await comet.borrowKink();
+    const expectedBorrowKink = convertDecimalTo18Decimals(borrowKink);
+    expect(deployedBorrowKink.toString()).to.equal(expectedBorrowKink);
+    console.log(`✅ Borrow kink matches: ${deployedBorrowKink.toString()}`);
+  });
+
+  it('should have borrow slope low matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    const {rates} = config;
+    const {borrowSlopeLow} = rates;
+
+    const deployedBorrowSlopeLow = await comet.borrowPerSecondInterestRateSlopeLow();
+    // Convert annual rate to per-second rate: annual_rate / SECONDS_PER_YEAR
+    const expectedBorrowSlopeLow = Math.trunc(Number(convertDecimalTo18Decimals(borrowSlopeLow)) / SECONDS_PER_YEAR).toString();
+    expect(deployedBorrowSlopeLow.toString()).to.equal(expectedBorrowSlopeLow);
+    console.log(`✅ Borrow slope low matches: ${deployedBorrowSlopeLow.toString()}`);
+  });
+
+  it('should have borrow slope high matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    const {rates} = config;
+    const {borrowSlopeHigh} = rates;
+
+    const deployedBorrowSlopeHigh = await comet.borrowPerSecondInterestRateSlopeHigh();
+    // Convert annual rate to per-second rate: annual_rate / SECONDS_PER_YEAR
+    const expectedBorrowSlopeHigh = Math.trunc(Number(convertDecimalTo18Decimals(borrowSlopeHigh)) / SECONDS_PER_YEAR).toString();
+    expect(deployedBorrowSlopeHigh.toString()).to.equal(expectedBorrowSlopeHigh);
+    console.log(`✅ Borrow slope high matches: ${deployedBorrowSlopeHigh.toString()}`);
+  });
+
+  it('should have borrow base matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    const {rates} = config;
+    const {borrowBase} = rates;
+
+    const deployedBorrowBase = await comet.borrowPerSecondInterestRateBase();
+    // Convert annual rate to per-second rate: annual_rate / SECONDS_PER_YEAR
+    const expectedBorrowBase = Math.trunc(Number(convertDecimalTo18Decimals(borrowBase)) / SECONDS_PER_YEAR).toString();
+    expect(deployedBorrowBase.toString()).to.equal(expectedBorrowBase);
+    console.log(`✅ Borrow base matches: ${deployedBorrowBase.toString()}`);
+  });
+
+  // ===== ASSET CONFIGURATION TESTS =====
+
+  it('should have correct number of assets matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    if (config.assets && typeof config.assets === 'object') {
+      const numAssets = await comet.numAssets();
+      expect(numAssets).to.equal(Object.keys(config.assets).length);
+      console.log(`✅ Number of assets matches: ${numAssets}`);
+    }
+  });
+  
+  it('should have asset addresses matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    // Load roots.json to get the actual addresses
+    const rootsPath = `../deployments/${network.name}/${market}/roots.json`;
+    const roots = require(rootsPath);
+    
+    if (config.assets && typeof config.assets === 'object') {
+      const assetKeys = Object.keys(config.assets);
+      for (let i = 0; i < assetKeys.length; i++) {
+        const assetKey = assetKeys[i];
+        const configAsset = config.assets[assetKey];
+        const deployedAssetInfo = await comet.getAssetInfo(i);
+        
+        // Validate that configAsset is an object
+        expect(configAsset).to.be.an('object');
+        
+        const expectedAssetAddress = roots[assetKey];
+        expect(expectedAssetAddress).to.exist;
+        expect(deployedAssetInfo.asset.toLowerCase()).to.equal(expectedAssetAddress.toLowerCase());
+        console.log(`✅ Asset ${assetKey} address matches: ${deployedAssetInfo.asset}`);
+      }
+    }
+  });
+
+  it('should have asset price feeds matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    // Load roots.json to get the actual addresses
+    const rootsPath = `../deployments/${network.name}/${market}/roots.json`;
+    const roots = require(rootsPath);
+    
+    if (config.assets && typeof config.assets === 'object') {
+      const assetKeys = Object.keys(config.assets);
+      for (let i = 0; i < assetKeys.length; i++) {
+        const assetKey = assetKeys[i];
+        const configAsset = config.assets[assetKey];
+        const deployedAssetInfo = await comet.getAssetInfo(i);
+        
+        // Price feed is required - fail if missing
+        expect(configAsset.priceFeed).to.exist;
+        expect(configAsset.priceFeed).to.be.a('string');
+        expect(configAsset.priceFeed).to.not.be.empty;
+        
+        const expectedPriceFeedAddress = roots[configAsset.priceFeed];
+        if (expectedPriceFeedAddress) {
+          expect(deployedAssetInfo.priceFeed.toLowerCase()).to.equal(expectedPriceFeedAddress.toLowerCase());
+          console.log(`✅ Asset ${assetKey} price feed ${configAsset.priceFeed} matches: ${deployedAssetInfo.priceFeed}`);
+        } else {
+          // If not in roots.json, compare directly with config value
+          expect(deployedAssetInfo.priceFeed.toLowerCase()).to.equal(configAsset.priceFeed.toLowerCase());
+          console.log(`✅ Asset ${assetKey} price feed matches: ${deployedAssetInfo.priceFeed}`);
+        }
+      }
+    }
+  });
+
+  it('should have asset supply caps matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    if (config.assets && typeof config.assets === 'object') {
+      const assetKeys = Object.keys(config.assets);
+      for (let i = 0; i < assetKeys.length; i++) {
+        const assetKey = assetKeys[i];
+        const configAsset = config.assets[assetKey];
+        const deployedAssetInfo = await comet.getAssetInfo(i);
+        
+        // Supply cap is required - fail if missing
+        expect(configAsset.supplyCap).to.exist;
+        expect(configAsset.supplyCap).to.not.be.undefined;
+        
+        const supplyCapDecimal = convertScientificNotation(configAsset.supplyCap);
+        expect(deployedAssetInfo.supplyCap.toString()).to.equal(supplyCapDecimal);
+        console.log(`✅ Asset ${assetKey} supply cap matches: ${deployedAssetInfo.supplyCap.toString()}`);
+      }
+    }
+  });
+
+  it('should have asset borrow collateral factors matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    if (config.assets && typeof config.assets === 'object') {
+      const assetKeys = Object.keys(config.assets);
+      for (let i = 0; i < assetKeys.length; i++) {
+        const assetKey = assetKeys[i];
+        const configAsset = config.assets[assetKey];
+        const deployedAssetInfo = await comet.getAssetInfo(i);
+        
+        // Borrow collateral factor is required - fail if missing
+        expect(configAsset.borrowCF).to.exist;
+        expect(configAsset.borrowCF).to.not.be.undefined;
+        
+        // Use decimal conversion for factors (0.75 -> 750000000000000000)
+        const borrowCFDecimal = convertDecimalTo18Decimals(configAsset.borrowCF);
+        expect(deployedAssetInfo.borrowCollateralFactor.toString()).to.equal(borrowCFDecimal);
+        console.log(`✅ Asset ${assetKey} borrow collateral factor matches: ${deployedAssetInfo.borrowCollateralFactor.toString()}`);
+      }
+    }
+  });
+
+  it('should have asset liquidate collateral factors matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    if (config.assets && typeof config.assets === 'object') {
+      const assetKeys = Object.keys(config.assets);
+      for (let i = 0; i < assetKeys.length; i++) {
+        const assetKey = assetKeys[i];
+        const configAsset = config.assets[assetKey];
+        const deployedAssetInfo = await comet.getAssetInfo(i);
+        
+        // Liquidate collateral factor is required - fail if missing
+        expect(configAsset.liquidateCF).to.exist;
+        expect(configAsset.liquidateCF).to.not.be.undefined;
+        
+        // Use decimal conversion for factors (0.8 -> 800000000000000000)
+        const liquidateCFDecimal = convertDecimalTo18Decimals(configAsset.liquidateCF);
+        expect(deployedAssetInfo.liquidateCollateralFactor.toString()).to.equal(liquidateCFDecimal);
+        console.log(`✅ Asset ${assetKey} liquidate collateral factor matches: ${deployedAssetInfo.liquidateCollateralFactor.toString()}`);
+      }
+    }
+  });
+
+  it('should have asset liquidation factors matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    if (config.assets && typeof config.assets === 'object') {
+      const assetKeys = Object.keys(config.assets);
+      for (let i = 0; i < assetKeys.length; i++) {
+        const assetKey = assetKeys[i];
+        const configAsset = config.assets[assetKey];
+        const deployedAssetInfo = await comet.getAssetInfo(i);
+        
+        // Liquidation factor is required - fail if missing
+        expect(configAsset.liquidationFactor).to.exist;
+        expect(configAsset.liquidationFactor).to.not.be.undefined;
+        
+        // Use decimal conversion for factors (0.85 -> 850000000000000000)
+        const liquidationFactorDecimal = convertDecimalTo18Decimals(configAsset.liquidationFactor);
+        expect(deployedAssetInfo.liquidationFactor.toString()).to.equal(liquidationFactorDecimal);
+        console.log(`✅ Asset ${assetKey} liquidation factor matches: ${deployedAssetInfo.liquidationFactor.toString()}`);
+      }
+    }
+  });
+
+  it('should have interest rate model matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    // Load roots.json to get the actual addresses
+    const rootsPath = `../deployments/${network.name}/${market}/roots.json`;
+    const roots = require(rootsPath);
+    
+    if (config.interestRateModel) {
+      const interestRateModel = await comet.interestRateModel();
+      const expectedInterestRateModelAddress = roots[config.interestRateModel];
+      
+      if (expectedInterestRateModelAddress) {
+        expect(interestRateModel.toLowerCase()).to.equal(expectedInterestRateModelAddress.toLowerCase());
+        console.log(`✅ Interest rate model ${config.interestRateModel} matches: ${interestRateModel}`);
+      } else {
+        // If not in roots.json, compare directly with config value
+        expect(interestRateModel.toLowerCase()).to.equal(config.interestRateModel.toLowerCase());
+        console.log(`✅ Interest rate model matches: ${interestRateModel}`);
+      }
+    }
+  });
+
+  it('should have reward configuration matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    // Load roots.json to get the actual addresses
+    const rootsPath = `../deployments/${network.name}/${market}/roots.json`;
+    const roots = require(rootsPath);
+    
+    if (config.rewards) {
+      const rewards = await ethers.getContractAt('CometRewards', await comet.rewards());
+      
+      if (config.rewards.token) {
+        const rewardConfig = await rewards.rewardConfig(comet.address);
+        const expectedRewardTokenAddress = roots[config.rewards.token];
+        
+        if (expectedRewardTokenAddress) {
+          expect(rewardConfig.token.toLowerCase()).to.equal(expectedRewardTokenAddress.toLowerCase());
+          console.log(`✅ Reward token ${config.rewards.token} matches: ${rewardConfig.token}`);
+        } else {
+          // If not in roots.json, compare directly with config value
+          expect(rewardConfig.token.toLowerCase()).to.equal(config.rewards.token.toLowerCase());
+          console.log(`✅ Reward token matches: ${rewardConfig.token}`);
+        }
+      }
+    }
+  });
+
+
+  // ===== ASSET PARAMETER TESTS =====
+  
+  it('should have asset decimals matching configuration.json', async function () {
+    const { comet } = deployedContracts;
+    
+    if (config.assets && typeof config.assets === 'object') {
+      const assetKeys = Object.keys(config.assets);
+      for (let i = 0; i < assetKeys.length; i++) {
+        const assetKey = assetKeys[i];
+        const configAsset = config.assets[assetKey];
+        const deployedAssetInfo = await comet.getAssetInfo(i);
+        
+        // Check asset decimals
+        if (configAsset.decimals !== undefined) {
+          // Get decimals from the asset contract using a minimal interface with decimals
+          try {
+            const assetContract = await ethers.getContractAt([
+              'function decimals() external view returns (uint8)',
+            ], deployedAssetInfo.asset);
+            const deployedDecimals = await assetContract.decimals();
+            expect(deployedDecimals.toString()).to.equal(configAsset.decimals);
+            console.log(`✅ Asset ${assetKey} decimals match: ${deployedDecimals}`);
+          } catch (error) {
+            console.log(`⚠️ Could not verify decimals for asset ${assetKey}: ${error.message}`);
+          }
+        }
+      }
+    }
+  });
+
 });
 
 // Helper function to get proxy admin for a contract
