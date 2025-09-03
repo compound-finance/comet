@@ -93,9 +93,8 @@ describe('Deployment Verification', function () {
 
   it('should validate BDAG governor environment configuration matches deployed contract', async function () {
     const { governor } = deployedContracts;
-    const customGovernor = governor as any;
     
-    const deployedThreshold = await customGovernor.multisigThreshold();
+    const deployedThreshold = await governor.multisigThreshold();
     
     // Get environment variables
     const envSigners = process.env.GOV_SIGNERS;
@@ -119,7 +118,7 @@ describe('Deployment Verification', function () {
       
       expect(ethers.utils.isAddress(envAddress)).to.be.true;
       
-      const isAdmin = await customGovernor.admins(envAddress);
+      const isAdmin = await governor.isAdmin(envAddress);
       expect(isAdmin).to.be.true;
     }
   });

@@ -94,33 +94,41 @@ async function extractLogsFromTransaction(
     
     // Parse logs based on execution type
     switch (executionType) {
-      case 'comet-impl-in-configuration':        
+      case 'comet-impl-in-configuration': {
         const cometDeployedData = extractCometDeployedEvent(receipt, trace);
         if (cometDeployedData) {
           extractedLogs.parsedLogs.cometDeployed = cometDeployedData;
         }
         break;
-        
+      }
       case 'comet-upgrade':
         trace('Parsing logs for comet upgrade execution...');
         break;
 
-      case 'comet-reward-funding':
+      case 'comet-reward-funding': {
         trace('Parsing logs for comet reward funding execution...');
         const transferData = extractTokenTransferEvent(receipt, trace);
         if (transferData) {
           extractedLogs.parsedLogs.tokenTransfer = transferData;
         }
         break;
-
-      case 'timelock-delay-change':
+      }
+      case 'governance-config': {
+        trace('Parsing logs for governance configuration change execution...');
+        const governanceConfigData = extractGovernanceConfigEvent(receipt, trace);
+        if (governanceConfigData) {
+          extractedLogs.parsedLogs.governanceConfig = governanceConfigData;
+        }
+        break;
+      }
+      case 'timelock-delay-change': {
         trace('Parsing logs for timelock delay change execution...');
         const newDelayData = extractNewDelayEvent(receipt, trace);
         if (newDelayData) {
           extractedLogs.parsedLogs.newDelay = newDelayData;
         }
         break;
-
+      }
       default:
         // Default log parsing
         trace('Parsing logs with default strategy...');
@@ -224,6 +232,51 @@ function extractTokenTransferEvent(receipt: any, trace: any): any {
 }
 
 /**
+ * Extracts GovernorAdminChanged events from governance configuration change transaction logs
+ * @param receipt Transaction receipt containing logs
+ * @param trace Tracer function for logging
+ * @returns Parsed governance configuration change data or null if not found
+ */
+function extractGovernanceConfigEvent(receipt: any, trace: any): any {
+  trace('Parsing logs for governance configuration change...');
+  // Create interface for CustomGovernor to parse GovernanceConfigSet event
+  const governorInterface = new ethers.utils.Interface([
+    'event GovernanceConfigSet(address[] admins, uint threshold)'
+  ]);
+  
+  // Look for GovernanceConfigSet events in the logs
+  const governanceConfigEvents = receipt.logs
+    .map((log: any) => {
+      try {
+        return governorInterface.parseLog(log);
+      } catch (error) {
+        return null; // Not a GovernanceConfigSet event
+      }
+    })
+    .filter((parsedLog: any) => parsedLog !== null && parsedLog.name === 'GovernanceConfigSet');
+  
+  if (governanceConfigEvents.length > 0) {
+    const governanceConfigEvent = governanceConfigEvents[0];
+    const newAdmins = governanceConfigEvent.args.admins;
+    const newThreshold = governanceConfigEvent.args.threshold;
+    
+    trace(`Found GovernanceConfigSet event`);
+    trace(`New admins: ${newAdmins.join(', ')}`);
+    trace(`New threshold: ${newThreshold}`);
+    
+    return {
+      newAdmins,
+      newThreshold,
+      totalAdmins: newAdmins.length,
+      eventName: 'GovernanceConfigSet'
+    };
+  } else {
+    trace('No GovernanceConfigSet events found in transaction logs');
+    return null;
+  }
+}
+  
+/*
  * Extracts NewDelay event from timelock transaction logs
  * @param receipt Transaction receipt containing logs
  * @param trace Tracer function for logging

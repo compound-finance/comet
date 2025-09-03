@@ -33,12 +33,11 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
     /// @notice The latest proposal for each proposer
     mapping (address => uint) public latestProposalIds;
 
-    /// @notice Mapping of admin addresses (set in constructor)
-    mapping (address => bool) public admins;
+    /// @notice Array of admin addresses (set in constructor)
+    address[] public admins;
 
     /// @notice Number of admins required to approve a proposal (immutable)
-    uint public immutable multisigThreshold;
-    
+    uint public multisigThreshold;
 
     /// @notice Mapping of proposal approvals by admins
     mapping (uint => mapping (address => bool)) public proposalApprovals;
@@ -52,12 +51,13 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
     /// @notice An event emitted when an admin approves a proposal
     event ProposalApproved(uint proposalId, address admin);
 
+    /// @notice An event emitted when the governance configuration is set
+    event GovernanceConfigSet(address[] admins, uint threshold);
+
     /**
-     * @notice Constructor to set immutable multisig threshold and disable initializers
-     * @param threshold_ The multisig threshold (immutable)
+     * @notice Constructor to disable initializers
      */
-    constructor(uint threshold_) {
-        multisigThreshold = threshold_;
+    constructor() {
         _disableInitializers();
     }
 
@@ -66,18 +66,24 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
      * @param timelock_ The timelock contract address
      * @param token_ The governance token address
      * @param admins_ The array of admin addresses
+     * @param threshold_ The multisig threshold (immutable)
      */
     function initialize(
         address timelock_,
         address token_,
-        address[] memory admins_
+        address[] memory admins_,
+        uint threshold_
     ) external initializer {
+        require(threshold_ > 0, "CustomGovernor::initialize: threshold must be greater than 0");
+        require(threshold_ <= admins_.length, "CustomGovernor::initialize: threshold cannot be greater than admins length");
+
         timelock = Timelock(payable(timelock_));
         token = token_;
-        
+
+        multisigThreshold = threshold_;
         // Set admins
         for (uint i = 0; i < admins_.length; i++) {
-            admins[admins_[i]] = true;
+            admins.push(admins_[i]);
             emit GovernorAdminChanged(admins_[i], true);
         }
     }
@@ -88,7 +94,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
         bytes[] memory calldatas,
         string memory description
     ) public returns (uint) {
-        require(admins[msg.sender], "CustomGovernor::propose: only admins can propose");
+        require(isAdmin(msg.sender), "CustomGovernor::propose: only admins can propose");
         require(targets.length == values.length && targets.length == calldatas.length, "CustomGovernor::propose: proposal function information arity mismatch");
         require(targets.length != 0, "CustomGovernor::propose: must provide actions");
         require(targets.length <= proposalMaxOperations, "CustomGovernor::propose: too many actions");
@@ -122,7 +128,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
     }
 
     function queue(uint proposalId) external {
-        require(admins[msg.sender], "CustomGovernor::queue: only admins can queue");
+        require(isAdmin(msg.sender), "CustomGovernor::queue: only admins can queue");
         require(state(proposalId) == IGovernorBravo.ProposalState.Succeeded, "CustomGovernor::queue: proposal can only be queued if it is succeeded");
         
         // Check if proposal has enough approvals
@@ -142,7 +148,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
     }
 
     function execute(uint proposalId) external {
-        require(admins[msg.sender], "CustomGovernor::execute: only admins can execute");
+        require(isAdmin(msg.sender), "CustomGovernor::execute: only admins can execute");
         require(state(proposalId) == IGovernorBravo.ProposalState.Queued, "CustomGovernor::execute: proposal can only be executed if it is queued");
         Proposal storage proposal = _proposals[proposalId];
         proposal.executed = true;
@@ -180,19 +186,29 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
      * @param admin The address to check
      * @return Whether the address is an admin
      */
-    function isAdmin(address admin) external view returns (bool) {
-        return admins[admin];
+    function isAdmin(address admin) public view returns (bool) {
+        for (uint i = 0; i < admins.length; i++) {
+            if (admins[i] == admin) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
-     * @notice Add or remove an admin
-     * @param admin The address to add or remove
-     * @param isAdmin Whether to add (true) or remove (false) the admin
+     * @notice Set new governance admins and threshold
+     * @param admins_ new admins
+     * @param threshold_ new threshold
+     * @dev setup a new governance configuration, this function is only callable by the timelock using the proposal execution
      */
-    function setAdmin(address admin, bool isAdmin) external {
-        require(admins[msg.sender], "CustomGovernor::setAdmin: only admins can manage admins");
-        admins[admin] = isAdmin;
-        emit GovernorAdminChanged(admin, isAdmin);
+    function setGovernanceConfig(address[] memory admins_, uint threshold_) external {
+        require(msg.sender == address(timelock), "CustomGovernor::setGovernanceConfig: only timelock can call");
+        require(threshold_ <= admins_.length, "CustomGovernor::setGovernanceConfig: threshold cannot be greater than admins length");
+        require(threshold_ > 0, "CustomGovernor::setGovernanceConfig: threshold cannot be 0");
+        admins = admins_;
+        multisigThreshold = threshold_;
+
+        emit GovernanceConfigSet(admins_, threshold_);
     }
 
     /**
@@ -216,7 +232,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
     function castVote(uint proposalId, uint8 support) external returns (uint) {
         // For multisig, castVote acts as approveProposal
         // support parameter is ignored, any call to castVote counts as approval
-        require(admins[msg.sender], "CustomGovernor::castVote: only admins can vote");
+        require(isAdmin(msg.sender), "CustomGovernor::castVote: only admins can vote");
         require(!proposalApprovals[proposalId][msg.sender], "CustomGovernor::castVote: already voted");
         
         proposalApprovals[proposalId][msg.sender] = true;
@@ -272,7 +288,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
      * @param description Description of the upgrade
      */
     function proposeUpgrade(address newImplementation, string memory description) external returns (uint) {
-        require(admins[msg.sender], "CustomGovernor::proposeUpgrade: only admins can propose upgrades");
+        require(isAdmin(msg.sender), "CustomGovernor::proposeUpgrade: only admins can propose upgrades");
         
         // Create upgrade proposal data
         address[] memory targets = new address[](1);
@@ -295,7 +311,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
      * @param description Description of the upgrade
      */
     function proposeUpgradeAndCall(address newImplementation, bytes calldata data, string memory description) external returns (uint) {
-        require(admins[msg.sender], "CustomGovernor::proposeUpgradeAndCall: only admins can propose upgrades");
+        require(isAdmin(msg.sender), "CustomGovernor::proposeUpgradeAndCall: only admins can propose upgrades");
         
         // Create upgrade proposal data
         address[] memory targets = new address[](1);
