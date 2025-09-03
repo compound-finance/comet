@@ -1081,12 +1081,12 @@ contract CometWithPartialLiquidation is CometMainInterface {
                 uint256 collateralValue = mulPrice(seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale);
                 uint256 collaterizationValue = mulFactor(collateralValue, assetInfo.borrowCollateralFactor);
                 uint256 seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor);
-                uint256 expectedHF = (remainingDebt - deltaValue - seizedValue) / (totalCollaterizedValue - collaterizationValue);
+                uint256 expectedHF = ((remainingDebt - deltaValue - seizedValue) * FACTOR_SCALE) / (totalCollaterizedValue - collaterizationValue);
                 if (expectedHF >= targetHF) { // we need to seize only part of collateral
                     /// target HF = (debt - delta * LF) / (collateral value - delta) * CF
                     /// =>
                     /// delta = (debt - THF * CF* collateral value) / (CF * THF - LF)
-                    seizedValue = (remainingDebt- deltaValue - mulFactor(targetHF, collaterizationValue)) / (mulFactor(assetInfo.borrowCollateralFactor, targetHF) - assetInfo.liquidationFactor);
+                    seizedValue = ((remainingDebt - deltaValue) - mulFactor(targetHF, collaterizationValue)) / (mulFactor(assetInfo.borrowCollateralFactor, targetHF) - assetInfo.liquidationFactor);
                     seizeAmount = divPrice(seizedValue, getPrice(assetInfo.priceFeed), assetInfo.scale);
                     currentHF = targetHF;
                 } else {
