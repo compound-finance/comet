@@ -42,8 +42,8 @@ const EZETH_RATE_PROVIDER = '0x387dBc0fB00b26fb085aa658527D5BE98302c84C';
 // 9. WBTC
 const WBTC_ADDRESS = '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599';
 const WBTC_BTC_PRICE_FEED = '0xfdFD9C85aD200c506Cf9e21F1FD8dd01932FBB23';
-const BTC_USD_OEV_PRICE_FEED = '0xdc715c751f1cc129A6b47fEDC87D9918a4580502';
-const ETH_USD_OEV_PRICE_FEED = '0x7c7FdFCa295a787ded12Bb5c1A49A8D2cC20E3F8';
+const BTC_USD_SVR_PRICE_FEED = '0x91D32e6f01d6473b596f54c6E304e06d774f86b2';
+const ETH_USD_SVR_PRICE_FEED = '0xc0053f3FBcCD593758258334Dfce24C2A9A673aD';
 
 // 10. cbBTC
 const CBBTC_ADDRESS = '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf';
@@ -273,24 +273,24 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       true
     );
 
-    const oevWbtcToUsdPriceFeed = await deploymentManager.deploy(
+    const svrWbtcToUsdPriceFeed = await deploymentManager.deploy(
       'WBTC:_priceFeed',
       'pricefeeds/MultiplicativePriceFeed.sol',
       [
         WBTC_BTC_PRICE_FEED,    // WBTC / BTC price feed
-        BTC_USD_OEV_PRICE_FEED, // BTC / USD price feed 
+        BTC_USD_SVR_PRICE_FEED, // BTC / USD price feed 
         8,                      // decimals
         'WBTC / USD price feed'
       ],
       true
     );
 
-    const oevWbtcToEthPriceFeed = await deploymentManager.deploy(
+    const svrWbtcToEthPriceFeed = await deploymentManager.deploy(
       'WBTC:priceFeed',
       'pricefeeds/ReverseMultiplicativePriceFeed.sol',
       [
-        oevWbtcToUsdPriceFeed.address, // WBTC / USD price feed
-        ETH_USD_OEV_PRICE_FEED,        // ETH / USD price feed (reversed)
+        svrWbtcToUsdPriceFeed.address, // WBTC / USD price feed
+        ETH_USD_SVR_PRICE_FEED,        // ETH / USD price feed (reversed)
         8,                             // decimals
         'WBTC / ETH price feed'
       ],
@@ -302,7 +302,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'pricefeeds/ReverseMultiplicativePriceFeed.sol',
       [
         CBBTC_USD_ADDRESS,        // cbBTC / USD price feed
-        ETH_USD_OEV_PRICE_FEED,  // ETH / USD price feed (reversed)
+        ETH_USD_SVR_PRICE_FEED,  // ETH / USD price feed (reversed)
         8,                       // decimals
         'cbBTC / ETH price feed'
       ],
@@ -314,7 +314,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'pricefeeds/ReverseMultiplicativePriceFeed.sol',
       [
         TBTC_USD_ADDRESS,        // tBTC / USD price feed
-        ETH_USD_OEV_PRICE_FEED,  // ETH / USD price feed (reversed)
+        ETH_USD_SVR_PRICE_FEED,  // ETH / USD price feed (reversed)
         8,                       // decimals
         'tBTC / ETH price feed'
       ],
@@ -330,7 +330,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       ethXCapoPriceFeedAddress: ethXCapoPriceFeed.address,
       //cbEthCapoPriceFeedAddress: cbEthCapoPriceFeed.address,
       ezEthCapoPriceFeedAddress: ezEthCapoPriceFeed.address,
-      wbtcPriceFeedAddress: oevWbtcToEthPriceFeed.address,
+      wbtcPriceFeedAddress: svrWbtcToEthPriceFeed.address,
       cbBtcPriceFeedAddress: cbBtcPriceFeed.address,
       tBtcPriceFeedAddress: tBtcPriceFeed.address,
     };

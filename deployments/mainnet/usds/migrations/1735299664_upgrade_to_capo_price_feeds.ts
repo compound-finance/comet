@@ -10,7 +10,7 @@ export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
 }
 
 const WETH_ADDRESS = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
-const ETH_USD_OEV_PRICE_FEED = '0x7c7FdFCa295a787ded12Bb5c1A49A8D2cC20E3F8';
+const ETH_USD_SVR_PRICE_FEED = '0xc0053f3FBcCD593758258334Dfce24C2A9A673aD';
 const WSTETH_ADDRESS = '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0';
 const WEETH_ADDRESS = '0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee';
 const FEED_DECIMALS = 8;
@@ -37,7 +37,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'capo/contracts/WstETHCorrelatedAssetsPriceOracle.sol',
       [
         timelock.address,
-        ETH_USD_OEV_PRICE_FEED,
+        ETH_USD_SVR_PRICE_FEED,
         wstETH.address,
         constantPriceFeed.address,
         'wstETH / USD capo price feed',
@@ -62,7 +62,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         timelock.address,
         constantPriceFeed.address,
         WEETH_ADDRESS,
-        ETH_USD_OEV_PRICE_FEED,
+        ETH_USD_SVR_PRICE_FEED,
         'weETH / ETH capo price feed',
         FEED_DECIMALS,
         3600,
@@ -113,7 +113,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       {
         contract: configurator,
         signature: 'updateAssetPriceFeed(address,address,address)',
-        args: [comet.address, WETH_ADDRESS, ETH_USD_OEV_PRICE_FEED],
+        args: [comet.address, WETH_ADDRESS, ETH_USD_SVR_PRICE_FEED],
       },
       // 3. Update weETH price feed
       {
@@ -129,7 +129,30 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       },
     ];
  
-    const description = '';
+    const description = `# Update wstETH, WETH and weETH price feeds in cUSDCv3 on Mainnet with CAPO and SVR implementation.
+
+## Proposal summary
+
+This proposal updates existing price feeds for wstETH, WETH and weETH on the USDS market on Mainnet implementing CAPO and SVR.
+CAPO is a price oracle adapter designed to support assets that grow gradually relative to a base asset - such as liquid staking tokens that accumulate yield over time. It provides a mechanism to track this expected growth while protecting downstream protocol from sudden or manipulated price spikes.
+SVR utilizes Chainlink's SVR oracle solution that allows to recapture the non-toxic Maximal Extractable Value (MEV) derived from their use of Chainlink Price Feeds.
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1015),  [forum discussion for CAPO](https://www.comp.xyz/t/woof-correlated-assets-price-oracle-capo/6245) and [forum discussion for SVR](https://www.comp.xyz/t/request-for-proposal-rfp-oracle-extractable-value-oev-solution-for-compound-protocol/6786).
+
+## CAPO audit
+
+CAPO has been audited by [OpenZeppelin](https://www.comp.xyz/t/capo-price-feed-audit/6631).
+
+## SVR fee recipient
+
+Compound DAO fee recipient is 0xd9496F2A3fd2a97d8A4531D92742F3C8F53183cB.
+
+## Proposal actions
+
+The first action updates wstETH price feed to CAPO + SVR.
+The second action updates WETH price feed to SVR.
+The third action updates weETH price feed to SVR.
+The fourth action deploys and upgrades Comet to a new version.
+`;
  
     const txn = await deploymentManager.retry(async () =>
       trace(
@@ -182,10 +205,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       await configurator.getConfiguration(comet.address)
     ).assetConfigs[wethIndexInComet];
 
-    expect(wethInCometInfo.priceFeed).to.eq(ETH_USD_OEV_PRICE_FEED);
-    expect(wethInConfiguratorInfoWETHComet.priceFeed).to.eq(ETH_USD_OEV_PRICE_FEED);
+    expect(wethInCometInfo.priceFeed).to.eq(ETH_USD_SVR_PRICE_FEED);
+    expect(wethInConfiguratorInfoWETHComet.priceFeed).to.eq(ETH_USD_SVR_PRICE_FEED);
 
-    expect(await comet.getPrice(ETH_USD_OEV_PRICE_FEED)).to.be.closeTo(await comet.getPrice(oldWETHPriceFeed), 40e8);
+    expect(await comet.getPrice(ETH_USD_SVR_PRICE_FEED)).to.be.closeTo(await comet.getPrice(oldWETHPriceFeed), 40e8);
 
     const weETHIndexInComet = await configurator.getAssetIndex(
       comet.address,
