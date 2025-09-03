@@ -1,12 +1,13 @@
-import { task } from "hardhat/config";
-import { DeploymentManager } from "../../plugins/deployment_manager";
-import approveProposal from "../../src/governor/ApproveProposal";
-import queueProposal from "../../src/governor/QueueProposal";
-import executeProposal from "../../src/governor/ExecuteProposal";
-import getProposalStatus from "../../src/governor/GetProposalStatus";
-import proposeCometUpgradeTask from "../../src/governor/ProposeCometUpgrade";
-import proposeFundCometRewardsTask from "../../src/governor/ProposeFundCometRewards";
-import proposeTimelockDelayChangeTask from "../../src/governor/ProposeTimelockDelayChange";
+import { task } from 'hardhat/config';
+import { DeploymentManager } from '../../plugins/deployment_manager';
+import approveProposal from '../../src/governor/ApproveProposal';
+import queueProposal from '../../src/governor/QueueProposal';
+import executeProposal from '../../src/governor/ExecuteProposal';
+import getProposalStatus from '../../src/governor/GetProposalStatus';
+import proposeCometUpgradeTask from '../../src/governor/ProposeCometUpgrade';
+import proposeFundCometRewardsTask from '../../src/governor/ProposeFundCometRewards';
+import proposeGovernanceConfigTask from '../../src/governor/ProposeGovernanceConfig';
+import proposeTimelockDelayChangeTask from '../../src/governor/ProposeTimelockDelayChange';
 
 // Helper function to create deployment manager
 async function createDeploymentManager(hre: any, deployment?: string) {
@@ -28,11 +29,13 @@ async function createDeploymentManager(hre: any, deployment?: string) {
 }
 
 // Task to approve a proposal
-task("governor:approve", "Approve a proposal")
-  .addParam("proposalId", "The proposal ID to approve")
+task('governor:approve', 'Approve a proposal')
+  .addParam('proposalId', 'The proposal ID to approve')
+  .addOptionalParam('deployment', 'The deployment to use')
   .setAction(async (taskArgs, hre) => {
+    const deployment = taskArgs.deployment;
     // Create deployment manager
-    await createDeploymentManager(hre);
+    await createDeploymentManager(hre, deployment);
     
     const proposalId = parseInt(taskArgs.proposalId);
     
@@ -48,11 +51,13 @@ task("governor:approve", "Approve a proposal")
   });
 
 // Task to queue a proposal
-task("governor:queue", "Queue a proposal")
-  .addParam("proposalId", "The proposal ID to queue")
+task('governor:queue', 'Queue a proposal')
+  .addParam('proposalId', 'The proposal ID to queue')
+  .addOptionalParam('deployment', 'The deployment to use')
   .setAction(async (taskArgs, hre) => {
+    const deployment = taskArgs.deployment;
     // Create deployment manager
-    await createDeploymentManager(hre);
+    await createDeploymentManager(hre, deployment);
     
     const proposalId = parseInt(taskArgs.proposalId);
     
@@ -68,12 +73,13 @@ task("governor:queue", "Queue a proposal")
   });
 
 // Task to execute a proposal
-task("governor:execute", "Execute a proposal")
-  .addParam("proposalId", "The proposal ID to execute")
-  .addParam("executionType", "The execution type (comet-impl-in-configuration, comet-upgrade)")
+task('governor:execute', 'Execute a proposal')
+  .addParam('proposalId', 'The proposal ID to execute')
+  .addParam('executionType', 'The execution type (comet-impl-in-configuration, comet-upgrade, governance-config)')
+  .addOptionalParam('deployment', 'The deployment to use')
   .setAction(async (taskArgs, hre) => {
-
-    await createDeploymentManager(hre);
+    const deployment = taskArgs.deployment;
+    await createDeploymentManager(hre, deployment);
     
     const proposalId = parseInt(taskArgs.proposalId);
     const executionType = taskArgs.executionType;
@@ -90,11 +96,13 @@ task("governor:execute", "Execute a proposal")
   });
 
 // Task to check proposal status
-task("governor:status", "Check proposal status")
-  .addParam("proposalId", "The proposal ID to check")
+task('governor:status', 'Check proposal status')
+  .addParam('proposalId', 'The proposal ID to check')
+  .addOptionalParam('deployment', 'The deployment to use')
   .setAction(async (taskArgs, hre) => {
+    const deployment = taskArgs.deployment;
     // Create deployment manager
-    await createDeploymentManager(hre);
+    await createDeploymentManager(hre, deployment);
     
     const proposalId = parseInt(taskArgs.proposalId);
     
@@ -110,9 +118,9 @@ task("governor:status", "Check proposal status")
   });
 
 // Task to propose Comet upgrade
-task("governor:propose-upgrade", "Propose a Comet implementation upgrade")
-  .addParam("implementation", "The new implementation address")
-  .addParam("deployment", "The deployment to use")
+task('governor:propose-upgrade', 'Propose a Comet implementation upgrade')
+  .addParam('implementation', 'The new implementation address')
+  .addParam('deployment', 'The deployment to use')
   .setAction(async (taskArgs, hre) => {
     // Create deployment manager
     const newImplementationAddress = taskArgs.implementation;
@@ -132,8 +140,8 @@ task("governor:propose-upgrade", "Propose a Comet implementation upgrade")
   }); 
 
 // Task to propose funding CometRewards
-task("governor:propose-fund-comet-rewards", "Propose to fund CometRewards contract with COMP tokens")
-  .addParam("amount", "The amount of COMP tokens to transfer (in wei, e.g., '1000000000000000000000' for 1000 COMP)")
+task('governor:propose-fund-comet-rewards', 'Propose to fund CometRewards contract with COMP tokens')
+  .addParam('amount', 'The amount of COMP tokens to transfer (in wei, e.g., "1000000000000000000000" for 1000 COMP)')
   .setAction(async (taskArgs, hre) => {
     const amount = taskArgs.amount;
 
@@ -148,11 +156,59 @@ task("governor:propose-fund-comet-rewards", "Propose to fund CometRewards contra
       console.error(`❌ Failed to propose CometRewards funding:`, error);
       throw error;
     }
+  });
+
+// Task to propose governance configuration changes
+task('governor:propose-governance-config', 'Propose changes to governance configuration (admins and threshold)')
+  .addParam('admins', "Comma-separated list of new admin addresses (e.g., '0x123...,0x456...,0x789...')")
+  .addParam('threshold', 'New multisig threshold (number of required approvals)')
+  .addParam('deployment', 'The deployment to use')
+  .setAction(async (taskArgs, hre) => {
+    const adminsParam = taskArgs.admins;
+    const threshold = parseInt(taskArgs.threshold);
+    const deployment = taskArgs.deployment;
+    
+    await createDeploymentManager(hre, deployment);
+    
+    // Parse admin addresses
+    const admins = adminsParam.split(',').map((addr: string) => addr.trim());
+    
+    // Validate inputs
+    if (admins.length === 0) {
+      throw new Error('❌ At least one admin address is required');
+    }
+    
+    if (threshold <= 0) {
+      throw new Error('❌ Threshold must be greater than 0');
+    }
+    
+    if (threshold > admins.length) {
+      throw new Error('❌ Threshold cannot be greater than the number of admins');
+    }
+    
+    // Validate addresses
+    for (const admin of admins) {
+      if (!/^0x[a-fA-F0-9]{40}$/.test(admin)) {
+        throw new Error(`❌ Invalid admin address: ${admin}`);
+      }
+    }
+    
+    console.log(`Proposing governance configuration change:`);
+    console.log(`  New admins: ${admins.join(', ')}`);
+    console.log(`  New threshold: ${threshold}`);
+    
+    try {
+      const result = await proposeGovernanceConfigTask(hre, admins, threshold);
+      return result;
+    } catch (error) {
+      console.error(`❌ Failed to propose governance configuration change:`, error);
+      throw error;
+    }
   }); 
 
 // Task to propose timelock delay change
-task("governor:propose-timelock-delay-change", "Propose to change the timelock delay")
-  .addParam("delay", "The new delay value in seconds (e.g., '86400' for 1 day)")
+task('governor:propose-timelock-delay-change', 'Propose to change the timelock delay')
+  .addParam('delay', "The new delay value in seconds (e.g., '86400' for 1 day)")
   .setAction(async (taskArgs, hre) => {
     const delay = taskArgs.delay;
 

@@ -468,21 +468,12 @@ async function createBDAGGov(
   
   const COMP = await deploymentManager.deploy('COMP', './Comp.sol', [timelock.address]);
 
-  const GOVERNOR_FACTORY = 'CustomGovernor';
-  
   // Deploy custom governor implementation
   let governorImpl = await deploymentManager.deploy(
     'governor:implementation',
-    `${GOVERNOR_FACTORY}.sol`,
-    [multisigThreshold] // multisigThreshold
+    'CustomGovernor.sol',
+    []
   );
-  
-  //This is a workaround because the second time
-  //we run this deployment, the governorImpl, is an IGovernorBravo contract type
-  //and the initialize function is not there
-  //We could change this in relation file but is not worth it do it there
-  const customGovernorFactory = await deploymentManager.hre.ethers.getContractFactory(GOVERNOR_FACTORY);
-  governorImpl = customGovernorFactory.attach(governorImpl.address);
 
   // Deploy governor proxy using ERC1967Proxy (UUPS pattern)
   const governorProxy = await deploymentManager.deploy(
@@ -493,7 +484,8 @@ async function createBDAGGov(
       governorImpl.interface.encodeFunctionData('initialize', [
         timelock.address,
         COMP.address,
-        governorSigners // Pass admins array
+        governorSigners,
+        multisigThreshold
       ])
     ]
   );
