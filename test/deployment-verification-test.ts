@@ -151,6 +151,99 @@ describe('Deployment Verification', function () {
     console.log(`✅ Timelock delay validation passed: ${deployedDelay} seconds (${envDelayNum} from env)`);
   });
 
+  it('should validate BDAG timelock grace period configuration matches deployed contract', async function () {
+    const { timelock } = deployedContracts;
+    
+    // Get environment variable
+    const envGracePeriod = process.env.GRACE_PERIOD;
+    
+    if (!envGracePeriod) {
+      throw new Error('GRACE_PERIOD environment variable must be set for BDAG timelock validation');
+    }
+    
+    const envGracePeriodNum = parseInt(envGracePeriod);
+    
+    // Validate environment variable
+    expect(envGracePeriodNum).to.not.be.NaN;
+    expect(envGracePeriodNum).to.be.gt(0);
+    
+    // Get deployed timelock grace period
+    const deployedGracePeriod = await timelock.GRACE_PERIOD();
+    
+    // Verify deployed grace period matches environment configuration
+    expect(deployedGracePeriod).to.equal(envGracePeriodNum);
+    
+    console.log(`✅ Timelock grace period validation passed: ${deployedGracePeriod} seconds (${envGracePeriodNum} from env)`);
+  });
+
+  it('should validate BDAG timelock minimum delay configuration matches deployed contract', async function () {
+    const { timelock } = deployedContracts;
+    
+    // Get environment variable
+    const envMinimumDelay = process.env.MINIMUM_DELAY;
+    
+    if (!envMinimumDelay) {
+      throw new Error('MINIMUM_DELAY environment variable must be set for BDAG timelock validation');
+    }
+    
+    const envMinimumDelayNum = parseInt(envMinimumDelay);
+    
+    // Validate environment variable
+    expect(envMinimumDelayNum).to.not.be.NaN;
+    expect(envMinimumDelayNum).to.be.gte(0);
+    
+    // Get deployed timelock minimum delay
+    const deployedMinimumDelay = await timelock.MINIMUM_DELAY();
+    
+    // Verify deployed minimum delay matches environment configuration
+    expect(deployedMinimumDelay).to.equal(envMinimumDelayNum);
+    
+    console.log(`✅ Timelock minimum delay validation passed: ${deployedMinimumDelay} seconds (${envMinimumDelayNum} from env)`);
+  });
+
+  it('should validate BDAG timelock maximum delay configuration matches deployed contract', async function () {
+    const { timelock } = deployedContracts;
+    
+    // Get environment variable
+    const envMaximumDelay = process.env.MAXIMUM_DELAY;
+    
+    if (!envMaximumDelay) {
+      throw new Error('MAXIMUM_DELAY environment variable must be set for BDAG timelock validation');
+    }
+    
+    const envMaximumDelayNum = parseInt(envMaximumDelay);
+    
+    // Validate environment variable
+    expect(envMaximumDelayNum).to.not.be.NaN;
+    expect(envMaximumDelayNum).to.be.gt(0);
+    
+    // Get deployed timelock maximum delay
+    const deployedMaximumDelay = await timelock.MAXIMUM_DELAY();
+    
+    // Verify deployed maximum delay matches environment configuration
+    expect(deployedMaximumDelay).to.equal(envMaximumDelayNum);
+    
+    console.log(`✅ Timelock maximum delay validation passed: ${deployedMaximumDelay} seconds (${envMaximumDelayNum} from env)`);
+  });
+
+  it('should validate BDAG timelock delay constraints are properly enforced', async function () {
+    const { timelock } = deployedContracts;
+    
+    // Get all delay-related values
+    const deployedDelay = await timelock.delay();
+    const deployedMinimumDelay = await timelock.MINIMUM_DELAY();
+    const deployedMaximumDelay = await timelock.MAXIMUM_DELAY();
+    
+    // Verify delay is within bounds
+    expect(deployedDelay).to.be.gte(deployedMinimumDelay);
+    expect(deployedDelay).to.be.lte(deployedMaximumDelay);
+    
+    // Verify minimum delay is less than or equal to maximum delay
+    expect(deployedMinimumDelay).to.be.lte(deployedMaximumDelay);
+    
+    console.log(`✅ Timelock delay constraints validation passed: delay=${deployedDelay}, min=${deployedMinimumDelay}, max=${deployedMaximumDelay}`);
+  });
+
   it('should validate BDAG governor admin addresses are not zero or contract address', async function () {
     const { governor } = deployedContracts;
     

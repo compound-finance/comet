@@ -73,7 +73,7 @@ class CometRewardFunder {
   }
 
   private async proposeFunding(amount: string): Promise<string> {
-    const command = `yarn hardhat governor:fund-comet-rewards --network ${this.options.network} --amount ${amount}`;
+    const command = `yarn hardhat governor:propose-fund-comet-rewards --network ${this.options.network} --amount ${amount}`;
     
     const output = await this.runCommand(command, 'Proposing comet reward funding');
     

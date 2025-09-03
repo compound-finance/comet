@@ -7,7 +7,6 @@ pragma solidity 0.8.15;
  */
 contract SimpleTimelock {
     event NewAdmin(address indexed newAdmin);
-    event NewDelay(uint indexed newDelay);
     event CancelTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature, bytes data, uint eta);
     event ExecuteTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature, bytes data, uint eta);
     event QueueTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature, bytes data, uint eta);
@@ -17,14 +16,13 @@ contract SimpleTimelock {
 
     // For GovernorBravo initiation and compatability
     uint public constant proposalCount = 1;
-    uint public delay;
+    uint public constant delay = 0;
     uint public constant GRACE_PERIOD = 14 days;
 
     error Unauthorized();
 
-    constructor(address admin_, uint delay_) {
+    constructor(address admin_) {
         admin = admin_;
-        delay = delay_;
     }
 
     receive() external payable {}
@@ -40,16 +38,8 @@ contract SimpleTimelock {
         emit NewAdmin(newAdmin);
     }
 
-    function setDelay(uint newDelay) external {
-        if (msg.sender != admin) revert Unauthorized();
-        delay = newDelay;
-
-        emit NewDelay(newDelay);
-    }
-
     function queueTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) external returns (bytes32) {
         if (msg.sender != admin) revert Unauthorized();
-        require(eta >= (block.timestamp + delay), "Timelock::queueTransaction: Estimated execution block must satisfy delay.");
 
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
         queuedTransactions[txHash] = true;
@@ -72,8 +62,6 @@ contract SimpleTimelock {
 
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
         require(queuedTransactions[txHash], "Timelock::executeTransaction: Transaction hasn't been queued.");
-        require(block.timestamp >= eta, "Timelock::executeTransaction: Transaction hasn't surpassed time lock.");
-        require(block.timestamp <= (eta + GRACE_PERIOD), "Timelock::executeTransaction: Transaction is stale.");
 
         queuedTransactions[txHash] = false;
 

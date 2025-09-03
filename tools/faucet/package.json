@@ -1,0 +1,24 @@
+{
+  "name": "faucet-tool",
+  "version": "1.0.0",
+  "description": "A TypeScript tool for interacting with the Comet faucet",
+  "main": "dist/faucet.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/faucet.js",
+    "dev": "ts-node faucet.ts",
+    "clean": "rm -rf dist/",
+    "prebuild": "npm run clean"
+  },
+  "dependencies": {
+    "ethers": "^5.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^16.11.7",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.4.4"
+  },
+  "keywords": ["faucet", "ethereum", "comet", "blockdag"],
+  "author": "",
+  "license": "MIT"
+} 
