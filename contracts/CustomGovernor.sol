@@ -66,6 +66,22 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
     }
 
     /**
+     * @notice Modifier to restrict access to admins only
+     */
+    modifier onlyAdmin() {
+        require(isAdmin(msg.sender), "CustomGovernor: only admins can call this function");
+        _;
+    }
+
+    /**
+     * @notice Modifier to restrict access to timelock only
+     */
+    modifier onlyTimelock() {
+        require(msg.sender == address(timelock), "CustomGovernor: only timelock can call this function");
+        _;
+    }
+
+    /**
      * @notice Constructor to disable initializers
      */
     constructor() {
@@ -101,8 +117,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
         uint[] memory values,
         bytes[] memory calldatas,
         string memory description
-    ) public returns (uint) {
-        require(isAdmin(msg.sender), "CustomGovernor::propose: only admins can propose");
+    ) public onlyAdmin returns (uint) {
         require(targets.length == values.length && targets.length == calldatas.length, "CustomGovernor::propose: proposal function information arity mismatch");
         require(targets.length != 0, "CustomGovernor::propose: must provide actions");
         require(targets.length <= proposalMaxOperations, "CustomGovernor::propose: too many actions");
@@ -135,8 +150,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
         return newProposal.id;
     }
 
-    function queue(uint proposalId) external {
-        require(isAdmin(msg.sender), "CustomGovernor::queue: only admins can queue");
+    function queue(uint proposalId) external onlyAdmin {
         require(state(proposalId) == IGovernorBravo.ProposalState.Succeeded, "CustomGovernor::queue: proposal can only be queued if it is succeeded");
         
         // Check if proposal has enough approvals
@@ -155,8 +169,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
         emit ProposalQueued(proposalId, eta);
     }
 
-    function execute(uint proposalId) external {
-        require(isAdmin(msg.sender), "CustomGovernor::execute: only admins can execute");
+    function execute(uint proposalId) external onlyAdmin {
         require(state(proposalId) == IGovernorBravo.ProposalState.Queued, "CustomGovernor::execute: proposal can only be executed if it is queued");
         Proposal storage proposal = _proposals[proposalId];
         proposal.executed = true;
@@ -209,8 +222,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
      * @param threshold_ new threshold
      * @dev setup a new governance configuration, this function is only callable by the timelock using the proposal execution
      */
-    function setGovernanceConfig(address[] memory admins_, uint threshold_) external validGovernanceConfig(admins_, threshold_) {
-        require(msg.sender == address(timelock), "CustomGovernor::setGovernanceConfig: only timelock can call");
+    function setGovernanceConfig(address[] memory admins_, uint threshold_) external onlyTimelock validGovernanceConfig(admins_, threshold_) {
         admins = admins_;
         multisigThreshold = threshold_;
 
@@ -235,10 +247,9 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
         return proposalApprovalCounts[proposalId] >= multisigThreshold;
     }
 
-    function castVote(uint proposalId, uint8 support) external returns (uint) {
+    function castVote(uint proposalId, uint8 support) external onlyAdmin returns (uint) {
         // For multisig, castVote acts as approveProposal
         // support parameter is ignored, any call to castVote counts as approval
-        require(isAdmin(msg.sender), "CustomGovernor::castVote: only admins can vote");
         require(!proposalApprovals[proposalId][msg.sender], "CustomGovernor::castVote: already voted");
         
         proposalApprovals[proposalId][msg.sender] = true;
@@ -293,8 +304,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
      * @param newImplementation The address of the new implementation
      * @param description Description of the upgrade
      */
-    function proposeUpgrade(address newImplementation, string memory description) external returns (uint) {
-        require(isAdmin(msg.sender), "CustomGovernor::proposeUpgrade: only admins can propose upgrades");
+    function proposeUpgrade(address newImplementation, string memory description) external onlyAdmin returns (uint) {
         
         // Create upgrade proposal data
         address[] memory targets = new address[](1);
@@ -316,8 +326,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
      * @param data The initialization data
      * @param description Description of the upgrade
      */
-    function proposeUpgradeAndCall(address newImplementation, bytes calldata data, string memory description) external returns (uint) {
-        require(isAdmin(msg.sender), "CustomGovernor::proposeUpgradeAndCall: only admins can propose upgrades");
+    function proposeUpgradeAndCall(address newImplementation, bytes calldata data, string memory description) external onlyAdmin returns (uint) {
         
         // Create upgrade proposal data
         address[] memory targets = new address[](1);
@@ -339,8 +348,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
      * @notice Execute upgrade (internal function called by proposal execution)
      * @param newImplementation The address of the new implementation
      */
-    function upgradeTo(address newImplementation) external {
-        require(msg.sender == address(timelock), "CustomGovernor::upgradeTo: only timelock can call");
+    function upgradeTo(address newImplementation) external onlyTimelock {
         _upgradeToAndCallUUPS(newImplementation, bytes(""), false);
     }
 
@@ -349,8 +357,7 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
      * @param newImplementation The address of the new implementation
      * @param data The initialization data
      */
-    function upgradeToAndCall(address newImplementation, bytes calldata data) external {
-        require(msg.sender == address(timelock), "CustomGovernor::upgradeToAndCall: only timelock can call");
+    function upgradeToAndCall(address newImplementation, bytes calldata data) external onlyTimelock {
         _upgradeToAndCallUUPS(newImplementation, data, true);
     }
 
