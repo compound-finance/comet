@@ -72,8 +72,6 @@ contract CustomGovernor is IGovernorBravo, ERC1967Upgrade, Initializable {
         address token_,
         address[] memory admins_
     ) external initializer {
-        require(timelock == Timelock(payable(0)), "CustomGovernor::initialize: already initialized");
-        
         timelock = Timelock(payable(timelock_));
         token = token_;
         
