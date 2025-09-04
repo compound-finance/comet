@@ -43,7 +43,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         constantPriceFeed.address,    // ETH price feed
         wstETHToETHPriceFeed.address, // wstETH / ETH price feed
         8,                            // decimals
-        'ETH / wstETH price feed',    // description
+        'ETH / wstETH Price Feed',    // description
       ],
       true
     );
@@ -58,7 +58,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         timelock.address,
         ethToWstETHPriceFeed.address,
         RSETH_ORACLE,
-        'rsETH / wstETH capo price feed',
+        'rsETH / wstETH CAPO Price Feed',
         FEED_DECIMALS,
         3600,
         {
@@ -81,7 +81,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         constantPriceFeed.address,
         rateProviderEzEth.address,
         constants.AddressZero,
-        'ezETH / wstETH capo price feed',
+        'ezETH / wstETH CAPO Price Feed',
         FEED_DECIMALS,
         3600,
         RATE_DECIMALS,

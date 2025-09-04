@@ -35,7 +35,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         timelock.address,
         ETH_TO_USD_PRICE_FEED_ADDRESS,
         METH_TO_ETH_PRICE_FEED_ADDRESS,
-        'mETH / USD capo price feed',
+        'mETH / USD CAPO Price Feed',
         FEED_DECIMALS,
         3600,
         {

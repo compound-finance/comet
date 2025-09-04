@@ -4,6 +4,7 @@ import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { proposal } from '../../../../src/deploy';
 import { Numeric } from '../../../../test/helpers';
 import { IWstETH, IRateProvider, AggregatorV3Interface } from '../../../../build/types';
+import { constants } from 'ethers';
 
 export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
   return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
@@ -72,7 +73,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         ETH_USD_SVR_PRICE_FEED,
         wstETH.address,
         constantPriceFeed.address,
-        'wstETH / USD capo price feed',
+        'wstETH / USD CAPO SVR Price Feed',
         FEED_DECIMALS,
         3600,
         {
@@ -91,7 +92,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         timelock.address,
         FRAX_TO_USD_PRICE_FEED,
         SFRAX_ADDRESS,
-        'sFRAX / USD capo price feed',
+        'sFRAX / USD CAPO Price Feed',
         FEED_DECIMALS,
         3600,
         {
@@ -122,10 +123,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'capo/contracts/RateBasedCorrelatedAssetsPriceOracle.sol',
       [
         timelock.address,
-        constantPriceFeed.address,
-        WEETH_ADDRESS,
         ETH_USD_SVR_PRICE_FEED,
-        'weETH / ETH capo price feed',
+        WEETH_ADDRESS,
+        constants.AddressZero,
+        'weETH / USD CAPO SVR Price Feed',
         FEED_DECIMALS,
         3600,
         RATE_DECIMALS,
@@ -147,7 +148,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         timelock.address,
         ETH_USD_SVR_PRICE_FEED,
         METH_TO_ETH_PRICE_FEED,
-        'mETH / USD capo price feed',
+        'mETH / USD CAPO SVR Price Feed',
         FEED_DECIMALS,
         3600,
         {
@@ -256,22 +257,25 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       },
     ];
 
-    const description = `# Update wstETH, sFRAX, wBTC, WETH, mETH, COMP and LINK price feeds in cUSDTv3 on Mainnet with CAPO and SVR implementation.
+    const description = `# Update price feeds in cUSDTv3 on Mainnet with CAPO and SVR implementation.
 
 ## Proposal summary
 
 This proposal updates existing price feeds for wstETH, sFRAX, wBTC, WETH, mETH, COMP, and LINK on the USDT market on Mainnet implementing CAPO and SVR.
+In conclusion after the [RFP process](https://www.comp.xyz/t/oev-rfp-process-update-july-2025/6945) and community [vote](https://snapshot.box/#/s:comp-vote.eth/proposal/0x98a3873319cdb5a4c66b6f862752bdcfb40d443a5b9c2f9472188d7ed5f9f2e0) passed and decided to implement Chainlink's SVR solution for Mainnet markets, this proposal updates WETH, WBTC, LINK and COMP price feeds to their SVR implementations.
+
 CAPO is a price oracle adapter designed to support assets that grow gradually relative to a base asset - such as liquid staking tokens that accumulate yield over time. It provides a mechanism to track this expected growth while protecting downstream protocol from sudden or manipulated price spikes.
-SVR utilizes Chainlink's SVR oracle solution that allows to recapture the non-toxic Maximal Extractable Value (MEV) derived from their use of Chainlink Price Feeds.
+wstETH, sFRAX, weETH and mETH price feeds are updated to their CAPO implementations.
+
 Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1015),  [forum discussion for CAPO](https://www.comp.xyz/t/woof-correlated-assets-price-oracle-capo/6245) and [forum discussion for SVR](https://www.comp.xyz/t/request-for-proposal-rfp-oracle-extractable-value-oev-solution-for-compound-protocol/6786).
 
 ## CAPO audit
 
-CAPO has been audited by [OpenZeppelin](https://www.comp.xyz/t/capo-price-feed-audit/6631).
+CAPO has been audited by [OpenZeppelin](https://www.comp.xyz/t/capo-price-feed-audit/6631), as well as the LST / LRT implementation [here](https://www.comp.xyz/t/capo-lst-lrt-audit/7118).
 
 ## SVR fee recipient
 
-Compound DAO fee recipient is 0xd9496F2A3fd2a97d8A4531D92742F3C8F53183cB.
+SVR generates revenue from liquidators and Compound DAO will receive that revenue as part of the protocol fee. The fee recipient for SVR is set to Compound DAO multisig: 0xd9496F2A3fd2a97d8A4531D92742F3C8F53183cB.
 
 ## Proposal actions
 

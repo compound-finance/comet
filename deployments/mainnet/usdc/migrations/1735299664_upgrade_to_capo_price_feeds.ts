@@ -4,6 +4,7 @@ import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { proposal } from '../../../../src/deploy';
 import { Numeric } from '../../../../test/helpers';
 import { IWstETH, AggregatorV3Interface, IRateProvider } from '../../../../build/types';
+import { constants } from 'ethers';
 
 export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
   return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
@@ -65,7 +66,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         ETH_USD_SVR_PRICE_FEED,
         wstETH.address,
         constantPriceFeed.address,
-        'wstETH / USD capo price feed',
+        'wstETH / USD CAPO SVR Price Feed',
         FEED_DECIMALS,
         3600,
         {
@@ -97,7 +98,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         timelock.address,
         ETH_USD_SVR_PRICE_FEED,
         rsEthRateProvider.address,
-        'rsETH / USD capo price feed',
+        'rsETH / USD CAPO SVR Price Feed',
         FEED_DECIMALS,
         3600,
         {
@@ -117,10 +118,10 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       'capo/contracts/RateBasedCorrelatedAssetsPriceOracle.sol',
       [
         timelock.address,
-        constantPriceFeed.address,
-        WEETH_ADDRESS,
         ETH_USD_SVR_PRICE_FEED,
-        'weETH / ETH capo price feed',
+        WEETH_ADDRESS,
+        constants.AddressZero,
+        'weETH / USD CAPO SVR Price Feed',
         FEED_DECIMALS,
         3600,
         RATE_DECIMALS,

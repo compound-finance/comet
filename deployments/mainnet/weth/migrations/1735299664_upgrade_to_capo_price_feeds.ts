@@ -98,7 +98,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         constantPriceFeed.address,
         wstETH.address,
         constants.AddressZero,
-        'wstETH / ETH capo price feed',
+        'wstETH / ETH CAPO Price Feed',
         FEED_DECIMALS,
         3600,
         {
@@ -120,7 +120,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         timelock.address,
         constantPriceFeed.address,
         RSETH_ORACLE,
-        'rsETH / ETH capo price feed',
+        'rsETH / ETH CAPO Price Feed',
         FEED_DECIMALS,
         3600,
         {
@@ -144,7 +144,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         constantPriceFeed.address,
         WEETH_ADDRESS,
         constants.AddressZero,
-        'weETH / ETH capo price feed',
+        'weETH / ETH CAPO Price Feed',
         FEED_DECIMALS,
         3600,
         RATE_DECIMALS,
@@ -167,7 +167,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         timelock.address,
         constantPriceFeed.address,
         OSETH_PRICE_FEED_ADDRESS,
-        'oETH / ETH capo price feed',
+        'oETH / ETH CAPO Price Feed',
         FEED_DECIMALS,
         3600,
         {
@@ -191,7 +191,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         constantPriceFeed.address,
         RSWETH_ADDRESS,
         constants.AddressZero,
-        'rswETH / ETH capo price feed',
+        'rswETH / ETH CAPO Price Feed',
         FEED_DECIMALS,
         3600,
         RATE_DECIMALS,
@@ -215,7 +215,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         timelock.address,
         constantPriceFeed.address,
         ETHX_PRICE_FEED_ADDRESS,
-        'ETHx / ETH capo price feed',
+        'ETHx / ETH CAPO Price Feed',
         FEED_DECIMALS,
         3600,
         {
@@ -237,7 +237,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     //     timelock.address,
     //     constantPriceFeed.address,
     //     rateProviderCbEth.address,
-    //     'cbETH / ETH capo price feed',
+    //     'cbETH / ETH CAPO Price Feed',
     //     FEED_DECIMALS,
     //     3600,
     //     {
@@ -260,7 +260,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         constantPriceFeed.address,
         rateProviderEzEth.address,
         constants.AddressZero,
-        'ezETH / ETH capo price feed',
+        'ezETH / ETH CAPO Price Feed',
         FEED_DECIMALS,
         3600,
         RATE_DECIMALS,
@@ -280,7 +280,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         WBTC_BTC_PRICE_FEED,    // WBTC / BTC price feed
         BTC_USD_SVR_PRICE_FEED, // BTC / USD price feed 
         8,                      // decimals
-        'WBTC / USD price feed'
+        'WBTC / USD SVR Price Feed'
       ],
       true
     );
@@ -292,7 +292,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         svrWbtcToUsdPriceFeed.address, // WBTC / USD price feed
         ETH_USD_SVR_PRICE_FEED,        // ETH / USD price feed (reversed)
         8,                             // decimals
-        'WBTC / ETH price feed'
+        'WBTC / ETH SVR Price Feed'
       ],
       true
     );
@@ -304,7 +304,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         CBBTC_USD_ADDRESS,        // cbBTC / USD price feed
         ETH_USD_SVR_PRICE_FEED,  // ETH / USD price feed (reversed)
         8,                       // decimals
-        'cbBTC / ETH price feed'
+        'cbBTC / ETH SVR Price Feed'
       ],
       true
     );
@@ -316,7 +316,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         TBTC_USD_ADDRESS,        // tBTC / USD price feed
         ETH_USD_SVR_PRICE_FEED,  // ETH / USD price feed (reversed)
         8,                       // decimals
-        'tBTC / ETH price feed'
+        'tBTC / ETH SVR Price Feed'
       ],
       true
     );

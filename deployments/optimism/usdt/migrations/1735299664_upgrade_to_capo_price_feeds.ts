@@ -35,7 +35,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         timelock.address,
         ETH_USD_PRICE_FEED,
         WSTETH_STETH_PRICE_FEED_ADDRESS, // wstETH / ETH price feed
-        'wstETH / USD capo price feed',
+        'wstETH / USD CAPO Price Feed',
         FEED_DECIMALS,
         3600,
         {
