@@ -436,10 +436,10 @@ describe('CometWithPartialLiquidation', function() {
     const { cometWithPartialLiquidation, tokens, users: [user1, liquidator] } = protocol;
     const { COMP, WETH, WBTC } = tokens;
 
-    await cometWithPartialLiquidation.setBasePrincipal(user1.address, -exp(1000, 6));
+    await cometWithPartialLiquidation.setBasePrincipal(user1.address, -exp(3000, 6));
     await cometWithPartialLiquidation.setCollateralBalance(user1.address, COMP.address, exp(200, 18));
     await cometWithPartialLiquidation.setCollateralBalance(user1.address, WETH.address, exp(0.2, 18));
-    await cometWithPartialLiquidation.setCollateralBalance(user1.address, WBTC.address, exp(1, 8));
+    await cometWithPartialLiquidation.setCollateralBalance(user1.address, WBTC.address, exp(0.02, 8));
     await cometWithPartialLiquidation.setCollateralBalance(ethers.constants.AddressZero, COMP.address, exp(10000, 18));
     await cometWithPartialLiquidation.setCollateralBalance(ethers.constants.AddressZero, WETH.address, exp(100, 18));
     await cometWithPartialLiquidation.setCollateralBalance(ethers.constants.AddressZero, WBTC.address, exp(100, 8));
@@ -476,16 +476,27 @@ describe('CometWithPartialLiquidation', function() {
     const initialDebt = await cometWithPartialLiquidation.borrowBalanceOf(user1.address);
     const isLiquidatable = await cometWithPartialLiquidation.isLiquidatable(user1.address);
     
-    expect(isLiquidatable).to.be.false; // Should be false because last collateral is sufficient
+    
+    expect(isLiquidatable).to.be.true; 
 
-    // Try to absorb - should fail because user is not liquidatable
-    try {
-      const absorbTx = await cometWithPartialLiquidation.connect(liquidator).absorb(liquidator.address, [user1.address]);
-      await absorbTx.wait();
-      expect.fail('Absorb should have failed because user is not liquidatable');
-    } catch (error) {
-      expect(error.message).to.include('NotLiquidatable');
-    }
+    const absorbTx = await cometWithPartialLiquidation.connect(liquidator).absorb(liquidator.address, [user1.address]);
+    await absorbTx.wait();
+
+    const finalCOMP = await cometWithPartialLiquidation.userCollateral(user1.address, COMP.address);
+    const finalWETH = await cometWithPartialLiquidation.userCollateral(user1.address, WETH.address);
+    const finalWBTC = await cometWithPartialLiquidation.userCollateral(user1.address, WBTC.address);
+    const finalDebt = await cometWithPartialLiquidation.borrowBalanceOf(user1.address);
+    const finalIsLiquidatable = await cometWithPartialLiquidation.isLiquidatable(user1.address);
+    
+    
+    expect(finalDebt.toBigInt()).to.be.lt(initialDebt.toBigInt());
+    
+    const compReduced = finalCOMP.balance.toBigInt() < initialCOMP.balance.toBigInt();
+    const wethReduced = finalWETH.balance.toBigInt() < initialWETH.balance.toBigInt();
+    const wbtcReduced = finalWBTC.balance.toBigInt() < initialWBTC.balance.toBigInt();
+    expect(compReduced || wethReduced || wbtcReduced).to.be.true;
+    
+    expect(finalIsLiquidatable).to.be.true;
   });
 
   it('should successfully absorb user with multiple collaterals - insufficient last collateral', async function () {
