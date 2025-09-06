@@ -8,6 +8,7 @@ import proposeCometUpgradeTask from '../../src/governor/ProposeCometUpgrade';
 import proposeFundCometRewardsTask from '../../src/governor/ProposeFundCometRewards';
 import proposeGovernanceConfigTask from '../../src/governor/ProposeGovernanceConfig';
 import proposeTimelockDelayChangeTask from '../../src/governor/ProposeTimelockDelayChange';
+import proposeTimelockDelayAndGovernanceUpdateTask from '../../src/governor/ProposeTimelockDelayAndGovernanceUpdate';
 
 // Helper function to create deployment manager
 async function createDeploymentManager(hre: any, deployment?: string) {
@@ -221,6 +222,63 @@ task('governor:propose-timelock-delay-change', 'Propose to change the timelock d
       return result;
     } catch (error) {
       console.error(`❌ Failed to propose timelock delay change:`, error);
+      throw error;
+    }
+  }); 
+
+// Task to propose timelock delay and governance updates
+task('governor:propose-timelock-delay-and-governance-update', 'Propose changes to timelock delay and governance configuration')
+  .addParam('admins', "Comma-separated list of new admin addresses (e.g., '0x123...,0x456...,0x789...')")
+  .addParam('threshold', 'New multisig threshold (number of required approvals)')
+  .addParam('deployment', 'The deployment to use')
+  .addOptionalParam('timelockDelay', 'New timelock delay in seconds (optional)')
+  .setAction(async (taskArgs, hre) => {
+    const adminsParam = taskArgs.admins;
+    const threshold = parseInt(taskArgs.threshold);
+    const deployment = taskArgs.deployment;
+    const timelockDelay = taskArgs.timelockDelay ? parseInt(taskArgs.timelockDelay) : null;
+    
+    await createDeploymentManager(hre, deployment);
+    
+    // Parse admin addresses
+    const admins = adminsParam.split(',').map((addr: string) => addr.trim());
+    
+    // Validate inputs
+    if (admins.length === 0) {
+      throw new Error('❌ At least one admin address is required');
+    }
+    
+    if (threshold <= 0) {
+      throw new Error('❌ Threshold must be greater than 0');
+    }
+    
+    if (threshold > admins.length) {
+      throw new Error('❌ Threshold cannot be greater than the number of admins');
+    }
+    
+    // Validate addresses
+    for (const admin of admins) {
+      if (!/^0x[a-fA-F0-9]{40}$/.test(admin)) {
+        throw new Error(`❌ Invalid admin address: ${admin}`);
+      }
+    }
+    
+    if (timelockDelay && timelockDelay <= 0) {
+      throw new Error('❌ Timelock delay must be greater than 0');
+    }
+    
+    console.log(`Proposing timelock delay and governance updates:`);
+    console.log(`  New admins: ${admins.join(', ')}`);
+    console.log(`  New threshold: ${threshold}`);
+    if (timelockDelay) {
+      console.log(`  New timelock delay: ${timelockDelay} seconds`);
+    }
+    
+    try {
+      const result = await proposeTimelockDelayAndGovernanceUpdateTask(hre, admins, threshold, timelockDelay);
+      return result;
+    } catch (error) {
+      console.error(`❌ Failed to propose timelock delay and governance updates:`, error);
       throw error;
     }
   }); 
