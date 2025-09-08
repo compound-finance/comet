@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
-import "../CometWithPartialLiquidation.sol";
+import "../CometInterface.sol";
 
-abstract contract CometHarnessInterfacePartialLiquidation is CometWithPartialLiquidation {
+abstract contract CometHarnessInterfacePartialLiquidation is CometInterface {
     function accrue() virtual external;
     function getNow() virtual external view returns (uint40);
     function setNow(uint now_) virtual external;
@@ -13,5 +13,7 @@ abstract contract CometHarnessInterfacePartialLiquidation is CometWithPartialLiq
     function setCollateralBalance(address account, address asset, uint128 balance) virtual external;
     function updateAssetsInExternal(address account, address asset, uint128 initialUserBalance, uint128 finalUserBalance) virtual external;
     function getAssetList(address account) virtual external view returns (address[] memory);
+    function assetList() virtual external view returns (address);
+    function targetHealthFactor() virtual external view returns (uint256);
 }
 

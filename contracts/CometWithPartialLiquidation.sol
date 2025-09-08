@@ -218,8 +218,8 @@ contract CometWithPartialLiquidation is CometMainInterface {
         // trackingBorrowIndex = 0;
     }
 
-    function healthFactor() external view returns (uint256) {
-        return IHealthFactorHolder(extensionDelegate).healthFactor(address(this));
+    function targetHealthFactor() external view returns (uint256) {
+        return IHealthFactorHolder(extensionDelegate).targetHealthFactor(address(this));
     }
 
     /**
@@ -1068,7 +1068,7 @@ contract CometWithPartialLiquidation is CometMainInterface {
         );
 
         uint256 deltaValue = 0;
-        uint256 targetHF = IHealthFactorHolder(extensionDelegate).healthFactor(address(this));
+        uint256 targetHF = IHealthFactorHolder(extensionDelegate).targetHealthFactor(address(this));
         uint256 currentHF = 0;
         uint256 totalCollaterizedValue = _getLiquidity(account, false); // sum of colalteral value * price * BF
 
@@ -1256,7 +1256,7 @@ contract CometWithPartialLiquidation is CometMainInterface {
     /**
      * @notice Fallback to calling the extension delegate for everything else
      */
-    fallback() external  {
+    fallback() external payable {
         address delegate = extensionDelegate;
         assembly {
             calldatacopy(0, 0, calldatasize())

@@ -21,7 +21,7 @@ contract CometExtPartialLiquidation is CometExtAssetList {
         configuratorProxy = configuratorProxyAddress;
     }
 
-    function healthFactor(address comet) external view returns (uint256) {
-        return IHealthFactorHolder(configuratorProxy).healthFactors(comet);
+    function targetHealthFactor(address comet) external view returns (uint256) {
+        return IHealthFactorHolder(configuratorProxy).targetHealthFactor(comet);
     }
 }

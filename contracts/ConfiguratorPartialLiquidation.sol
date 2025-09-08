@@ -32,7 +32,7 @@ contract ConfiguratorPartialLiquidation is ConfiguratorStorage {
     event SetBaseMinForRewards(address indexed cometProxy, uint104 oldBaseMinForRewards, uint104 newBaseMinForRewards);
     event SetBaseBorrowMin(address indexed cometProxy, uint104 oldBaseBorrowMin, uint104 newBaseBorrowMin);
     event SetTargetReserves(address indexed cometProxy, uint104 oldTargetReserves, uint104 newTargetReserves);
-    event SetHealthFactor(address indexed cometProxy, uint256 oldHealthFactor, uint256 newHealthFactor);
+    event SetTargetHealthFactor(address indexed cometProxy, uint256 oldHealthFactor, uint256 newHealthFactor);
     event UpdateAsset(address indexed cometProxy, AssetConfig oldAssetConfig, AssetConfig newAssetConfig);
     event UpdateAssetPriceFeed(address indexed cometProxy, address indexed asset, address oldPriceFeed, address newPriceFeed);
     event UpdateAssetBorrowCollateralFactor(address indexed cometProxy, address indexed asset, uint64 oldBorrowCF, uint64 newBorrowCF);
@@ -48,7 +48,7 @@ contract ConfiguratorPartialLiquidation is ConfiguratorStorage {
     error InvalidAddress();
     error Unauthorized();
 
-    mapping(address => uint256) public healthFactors;
+    mapping(address => uint256) public targetHealthFactors;
 
     /**
      * @notice Constructs a new Configurator instance
@@ -244,12 +244,12 @@ contract ConfiguratorPartialLiquidation is ConfiguratorStorage {
         emit SetTargetReserves(cometProxy, oldTargetReserves, newTargetReserves);
     }
 
-    function setHealthFactor(address cometProxy, uint256 newHealthFactor) external {
+    function setTargetHealthFactor(address cometProxy, uint256 newTargetHealthFactor) external {
         if (msg.sender != governor) revert Unauthorized();
 
-        uint256 oldHealthFactor = healthFactors[cometProxy];
-        healthFactors[cometProxy] = newHealthFactor;
-        emit SetHealthFactor(cometProxy, oldHealthFactor, newHealthFactor);
+        uint256 oldTargetHealthFactor = targetHealthFactors[cometProxy];
+        targetHealthFactors[cometProxy] = newTargetHealthFactor;
+        emit SetTargetHealthFactor(cometProxy, oldTargetHealthFactor, newTargetHealthFactor);
     }
 
     function addAsset(address cometProxy, AssetConfig calldata assetConfig) external {
