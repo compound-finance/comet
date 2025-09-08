@@ -28,7 +28,6 @@
       "hardhat/config",
       "@nomiclabs/hardhat-ethers",
       "@nomiclabs/hardhat-etherscan",
-      "./types/tenderly"
     ],
     "skipLibCheck": true
   },

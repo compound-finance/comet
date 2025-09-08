@@ -10,15 +10,10 @@ function applyL1ToL2Alias(address: string) {
   return `0x${(BigInt(address) + offset).toString(16)}`;
 }
 
-function isTenderlyLog(log: any): log is { raw: { topics: string[], data: string } } {
-  return !!log?.raw?.topics && !!log?.raw?.data;
-}
-
 export async function relayUnichainMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
   startingBlockNumber: number,
-  tenderlyLogs?: any[]
 ) {
   const unichainL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow('unichainL1CrossDomainMessenger');
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
@@ -31,37 +26,17 @@ export async function relayUnichainMessage(
   const filter = unichainL1CrossDomainMessenger.filters.SentMessage();
   let sentMessageEvents: Log[] = [];
 
-  if (tenderlyLogs) {
-    const topic = unichainL1CrossDomainMessenger.interface.getEventTopic('SentMessage');
-    const tenderlyEvents = tenderlyLogs.filter(
-      log => log.raw?.topics?.[0] === topic && log.raw?.address?.toLowerCase() === unichainL1CrossDomainMessenger.address.toLowerCase()
-    );
-    const realEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
-      fromBlock: startingBlockNumber,
-      toBlock: 'latest',
-      address: unichainL1CrossDomainMessenger.address,
-      topics: filter.topics!
-    });
-    sentMessageEvents = [...realEvents, ...tenderlyEvents];
-  } else {
-    sentMessageEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
-      fromBlock: startingBlockNumber,
-      toBlock: 'latest',
-      address: unichainL1CrossDomainMessenger.address,
-      topics: filter.topics!
-    });
-  }
+
+  sentMessageEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+    fromBlock: startingBlockNumber,
+    toBlock: 'latest',
+    address: unichainL1CrossDomainMessenger.address,
+    topics: filter.topics!
+  });
 
   for (let sentMessageEvent of sentMessageEvents) {
     let parsed;
-    if (isTenderlyLog(sentMessageEvent)) {
-      parsed = unichainL1CrossDomainMessenger.interface.parseLog({
-        topics: sentMessageEvent.raw.topics,
-        data: sentMessageEvent.raw.data
-      });
-    } else {
-      parsed = unichainL1CrossDomainMessenger.interface.parseLog(sentMessageEvent);
-    }
+    parsed = unichainL1CrossDomainMessenger.interface.parseLog(sentMessageEvent);
 
     const { sender, target, message, messageNonce, gasLimit } = parsed.args;
     const aliasedSigner = await impersonateAddress(
@@ -72,14 +47,6 @@ export async function relayUnichainMessage(
     await setNextBaseFeeToZero(bridgeDeploymentManager);
 
     let relayMessageTxn: { events: any[] };
-    if (tenderlyLogs) {
-      const callData = l2CrossDomainMessenger.interface.encodeFunctionData('relayMessage', [messageNonce, sender, target, 0, 0, message]);
-      bridgeDeploymentManager.stashRelayMessage(
-        l2CrossDomainMessenger.address,
-        callData,
-        aliasedSigner.address
-      );
-    }
     relayMessageTxn = await (
       await l2CrossDomainMessenger.connect(aliasedSigner).relayMessage(
         messageNonce,
@@ -132,7 +99,7 @@ export async function relayUnichainMessage(
       }
     } else if (target === bridgeReceiver.address) {
       // Cross-chain message passing
-      if (!tenderlyLogs && relayMessageTxn) {
+      if (relayMessageTxn) {
         const proposalCreatedEvent = relayMessageTxn.events.find(event => event.address === bridgeReceiver.address);
         const { args: { id, eta } } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
 
@@ -144,25 +111,6 @@ export async function relayUnichainMessage(
     }
   }
 
-  // Handle proposal creation for tenderly
-  if (tenderlyLogs) {
-    // We need to check for ProposalCreated events since we don't get them in the loop above
-    const proposalFilter = bridgeReceiver.filters.ProposalCreated();
-    const proposalEvents = await bridgeDeploymentManager.hre.ethers.provider.getLogs({
-      fromBlock: 'latest',
-      toBlock: 'latest',
-      address: bridgeReceiver.address,
-      topics: proposalFilter.topics
-    });
-
-    for (let event of proposalEvents) {
-      const {
-        args: { id, eta },
-      } = bridgeReceiver.interface.parseLog(event);
-      openBridgedProposals.push({ id, eta });
-    }
-  }
-
   // Execute open bridged proposals now that all messages have been bridged
   for (let proposal of openBridgedProposals) {
     const { eta, id } = proposal;
@@ -171,17 +119,7 @@ export async function relayUnichainMessage(
 
     // Execute queued proposal
     await setNextBaseFeeToZero(bridgeDeploymentManager);
-    if (tenderlyLogs) {
-      const signer = await bridgeDeploymentManager.getSigner();
-      const callData = bridgeReceiver.interface.encodeFunctionData('executeProposal', [id]);
-      bridgeDeploymentManager.stashRelayMessage(
-        bridgeReceiver.address,
-        callData,
-        await signer.getAddress()
-      );
-    } else {
-      await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
-    }
+    await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
     console.log(
       `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
     );
@@ -193,8 +131,7 @@ export async function relayUnichainMessage(
 export async function relayUnichainCCTPMint(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
-  startingBlockNumber: number,
-  tenderlyLogs?: any[]
+  startingBlockNumber: number
 ){
 
   // CCTP relay
@@ -205,42 +142,19 @@ export async function relayUnichainCCTPMint(
 
   let depositForBurnEvents: Log[] = [];
 
-  if (tenderlyLogs) {
-    const messageSentTopic = utils.id('MessageSent(bytes)');
-
-    const tenderlyEvents = tenderlyLogs.filter(log =>
-      log.raw?.topics?.[0] === messageSentTopic &&
-      log.raw?.address?.toLowerCase() === L1MessageTransmitter.address.toLowerCase()
-    );
-
-    const realEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
-      fromBlock: startingBlockNumber,
-      toBlock: 'latest',
-      address: L1MessageTransmitter.address,
-      topics: [messageSentTopic]
-    });
-
-    depositForBurnEvents = [...realEvents, ...tenderlyEvents];
-  } else {
-    depositForBurnEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
-      fromBlock: startingBlockNumber,
-      toBlock: 'latest',
-      address: L1MessageTransmitter.address,
-      topics: [utils.id('MessageSent(bytes)')]
-    });
-  }
+  depositForBurnEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+    fromBlock: startingBlockNumber,
+    toBlock: 'latest',
+    address: L1MessageTransmitter.address,
+    topics: [utils.id('MessageSent(bytes)')]
+  });
 
   // Decode message body
   console.log(`Found ${depositForBurnEvents.length} CCTP deposit for burn events`);
 
   const burnEvents = depositForBurnEvents.map((event) => {
     let data;
-    
-    if (isTenderlyLog(event)) {
-      data = event.raw.data;
-    } else {
-      data = event.data;
-    }
+    data = event.data;
 
     const dataBytes = utils.arrayify(data);
     // Since data is encodePacked, so can't simply decode via AbiCoder.decode
@@ -331,17 +245,8 @@ export async function relayUnichainCCTPMint(
     });
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
-    if( tenderlyLogs ) {
-      const callData = TokenMinter.interface.encodeFunctionData('mint', [sourceDomain, burnToken, utils.getAddress(recipient), amount]);
-      bridgeDeploymentManager.stashRelayMessage(
-        TokenMinter.address,
-        callData,
-        localTokenMessengerSigner.address
-      );
-    } else {
-      await (
-        await localTokenMessengerSigner.sendTransaction(transactionRequest)
-      ).wait();
-    }
+    await (
+      await localTokenMessengerSigner.sendTransaction(transactionRequest)
+    ).wait();
   }
 }

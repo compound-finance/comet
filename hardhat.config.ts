@@ -3,7 +3,6 @@ import 'dotenv/config';
 import { HardhatUserConfig, task } from 'hardhat/config';
 import '@compound-finance/hardhat-import';
 import '@nomiclabs/hardhat-etherscan';
-import '@tenderly/hardhat-tenderly';
 import '@nomiclabs/hardhat-ethers';
 import '@typechain/hardhat';
 import 'hardhat-chai-matchers';
@@ -686,13 +685,6 @@ const config: HardhatUserConfig = {
         auxiliaryBase: 'mainnet'
       },
     ],
-  },
-
-  tenderly: {
-    project: 'comet',
-    username: process.env.TENDERLY_USERNAME || '',
-    accessKey: process.env.TENDERLY_ACCESS_KEY || '',
-    privateVerification: false,
   },
 
   mocha: {
