@@ -27,7 +27,7 @@ async function borrowCapacityForAsset(comet: CometInterface, actor: SignerWithAd
 }
 
 describe('CometWithPartialLiquidation', function() {
-  it.only('should demonstrate partial liquidation', async function () {
+  it('should demonstrate partial liquidation', async function () {
     const protocol = await makeProtocol({
       assets: {
         USDC: {
@@ -112,104 +112,42 @@ describe('CometWithPartialLiquidation', function() {
     const userBasicAfter = await cometWithPartialLiquidation.userBasic(userToLiquidate.address);
     console.log('User basic after:', userBasicAfter);
 
-    // await cometWithPartialLiquidation.setBasePrincipal(user1.address, -exp(1500, 6));
-    // await cometWithPartialLiquidation.setCollateralBalance(user1.address, COMP.address, exp(1500, 18));
-    // await cometWithPartialLiquidation.setCollateralBalance(
-    //   ethers.constants.AddressZero,
-    //   COMP.address, 
-    //   exp(10000, 18)
-    // );
-
-    // await cometWithPartialLiquidation.setTotalsBasic({
-    //   baseSupplyIndex: exp(1, 15),
-    //   baseBorrowIndex: exp(1, 15),
-    //   trackingSupplyIndex: exp(1, 15),
-    //   trackingBorrowIndex: exp(1, 15),
-    //   totalSupplyBase: 1000n,
-    //   totalBorrowBase: exp(1500, 6),
-    //   lastAccrualTime: Math.floor(Date.now() / 1000),
-    //   pauseFlags: 0,
-    // });
-
-    // await cometWithPartialLiquidation.setTotalsCollateral(COMP.address, {
-    //   totalSupplyAsset: exp(11500, 18),
-    //   _reserved: 0n,
-    // });
-
-    // const userBasic = await cometWithPartialLiquidation.userBasic(user1.address);
-    // const assetInfoInitial = await cometWithPartialLiquidation.getAssetInfoByAddress(COMP.address);
-    // const isAssetInInitial = (userBasic.assetsIn & (1 << assetInfoInitial.offset)) !== 0;
-    // expect(isAssetInInitial).to.be.true;
-
-    // const isLiquidatable = await cometWithPartialLiquidation.isLiquidatable(user1.address);
-    // expect(isLiquidatable).to.be.true;
-
-    // const initialCollateral = await cometWithPartialLiquidation.userCollateral(user1.address, COMP.address);
-    // const initialDebt = await cometWithPartialLiquidation.borrowBalanceOf(user1.address);
-
-    // try {
-    //   const absorbTx = await cometWithPartialLiquidation.connect(liquidator).absorb(liquidator.address, [user1.address]);
-    //   await absorbTx.wait();
-      
-    //   const finalCollateral = await cometWithPartialLiquidation.userCollateral(user1.address, COMP.address);
-    //   const finalDebt = await cometWithPartialLiquidation.borrowBalanceOf(user1.address);
-    //   const finalUserBasic = await cometWithPartialLiquidation.userBasic(user1.address);
-      
-    //   expect(finalDebt.toBigInt()).to.be.lt(initialDebt.toBigInt());
-    //   expect(finalCollateral.balance.toBigInt()).to.be.gt(0n);
-      
-    //   const assetInfoFinal = await cometWithPartialLiquidation.getAssetInfoByAddress(COMP.address);
-    //   const isAssetInFinal = (finalUserBasic.assetsIn & (1 << assetInfoFinal.offset)) !== 0;
-      
-    //   if (finalCollateral.balance.toBigInt() === 0n) {
-    //     expect(isAssetInFinal).to.be.false;
-    //   } else {
-    //     expect(isAssetInFinal).to.be.true;
-    //   }
-      
-    // } catch (error) {
-    //   if (error.message.includes('Division or modulo division by zero')) {
-    //     const userBasicError = await cometWithPartialLiquidation.userBasic(user1.address);
-    //     const userCollateralError = await cometWithPartialLiquidation.userCollateral(user1.address, COMP.address);
-    //     const assetInfoError = await cometWithPartialLiquidation.getAssetInfoByAddress(COMP.address);
-    //     const priceError = await cometWithPartialLiquidation.getPrice(assetInfoError.priceFeed);
-        
-    //     const collateralValueError = (userCollateralError.balance.toBigInt() * priceError.toBigInt()) / (10n ** 18n);
-    //     const collaterizationValueError = (collateralValueError * assetInfoError.borrowCollateralFactor.toBigInt()) / (10n ** 18n);
-    //     const liquidationValueError = (collateralValueError * assetInfoError.liquidationFactor.toBigInt()) / (10n ** 18n);
-        
-    //     const targetHF = 1n * (10n ** 18n);
-    //     const denominator1 = (assetInfoError.borrowCollateralFactor.toBigInt() * targetHF) / (10n ** 18n) - assetInfoError.liquidationFactor.toBigInt();
-    //     const denominator2 = collaterizationValueError - liquidationValueError;
-        
-    //     if (denominator1 === 0n || denominator2 === 0n) {
-    //       throw new Error('Division by zero detected in absorb function');
-    //     }
-    //   }
-    //   throw error;
-    // }
   });
 
   it('should return false when user has no debt', async function () {
     const protocol = await makeProtocol({
       assets: {
-        USDC: { decimals: 6 },
-        COMP: {
-          initial: 1e7,
-          decimals: 18,
+        USDC: {
+          initial: exp(1e6, 6),
+          decimals: 6,
           initialPrice: 1,
+        },
+        COMP: {
+          initial: exp(1e6, 18),
+          decimals: 18,
+          initialPrice: 50,
           borrowCF: exp(0.8, 18),
           liquidateCF: exp(0.85, 18),
           liquidationFactor: exp(0.7, 18),
+          supplyCap: exp(2e5, 18),
         },
       },
+      baseTrackingBorrowSpeed: exp(1 / 86400, 15, 18),
     });
 
-    const { cometWithPartialLiquidation, tokens, users: [user1, liquidator] } = protocol;
-    const { COMP } = tokens;
+    const { cometWithPartialLiquidation, tokens, priceFeeds, governor, users: [user1, liquidator] } = protocol;
+    const { USDC, COMP } = tokens;
+    const { COMP: priceFeedCOMP } = priceFeeds;
 
-    await cometWithPartialLiquidation.setBasePrincipal(user1.address, 0);
-    await cometWithPartialLiquidation.setCollateralBalance(user1.address, COMP.address, exp(1000, 18));
+    // Setup liquidator with USDC
+    await USDC.connect(governor).transfer(liquidator.address, exp(10000, 6));
+    await USDC.connect(liquidator).approve(cometWithPartialLiquidation.address, exp(10000, 6));
+    await cometWithPartialLiquidation.connect(liquidator).supply(USDC.address, exp(10000, 6));
+
+    // Setup user with collateral but no debt
+    await COMP.connect(governor).transfer(user1.address, exp(100, 18));
+    await COMP.connect(user1).approve(cometWithPartialLiquidation.address, exp(100, 18));
+    await cometWithPartialLiquidation.connect(user1).supply(COMP.address, exp(100, 18));
 
     const isLiquidatable = await cometWithPartialLiquidation.isLiquidatable(user1.address);
     expect(isLiquidatable).to.be.false;
@@ -227,23 +165,42 @@ describe('CometWithPartialLiquidation', function() {
   it('should return false when user has deposit', async function () {
     const protocol = await makeProtocol({
       assets: {
-        USDC: { decimals: 6 },
-        COMP: {
-          initial: 1e7,
-          decimals: 18,
+        USDC: {
+          initial: exp(1e6, 6),
+          decimals: 6,
           initialPrice: 1,
+        },
+        COMP: {
+          initial: exp(1e6, 18),
+          decimals: 18,
+          initialPrice: 50,
           borrowCF: exp(0.8, 18),
           liquidateCF: exp(0.85, 18),
           liquidationFactor: exp(0.7, 18),
+          supplyCap: exp(2e5, 18),
         },
       },
+      baseTrackingBorrowSpeed: exp(1 / 86400, 15, 18),
     });
 
-    const { cometWithPartialLiquidation, tokens, users: [user1, liquidator] } = protocol;
-    const { COMP } = tokens;
+    const { cometWithPartialLiquidation, tokens, priceFeeds, governor, users: [user1, liquidator] } = protocol;
+    const { USDC, COMP } = tokens;
+    const { COMP: priceFeedCOMP } = priceFeeds;
 
-    await cometWithPartialLiquidation.setBasePrincipal(user1.address, exp(1000, 6));
-    await cometWithPartialLiquidation.setCollateralBalance(user1.address, COMP.address, exp(1000, 18));
+    // Setup liquidator with USDC
+    await USDC.connect(governor).transfer(liquidator.address, exp(10000, 6));
+    await USDC.connect(liquidator).approve(cometWithPartialLiquidation.address, exp(10000, 6));
+    await cometWithPartialLiquidation.connect(liquidator).supply(USDC.address, exp(10000, 6));
+
+    // Setup user with USDC deposit (positive principal)
+    await USDC.connect(governor).transfer(user1.address, exp(1000, 6));
+    await USDC.connect(user1).approve(cometWithPartialLiquidation.address, exp(1000, 6));
+    await cometWithPartialLiquidation.connect(user1).supply(USDC.address, exp(1000, 6));
+
+    // Add some collateral
+    await COMP.connect(governor).transfer(user1.address, exp(100, 18));
+    await COMP.connect(user1).approve(cometWithPartialLiquidation.address, exp(100, 18));
+    await cometWithPartialLiquidation.connect(user1).supply(COMP.address, exp(100, 18));
 
     const isLiquidatable = await cometWithPartialLiquidation.isLiquidatable(user1.address);
     expect(isLiquidatable).to.be.false;
@@ -261,90 +218,119 @@ describe('CometWithPartialLiquidation', function() {
   it('should return false when user has sufficient collateral for debt', async function () {
     const protocol = await makeProtocol({
       assets: {
-        USDC: { decimals: 6 },
-        COMP: {
-          initial: 1e7,
-          decimals: 18,
+        USDC: {
+          initial: exp(1e6, 6),
+          decimals: 6,
           initialPrice: 1,
+        },
+        COMP: {
+          initial: exp(1e6, 18),
+          decimals: 18,
+          initialPrice: 50,
           borrowCF: exp(0.8, 18),
           liquidateCF: exp(0.85, 18),
           liquidationFactor: exp(0.7, 18),
+          supplyCap: exp(2e5, 18),
         },
       },
+      baseTrackingBorrowSpeed: exp(1 / 86400, 15, 18),
     });
 
-    const { cometWithPartialLiquidation, tokens, users: [user1] } = protocol;
-    const { COMP } = tokens;
+    const { cometWithPartialLiquidation, tokens, priceFeeds, governor, users: [user1, liquidator] } = protocol;
+    const { USDC, COMP } = tokens;
+    const { COMP: priceFeedCOMP } = priceFeeds;
 
-    await cometWithPartialLiquidation.setBasePrincipal(user1.address, -exp(1000, 6));
-    await cometWithPartialLiquidation.setCollateralBalance(user1.address, COMP.address, exp(2000, 18));
+    // Setup liquidator with USDC
+    await USDC.connect(governor).transfer(liquidator.address, exp(10000, 6));
+    await USDC.connect(liquidator).approve(cometWithPartialLiquidation.address, exp(10000, 6));
+    await cometWithPartialLiquidation.connect(liquidator).supply(USDC.address, exp(10000, 6));
 
-    await cometWithPartialLiquidation.setTotalsBasic({
-      baseSupplyIndex: exp(1, 15),
-      baseBorrowIndex: exp(1, 15),
-      trackingSupplyIndex: exp(1, 15),
-      trackingBorrowIndex: exp(1, 15),
-      totalSupplyBase: 0n,
-      totalBorrowBase: exp(1000, 6),
-      lastAccrualTime: Math.floor(Date.now() / 1000),
-      pauseFlags: 0,
-    });
+    // Setup user with sufficient collateral
+    await COMP.connect(governor).transfer(user1.address, exp(200, 18)); // 200 COMP = $10,000
+    await COMP.connect(user1).approve(cometWithPartialLiquidation.address, exp(200, 18));
+    await cometWithPartialLiquidation.connect(user1).supply(COMP.address, exp(200, 18));
 
-    await cometWithPartialLiquidation.setTotalsCollateral(COMP.address, {
-      totalSupplyAsset: exp(2000, 18),
-      _reserved: 0n,
-    });
+    // Calculate borrow capacity and take some debt
+    const borrowCapacity = await borrowCapacityForAsset(cometWithPartialLiquidation, user1, 0);
+    const borrowAmount = borrowCapacity.div(2); // Take only half of capacity
+    await cometWithPartialLiquidation.connect(user1).withdraw(USDC.address, borrowAmount);
 
     const isLiquidatable = await cometWithPartialLiquidation.isLiquidatable(user1.address);
     expect(isLiquidatable).to.be.false;
+
+    // Try to absorb - should fail because user is not liquidatable
+    try {
+      const absorbTx = await cometWithPartialLiquidation.connect(liquidator).absorb(liquidator.address, [user1.address]);
+      await absorbTx.wait();
+      expect.fail('Absorb should have failed because user is not liquidatable');
+    } catch (error) {
+      expect(error.message).to.include('NotLiquidatable');
+    }
   });
 
   it('should return true when user has insufficient collateral for debt', async function () {
     const protocol = await makeProtocol({
       assets: {
-        USDC: { decimals: 6 },
-        COMP: {
-          initial: 1e7,
-          decimals: 18,
+        USDC: {
+          initial: exp(1e6, 6),
+          decimals: 6,
           initialPrice: 1,
+        },
+        COMP: {
+          initial: exp(1e6, 18),
+          decimals: 18,
+          initialPrice: 50,
           borrowCF: exp(0.8, 18),
           liquidateCF: exp(0.85, 18),
           liquidationFactor: exp(0.7, 18),
+          supplyCap: exp(2e5, 18),
         },
       },
+      baseTrackingBorrowSpeed: exp(1 / 86400, 15, 18),
     });
 
-    const { cometWithPartialLiquidation, tokens, users: [user1, liquidator] } = protocol;
-    const { COMP } = tokens;
+    const { cometWithPartialLiquidation, tokens, priceFeeds, governor, users: [user1, liquidator] } = protocol;
+    const { USDC, COMP } = tokens;
+    const { COMP: priceFeedCOMP } = priceFeeds;
 
-    await cometWithPartialLiquidation.setBasePrincipal(user1.address, -exp(1000, 6));
-    await cometWithPartialLiquidation.setCollateralBalance(user1.address, COMP.address, exp(500, 18));
-    await cometWithPartialLiquidation.setCollateralBalance(
-      ethers.constants.AddressZero,
-      COMP.address, 
-      exp(10000, 18)
-    );
+    // Setup liquidator with USDC
+    await USDC.connect(governor).transfer(liquidator.address, exp(10000, 6));
+    await USDC.connect(liquidator).approve(cometWithPartialLiquidation.address, exp(10000, 6));
+    await cometWithPartialLiquidation.connect(liquidator).supply(USDC.address, exp(10000, 6));
 
-    await cometWithPartialLiquidation.setTotalsBasic({
-      baseSupplyIndex: exp(1, 15),
-      baseBorrowIndex: exp(1, 15),
-      trackingSupplyIndex: exp(1, 15),
-      trackingBorrowIndex: exp(1, 15),
-      totalSupplyBase: 0n,
-      totalBorrowBase: exp(1000, 6),
-      lastAccrualTime: Math.floor(Date.now() / 1000),
-      pauseFlags: 0,
-    });
+    // Setup user with insufficient collateral
+    await COMP.connect(governor).transfer(user1.address, exp(50, 18)); // 50 COMP = $2,500
+    await COMP.connect(user1).approve(cometWithPartialLiquidation.address, exp(50, 18));
+    await cometWithPartialLiquidation.connect(user1).supply(COMP.address, exp(50, 18));
 
-    await cometWithPartialLiquidation.setTotalsCollateral(COMP.address, {
-      totalSupplyAsset: exp(10500, 18),
-      _reserved: 0n,
-    });
+    // Take maximum borrow capacity
+    const borrowCapacity = await borrowCapacityForAsset(cometWithPartialLiquidation, user1, 0);
+    await cometWithPartialLiquidation.connect(user1).withdraw(USDC.address, borrowCapacity);
+
+    // Create liquidation conditions by dropping COMP price
+    let iterations = 0;
+    while(!(await cometWithPartialLiquidation.isLiquidatable(user1.address)) && iterations < 50) {
+      const currentCOMPData = await priceFeedCOMP.latestRoundData();
+      await priceFeedCOMP.connect(governor).setRoundData(
+        currentCOMPData._roundId,
+        currentCOMPData._answer.mul(95).div(100), // Decrease price by 5%
+        currentCOMPData._startedAt,
+        currentCOMPData._updatedAt,
+        currentCOMPData._answeredInRound
+      );
+
+      await ethers.provider.send('evm_increaseTime', [7 * 24 * 60 * 60]); // 1 week
+      await ethers.provider.send('evm_mine', []);
+      iterations++;
+    }
 
     const isLiquidatable = await cometWithPartialLiquidation.isLiquidatable(user1.address);
     expect(isLiquidatable).to.be.true;
 
-    // Try to absorb - should succeed because user is liquidatable
+    // Perform liquidation
+    const initialDebt = await cometWithPartialLiquidation.borrowBalanceOf(user1.address);
+    const initialCollateral = await cometWithPartialLiquidation.userCollateral(user1.address, COMP.address);
+    
     const absorbTx = await cometWithPartialLiquidation.connect(liquidator).absorb(liquidator.address, [user1.address]);
     await absorbTx.wait();
 
@@ -353,52 +339,66 @@ describe('CometWithPartialLiquidation', function() {
     const finalCollateral = await cometWithPartialLiquidation.userCollateral(user1.address, COMP.address);
     const finalIsLiquidatable = await cometWithPartialLiquidation.isLiquidatable(user1.address);
     
-    expect(finalDebt.toBigInt()).to.be.lt(exp(1000, 6));
-    expect(finalCollateral.balance.toBigInt()).to.be.lt(exp(500, 18));
+    expect(finalDebt.toBigInt()).to.be.lt(initialDebt.toBigInt());
+    expect(finalCollateral.balance.toBigInt()).to.be.lt(initialCollateral.balance.toBigInt());
     expect(finalIsLiquidatable).to.be.false; // Should be fully liquidated
   });
 
   it('should successfully absorb user with single collateral', async function () {
     const protocol = await makeProtocol({
       assets: {
-        USDC: { decimals: 6 },
-        COMP: {
-          initial: 1e7,
-          decimals: 18,
+        USDC: {
+          initial: exp(1e6, 6),
+          decimals: 6,
           initialPrice: 1,
+        },
+        COMP: {
+          initial: exp(1e6, 18),
+          decimals: 18,
+          initialPrice: 50,
           borrowCF: exp(0.8, 18),
           liquidateCF: exp(0.85, 18),
           liquidationFactor: exp(0.7, 18),
+          supplyCap: exp(2e5, 18),
         },
       },
+      baseTrackingBorrowSpeed: exp(1 / 86400, 15, 18),
     });
 
-    const { cometWithPartialLiquidation, tokens, users: [user1, liquidator] } = protocol;
-    const { COMP } = tokens;
+    const { cometWithPartialLiquidation, tokens, priceFeeds, governor, users: [user1, liquidator] } = protocol;
+    const { USDC, COMP } = tokens;
+    const { COMP: priceFeedCOMP } = priceFeeds;
 
-    await cometWithPartialLiquidation.setBasePrincipal(user1.address, -exp(2000, 6));
-    await cometWithPartialLiquidation.setCollateralBalance(user1.address, COMP.address, exp(1500, 18));
-    await cometWithPartialLiquidation.setCollateralBalance(
-      ethers.constants.AddressZero,
-      COMP.address, 
-      exp(10000, 18)
-    );
+    // Setup liquidator with USDC
+    await USDC.connect(governor).transfer(liquidator.address, exp(10000, 6));
+    await USDC.connect(liquidator).approve(cometWithPartialLiquidation.address, exp(10000, 6));
+    await cometWithPartialLiquidation.connect(liquidator).supply(USDC.address, exp(10000, 6));
 
-    await cometWithPartialLiquidation.setTotalsBasic({
-      baseSupplyIndex: exp(1, 15),
-      baseBorrowIndex: exp(1, 15),
-      trackingSupplyIndex: exp(1, 15),
-      trackingBorrowIndex: exp(1, 15),
-      totalSupplyBase: 0n,
-      totalBorrowBase: exp(2000, 6),
-      lastAccrualTime: Math.floor(Date.now() / 1000),
-      pauseFlags: 0,
-    });
+    // Setup user with collateral
+    await COMP.connect(governor).transfer(user1.address, exp(100, 18)); // 100 COMP = $5,000
+    await COMP.connect(user1).approve(cometWithPartialLiquidation.address, exp(100, 18));
+    await cometWithPartialLiquidation.connect(user1).supply(COMP.address, exp(100, 18));
 
-    await cometWithPartialLiquidation.setTotalsCollateral(COMP.address, {
-      totalSupplyAsset: exp(11500, 18),
-      _reserved: 0n,
-    });
+    // Take maximum borrow capacity
+    const borrowCapacity = await borrowCapacityForAsset(cometWithPartialLiquidation, user1, 0);
+    await cometWithPartialLiquidation.connect(user1).withdraw(USDC.address, borrowCapacity);
+
+    // Create liquidation conditions by dropping COMP price
+    let iterations = 0;
+    while(!(await cometWithPartialLiquidation.isLiquidatable(user1.address)) && iterations < 50) {
+      const currentCOMPData = await priceFeedCOMP.latestRoundData();
+      await priceFeedCOMP.connect(governor).setRoundData(
+        currentCOMPData._roundId,
+        currentCOMPData._answer.mul(90).div(100), // Decrease price by 10%
+        currentCOMPData._startedAt,
+        currentCOMPData._updatedAt,
+        currentCOMPData._answeredInRound
+      );
+
+      await ethers.provider.send('evm_increaseTime', [7 * 24 * 60 * 60]); // 1 week
+      await ethers.provider.send('evm_mine', []);
+      iterations++;
+    }
 
     const initialCollateral = await cometWithPartialLiquidation.userCollateral(user1.address, COMP.address);
     const initialDebt = await cometWithPartialLiquidation.borrowBalanceOf(user1.address);
@@ -421,55 +421,82 @@ describe('CometWithPartialLiquidation', function() {
   it('should successfully absorb user with multiple collaterals', async function () {
     const protocol = await makeProtocol({
       assets: {
-        USDC: { decimals: 6 },
-        COMP: {
-          initial: 1e7,
-          decimals: 18,
+        USDC: {
+          initial: exp(1e6, 6),
+          decimals: 6,
           initialPrice: 1,
+        },
+        COMP: {
+          initial: exp(1e6, 18),
+          decimals: 18,
+          initialPrice: 50,
           borrowCF: exp(0.8, 18),
           liquidateCF: exp(0.85, 18),
           liquidationFactor: exp(0.7, 18),
+          supplyCap: exp(2e5, 18),
         },
         WETH: {
-          initial: 1e7,
+          initial: exp(1e6, 18),
           decimals: 18,
           initialPrice: 2000,
           borrowCF: exp(0.75, 18),
           liquidateCF: exp(0.8, 18),
           liquidationFactor: exp(0.65, 18),
+          supplyCap: exp(1e4, 18),
         },
       },
+      baseTrackingBorrowSpeed: exp(1 / 86400, 15, 18),
     });
 
-    const { cometWithPartialLiquidation, tokens, users: [user1, liquidator] } = protocol;
-    const { COMP, WETH } = tokens;
+    const { cometWithPartialLiquidation, tokens, priceFeeds, governor, users: [user1, liquidator] } = protocol;
+    const { USDC, COMP, WETH } = tokens;
+    const { COMP: priceFeedCOMP, WETH: priceFeedWETH } = priceFeeds;
 
-    await cometWithPartialLiquidation.setBasePrincipal(user1.address, -exp(3000, 6));
-    await cometWithPartialLiquidation.setCollateralBalance(user1.address, COMP.address, exp(1000, 18));
-    await cometWithPartialLiquidation.setCollateralBalance(user1.address, WETH.address, exp(1, 18));
-    await cometWithPartialLiquidation.setCollateralBalance(ethers.constants.AddressZero, COMP.address, exp(10000, 18));
-    await cometWithPartialLiquidation.setCollateralBalance(ethers.constants.AddressZero, WETH.address, exp(100, 18));
+    // Setup liquidator with USDC
+    await USDC.connect(governor).transfer(liquidator.address, exp(10000, 6));
+    await USDC.connect(liquidator).approve(cometWithPartialLiquidation.address, exp(10000, 6));
+    await cometWithPartialLiquidation.connect(liquidator).supply(USDC.address, exp(10000, 6));
 
-    await cometWithPartialLiquidation.setTotalsBasic({
-      baseSupplyIndex: exp(1, 15),
-      baseBorrowIndex: exp(1, 15),
-      trackingSupplyIndex: exp(1, 15),
-      trackingBorrowIndex: exp(1, 15),
-      totalSupplyBase: 0n,
-      totalBorrowBase: exp(3000, 6),
-      lastAccrualTime: Math.floor(Date.now() / 1000),
-      pauseFlags: 0,
-    });
+    // Setup user with multiple collaterals
+    await COMP.connect(governor).transfer(user1.address, exp(50, 18)); // 50 COMP = $2,500
+    await COMP.connect(user1).approve(cometWithPartialLiquidation.address, exp(50, 18));
+    await cometWithPartialLiquidation.connect(user1).supply(COMP.address, exp(50, 18));
 
-    await cometWithPartialLiquidation.setTotalsCollateral(COMP.address, {
-      totalSupplyAsset: exp(11000, 18),
-      _reserved: 0n,
-    });
+    await WETH.connect(governor).transfer(user1.address, exp(1, 18)); // 1 WETH = $2,000
+    await WETH.connect(user1).approve(cometWithPartialLiquidation.address, exp(1, 18));
+    await cometWithPartialLiquidation.connect(user1).supply(WETH.address, exp(1, 18));
 
-    await cometWithPartialLiquidation.setTotalsCollateral(WETH.address, {
-      totalSupplyAsset: exp(101, 18),
-      _reserved: 0n,
-    });
+    // Calculate total borrow capacity and take debt
+    const borrowCapacityCOMP = await borrowCapacityForAsset(cometWithPartialLiquidation, user1, 0);
+    const borrowCapacityWETH = await borrowCapacityForAsset(cometWithPartialLiquidation, user1, 1);
+    const totalBorrowCapacity = borrowCapacityCOMP.add(borrowCapacityWETH);
+    await cometWithPartialLiquidation.connect(user1).withdraw(USDC.address, totalBorrowCapacity);
+
+    // Create liquidation conditions by dropping prices
+    let iterations = 0;
+    while(!(await cometWithPartialLiquidation.isLiquidatable(user1.address)) && iterations < 50) {
+      const currentCOMPData = await priceFeedCOMP.latestRoundData();
+      await priceFeedCOMP.connect(governor).setRoundData(
+        currentCOMPData._roundId,
+        currentCOMPData._answer.mul(90).div(100), // Decrease COMP price by 10%
+        currentCOMPData._startedAt,
+        currentCOMPData._updatedAt,
+        currentCOMPData._answeredInRound
+      );
+
+      const currentWETHData = await priceFeedWETH.latestRoundData();
+      await priceFeedWETH.connect(governor).setRoundData(
+        currentWETHData._roundId,
+        currentWETHData._answer.mul(90).div(100), // Decrease WETH price by 10%
+        currentWETHData._startedAt,
+        currentWETHData._updatedAt,
+        currentWETHData._answeredInRound
+      );
+
+      await ethers.provider.send('evm_increaseTime', [7 * 24 * 60 * 60]); // 1 week
+      await ethers.provider.send('evm_mine', []);
+      iterations++;
+    }
 
     const initialCOMP = await cometWithPartialLiquidation.userCollateral(user1.address, COMP.address);
     const initialWETH = await cometWithPartialLiquidation.userCollateral(user1.address, WETH.address);
@@ -498,77 +525,112 @@ describe('CometWithPartialLiquidation', function() {
   it('should successfully absorb user with multiple collaterals - sufficient last collateral only', async function () {
     const protocol = await makeProtocol({
       assets: {
-        USDC: { decimals: 6 },
-        COMP: {
-          initial: 1e7,
-          decimals: 18,
+        USDC: {
+          initial: exp(1e6, 6),
+          decimals: 6,
           initialPrice: 1,
+        },
+        COMP: {
+          initial: exp(1e6, 18),
+          decimals: 18,
+          initialPrice: 50,
           borrowCF: exp(0.8, 18),
           liquidateCF: exp(0.85, 18),
           liquidationFactor: exp(0.7, 18),
+          supplyCap: exp(2e5, 18),
         },
         WETH: {
-          initial: 1e7,
+          initial: exp(1e6, 18),
           decimals: 18,
           initialPrice: 2000,
           borrowCF: exp(0.75, 18),
           liquidateCF: exp(0.8, 18),
           liquidationFactor: exp(0.65, 18),
+          supplyCap: exp(1e4, 18),
         },
         WBTC: {
-          initial: 1e7,
+          initial: exp(1e6, 8),
           decimals: 8,
           initialPrice: 50000,
           borrowCF: exp(0.7, 18),
           liquidateCF: exp(0.75, 18),
           liquidationFactor: exp(0.6, 18),
+          supplyCap: exp(100, 8),
         },
       },
+      baseTrackingBorrowSpeed: exp(1 / 86400, 15, 18),
     });
 
-    const { cometWithPartialLiquidation, tokens, users: [user1, liquidator] } = protocol;
-    const { COMP, WETH, WBTC } = tokens;
+    const { cometWithPartialLiquidation, tokens, priceFeeds, governor, users: [user1, liquidator] } = protocol;
+    const { USDC, COMP, WETH, WBTC } = tokens;
+    const { COMP: priceFeedCOMP, WETH: priceFeedWETH, WBTC: priceFeedWBTC } = priceFeeds;
 
-    await cometWithPartialLiquidation.setBasePrincipal(user1.address, -exp(3000, 6));
-    await cometWithPartialLiquidation.setCollateralBalance(user1.address, COMP.address, exp(200, 18));
-    await cometWithPartialLiquidation.setCollateralBalance(user1.address, WETH.address, exp(0.2, 18));
-    await cometWithPartialLiquidation.setCollateralBalance(user1.address, WBTC.address, exp(0.02, 8));
-    await cometWithPartialLiquidation.setCollateralBalance(ethers.constants.AddressZero, COMP.address, exp(10000, 18));
-    await cometWithPartialLiquidation.setCollateralBalance(ethers.constants.AddressZero, WETH.address, exp(100, 18));
-    await cometWithPartialLiquidation.setCollateralBalance(ethers.constants.AddressZero, WBTC.address, exp(100, 8));
+    // Setup liquidator with USDC
+    await USDC.connect(governor).transfer(liquidator.address, exp(10000, 6));
+    await USDC.connect(liquidator).approve(cometWithPartialLiquidation.address, exp(10000, 6));
+    await cometWithPartialLiquidation.connect(liquidator).supply(USDC.address, exp(10000, 6));
 
-    await cometWithPartialLiquidation.setTotalsBasic({
-      baseSupplyIndex: exp(1, 15),
-      baseBorrowIndex: exp(1, 15),
-      trackingSupplyIndex: exp(1, 15),
-      trackingBorrowIndex: exp(1, 15),
-      totalSupplyBase: 0n,
-      totalBorrowBase: exp(1000, 6),
-      lastAccrualTime: Math.floor(Date.now() / 1000),
-      pauseFlags: 0,
-    });
+    // Setup user with small amounts of first two collaterals and sufficient last collateral
+    await COMP.connect(governor).transfer(user1.address, exp(20, 18)); // 20 COMP = $1,000
+    await COMP.connect(user1).approve(cometWithPartialLiquidation.address, exp(20, 18));
+    await cometWithPartialLiquidation.connect(user1).supply(COMP.address, exp(20, 18));
 
-    await cometWithPartialLiquidation.setTotalsCollateral(COMP.address, {
-      totalSupplyAsset: exp(10200, 18),
-      _reserved: 0n,
-    });
+    await WETH.connect(governor).transfer(user1.address, exp(0.2, 18)); // 0.2 WETH = $400
+    await WETH.connect(user1).approve(cometWithPartialLiquidation.address, exp(0.2, 18));
+    await cometWithPartialLiquidation.connect(user1).supply(WETH.address, exp(0.2, 18));
 
-    await cometWithPartialLiquidation.setTotalsCollateral(WETH.address, {
-      totalSupplyAsset: exp(100.2, 18),
-      _reserved: 0n,
-    });
+    await WBTC.connect(governor).transfer(user1.address, exp(0.02, 8)); // 0.02 WBTC = $1,000
+    await WBTC.connect(user1).approve(cometWithPartialLiquidation.address, exp(0.02, 8));
+    await cometWithPartialLiquidation.connect(user1).supply(WBTC.address, exp(0.02, 8));
 
-    await cometWithPartialLiquidation.setTotalsCollateral(WBTC.address, {
-      totalSupplyAsset: exp(101, 8),
-      _reserved: 0n,
-    });
+    // Calculate total borrow capacity and take debt
+    const borrowCapacityCOMP = await borrowCapacityForAsset(cometWithPartialLiquidation, user1, 0);
+    const borrowCapacityWETH = await borrowCapacityForAsset(cometWithPartialLiquidation, user1, 1);
+    const borrowCapacityWBTC = await borrowCapacityForAsset(cometWithPartialLiquidation, user1, 2);
+    const totalBorrowCapacity = borrowCapacityCOMP.add(borrowCapacityWETH).add(borrowCapacityWBTC);
+    await cometWithPartialLiquidation.connect(user1).withdraw(USDC.address, totalBorrowCapacity);
+
+    // Create liquidation conditions by dropping prices of first two collaterals heavily
+    let iterations = 0;
+    while(!(await cometWithPartialLiquidation.isLiquidatable(user1.address)) && iterations < 50) {
+      const currentCOMPData = await priceFeedCOMP.latestRoundData();
+      await priceFeedCOMP.connect(governor).setRoundData(
+        currentCOMPData._roundId,
+        currentCOMPData._answer.mul(70).div(100), // Decrease COMP price by 30%
+        currentCOMPData._startedAt,
+        currentCOMPData._updatedAt,
+        currentCOMPData._answeredInRound
+      );
+
+      const currentWETHData = await priceFeedWETH.latestRoundData();
+      await priceFeedWETH.connect(governor).setRoundData(
+        currentWETHData._roundId,
+        currentWETHData._answer.mul(70).div(100), // Decrease WETH price by 30%
+        currentWETHData._startedAt,
+        currentWETHData._updatedAt,
+        currentWETHData._answeredInRound
+      );
+
+      // Keep WBTC price stable or slightly decrease
+      const currentWBTCData = await priceFeedWBTC.latestRoundData();
+      await priceFeedWBTC.connect(governor).setRoundData(
+        currentWBTCData._roundId,
+        currentWBTCData._answer.mul(95).div(100), // Decrease WBTC price by 5%
+        currentWBTCData._startedAt,
+        currentWBTCData._updatedAt,
+        currentWBTCData._answeredInRound
+      );
+
+      await ethers.provider.send('evm_increaseTime', [7 * 24 * 60 * 60]); // 1 week
+      await ethers.provider.send('evm_mine', []);
+      iterations++;
+    }
 
     const initialCOMP = await cometWithPartialLiquidation.userCollateral(user1.address, COMP.address);
     const initialWETH = await cometWithPartialLiquidation.userCollateral(user1.address, WETH.address);
     const initialWBTC = await cometWithPartialLiquidation.userCollateral(user1.address, WBTC.address);
     const initialDebt = await cometWithPartialLiquidation.borrowBalanceOf(user1.address);
     const isLiquidatable = await cometWithPartialLiquidation.isLiquidatable(user1.address);
-    
     
     expect(isLiquidatable).to.be.true; 
 
@@ -580,7 +642,6 @@ describe('CometWithPartialLiquidation', function() {
     const finalWBTC = await cometWithPartialLiquidation.userCollateral(user1.address, WBTC.address);
     const finalDebt = await cometWithPartialLiquidation.borrowBalanceOf(user1.address);
     const finalIsLiquidatable = await cometWithPartialLiquidation.isLiquidatable(user1.address);
-    
     
     expect(finalDebt.toBigInt()).to.be.lt(initialDebt.toBigInt());
     
@@ -595,70 +656,105 @@ describe('CometWithPartialLiquidation', function() {
   it('should successfully absorb user with multiple collaterals - insufficient last collateral', async function () {
     const protocol = await makeProtocol({
       assets: {
-        USDC: { decimals: 6 },
-        COMP: {
-          initial: 1e7,
-          decimals: 18,
+        USDC: {
+          initial: exp(1e6, 6),
+          decimals: 6,
           initialPrice: 1,
+        },
+        COMP: {
+          initial: exp(1e6, 18),
+          decimals: 18,
+          initialPrice: 50,
           borrowCF: exp(0.8, 18),
           liquidateCF: exp(0.85, 18),
           liquidationFactor: exp(0.7, 18),
+          supplyCap: exp(2e5, 18),
         },
         WETH: {
-          initial: 1e7,
+          initial: exp(1e6, 18),
           decimals: 18,
           initialPrice: 2000,
           borrowCF: exp(0.75, 18),
           liquidateCF: exp(0.8, 18),
           liquidationFactor: exp(0.65, 18),
+          supplyCap: exp(1e4, 18),
         },
         WBTC: {
-          initial: 1e7,
+          initial: exp(1e6, 8),
           decimals: 8,
           initialPrice: 50000,
           borrowCF: exp(0.7, 18),
           liquidateCF: exp(0.75, 18),
           liquidationFactor: exp(0.6, 18),
+          supplyCap: exp(100, 8),
         },
       },
+      baseTrackingBorrowSpeed: exp(1 / 86400, 15, 18),
     });
 
-    const { cometWithPartialLiquidation, tokens, users: [user1, liquidator] } = protocol;
-    const { COMP, WETH, WBTC } = tokens;
+    const { cometWithPartialLiquidation, tokens, priceFeeds, governor, users: [user1, liquidator] } = protocol;
+    const { USDC, COMP, WETH, WBTC } = tokens;
+    const { COMP: priceFeedCOMP, WETH: priceFeedWETH, WBTC: priceFeedWBTC } = priceFeeds;
 
-    await cometWithPartialLiquidation.setBasePrincipal(user1.address, -exp(1000, 6));
-    await cometWithPartialLiquidation.setCollateralBalance(user1.address, COMP.address, exp(200, 18));
-    await cometWithPartialLiquidation.setCollateralBalance(user1.address, WETH.address, exp(0.2, 18));
-    await cometWithPartialLiquidation.setCollateralBalance(user1.address, WBTC.address, exp(0.002, 8));
-    await cometWithPartialLiquidation.setCollateralBalance(ethers.constants.AddressZero, COMP.address, exp(10000, 18));
-    await cometWithPartialLiquidation.setCollateralBalance(ethers.constants.AddressZero, WETH.address, exp(100, 18));
-    await cometWithPartialLiquidation.setCollateralBalance(ethers.constants.AddressZero, WBTC.address, exp(100, 8));
+    // Setup liquidator with USDC
+    await USDC.connect(governor).transfer(liquidator.address, exp(10000, 6));
+    await USDC.connect(liquidator).approve(cometWithPartialLiquidation.address, exp(10000, 6));
+    await cometWithPartialLiquidation.connect(liquidator).supply(USDC.address, exp(10000, 6));
 
-    await cometWithPartialLiquidation.setTotalsBasic({
-      baseSupplyIndex: exp(1, 15),
-      baseBorrowIndex: exp(1, 15),
-      trackingSupplyIndex: exp(1, 15),
-      trackingBorrowIndex: exp(1, 15),
-      totalSupplyBase: 0n,
-      totalBorrowBase: exp(1000, 6),
-      lastAccrualTime: Math.floor(Date.now() / 1000),
-      pauseFlags: 0,
-    });
+    // Setup user with small amounts of all collaterals (all insufficient)
+    await COMP.connect(governor).transfer(user1.address, exp(10, 18)); // 10 COMP = $500
+    await COMP.connect(user1).approve(cometWithPartialLiquidation.address, exp(10, 18));
+    await cometWithPartialLiquidation.connect(user1).supply(COMP.address, exp(10, 18));
 
-    await cometWithPartialLiquidation.setTotalsCollateral(COMP.address, {
-      totalSupplyAsset: exp(10200, 18),
-      _reserved: 0n,
-    });
+    await WETH.connect(governor).transfer(user1.address, exp(0.1, 18)); // 0.1 WETH = $200
+    await WETH.connect(user1).approve(cometWithPartialLiquidation.address, exp(0.1, 18));
+    await cometWithPartialLiquidation.connect(user1).supply(WETH.address, exp(0.1, 18));
 
-    await cometWithPartialLiquidation.setTotalsCollateral(WETH.address, {
-      totalSupplyAsset: exp(100.2, 18),
-      _reserved: 0n,
-    });
+    await WBTC.connect(governor).transfer(user1.address, exp(0.001, 8)); // 0.001 WBTC = $50
+    await WBTC.connect(user1).approve(cometWithPartialLiquidation.address, exp(0.001, 8));
+    await cometWithPartialLiquidation.connect(user1).supply(WBTC.address, exp(0.001, 8));
 
-    await cometWithPartialLiquidation.setTotalsCollateral(WBTC.address, {
-      totalSupplyAsset: exp(100.002, 8),
-      _reserved: 0n,
-    });
+    // Calculate total borrow capacity and take debt
+    const borrowCapacityCOMP = await borrowCapacityForAsset(cometWithPartialLiquidation, user1, 0);
+    const borrowCapacityWETH = await borrowCapacityForAsset(cometWithPartialLiquidation, user1, 1);
+    const borrowCapacityWBTC = await borrowCapacityForAsset(cometWithPartialLiquidation, user1, 2);
+    const totalBorrowCapacity = borrowCapacityCOMP.add(borrowCapacityWETH).add(borrowCapacityWBTC);
+    await cometWithPartialLiquidation.connect(user1).withdraw(USDC.address, totalBorrowCapacity);
+
+    // Create liquidation conditions by dropping all prices heavily
+    let iterations = 0;
+    while(!(await cometWithPartialLiquidation.isLiquidatable(user1.address)) && iterations < 50) {
+      const currentCOMPData = await priceFeedCOMP.latestRoundData();
+      await priceFeedCOMP.connect(governor).setRoundData(
+        currentCOMPData._roundId,
+        currentCOMPData._answer.mul(60).div(100), // Decrease COMP price by 40%
+        currentCOMPData._startedAt,
+        currentCOMPData._updatedAt,
+        currentCOMPData._answeredInRound
+      );
+
+      const currentWETHData = await priceFeedWETH.latestRoundData();
+      await priceFeedWETH.connect(governor).setRoundData(
+        currentWETHData._roundId,
+        currentWETHData._answer.mul(60).div(100), // Decrease WETH price by 40%
+        currentWETHData._startedAt,
+        currentWETHData._updatedAt,
+        currentWETHData._answeredInRound
+      );
+
+      const currentWBTCData = await priceFeedWBTC.latestRoundData();
+      await priceFeedWBTC.connect(governor).setRoundData(
+        currentWBTCData._roundId,
+        currentWBTCData._answer.mul(60).div(100), // Decrease WBTC price by 40%
+        currentWBTCData._startedAt,
+        currentWBTCData._updatedAt,
+        currentWBTCData._answeredInRound
+      );
+
+      await ethers.provider.send('evm_increaseTime', [7 * 24 * 60 * 60]); // 1 week
+      await ethers.provider.send('evm_mine', []);
+      iterations++;
+    }
 
     const initialCOMP = await cometWithPartialLiquidation.userCollateral(user1.address, COMP.address);
     const initialWETH = await cometWithPartialLiquidation.userCollateral(user1.address, WETH.address);
@@ -695,55 +791,82 @@ describe('CometWithPartialLiquidation', function() {
   it('should successfully absorb user with insufficient collaterals', async function () {
     const protocol = await makeProtocol({
       assets: {
-        USDC: { decimals: 6 },
-        COMP: {
-          initial: 1e7,
-          decimals: 18,
+        USDC: {
+          initial: exp(1e6, 6),
+          decimals: 6,
           initialPrice: 1,
+        },
+        COMP: {
+          initial: exp(1e6, 18),
+          decimals: 18,
+          initialPrice: 50,
           borrowCF: exp(0.8, 18),
           liquidateCF: exp(0.85, 18),
           liquidationFactor: exp(0.7, 18),
+          supplyCap: exp(2e5, 18),
         },
         WETH: {
-          initial: 1e7,
+          initial: exp(1e6, 18),
           decimals: 18,
           initialPrice: 2000,
           borrowCF: exp(0.75, 18),
           liquidateCF: exp(0.8, 18),
           liquidationFactor: exp(0.65, 18),
+          supplyCap: exp(1e4, 18),
         },
       },
+      baseTrackingBorrowSpeed: exp(1 / 86400, 15, 18),
     });
 
-    const { cometWithPartialLiquidation, tokens, users: [user1, liquidator] } = protocol;
-    const { COMP, WETH } = tokens;
+    const { cometWithPartialLiquidation, tokens, priceFeeds, governor, users: [user1, liquidator] } = protocol;
+    const { USDC, COMP, WETH } = tokens;
+    const { COMP: priceFeedCOMP, WETH: priceFeedWETH } = priceFeeds;
 
-    await cometWithPartialLiquidation.setBasePrincipal(user1.address, -exp(1000, 6));
-    await cometWithPartialLiquidation.setCollateralBalance(user1.address, COMP.address, exp(300, 18));
-    await cometWithPartialLiquidation.setCollateralBalance(user1.address, WETH.address, exp(0.2, 18));
-    await cometWithPartialLiquidation.setCollateralBalance(ethers.constants.AddressZero, COMP.address, exp(10000, 18));
-    await cometWithPartialLiquidation.setCollateralBalance(ethers.constants.AddressZero, WETH.address, exp(100, 18));
+    // Setup liquidator with USDC
+    await USDC.connect(governor).transfer(liquidator.address, exp(10000, 6));
+    await USDC.connect(liquidator).approve(cometWithPartialLiquidation.address, exp(10000, 6));
+    await cometWithPartialLiquidation.connect(liquidator).supply(USDC.address, exp(10000, 6));
 
-    await cometWithPartialLiquidation.setTotalsBasic({
-      baseSupplyIndex: exp(1, 15),
-      baseBorrowIndex: exp(1, 15),
-      trackingSupplyIndex: exp(1, 15),
-      trackingBorrowIndex: exp(1, 15),
-      totalSupplyBase: 0n,
-      totalBorrowBase: exp(1000, 6),
-      lastAccrualTime: Math.floor(Date.now() / 1000),
-      pauseFlags: 0,
-    });
+    // Setup user with insufficient collaterals
+    await COMP.connect(governor).transfer(user1.address, exp(15, 18)); // 15 COMP = $750
+    await COMP.connect(user1).approve(cometWithPartialLiquidation.address, exp(15, 18));
+    await cometWithPartialLiquidation.connect(user1).supply(COMP.address, exp(15, 18));
 
-    await cometWithPartialLiquidation.setTotalsCollateral(COMP.address, {
-      totalSupplyAsset: exp(10300, 18),
-      _reserved: 0n,
-    });
+    await WETH.connect(governor).transfer(user1.address, exp(0.1, 18)); // 0.1 WETH = $200
+    await WETH.connect(user1).approve(cometWithPartialLiquidation.address, exp(0.1, 18));
+    await cometWithPartialLiquidation.connect(user1).supply(WETH.address, exp(0.1, 18));
 
-    await cometWithPartialLiquidation.setTotalsCollateral(WETH.address, {
-      totalSupplyAsset: exp(100.2, 18),
-      _reserved: 0n,
-    });
+    // Calculate total borrow capacity and take debt
+    const borrowCapacityCOMP = await borrowCapacityForAsset(cometWithPartialLiquidation, user1, 0);
+    const borrowCapacityWETH = await borrowCapacityForAsset(cometWithPartialLiquidation, user1, 1);
+    const totalBorrowCapacity = borrowCapacityCOMP.add(borrowCapacityWETH);
+    await cometWithPartialLiquidation.connect(user1).withdraw(USDC.address, totalBorrowCapacity);
+
+    // Create liquidation conditions by dropping prices
+    let iterations = 0;
+    while(!(await cometWithPartialLiquidation.isLiquidatable(user1.address)) && iterations < 50) {
+      const currentCOMPData = await priceFeedCOMP.latestRoundData();
+      await priceFeedCOMP.connect(governor).setRoundData(
+        currentCOMPData._roundId,
+        currentCOMPData._answer.mul(80).div(100), // Decrease COMP price by 20%
+        currentCOMPData._startedAt,
+        currentCOMPData._updatedAt,
+        currentCOMPData._answeredInRound
+      );
+
+      const currentWETHData = await priceFeedWETH.latestRoundData();
+      await priceFeedWETH.connect(governor).setRoundData(
+        currentWETHData._roundId,
+        currentWETHData._answer.mul(80).div(100), // Decrease WETH price by 20%
+        currentWETHData._startedAt,
+        currentWETHData._updatedAt,
+        currentWETHData._answeredInRound
+      );
+
+      await ethers.provider.send('evm_increaseTime', [7 * 24 * 60 * 60]); // 1 week
+      await ethers.provider.send('evm_mine', []);
+      iterations++;
+    }
 
     const initialCOMP = await cometWithPartialLiquidation.userCollateral(user1.address, COMP.address);
     const initialWETH = await cometWithPartialLiquidation.userCollateral(user1.address, WETH.address);
@@ -772,40 +895,58 @@ describe('CometWithPartialLiquidation', function() {
   it('should perform full liquidation with single collateral', async function () {
     const protocol = await makeProtocol({
       assets: {
-        USDC: { decimals: 6 },
-        COMP: {
-          initial: 1e7,
-          decimals: 18,
+        USDC: {
+          initial: exp(1e6, 6),
+          decimals: 6,
           initialPrice: 1,
+        },
+        COMP: {
+          initial: exp(1e6, 18),
+          decimals: 18,
+          initialPrice: 50,
           borrowCF: exp(0.8, 18),
           liquidateCF: exp(0.85, 18),
           liquidationFactor: exp(0.7, 18),
+          supplyCap: exp(2e5, 18),
         },
       },
+      baseTrackingBorrowSpeed: exp(1 / 86400, 15, 18),
     });
 
-    const { cometWithPartialLiquidation, tokens, users: [user1, liquidator] } = protocol;
-    const { COMP } = tokens;
+    const { cometWithPartialLiquidation, tokens, priceFeeds, governor, users: [user1, liquidator] } = protocol;
+    const { USDC, COMP } = tokens;
+    const { COMP: priceFeedCOMP } = priceFeeds;
 
-    await cometWithPartialLiquidation.setBasePrincipal(user1.address, -exp(1000, 6));
-    await cometWithPartialLiquidation.setCollateralBalance(user1.address, COMP.address, exp(1000, 18));
-    await cometWithPartialLiquidation.setCollateralBalance(ethers.constants.AddressZero, COMP.address, exp(10000, 18));
+    // Setup liquidator with USDC
+    await USDC.connect(governor).transfer(liquidator.address, exp(10000, 6));
+    await USDC.connect(liquidator).approve(cometWithPartialLiquidation.address, exp(10000, 6));
+    await cometWithPartialLiquidation.connect(liquidator).supply(USDC.address, exp(10000, 6));
 
-    await cometWithPartialLiquidation.setTotalsBasic({
-      baseSupplyIndex: exp(1, 15),
-      baseBorrowIndex: exp(1, 15),
-      trackingSupplyIndex: exp(1, 15),
-      trackingBorrowIndex: exp(1, 15),
-      totalSupplyBase: 0n,
-      totalBorrowBase: exp(1000, 6),
-      lastAccrualTime: Math.floor(Date.now() / 1000),
-      pauseFlags: 0,
-    });
+    // Setup user with exact collateral amount for full liquidation
+    await COMP.connect(governor).transfer(user1.address, exp(20, 18)); // 20 COMP = $1,000
+    await COMP.connect(user1).approve(cometWithPartialLiquidation.address, exp(20, 18));
+    await cometWithPartialLiquidation.connect(user1).supply(COMP.address, exp(20, 18));
 
-    await cometWithPartialLiquidation.setTotalsCollateral(COMP.address, {
-      totalSupplyAsset: exp(11000, 18),
-      _reserved: 0n,
-    });
+    // Take maximum borrow capacity
+    const borrowCapacity = await borrowCapacityForAsset(cometWithPartialLiquidation, user1, 0);
+    await cometWithPartialLiquidation.connect(user1).withdraw(USDC.address, borrowCapacity);
+
+    // Create liquidation conditions by dropping COMP price significantly
+    let iterations = 0;
+    while(!(await cometWithPartialLiquidation.isLiquidatable(user1.address)) && iterations < 50) {
+      const currentCOMPData = await priceFeedCOMP.latestRoundData();
+      await priceFeedCOMP.connect(governor).setRoundData(
+        currentCOMPData._roundId,
+        currentCOMPData._answer.mul(50).div(100), // Decrease COMP price by 50%
+        currentCOMPData._startedAt,
+        currentCOMPData._updatedAt,
+        currentCOMPData._answeredInRound
+      );
+
+      await ethers.provider.send('evm_increaseTime', [7 * 24 * 60 * 60]); // 1 week
+      await ethers.provider.send('evm_mine', []);
+      iterations++;
+    }
 
     const initialCOMP = await cometWithPartialLiquidation.userCollateral(user1.address, COMP.address);
     const initialDebt = await cometWithPartialLiquidation.borrowBalanceOf(user1.address);
