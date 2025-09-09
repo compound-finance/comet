@@ -257,15 +257,19 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       },
     ];
 
-    const description = `# Update price feeds in cUSDTv3 on Mainnet with CAPO and SVR implementation.
+    const description = `# Update price feeds in cUSDTv3 on Mainnet with CAPO and Chainlink SVR implementation.
 
 ## Proposal summary
 
-This proposal updates existing price feeds for wstETH, sFRAX, wBTC, WETH, mETH, COMP, and LINK on the USDT market on Mainnet implementing CAPO and SVR.
-In conclusion after the [RFP process](https://www.comp.xyz/t/oev-rfp-process-update-july-2025/6945) and community [vote](https://snapshot.box/#/s:comp-vote.eth/proposal/0x98a3873319cdb5a4c66b6f862752bdcfb40d443a5b9c2f9472188d7ed5f9f2e0) passed and decided to implement Chainlink's SVR solution for Mainnet markets, this proposal updates WETH, WBTC, LINK and COMP price feeds to their SVR implementations.
+This proposal updates existing price feeds for wstETH, sFRAX, weETH, WBTC, WETH, mETH, COMP, and LINK on the USDT market on Mainnet. 
 
-CAPO is a price oracle adapter designed to support assets that grow gradually relative to a base asset - such as liquid staking tokens that accumulate yield over time. It provides a mechanism to track this expected growth while protecting downstream protocol from sudden or manipulated price spikes.
-wstETH, sFRAX, weETH and mETH price feeds are updated to their CAPO implementations.
+SVR summery
+
+[RFP process](https://www.comp.xyz/t/oev-rfp-process-update-july-2025/6945) and community [vote](https://snapshot.box/#/s:comp-vote.eth/proposal/0x98a3873319cdb5a4c66b6f862752bdcfb40d443a5b9c2f9472188d7ed5f9f2e0) passed and decided to implement Chainlink's SVR solution for Mainnet markets, this proposal updates wstETH, WBTC, WETH, LINK, weETH, mETH, COMP price feeds to support SVR implementations.
+
+CAPO summery
+
+CAPO is a price oracle adapter designed to support assets that grow gradually relative to a base asset - such as liquid staking tokens that accumulate yield over time. It provides a mechanism to track this expected growth while protecting downstream protocol from sudden or manipulated price spikes. wstETH, sFRAX, weETH, mETH price feeds are updated to their CAPO implementations.
 
 Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1015),  [forum discussion for CAPO](https://www.comp.xyz/t/woof-correlated-assets-price-oracle-capo/6245) and [forum discussion for SVR](https://www.comp.xyz/t/request-for-proposal-rfp-oracle-extractable-value-oev-solution-for-compound-protocol/6786).
 
