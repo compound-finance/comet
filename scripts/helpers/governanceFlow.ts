@@ -9,21 +9,6 @@ export interface GovernanceFlowOptions {
 }
 
 export class GovernanceFlowHelper {
-
-  private async checkProposalStatus(options: GovernanceFlowOptions): Promise<void> {
-    const command = `yarn hardhat governor:status --network ${options.network} --deployment ${options.deployment} --proposal-id ${options.proposalId}`;
-    
-    try {
-      await runCommand(command, 'Checking proposal status');
-    } catch (error) {
-      log(`\n⚠️  Could not check proposal status. Please verify the proposal ID is correct.`, 'warning');
-      const shouldContinue = await confirm(`\nDo you want to continue with the governance flow?`);
-      if (!shouldContinue) {
-        throw new Error('Governance flow cancelled by user');
-      }
-    }
-  }
-
   private async approveProposal(options: GovernanceFlowOptions): Promise<void> {
     const command = `yarn hardhat governor:approve --network ${options.network} --deployment ${options.deployment} --proposal-id ${options.proposalId}`;
     
@@ -36,11 +21,11 @@ export class GovernanceFlowHelper {
     await runCommand(command, 'Queueing proposal');
   }
 
-  private async executeProposal(options: GovernanceFlowOptions): Promise<void> {
+  private async executeProposal(options: GovernanceFlowOptions): Promise<string> {
     const executionType = options.executionType || 'governance-config';
     const command = `yarn hardhat governor:execute --network ${options.network} --deployment ${options.deployment} --proposal-id ${options.proposalId} --execution-type ${executionType}`;
     
-    await runCommand(command, 'Executing proposal');
+    return await runCommand(command, 'Executing proposal');
   }
 
   /**
@@ -53,12 +38,13 @@ export class GovernanceFlowHelper {
     options: GovernanceFlowOptions,
     successMessage?: string,
     manualCommands?: string[]
-  ): Promise<void> {
+  ): Promise<string> {
     log(`\n🎯 Running governance flow for proposal ${options.proposalId}...`, 'info');
     
     // Ask user if they want to proceed with governance
     const shouldProcessGovernance = await confirm(`\nDo you want to approve, queue, and execute proposal ${options.proposalId}?`);
     
+    let governanceFlowResponse = '';
     if (shouldProcessGovernance) {
       // Approve proposal
       await this.approveProposal(options);
@@ -67,7 +53,7 @@ export class GovernanceFlowHelper {
       await this.queueProposal(options);
       
       // Execute proposal
-      await this.executeProposal(options);
+      governanceFlowResponse = await this.executeProposal(options);
       
       log(`\n✅ Governance flow completed successfully!`, 'success');
       if (successMessage) {
@@ -86,6 +72,8 @@ export class GovernanceFlowHelper {
         log(`   yarn hardhat governor:execute --network ${options.network} --deployment ${options.deployment} --proposal-id ${options.proposalId} --execution-type ${options.executionType || 'governance-config'}`, 'info');
       }
     }
+
+    return governanceFlowResponse;
   }
 }
 
@@ -99,7 +87,7 @@ export async function runGovernanceFlow(
   options: GovernanceFlowOptions,
   successMessage?: string,
   manualCommands?: string[]
-): Promise<void> {
+): Promise<string> {
   const helper = new GovernanceFlowHelper();
   return await helper.runGovernanceFlow(options, successMessage, manualCommands);
 }

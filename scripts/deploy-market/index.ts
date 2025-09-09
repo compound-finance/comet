@@ -96,7 +96,7 @@ class MarketDeployer {
   private async deployMarket(): Promise<string> {
     const command = `yarn hardhat deploy --network ${this.options.network} --deployment ${this.options.deployment} --bdag`;
     
-    return extractProposalId(await runCommand(command, 'Deploying market', true));
+    return extractProposalId(await runCommand(command, 'Deploying market'));
   }
 
   private async runDeploymentVerification(): Promise<void> {
@@ -110,12 +110,13 @@ class MarketDeployer {
     log(`\n🚀 Starting governance flow to accept implementation...`, 'info');
     
     // Step 1: Run governance flow to accept implementation
-    await runGovernanceFlow({
+    const governanceFlowResponse = await runGovernanceFlow({
       network: this.options.network,
       deployment: this.options.deployment,
       proposalId,
       executionType: 'comet-impl-in-configuration'
     });
+    log(`\n🎉 Governance flow response: ${governanceFlowResponse}`, 'success');
     log(`\n🎉 Governance flow to accept implementation completed successfully!`, 'success');
     
     // Step 2: Propose upgrade (if needed)
@@ -124,6 +125,7 @@ class MarketDeployer {
 
       log(`\n🔧 Proposing upgrade to a new implementation...`, 'info');
       if (shouldProposeUpgrade) {
+        // TODO: extract implementation address from governance flow response
         const implementationAddress = await question(`\nEnter the new implementation address: `);
         
         if (implementationAddress) {
