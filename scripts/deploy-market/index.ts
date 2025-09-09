@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { runGovernanceFlow } from '../helpers/governanceFlow';
 import { log, question, confirm } from '../helpers/ioUtil';
-import { runCommand } from '../helpers/commandUtil';
+import { extractProposalId, runCommand } from '../helpers/commandUtil';
 
 interface DeployOptions {
   network: string;
@@ -93,10 +93,10 @@ class MarketDeployer {
     await runCommand(command, 'Deploying infrastructure');
   }
 
-  private async deployMarket(): Promise<void> {
+  private async deployMarket(): Promise<string> {
     const command = `yarn hardhat deploy --network ${this.options.network} --deployment ${this.options.deployment} --bdag`;
     
-    await runCommand(command, 'Deploying market');
+    return extractProposalId(await runCommand(command, 'Deploying market', true));
   }
 
   private async runDeploymentVerification(): Promise<void> {
@@ -105,12 +105,11 @@ class MarketDeployer {
     await runCommand(command, 'Running deployment verification test');
   }
 
-  private async runGovernanceToAcceptImplementation(): Promise<void> {
+  private async runGovernanceToAcceptImplementation(proposalId: string): Promise<void> {
     log(`\n🎉 Market deployment completed successfully!`, 'success');
     log(`\n🚀 Starting governance flow to accept implementation...`, 'info');
     
     // Step 1: Run governance flow to accept implementation
-    const proposalId = await question(`\nEnter the proposal ID: `);
     await runGovernanceFlow({
       network: this.options.network,
       deployment: this.options.deployment,
@@ -128,13 +127,13 @@ class MarketDeployer {
         const implementationAddress = await question(`\nEnter the new implementation address: `);
         
         if (implementationAddress) {
-          await runCommand(
+          const proposalId = extractProposalId(await runCommand(
             `yarn hardhat governor:propose-upgrade --network ${this.options.network} --deployment ${this.options.deployment} --implementation ${implementationAddress}`,
             'Proposing upgrade'
-          );
+          ));
           
           // Step 3: Process upgrade proposal
-          await this.runGovernanceToAcceptUpgrade();
+          await this.runGovernanceToAcceptUpgrade(proposalId);
         }
       }
     } catch (error) {
@@ -170,27 +169,20 @@ class MarketDeployer {
     }
   }
 
-  private async runGovernanceToAcceptUpgrade(): Promise<void> {
-    const upgradeProposalId = await question(`\nEnter the upgrade proposal ID: `);
-    
-    if (upgradeProposalId) {
-      log(`\n📋 Processing upgrade proposal ID: ${upgradeProposalId}`, 'info');
-      
+  private async runGovernanceToAcceptUpgrade(proposalId: string): Promise<void> {
+    if (proposalId) {
       // Approve all upgrade governance steps at once
-      const shouldProcessUpgradeGovernance = await confirm(`\nDo you want to approve, queue, and execute upgrade proposal ${upgradeProposalId}?`);
-      if (shouldProcessUpgradeGovernance) {
-        await runGovernanceFlow({
-          network: this.options.network,
-          deployment: this.options.deployment,
-          proposalId: upgradeProposalId,
-          executionType: 'comet-upgrade'
-        });
-        
-        // Refresh roots after upgrade
-        const shouldRefreshRoots = await confirm(`\nDo you want to refresh roots after the upgrade?`);
-        if (shouldRefreshRoots) {
-          await this.runSpiderForMarket();
-        }
+      await runGovernanceFlow({
+        network: this.options.network,
+        deployment: this.options.deployment,
+        proposalId,
+        executionType: 'comet-upgrade'
+      });
+      
+      // Refresh roots after upgrade
+      const shouldRefreshRoots = await confirm(`\nDo you want to refresh roots after the upgrade?`);
+      if (shouldRefreshRoots) {
+        await this.runSpiderForMarket();
       }
     }
   }
@@ -219,13 +211,10 @@ class MarketDeployer {
       await this.promptForConfigurationUpdate();
       
       // Step 4: Deploy Market
-      await this.deployMarket();
+      const proposalId = await this.deployMarket();
       
       // Step 5: Run governance flow
-      const runGovernance = await confirm(`\nDo you want to run the governance flow?`);
-      if (runGovernance) {
-        await this.runGovernanceToAcceptImplementation();
-      }
+      await this.runGovernanceToAcceptImplementation(proposalId);
       
       // Step 6: Run verification test (after governance)
       const runVerification = await confirm(`\nDo you want to run deployment verification test?`);

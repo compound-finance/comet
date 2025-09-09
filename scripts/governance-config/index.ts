@@ -2,7 +2,7 @@
 
 import { runGovernanceFlow, GovernanceFlowOptions } from '../helpers/governanceFlow';
 import { log, question, confirm } from '../helpers/ioUtil';
-import { runCommandWithOutput } from '../helpers/commandUtil';
+import { runCommand, extractProposalId } from '../helpers/commandUtil';
 
 interface GovernanceConfigOptions {
   network: string;
@@ -16,8 +16,6 @@ class GovernanceConfigProposer {
     this.options = options;
   }
 
-
-
   private validateAdminAddresses(admins: string[]): void {
     for (const admin of admins) {
       if (!/^0x[a-fA-F0-9]{40}$/.test(admin)) {
@@ -30,15 +28,9 @@ class GovernanceConfigProposer {
     const adminsParam = admins.join(',');
     const command = `yarn hardhat governor:propose-governance-config --network ${this.options.network} --deployment ${this.options.deployment} --admins "${adminsParam}" --threshold ${threshold}`;
     
-    const output = await runCommandWithOutput(command, 'Proposing governance configuration change');
+    const output = await runCommand(command, 'Proposing governance configuration change');
     
-    // Extract proposal ID from output
-    const proposalIdMatch = output.match(/Proposal ID: (\d+)/);
-    if (proposalIdMatch) {
-      return proposalIdMatch[1];
-    }
-    
-    throw new Error('Could not extract proposal ID from output');
+    return extractProposalId(output);
   }
 
   private async runGovernanceFlow(proposalId: string): Promise<void> {

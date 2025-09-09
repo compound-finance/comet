@@ -56,9 +56,6 @@ export class GovernanceFlowHelper {
   ): Promise<void> {
     log(`\n🎯 Running governance flow for proposal ${options.proposalId}...`, 'info');
     
-    // Check proposal status first
-    await this.checkProposalStatus(options);
-    
     // Ask user if they want to proceed with governance
     const shouldProcessGovernance = await confirm(`\nDo you want to approve, queue, and execute proposal ${options.proposalId}?`);
     
