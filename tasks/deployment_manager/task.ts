@@ -29,9 +29,8 @@ async function runMigration<T>(
   prepare: boolean,
   enact: boolean,
   migration: Migration<T>,
-  overwrite: boolean,
+  overwrite: boolean
 ) {
-  deploymentManager.cleanCache();
   let artifact: T = await deploymentManager.readArtifact(migration);
   if (prepare) {
     if (artifact && !overwrite) {
@@ -58,8 +57,6 @@ async function runMigration<T>(
       artifact
     );
     console.log('Enactment complete');
-
-    await govDeploymentManager.cleanCache();
   }
 }
 
