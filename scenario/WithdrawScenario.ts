@@ -12,12 +12,12 @@ async function testWithdrawCollateral(context: CometContext, assetNum: number): 
   const scale = scaleBN.toBigInt();
 
   expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(0n);
-  expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(100n * scale);
+  expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(BigInt(getConfigForScenario(context).supplyCollateral) * scale);
 
   // Albert withdraws 100 units of collateral from Comet
-  const txn = await albert.withdrawAsset({ asset: collateralAsset.address, amount: 100n * scale });
+  const txn = await albert.withdrawAsset({ asset: collateralAsset.address, amount: BigInt(getConfigForScenario(context).supplyCollateral) * scale });
 
-  expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(100n * scale);
+  expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(BigInt(getConfigForScenario(context).supplyCollateral) * scale);
   expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(0n);
 
   return txn; // return txn to measure gas
@@ -31,28 +31,29 @@ async function testWithdrawFromCollateral(context: CometContext, assetNum: numbe
   const scale = scaleBN.toBigInt();
 
   expect(await collateralAsset.balanceOf(betty.address)).to.be.equal(0n);
-  expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(100n * scale);
+  expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(BigInt(getConfigForScenario(context).supplyCollateral) * scale);
 
   await albert.allow(betty, true);
 
   // Betty withdraws 1000 units of collateral from Albert
-  const txn = await betty.withdrawAssetFrom({ src: albert.address, dst: betty.address, asset: collateralAsset.address, amount: 100n * scale });
+  const txn = await betty.withdrawAssetFrom({ src: albert.address, dst: betty.address, asset: collateralAsset.address, amount: BigInt(getConfigForScenario(context).supplyCollateral) * scale });
 
-  expect(await collateralAsset.balanceOf(betty.address)).to.be.equal(100n * scale);
+  expect(await collateralAsset.balanceOf(betty.address)).to.be.equal(BigInt(getConfigForScenario(context).supplyCollateral) * scale);
   expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(0n);
 
   return txn; // return txn to measure gas
 }
 
 for (let i = 0; i < MAX_ASSETS; i++) {
-  const amountToWithdraw = 100; // in units of asset, not wei
   scenario(
     `Comet#withdraw > collateral asset ${i}`,
     {
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToWithdraw),
-      cometBalances: {
-        albert: { [`$asset${i}`]: amountToWithdraw },
-      },
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, getConfigForScenario(ctx).withdrawCollateral),
+      cometBalances: async (ctx) =>  (
+        {
+          albert: { [`$asset${i}`]: getConfigForScenario(ctx).withdrawCollateral }
+        }
+      ),
     },
     async (_properties, context) => {
       return await testWithdrawCollateral(context, i);
@@ -61,14 +62,15 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 }
 
 for (let i = 0; i < MAX_ASSETS; i++) {
-  const amountToWithdraw = 100; // in units of asset, not wei
   scenario(
     `Comet#withdrawFrom > collateral asset ${i}`,
     {
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToWithdraw),
-      cometBalances: {
-        albert: { [`$asset${i}`]: amountToWithdraw },
-      },
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, getConfigForScenario(ctx).withdrawCollateral),
+      cometBalances: async (ctx) =>  (
+        {
+          albert: { [`$asset${i}`]: getConfigForScenario(ctx).withdrawCollateral }
+        }
+      ),
     },
     async (_properties, context) => {
       return await testWithdrawFromCollateral(context, i);

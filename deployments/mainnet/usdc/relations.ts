@@ -11,6 +11,14 @@ export default {
       }
     }
   },
+  TransparentUpgradeableProxy: {
+    artifact: 'contracts/ERC20.sol:ERC20',
+    delegates: {
+      field: {
+        slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+      }
+    }
+  },
   'AppProxyUpgradeable': {
     artifact: 'contracts/ERC20.sol:ERC20',
   },
@@ -22,6 +30,14 @@ export default {
     }
   },
   UUPSProxy: {
+    artifact: 'contracts/ERC20.sol:ERC20',
+    delegates: {
+      field: {
+        slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+      }
+    }
+  },
+  ERC1967Proxy: {
     artifact: 'contracts/ERC20.sol:ERC20',
     delegates: {
       field: {
@@ -100,6 +116,30 @@ export default {
     }
   },
   unichainL1StandardBridge: {
+    delegates: {
+      field: {
+        slot:
+          '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+      }
+    }
+  },
+  lineaMessageService: {
+    delegates: {
+      field: {
+        slot:
+          '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+      }
+    }
+  },
+  lineaL1TokenBridge: {
+    delegates: {
+      field: {
+        slot:
+          '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+      }
+    }
+  },
+  lineaL1USDCBridge: {
     delegates: {
       field: {
         slot:

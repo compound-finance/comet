@@ -10,7 +10,7 @@ import hreForBase from '../../plugins/scenario/utils/hreForBase';
 async function getForkEnv(env: HardhatRuntimeEnvironment, deployment: string): Promise<HardhatRuntimeEnvironment> {
   const base = env.config.scenario.bases.find(b => b.network == env.network.name && b.deployment == deployment);
   if (!base) {
-    throw new Error(`No fork spec for ${env.network.name}`);
+    throw new Error(`No fork spec for ${env.network.name}-${deployment}`);
   }
   return await hreForBase(base);
 }
@@ -29,8 +29,10 @@ async function runMigration<T>(
   prepare: boolean,
   enact: boolean,
   migration: Migration<T>,
-  overwrite: boolean
+  overwrite: boolean,
+  tenderly: boolean = false
 ) {
+  deploymentManager.cleanCache();
   let artifact: T = await deploymentManager.readArtifact(migration);
   if (prepare) {
     if (artifact && !overwrite) {
@@ -51,9 +53,24 @@ async function runMigration<T>(
   }
 
   if (enact) {
-    console.log('Running enactment step with artifact...', artifact);
-    await migration.actions.enact(deploymentManager, govDeploymentManager, artifact);
+
+    const {
+      governor,
+      timelock
+    } = await govDeploymentManager.getContracts();
+    
+    await migration.actions.enact(
+      deploymentManager,
+      govDeploymentManager,
+      artifact
+    );
     console.log('Enactment complete');
+
+    if (tenderly) {
+      const { tenderlyExecute } = await import('../../scenario/utils');
+      await tenderlyExecute(govDeploymentManager, deploymentManager, governor, timelock);
+    }
+    await govDeploymentManager.cleanCache();
   }
 }
 
@@ -171,11 +188,29 @@ task('migrate', 'Runs migration')
   .addFlag('enact', 'enacts migration [implies prepare]')
   .addFlag('noEnacted', 'do not write enacted to the migration script')
   .addFlag('simulate', 'only simulates the blockchain effects')
+  .addFlag('tenderly', 'use tenderly to simulate the migration')
   .addFlag('overwrite', 'overwrites artifact if exists, fails otherwise')
   .setAction(
-    async ({ migration: migrationName, prepare, enact, noEnacted, simulate, overwrite, deployment, impersonate }, env) => {
+    async (
+      {
+        migration: migrationName,
+        prepare,
+        enact,
+        noEnacted,
+        simulate,
+        tenderly,
+        overwrite,
+        deployment,
+        impersonate,
+      },
+      env
+    ) => {
+      const origNetwork = env.network.name;
+
       const maybeForkEnv = simulate ? await getForkEnv(env, deployment) : env;
-      const network = env.network.name;
+
+
+      const network = origNetwork;
       const dm = new DeploymentManager(
         network,
         deployment,
@@ -183,8 +218,10 @@ task('migrate', 'Runs migration')
         {
           writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
           verificationStrategy: 'eager', // We use eager here to verify contracts right after they are deployed
-        }
+          saveBytecode: tenderly, // Save bytecode to cache if tenderly is enabled
+        },
       );
+
       await dm.spider();
 
       let governanceDm: DeploymentManager;
@@ -201,7 +238,8 @@ task('migrate', 'Runs migration')
           {
             writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
             verificationStrategy: 'eager', // We use eager here to verify contracts right after they are deployed
-          }
+            saveBytecode: tenderly
+          },
         );
         await governanceDm.spider();
       } else {
@@ -222,6 +260,7 @@ task('migrate', 'Runs migration')
       }
 
       const migrationPath = `${__dirname}/../../deployments/${network}/${deployment}/migrations/${migrationName}.ts`;
+      console.log(`Loading migration from ${migrationPath}`);
       const [migration] = await loadMigrations([migrationPath]);
       if (!migration) {
         throw new Error(`Unknown migration for network ${network}/${deployment}: \`${migrationName}\`.`);
@@ -230,7 +269,7 @@ task('migrate', 'Runs migration')
         prepare = true;
       }
 
-      await runMigration(dm, governanceDm, prepare, enact, migration, overwrite);
+      await runMigration(dm, governanceDm, prepare, enact, migration, overwrite, tenderly);
 
       if (enact && !noEnacted) {
         await writeEnacted(migration, dm, true);
