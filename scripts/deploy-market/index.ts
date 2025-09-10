@@ -4,7 +4,7 @@ import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import { runGovernanceFlow } from '../helpers/governanceFlow';
-import { log, confirm } from '../helpers/ioUtil';
+import { log, confirm, updateCometImplAddress } from '../helpers/ioUtil';
 import { extractProposalId, extractImplementationAddress, runCommand } from '../helpers/commandUtil';
 
 interface DeployOptions {
@@ -135,7 +135,7 @@ class MarketDeployer {
         ));
         
         // Step 3: Process upgrade proposal
-        await this.runGovernanceToAcceptUpgrade(proposalId);
+        await this.runGovernanceToAcceptUpgrade(proposalId, implementationAddress);
       }
     } catch (error) {
       log(`\n⚠️  Failed to propose upgrade: ${error}`, 'error');
@@ -170,7 +170,7 @@ class MarketDeployer {
     }
   }
 
-  private async runGovernanceToAcceptUpgrade(proposalId: string): Promise<void> {
+  private async runGovernanceToAcceptUpgrade(proposalId: string, newImplementationAddress: string): Promise<void> {
     if (proposalId) {
       // Approve all upgrade governance steps at once
       const governanceFlowResponse = await runGovernanceFlow({
@@ -182,11 +182,11 @@ class MarketDeployer {
 
       log(`\n🎉 Governance flow response: ${governanceFlowResponse}`, 'success');
       
+      // Update aliases.json and roots.json with the new implementation address
+      updateCometImplAddress(this.options.network, this.options.deployment, newImplementationAddress);
+      
       // Refresh roots after upgrade
-      const shouldRefreshRoots = await confirm(`\nDo you want to refresh roots after the upgrade?`);
-      if (shouldRefreshRoots) {
-        await this.runSpiderForMarket();
-      }
+      await this.runSpiderForMarket();
     }
   }
 
