@@ -4,8 +4,8 @@ import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import { runGovernanceFlow } from '../helpers/governanceFlow';
-import { log, question, confirm } from '../helpers/ioUtil';
-import { extractProposalId, runCommand } from '../helpers/commandUtil';
+import { log, confirm } from '../helpers/ioUtil';
+import { extractProposalId, extractImplementationAddress, runCommand } from '../helpers/commandUtil';
 
 interface DeployOptions {
   network: string;
@@ -125,18 +125,17 @@ class MarketDeployer {
 
       log(`\n🔧 Proposing upgrade to a new implementation...`, 'info');
       if (shouldProposeUpgrade) {
-        // TODO: extract implementation address from governance flow response
-        const implementationAddress = await question(`\nEnter the new implementation address: `);
+        // Extract implementation address from governance flow response
+        const implementationAddress = extractImplementationAddress(governanceFlowResponse);
+        log(`\n📋 Extracted implementation address: ${implementationAddress}`, 'info');
         
-        if (implementationAddress) {
-          const proposalId = extractProposalId(await runCommand(
-            `yarn hardhat governor:propose-upgrade --network ${this.options.network} --deployment ${this.options.deployment} --implementation ${implementationAddress}`,
-            'Proposing upgrade'
-          ));
-          
-          // Step 3: Process upgrade proposal
-          await this.runGovernanceToAcceptUpgrade(proposalId);
-        }
+        const proposalId = extractProposalId(await runCommand(
+          `yarn hardhat governor:propose-upgrade --network ${this.options.network} --deployment ${this.options.deployment} --implementation ${implementationAddress}`,
+          'Proposing upgrade'
+        ));
+        
+        // Step 3: Process upgrade proposal
+        await this.runGovernanceToAcceptUpgrade(proposalId);
       }
     } catch (error) {
       log(`\n⚠️  Failed to propose upgrade: ${error}`, 'error');
@@ -174,12 +173,14 @@ class MarketDeployer {
   private async runGovernanceToAcceptUpgrade(proposalId: string): Promise<void> {
     if (proposalId) {
       // Approve all upgrade governance steps at once
-      await runGovernanceFlow({
+      const governanceFlowResponse = await runGovernanceFlow({
         network: this.options.network,
         deployment: this.options.deployment,
         proposalId,
         executionType: 'comet-upgrade'
       });
+
+      log(`\n🎉 Governance flow response: ${governanceFlowResponse}`, 'success');
       
       // Refresh roots after upgrade
       const shouldRefreshRoots = await confirm(`\nDo you want to refresh roots after the upgrade?`);
