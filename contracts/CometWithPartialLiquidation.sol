@@ -423,12 +423,12 @@ contract CometWithPartialLiquidation is CometMainInterface {
     function isLiquidatable(address account) override public view returns (bool) {
         int104 principal = userBasic[account].principal;
         if (principal >= 0) return false;
-        int debt = signedMulPrice(
+        int256 debt = signedMulPrice(
             presentValue(principal),
             getPrice(baseTokenPriceFeed),
             uint64(baseScale)
         );
-        return (debt + int(_getLiquidity(account, true)) < 0);
+        return (debt + int256(_getLiquidity(account, true)) < 0);
     }
     function _getLiquidity(address account, bool liquidation) internal view returns (uint256) {
         uint16 assetsIn = userBasic[account].assetsIn;
@@ -1061,7 +1061,7 @@ contract CometWithPartialLiquidation is CometMainInterface {
         uint8 _reserved = accountUser._reserved;
         uint256 basePrice = getPrice(baseTokenPriceFeed);
         /// debt value - scaled by price
-        int debt = signedMulPrice(
+        int256 debt = signedMulPrice(
             presentValue(oldPrincipal),
             basePrice,
             uint64(baseScale)
@@ -1080,12 +1080,12 @@ contract CometWithPartialLiquidation is CometMainInterface {
                 uint256 collateralValue = mulPrice(seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale);
                 uint256 collaterizationValue = mulFactor(collateralValue, assetInfo.borrowCollateralFactor);
                 uint256 seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor);
-                uint256 expectedHF = ((uint256(-debt) - deltaValue - seizedValue) * FACTOR_SCALE) / (totalCollaterizedValue - collaterizationValue);
+                uint256 expectedHF = ((totalCollaterizedValue - collaterizationValue) * FACTOR_SCALE) / (uint256(-debt) - deltaValue - seizedValue);
                 if (expectedHF >= targetHF) { // we need to seize only part of collateral
-                    /// target HF = (debt - delta * LF) / (collateral value - delta) * CF
+                    /// target HF = (collateral value - delta * CF) / (debt - delta * LF)
                     /// =>
-                    /// delta = (debt - THF * CF* collateral value) / (CF * THF - LF)
-                    seizedValue = ((uint256(-debt) - deltaValue) - mulFactor(targetHF, collaterizationValue)) / (mulFactor(assetInfo.borrowCollateralFactor, targetHF) - assetInfo.liquidationFactor);
+                    /// delta = (collateral value - debt * THF) / (LF * THF - CF)
+                    seizedValue = (totalCollaterizedValue - mulFactor(uint256(-debt) - deltaValue, targetHF)) * FACTOR_SCALE / (mulFactor(assetInfo.liquidationFactor, targetHF) - assetInfo.borrowCollateralFactor);
                     seizeAmount = divPrice(seizedValue, getPrice(assetInfo.priceFeed), assetInfo.scale);
                     currentHF = targetHF;
                 } else {
@@ -1120,8 +1120,8 @@ contract CometWithPartialLiquidation is CometMainInterface {
         //  the amount of debt repaid by reserves is `newBalance - oldBalance`
         totalSupplyBase += supplyAmount;
         totalBorrowBase -= repayAmount;
-        uint256 basePaidOut = unsigned256(newBalance - oldBalance);
-        uint256 valueOfBasePaidOut = mulPrice(basePaidOut, basePrice, uint64(baseScale));
+        uint256 basePaidOut = newBalance > 0 ? unsigned256(newBalance - oldBalance) : 0;
+        uint256 valueOfBasePaidOut = basePaidOut > 0 ? mulPrice(basePaidOut, basePrice, uint64(baseScale)) : 0;
         emit AbsorbDebt(absorber, account, basePaidOut, valueOfBasePaidOut);
         if (newPrincipal > 0) {
             emit Transfer(address(0), account, presentValueSupply(baseSupplyIndex, unsigned104(newPrincipal)));
