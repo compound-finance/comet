@@ -1,7 +1,8 @@
 #!/usr/bin/env ts-node
 
-import { execSync } from 'child_process';
-import * as readline from 'readline';
+import { runGovernanceFlow, GovernanceFlowOptions } from '../helpers/governanceFlow';
+import { log, question, confirm } from '../helpers/ioUtil';
+import { runCommand, extractProposalId } from '../helpers/commandUtil';
 
 interface GovernanceConfigOptions {
   network: string;
@@ -9,68 +10,10 @@ interface GovernanceConfigOptions {
 }
 
 class GovernanceConfigProposer {
-  private rl: readline.Interface;
   private options: GovernanceConfigOptions;
 
   constructor(options: GovernanceConfigOptions) {
     this.options = options;
-    this.rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout
-    });
-  }
-
-  private async question(prompt: string): Promise<string> {
-    return new Promise((resolve) => {
-      this.rl.question(prompt, (answer) => {
-        resolve(answer.trim());
-      });
-    });
-  }
-
-  private async confirm(prompt: string): Promise<boolean> {
-    const answer = await this.question(`${prompt} (y/N): `);
-    return answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes';
-  }
-
-  private log(message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info') {
-    const colors = {
-      info: '\x1b[36m',    // Cyan
-      success: '\x1b[32m', // Green
-      warning: '\x1b[33m', // Yellow
-      error: '\x1b[31m'    // Red
-    };
-    const reset = '\x1b[0m';
-    console.log(`${colors[type]}${message}${reset}`);
-  }
-
-  private async runCommand(command: string, description: string): Promise<string> {
-    this.log(`\n🔄 ${description}...`, 'info');
-    try {
-      const output = execSync(command, { 
-        stdio: 'pipe',
-        encoding: 'utf8'
-      });
-      this.log(`✅ ${description} completed successfully`, 'success');
-      return output;
-    } catch (error) {
-      this.log(`❌ ${description} failed: ${error}`, 'error');
-      throw error;
-    }
-  }
-
-  private async runCommandWithOutput(command: string, description: string): Promise<void> {
-    this.log(`\n🔄 ${description}...`, 'info');
-    try {
-      execSync(command, { 
-        stdio: 'inherit',
-        encoding: 'utf8'
-      });
-      this.log(`✅ ${description} completed successfully`, 'success');
-    } catch (error) {
-      this.log(`❌ ${description} failed: ${error}`, 'error');
-      throw error;
-    }
   }
 
   private validateAdminAddresses(admins: string[]): void {
@@ -85,83 +28,37 @@ class GovernanceConfigProposer {
     const adminsParam = admins.join(',');
     const command = `yarn hardhat governor:propose-governance-config --network ${this.options.network} --deployment ${this.options.deployment} --admins "${adminsParam}" --threshold ${threshold}`;
     
-    const output = await this.runCommand(command, 'Proposing governance configuration change');
+    const output = await runCommand(command, 'Proposing governance configuration change');
     
-    // Extract proposal ID from output
-    const proposalIdMatch = output.match(/Proposal ID: (\d+)/);
-    if (proposalIdMatch) {
-      return proposalIdMatch[1];
-    }
-    
-    throw new Error('Could not extract proposal ID from output');
-  }
-
-  private async checkProposalStatus(proposalId: string): Promise<void> {
-    const command = `yarn hardhat governor:status --network ${this.options.network} --deployment ${this.options.deployment} --proposal-id ${proposalId}`;
-    
-    await this.runCommandWithOutput(command, 'Checking proposal status');
-  }
-
-  private async approveProposal(proposalId: string): Promise<void> {
-    const command = `yarn hardhat governor:approve --network ${this.options.network} --deployment ${this.options.deployment} --proposal-id ${proposalId}`;
-    
-    await this.runCommandWithOutput(command, 'Approving proposal');
-  }
-
-  private async queueProposal(proposalId: string): Promise<void> {
-    const command = `yarn hardhat governor:queue --network ${this.options.network} --deployment ${this.options.deployment} --proposal-id ${proposalId}`;
-    
-    await this.runCommandWithOutput(command, 'Queueing proposal');
-  }
-
-  private async executeProposal(proposalId: string): Promise<void> {
-    const command = `yarn hardhat governor:execute --network ${this.options.network} --deployment ${this.options.deployment} --proposal-id ${proposalId} --execution-type governance-config`;
-    
-    await this.runCommandWithOutput(command, 'Executing proposal');
+    return extractProposalId(output);
   }
 
   private async runGovernanceFlow(proposalId: string): Promise<void> {
-    this.log(`\n🎉 Governance configuration proposal created successfully!`, 'success');
-    this.log(`\n🚀 Starting governance flow for proposal ID: ${proposalId}`, 'info');
+    log(`\n🎉 Governance configuration proposal created successfully!`, 'success');
     
-    // Check proposal status
-    await this.checkProposalStatus(proposalId);
+    const options: GovernanceFlowOptions = {
+      network: this.options.network,
+      deployment: this.options.deployment,
+      proposalId: proposalId,
+      executionType: 'governance-config'
+    };
     
-    // Ask user if they want to proceed with governance
-    const shouldProcessGovernance = await this.confirm(`\nDo you want to approve, queue, and execute proposal ${proposalId}?`);
+    const successMessage = `\n🎉 Governance configuration change completed successfully!\n🔧 New governance configuration is now active`;
     
-    if (shouldProcessGovernance) {
-      // Approve proposal
-      await this.approveProposal(proposalId);
-      
-      // Queue proposal
-      await this.queueProposal(proposalId);
-      
-      // Execute proposal
-      await this.executeProposal(proposalId);
-      
-      this.log(`\n🎉 Governance configuration change completed successfully!`, 'success');
-      this.log(`\n🔧 New governance configuration is now active`, 'info');
-    } else {
-      this.log(`\n⏸️  Governance flow paused. You can manually process the proposal later.`, 'warning');
-      this.log(`\n📋 Commands to run manually:`, 'info');
-      this.log(`   yarn hardhat governor:approve --network ${this.options.network} --deployment ${this.options.deployment} --proposal-id ${proposalId}`, 'info');
-      this.log(`   yarn hardhat governor:queue --network ${this.options.network} --deployment ${this.options.deployment} --proposal-id ${proposalId}`, 'info');
-      this.log(`   yarn hardhat governor:execute --network ${this.options.network} --deployment ${this.options.deployment} --proposal-id ${proposalId} --execution-type governance-config`, 'info');
-    }
+    await runGovernanceFlow(options, successMessage);
   }
 
   public async run(): Promise<void> {
     try {
-      this.log(`\n🚀 Starting Governance Configuration Change Process`, 'info');
-      this.log(`Network: ${this.options.network}`, 'info');
-      this.log(`Deployment: ${this.options.deployment}`, 'info');
+      log(`\n🚀 Starting Governance Configuration Change Process`, 'info');
+      log(`Network: ${this.options.network}`, 'info');
+      log(`Deployment: ${this.options.deployment}`, 'info');
       
       // Ask for admin addresses
-      const adminsInput = await this.question(`\nEnter admin addresses (comma-separated, e.g., 0x123...,0x456...,0x789...): `);
+      const adminsInput = await question(`\nEnter admin addresses (comma-separated, e.g., 0x123...,0x456...,0x789...): `);
       
       if (!adminsInput) {
-        this.log(`\n❌ Admin addresses are required`, 'error');
+        log(`\n❌ Admin addresses are required`, 'error');
         return;
       }
       
@@ -171,10 +68,10 @@ class GovernanceConfigProposer {
       this.validateAdminAddresses(admins);
       
       // Ask for threshold
-      const thresholdInput = await this.question(`\nEnter multisig threshold (number of required approvals): `);
+      const thresholdInput = await question(`\nEnter multisig threshold (number of required approvals): `);
       
       if (!thresholdInput) {
-        this.log(`\n❌ Threshold is required`, 'error');
+        log(`\n❌ Threshold is required`, 'error');
         return;
       }
       
@@ -182,25 +79,25 @@ class GovernanceConfigProposer {
       
       // Validate threshold
       if (isNaN(threshold) || threshold <= 0) {
-        this.log(`\n❌ Threshold must be a positive number`, 'error');
+        log(`\n❌ Threshold must be a positive number`, 'error');
         return;
       }
       
       if (threshold > admins.length) {
-        this.log(`\n❌ Threshold cannot be greater than the number of admins`, 'error');
+        log(`\n❌ Threshold cannot be greater than the number of admins`, 'error');
         return;
       }
       
-      this.log(`\n📋 Configuration Summary:`, 'info');
-      this.log(`   Admin addresses: ${admins.join(', ')}`, 'info');
-      this.log(`   Threshold: ${threshold}`, 'info');
-      this.log(`   Total admins: ${admins.length}`, 'info');
+      log(`\n📋 Configuration Summary:`, 'info');
+      log(`   Admin addresses: ${admins.join(', ')}`, 'info');
+      log(`   Threshold: ${threshold}`, 'info');
+      log(`   Total admins: ${admins.length}`, 'info');
       
       // Confirm before proceeding
-      const shouldProceed = await this.confirm(`\nDo you want to proceed with this governance configuration change?`);
+      const shouldProceed = await confirm(`\nDo you want to proceed with this governance configuration change?`);
       
       if (!shouldProceed) {
-        this.log(`\n⏸️  Governance configuration change cancelled.`, 'warning');
+        log(`\n⏸️  Governance configuration change cancelled.`, 'warning');
         return;
       }
       
@@ -211,10 +108,10 @@ class GovernanceConfigProposer {
       await this.runGovernanceFlow(proposalId);
       
     } catch (error) {
-      this.log(`\n❌ Governance configuration change process failed: ${error}`, 'error');
+      log(`\n❌ Governance configuration change process failed: ${error}`, 'error');
       throw error;
     } finally {
-      this.rl.close();
+      // No cleanup needed since each function manages its own readline interface
     }
   }
 }
