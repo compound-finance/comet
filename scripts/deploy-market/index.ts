@@ -102,7 +102,7 @@ class MarketDeployer {
   private async runDeploymentVerification(): Promise<void> {
     const command = `MARKET=${this.options.deployment} yarn hardhat test test/deployment-verification-test.ts --network ${this.options.network}`;
     
-    await runCommand(command, 'Running deployment verification test');
+    await runCommand(command, 'Running deployment verification test', true);
   }
 
   private async runGovernanceToAcceptImplementation(proposalId: string): Promise<void> {

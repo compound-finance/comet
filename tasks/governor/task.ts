@@ -9,6 +9,7 @@ import proposeFundCometRewardsTask from '../../src/governor/ProposeFundCometRewa
 import proposeGovernanceConfigTask from '../../src/governor/ProposeGovernanceConfig';
 import proposeTimelockDelayChangeTask from '../../src/governor/ProposeTimelockDelayChange';
 import proposeTimelockDelayAndGovernanceUpdateTask from '../../src/governor/ProposeTimelockDelayAndGovernanceUpdate';
+import proposeCombinedGovernanceUpdateTask from '../../src/governor/ProposeCombinedGovernanceUpdate';
 
 // Helper function to create deployment manager
 async function createDeploymentManager(hre: any, deployment?: string) {
@@ -279,6 +280,39 @@ task('governor:propose-timelock-delay-and-governance-update', 'Propose changes t
       return result;
     } catch (error) {
       console.error(`❌ Failed to propose timelock delay and governance updates:`, error);
+      throw error;
+    }
+  }); 
+
+// Task to propose combined governance update (improved version)
+task('governor:propose-combined-update', 'Propose combined governance configuration and timelock delay updates')
+  .addParam('admins', "Comma-separated list of new admin addresses (e.g., '0x123...,0x456...,0x789...')")
+  .addParam('threshold', 'New multisig threshold (number of required approvals)')
+  .addParam('deployment', 'The deployment to use')
+  .addOptionalParam('timelockDelay', 'New timelock delay in seconds (optional)')
+  .setAction(async (taskArgs, hre) => {
+    const adminsParam = taskArgs.admins;
+    const threshold = parseInt(taskArgs.threshold);
+    const deployment = taskArgs.deployment;
+    const timelockDelay = taskArgs.timelockDelay ? parseInt(taskArgs.timelockDelay) : null;
+    
+    await createDeploymentManager(hre, deployment);
+    
+    // Parse admin addresses
+    const admins = adminsParam.split(',').map((addr: string) => addr.trim());
+    
+    console.log(`Proposing combined governance update:`);
+    console.log(`  New admins: ${admins.join(', ')}`);
+    console.log(`  New threshold: ${threshold}`);
+    if (timelockDelay) {
+      console.log(`  New timelock delay: ${timelockDelay} seconds`);
+    }
+    
+    try {
+      const result = await proposeCombinedGovernanceUpdateTask(hre, admins, threshold, timelockDelay);
+      return result;
+    } catch (error) {
+      console.error(`❌ Failed to propose combined governance update:`, error);
       throw error;
     }
   }); 
