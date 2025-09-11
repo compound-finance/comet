@@ -1,0 +1,451 @@
+import { expect } from 'chai';
+import { ethers } from 'hardhat';
+import { DeploymentManager } from '../../../plugins/deployment_manager';
+import { ProposalManager, createProposalManager } from '../../../src/governor/helpers/proposalManager';
+import { ProposalAction, ProposalStack } from '../../../src/governor/types/proposalTypes';
+
+import * as fs from 'fs';
+import * as path from 'path';
+
+describe('ProposalManager', () => {
+  let deploymentManager: DeploymentManager;
+  let proposalManager: ProposalManager;
+  const testNetwork = 'test';
+  const testDeployment = 'dai';
+  const testProposalStackPath = path.join(
+    process.cwd(),
+    'deployments',
+    testNetwork,
+    testDeployment,
+    'proposalStack.json'
+  );
+
+  beforeEach(async () => {
+    // Create a mock deployment manager
+    deploymentManager = new DeploymentManager(ethers as any, testNetwork, {} as any);
+    proposalManager = createProposalManager(deploymentManager, testNetwork, testDeployment);
+    
+    // Clean up any existing test files and ensure directory exists
+    const testDir = path.dirname(testProposalStackPath);
+    if (fs.existsSync(testProposalStackPath)) {
+      fs.unlinkSync(testProposalStackPath);
+    }
+    if (!fs.existsSync(testDir)) {
+      fs.mkdirSync(testDir, { recursive: true });
+    }
+  });
+
+  afterEach(() => {
+    // Clean up test files
+    if (fs.existsSync(testProposalStackPath)) {
+      fs.unlinkSync(testProposalStackPath);
+    }
+    const testDir = path.dirname(testProposalStackPath);
+    if (fs.existsSync(testDir) && fs.readdirSync(testDir).length === 0) {
+      fs.rmdirSync(testDir);
+    }
+  });
+
+  describe('File Operations', () => {
+    it('should create proposal stack file when adding first action', async () => {
+      const mockContract = {
+        address: '0x1234567890123456789012345678901234567890',
+        interface: {
+          encodeFunctionData: (_signature: string, _args: any[]) => '0x' + '0'.repeat(64)
+        }
+      } as any;
+
+      const action: ProposalAction = {
+        contract: mockContract,
+        value: 0,
+        signature: 'testFunction',
+        args: ['arg1', 'arg2']
+      };
+
+      await proposalManager.addAction(action);
+
+      expect(fs.existsSync(testProposalStackPath)).to.be.true;
+      
+      const stack = JSON.parse(fs.readFileSync(testProposalStackPath, 'utf8'));
+      expect(stack.actions).to.have.length(1);
+      expect(stack.actions[0].type).to.equal('contract');
+      expect(stack.actions[0].target).to.equal(mockContract.address);
+    });
+
+    it('should load existing proposal stack', async () => {
+      // Ensure directory exists
+      const testDir = path.dirname(testProposalStackPath);
+      if (!fs.existsSync(testDir)) {
+        fs.mkdirSync(testDir, { recursive: true });
+      }
+
+      // Create a test proposal stack file
+      const testStack: ProposalStack = {
+        actions: [
+          {
+            id: 'test-action-1',
+            type: 'contract',
+            target: '0x1234567890123456789012345678901234567890',
+            value: 0,
+            signature: 'testFunction',
+            args: ['arg1'],
+            contractAddress: '0x1234567890123456789012345678901234567890',
+            description: 'Test action'
+          }
+        ],
+        description: 'Test proposal',
+        metadata: { version: '1.0.0' }
+      };
+
+      fs.writeFileSync(testProposalStackPath, JSON.stringify(testStack, null, 2));
+
+      const loadedStack = await proposalManager.loadProposalStack();
+      expect(loadedStack.actions).to.have.length(1);
+      expect(loadedStack.description).to.equal('Test proposal');
+      expect(loadedStack.metadata?.version).to.equal('1.0.0');
+    });
+
+    it('should return empty stack if file does not exist', async () => {
+      const stack = await proposalManager.loadProposalStack();
+      expect(stack.actions).to.have.length(0);
+      expect(stack.description).to.equal('');
+      expect(stack.metadata).to.deep.equal({});
+    });
+
+    it('should clear proposal stack', async () => {
+      // Add an action first
+      const mockContract = {
+        address: '0x1234567890123456789012345678901234567890',
+        interface: {
+          encodeFunctionData: (_signature: string, _args: any[]) => '0x' + '0'.repeat(64)
+        }
+      } as any;
+
+      await proposalManager.addAction({
+        contract: mockContract,
+        value: 0,
+        signature: 'testFunction',
+        args: []
+      });
+
+      // Clear the stack
+      await proposalManager.clearProposalStack();
+
+      const stack = await proposalManager.loadProposalStack();
+      expect(stack.actions).to.have.length(0);
+      expect(stack.description).to.equal('');
+    });
+  });
+
+  describe('Action Management', () => {
+    it('should add contract action', async () => {
+      const mockContract = {
+        address: '0x1234567890123456789012345678901234567890',
+        interface: {
+          encodeFunctionData: (_signature: string, _args: any[]) => '0x' + '0'.repeat(64)
+        }
+      } as any;
+
+      const action: ProposalAction = {
+        contract: mockContract,
+        value: 1000,
+        signature: 'setValue',
+        args: ['newValue']
+      };
+
+      await proposalManager.addAction(action, 'Set new value');
+
+      const stack = await proposalManager.loadProposalStack();
+      expect(stack.actions).to.have.length(1);
+      
+      const addedAction = stack.actions[0];
+      expect(addedAction.type).to.equal('contract');
+      expect(addedAction.target).to.equal(mockContract.address);
+      expect(addedAction.value).to.equal(1000);
+      expect(addedAction.signature).to.equal('setValue');
+      expect(addedAction.args).to.deep.equal(['newValue']);
+      expect(addedAction.description).to.equal('Set new value');
+    });
+
+    it('should add target action', async () => {
+      const action: ProposalAction = {
+        target: '0xabcdef1234567890123456789012345678901234',
+        value: 0,
+        signature: 'deploy',
+        calldata: '0x1234567890abcdef'
+      };
+
+      await proposalManager.addAction(action, 'Deploy contract');
+
+      const stack = await proposalManager.loadProposalStack();
+      expect(stack.actions).to.have.length(1);
+      
+      const addedAction = stack.actions[0];
+      expect(addedAction.type).to.equal('target');
+      expect(addedAction.target).to.equal('0xabcdef1234567890123456789012345678901234');
+      expect(addedAction.value).to.equal(0);
+      expect(addedAction.signature).to.equal('deploy');
+      expect(addedAction.calldata).to.equal('0x1234567890abcdef');
+      expect(addedAction.description).to.equal('Deploy contract');
+    });
+
+    it('should add multiple actions', async () => {
+      const mockContract = {
+        address: '0x1234567890123456789012345678901234567890',
+        interface: {
+          encodeFunctionData: (_signature: string, _args: any[]) => '0x' + '0'.repeat(64)
+        }
+      } as any;
+
+      const actions: ProposalAction[] = [
+        {
+          contract: mockContract,
+          value: 0,
+          signature: 'function1',
+          args: ['arg1']
+        },
+        {
+          target: '0xabcdef1234567890123456789012345678901234',
+          value: 1000,
+          signature: 'function2',
+          calldata: '0x1234567890abcdef'
+        }
+      ];
+
+      const descriptions = ['First action', 'Second action'];
+
+      await proposalManager.addActions(actions, descriptions);
+
+      const stack = await proposalManager.loadProposalStack();
+      expect(stack.actions).to.have.length(2);
+      expect(stack.actions[0].description).to.equal('First action');
+      expect(stack.actions[1].description).to.equal('Second action');
+    });
+
+    it('should generate unique action IDs', async () => {
+      const mockContract = {
+        address: '0x1234567890123456789012345678901234567890',
+        interface: {
+          encodeFunctionData: (_signature: string, _args: any[]) => '0x' + '0'.repeat(64)
+        }
+      } as any;
+
+      await proposalManager.addAction({
+        contract: mockContract,
+        value: 0,
+        signature: 'function1',
+        args: []
+      });
+
+      await proposalManager.addAction({
+        contract: mockContract,
+        value: 0,
+        signature: 'function2',
+        args: []
+      });
+
+      const stack = await proposalManager.loadProposalStack();
+      expect(stack.actions[0].id).to.not.equal(stack.actions[1].id);
+    });
+  });
+
+  describe('Description and Metadata', () => {
+    it('should set proposal description', async () => {
+      await proposalManager.setDescription('Test proposal description');
+      
+      const stack = await proposalManager.loadProposalStack();
+      expect(stack.description).to.equal('Test proposal description');
+    });
+
+    it('should add metadata', async () => {
+      await proposalManager.addMetadata('version', '1.0.0');
+      await proposalManager.addMetadata('author', 'test-script');
+      
+      const stack = await proposalManager.loadProposalStack();
+      expect(stack.metadata?.version).to.equal('1.0.0');
+      expect(stack.metadata?.author).to.equal('test-script');
+    });
+
+    it('should update existing metadata', async () => {
+      await proposalManager.addMetadata('version', '1.0.0');
+      await proposalManager.addMetadata('version', '2.0.0');
+      
+      const stack = await proposalManager.loadProposalStack();
+      expect(stack.metadata?.version).to.equal('2.0.0');
+    });
+  });
+
+  describe('Proposal Data Conversion', () => {
+    it('should convert proposal stack to proposal data', async () => {
+      const mockContract = {
+        address: '0x1234567890123456789012345678901234567890',
+        interface: {
+          encodeFunctionData: (_signature: string, _args: any[]) => '0x' + '0'.repeat(64)
+        }
+      } as any;
+
+      // Mock the contract retrieval
+      (deploymentManager as any).contract = async (address: string) => {
+        if (address === mockContract.address) {
+          return mockContract;
+        }
+        return null;
+      };
+
+      await proposalManager.addAction({
+        contract: mockContract,
+        value: 1000,
+        signature: 'setValue',
+        args: ['newValue']
+      });
+
+      await proposalManager.setDescription('Test proposal');
+
+      const proposalData = await proposalManager.toProposalData();
+      
+      expect(proposalData.targets).to.have.length(1);
+      expect(proposalData.targets[0]).to.equal(mockContract.address);
+      expect(proposalData.values).to.deep.equal([1000]);
+      expect(proposalData.calldatas).to.have.length(1);
+      expect(proposalData.description).to.equal('Test proposal');
+    });
+
+    it('should throw error when converting empty proposal stack', async () => {
+      try {
+        await proposalManager.toProposalData();
+        expect.fail('Should have thrown error for empty proposal stack');
+      } catch (error) {
+        expect(error.message).to.include('No actions in proposal stack');
+      }
+    });
+
+    it('should throw error for invalid contract action', async () => {
+      // Add action with invalid contract address
+      const stack = await proposalManager.loadProposalStack();
+      stack.actions.push({
+        id: 'test-action',
+        type: 'contract',
+        target: '0xinvalid',
+        value: 0,
+        signature: 'testFunction',
+        args: [],
+        contractAddress: '0xinvalid',
+        description: 'Test'
+      });
+      await proposalManager['saveProposalStack'](stack);
+
+      // Mock contract retrieval to return null
+      (deploymentManager as any).contract = async () => null;
+
+      try {
+        await proposalManager.toProposalData();
+        expect.fail('Should have thrown error for invalid contract');
+      } catch (error) {
+        expect(error.message).to.include('Contract not found');
+      }
+    });
+  });
+
+  describe('Utility Methods', () => {
+    it('should check if proposal has actions', async () => {
+      expect(await proposalManager.hasActions()).to.be.false;
+
+      const mockContract = {
+        address: '0x1234567890123456789012345678901234567890',
+        interface: {
+          encodeFunctionData: (_signature: string, _args: any[]) => '0x' + '0'.repeat(64)
+        }
+      } as any;
+
+      await proposalManager.addAction({
+        contract: mockContract,
+        value: 0,
+        signature: 'testFunction',
+        args: []
+      });
+
+      expect(await proposalManager.hasActions()).to.be.true;
+    });
+
+    it('should get action count', async () => {
+      expect(await proposalManager.getActionCount()).to.equal(0);
+
+      const mockContract = {
+        address: '0x1234567890123456789012345678901234567890',
+        interface: {
+          encodeFunctionData: (_signature: string, _args: any[]) => '0x' + '0'.repeat(64)
+        }
+      } as any;
+
+      await proposalManager.addAction({
+        contract: mockContract,
+        value: 0,
+        signature: 'testFunction1',
+        args: []
+      });
+
+      expect(await proposalManager.getActionCount()).to.equal(1);
+
+      await proposalManager.addAction({
+        contract: mockContract,
+        value: 0,
+        signature: 'testFunction2',
+        args: []
+      });
+
+      expect(await proposalManager.getActionCount()).to.equal(2);
+    });
+
+    it('should return correct proposal stack path', () => {
+      const expectedPath = path.join(
+        process.cwd(),
+        'deployments',
+        testNetwork,
+        testDeployment,
+        'proposalStack.json'
+      );
+      expect(proposalManager.getProposalStackPath()).to.equal(expectedPath);
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should handle file read errors gracefully', async () => {
+      // Ensure directory exists
+      const testDir = path.dirname(testProposalStackPath);
+      if (!fs.existsSync(testDir)) {
+        fs.mkdirSync(testDir, { recursive: true });
+      }
+
+      // Create invalid JSON file
+      fs.writeFileSync(testProposalStackPath, 'invalid json');
+      
+      const stack = await proposalManager.loadProposalStack();
+      expect(stack.actions).to.have.length(0);
+      expect(stack.description).to.equal('');
+    });
+
+    it('should handle missing directory creation', async () => {
+      // Remove parent directory to test directory creation
+      const parentDir = path.dirname(testProposalStackPath);
+      if (fs.existsSync(parentDir)) {
+        fs.rmdirSync(parentDir);
+      }
+
+      const mockContract = {
+        address: '0x1234567890123456789012345678901234567890',
+        interface: {
+          encodeFunctionData: (_signature: string, _args: any[]) => '0x' + '0'.repeat(64)
+        }
+      } as any;
+
+      await proposalManager.addAction({
+        contract: mockContract,
+        value: 0,
+        signature: 'testFunction',
+        args: []
+      });
+
+      expect(fs.existsSync(testProposalStackPath)).to.be.true;
+    });
+  });
+});
