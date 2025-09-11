@@ -1,4 +1,6 @@
 import * as readline from 'readline';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export type LogType = 'info' | 'success' | 'warning' | 'error';
 
@@ -49,7 +51,7 @@ export async function question(prompt: string): Promise<string> {
  * @returns Promise<boolean> - True if user answered yes, false otherwise
  */
 export async function confirm(prompt: string): Promise<boolean> {
-  while (true) {
+  for await (const _ of Array(10)) {
     const answer = await question(`${prompt} (Y/n): `);
     const lowerAnswer = answer.toLowerCase().trim();
     
@@ -60,5 +62,62 @@ export async function confirm(prompt: string): Promise<boolean> {
     } else {
       log(`Please enter 'y' for yes or 'n' for no.`, 'warning');
     }
+  }
+  throw new Error('User did not answer yes or no after 10 attempts');
+}
+
+/**
+ * Updates aliases.json and roots.json files with new Comet implementation address
+ * @param network - The network name (e.g., 'local', 'mainnet')
+ * @param deployment - The deployment name (e.g., 'dai', 'usdc')
+ * @param newImplementationAddress - The new implementation address to set
+ */
+export function updateCometImplAddress(
+  network: string, 
+  deployment: string, 
+  newImplementationAddress: string
+): void {
+  const basePath = path.join(process.cwd(), 'deployments', network, deployment);
+  const aliasesPath = path.join(basePath, 'aliases.json');
+  const rootsPath = path.join(basePath, 'roots.json');
+
+  try {
+    // Update aliases.json
+    if (fs.existsSync(aliasesPath)) {
+      const aliasesContent = fs.readFileSync(aliasesPath, 'utf8');
+      const aliases = JSON.parse(aliasesContent);
+      
+      // Update the comet:implementation field
+      aliases['comet:implementation'] = newImplementationAddress;
+      
+      // Write back to file with proper formatting
+      fs.writeFileSync(aliasesPath, JSON.stringify(aliases, null, 4));
+      log(`✅ Updated aliases.json with new implementation address: ${newImplementationAddress}`, 'success');
+    } else {
+      log(`⚠️  Aliases file not found at: ${aliasesPath}`, 'warning');
+    }
+
+    // Update roots.json
+    if (fs.existsSync(rootsPath)) {
+      const rootsContent = fs.readFileSync(rootsPath, 'utf8');
+      const roots = JSON.parse(rootsContent);
+      
+      // Update the comet:implementation field
+      roots['comet:implementation'] = newImplementationAddress;
+      
+      // Write back to file with proper formatting
+      fs.writeFileSync(rootsPath, JSON.stringify(roots, null, 4));
+      log(`✅ Updated roots.json with new implementation address: ${newImplementationAddress}`, 'success');
+    } else {
+      log(`⚠️  Roots file not found at: ${rootsPath}`, 'warning');
+    }
+
+    log(`\n📁 Updated files:`, 'info');
+    log(`   - deployments/${network}/${deployment}/aliases.json`, 'info');
+    log(`   - deployments/${network}/${deployment}/roots.json`, 'info');
+
+  } catch (error) {
+    log(`❌ Failed to update aliases and roots: ${error}`, 'error');
+    throw error;
   }
 }
