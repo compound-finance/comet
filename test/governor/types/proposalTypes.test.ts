@@ -52,26 +52,22 @@ describe('ProposalTypes', () => {
       const action: TargetAction = {
         target: '0xabcdef1234567890123456789012345678901234',
         value: 0,
-        signature: 'deploy',
         calldata: '0x1234567890abcdef'
       };
 
       expect(action.target).to.equal('0xabcdef1234567890123456789012345678901234');
       expect(action.value).to.equal(0);
-      expect(action.signature).to.equal('deploy');
       expect(action.calldata).to.equal('0x1234567890abcdef');
     });
 
     it('should create TargetAction without value', () => {
       const action: TargetAction = {
         target: '0xabcdef1234567890123456789012345678901234',
-        signature: 'execute',
         calldata: '0x1234567890abcdef'
       };
 
       expect(action.target).to.equal('0xabcdef1234567890123456789012345678901234');
       expect(action.value).to.be.undefined;
-      expect(action.signature).to.equal('execute');
       expect(action.calldata).to.equal('0x1234567890abcdef');
     });
   });
@@ -97,7 +93,6 @@ describe('ProposalTypes', () => {
       const action: ProposalAction = {
         target: '0xabcdef1234567890123456789012345678901234',
         value: 0,
-        signature: 'deploy',
         calldata: '0x1234567890abcdef'
       };
 
@@ -155,41 +150,33 @@ describe('ProposalTypes', () => {
     it('should create valid contract ProposalStackAction', () => {
       const action: ProposalStackAction = {
         id: 'action_1234567890_abc123',
-        type: 'contract',
         target: '0x1234567890123456789012345678901234567890',
         value: 1000,
-        signature: 'setValue',
+        calldata: '0x1234567890abcdef',
         args: ['newValue'],
-        contractAddress: '0x1234567890123456789012345678901234567890',
         description: 'Set new value'
       };
 
       expect(action.id).to.equal('action_1234567890_abc123');
-      expect(action.type).to.equal('contract');
       expect(action.target).to.equal('0x1234567890123456789012345678901234567890');
       expect(action.value).to.equal(1000);
-      expect(action.signature).to.equal('setValue');
+      expect(action.calldata).to.equal('0x1234567890abcdef');
       expect(action.args).to.deep.equal(['newValue']);
-      expect(action.contractAddress).to.equal('0x1234567890123456789012345678901234567890');
       expect(action.description).to.equal('Set new value');
     });
 
     it('should create valid target ProposalStackAction', () => {
       const action: ProposalStackAction = {
         id: 'action_1234567890_def456',
-        type: 'target',
         target: '0xabcdef1234567890123456789012345678901234',
         value: 0,
-        signature: 'deploy',
         calldata: '0x1234567890abcdef',
         description: 'Deploy contract'
       };
 
       expect(action.id).to.equal('action_1234567890_def456');
-      expect(action.type).to.equal('target');
       expect(action.target).to.equal('0xabcdef1234567890123456789012345678901234');
       expect(action.value).to.equal(0);
-      expect(action.signature).to.equal('deploy');
       expect(action.calldata).to.equal('0x1234567890abcdef');
       expect(action.description).to.equal('Deploy contract');
     });
@@ -201,12 +188,10 @@ describe('ProposalTypes', () => {
         actions: [
           {
             id: 'action_1',
-            type: 'contract',
             target: '0x1234567890123456789012345678901234567890',
             value: 0,
-            signature: 'function1',
-            args: [],
-            contractAddress: '0x1234567890123456789012345678901234567890'
+            calldata: '0x1234567890abcdef',
+            args: []
           }
         ],
         description: 'Test proposal stack',
@@ -268,7 +253,6 @@ describe('ProposalTypes', () => {
 
       const targetAction: ProposalAction = {
         target: '0x1234567890123456789012345678901234567890',
-        signature: 'test',
         calldata: '0x1234'
       };
 
@@ -281,25 +265,22 @@ describe('ProposalTypes', () => {
     it('should identify ProposalStackAction type correctly', () => {
       const contractAction: ProposalStackAction = {
         id: 'test',
-        type: 'contract',
         target: '0x1234567890123456789012345678901234567890',
         value: 0,
-        signature: 'test',
-        args: [],
-        contractAddress: '0x1234567890123456789012345678901234567890'
+        calldata: '0x1234567890abcdef',
+        args: []
       };
 
       const targetAction: ProposalStackAction = {
         id: 'test',
-        type: 'target',
         target: '0x1234567890123456789012345678901234567890',
         value: 0,
-        signature: 'test',
         calldata: '0x1234'
       };
 
-      expect(contractAction.type).to.equal('contract');
-      expect(targetAction.type).to.equal('target');
+      // Both actions have the same structure since ProposalStackAction doesn't have type discrimination
+      expect(contractAction.target).to.equal('0x1234567890123456789012345678901234567890');
+      expect(targetAction.target).to.equal('0x1234567890123456789012345678901234567890');
     });
   });
 });

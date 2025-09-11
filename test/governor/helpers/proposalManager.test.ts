@@ -33,6 +33,9 @@ describe('ProposalManager', () => {
     if (!fs.existsSync(testDir)) {
       fs.mkdirSync(testDir, { recursive: true });
     }
+    
+    // Clear any existing proposal stack to ensure test isolation
+    await proposalManager.clearProposalStack();
   });
 
   afterEach(() => {
@@ -68,7 +71,7 @@ describe('ProposalManager', () => {
       
       const stack = JSON.parse(fs.readFileSync(testProposalStackPath, 'utf8'));
       expect(stack.actions).to.have.length(1);
-      expect(stack.actions[0].type).to.equal('contract');
+      // ProposalStackAction doesn't have type property
       expect(stack.actions[0].target).to.equal(mockContract.address);
     });
 
@@ -84,12 +87,10 @@ describe('ProposalManager', () => {
         actions: [
           {
             id: 'test-action-1',
-            type: 'contract',
             target: '0x1234567890123456789012345678901234567890',
             value: 0,
-            signature: 'testFunction',
+            calldata: '0x1234567890abcdef',
             args: ['arg1'],
-            contractAddress: '0x1234567890123456789012345678901234567890',
             description: 'Test action'
           }
         ],
@@ -159,11 +160,9 @@ describe('ProposalManager', () => {
       expect(stack.actions).to.have.length(1);
       
       const addedAction = stack.actions[0];
-      expect(addedAction.type).to.equal('contract');
       expect(addedAction.target).to.equal(mockContract.address);
       expect(addedAction.value).to.equal(1000);
-      expect(addedAction.signature).to.equal('setValue');
-      expect(addedAction.args).to.deep.equal(['newValue']);
+      expect(addedAction.calldata).to.equal('0x' + '0'.repeat(64));
       expect(addedAction.description).to.equal('Set new value');
     });
 
@@ -171,7 +170,6 @@ describe('ProposalManager', () => {
       const action: ProposalAction = {
         target: '0xabcdef1234567890123456789012345678901234',
         value: 0,
-        signature: 'deploy',
         calldata: '0x1234567890abcdef'
       };
 
@@ -181,10 +179,8 @@ describe('ProposalManager', () => {
       expect(stack.actions).to.have.length(1);
       
       const addedAction = stack.actions[0];
-      expect(addedAction.type).to.equal('target');
       expect(addedAction.target).to.equal('0xabcdef1234567890123456789012345678901234');
       expect(addedAction.value).to.equal(0);
-      expect(addedAction.signature).to.equal('deploy');
       expect(addedAction.calldata).to.equal('0x1234567890abcdef');
       expect(addedAction.description).to.equal('Deploy contract');
     });
@@ -207,7 +203,6 @@ describe('ProposalManager', () => {
         {
           target: '0xabcdef1234567890123456789012345678901234',
           value: 1000,
-          signature: 'function2',
           calldata: '0x1234567890abcdef'
         }
       ];
@@ -319,30 +314,26 @@ describe('ProposalManager', () => {
       }
     });
 
-    it('should throw error for invalid contract action', async () => {
-      // Add action with invalid contract address
+    it('should convert proposal stack with any target address', async () => {
+      // Add action with any target address - toProposalData doesn't validate contracts
       const stack = await proposalManager.loadProposalStack();
       stack.actions.push({
         id: 'test-action',
-        type: 'contract',
         target: '0xinvalid',
         value: 0,
-        signature: 'testFunction',
+        calldata: '0x1234567890abcdef',
         args: [],
-        contractAddress: '0xinvalid',
         description: 'Test'
       });
       await proposalManager['saveProposalStack'](stack);
 
-      // Mock contract retrieval to return null
-      (deploymentManager as any).contract = async () => null;
-
-      try {
-        await proposalManager.toProposalData();
-        expect.fail('Should have thrown error for invalid contract');
-      } catch (error) {
-        expect(error.message).to.include('Contract not found');
-      }
+      // toProposalData should work with any target address
+      const proposalData = await proposalManager.toProposalData();
+      
+      expect(proposalData.targets).to.have.length(1);
+      expect(proposalData.targets[0]).to.equal('0xinvalid');
+      expect(proposalData.values).to.deep.equal([0]);
+      expect(proposalData.calldatas).to.deep.equal(['0x1234567890abcdef']);
     });
   });
 
@@ -428,6 +419,11 @@ describe('ProposalManager', () => {
       // Remove parent directory to test directory creation
       const parentDir = path.dirname(testProposalStackPath);
       if (fs.existsSync(parentDir)) {
+        // Remove all files in the directory first
+        const files = fs.readdirSync(parentDir);
+        for (const file of files) {
+          fs.unlinkSync(path.join(parentDir, file));
+        }
         fs.rmdirSync(parentDir);
       }
 
@@ -446,6 +442,55 @@ describe('ProposalManager', () => {
       });
 
       expect(fs.existsSync(testProposalStackPath)).to.be.true;
+    });
+  });
+
+  describe('BigInt Serialization', () => {
+    let mockDeploymentManager: any;
+    let mockContract: any;
+
+    beforeEach(() => {
+      // Create mock deployment manager
+      mockDeploymentManager = {
+        tracer: () => (msg: string) => console.log(msg),
+        contract: () => mockContract
+      };
+
+      // Create mock contract
+      mockContract = {
+        address: '0x1234567890123456789012345678901234567890',
+        interface: {
+          encodeFunctionData: (_signature: string, _args: any[]) => '0x1234'
+        }
+      };
+    });
+    it('should handle BigInt values in contract actions', async () => {
+      const proposalManager = new ProposalManager(mockDeploymentManager, 'test-network', 'test-deployment');
+      
+      // Clear any existing stack
+      await proposalManager.clearProposalStack();
+    
+      // This should not throw an error - test the async function properly
+      await expect(proposalManager.addAction({
+        contract: mockContract,
+        value: BigInt('1000000000000000000'), // 1 ETH in wei
+        signature: 'testFunction',
+        args: [BigInt('2000000000000000000')] // 2 ETH in wei
+      })).to.not.be.rejected;
+    });
+
+    it('should handle BigInt values in target actions', async () => {
+      const proposalManager = new ProposalManager(mockDeploymentManager, 'test-network', 'test-deployment');
+      
+      // Clear any existing stack
+      await proposalManager.clearProposalStack();
+      
+      // This should not throw an error - test the async function properly
+      await expect(proposalManager.addAction({
+        target: '0x1234567890123456789012345678901234567890',
+        value: BigInt('5000000000000000000'), // 5 ETH in wei
+        calldata: '0x1234'
+      })).to.not.be.rejected;
     });
   });
 });

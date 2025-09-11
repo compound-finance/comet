@@ -16,7 +16,6 @@ export interface ContractAction {
 export interface TargetAction {
   target: string;
   value?: BigNumberish;
-  signature: string;
   calldata: string;
 }
 
@@ -44,13 +43,10 @@ export interface ProposalData {
  */
 export interface ProposalStackAction {
   id: string;
-  type: 'contract' | 'target';
   target: string;
   value?: BigNumberish;
-  signature: string;
   calldata?: string;
   args?: any[];
-  contractAddress?: string;
   description?: string;
 }
 
