@@ -3,8 +3,8 @@ import { Deployed, DeploymentManager } from '../../plugins/deployment_manager';
 import { DeploySpec, ProtocolConfiguration, wait, COMP_WHALES } from './index';
 import { getConfiguration } from './NetworkConfiguration';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { extractProposalIdFromLogs } from './helpers';
 import { ethers } from 'hardhat';
+import { createProposalManager } from '../governor/helpers/proposalManager';
 
 export function sameAddress(a: string, b: string) {
   return BigInt(a) === BigInt(b);
@@ -527,8 +527,8 @@ async function deployOrRetrieveCometProxy(
   deploymentManager: DeploymentManager,
   deploySpec: DeploySpec = { all: true },
   configOverrides: ProtocolConfiguration = {},
-  withAssetList = false,
-  adminSigner?: SignerWithAddress,
+  _withAssetList = false,
+  _adminSigner?: SignerWithAddress,
 ): Promise<Deployed> {
 
   const trace = deploymentManager.tracer();
@@ -599,8 +599,8 @@ async function deployOrRetrieveCometExt(
   deploymentManager: DeploymentManager,
   deploySpec: DeploySpec = { all: true },
   configOverrides: ProtocolConfiguration,
-  withAssetList: boolean,
-  adminSigner?: SignerWithAddress
+  _withAssetList: boolean,
+  _adminSigner?: SignerWithAddress
 ): Promise<Contract> {
   const trace = deploymentManager.tracer();
 
@@ -636,13 +636,12 @@ async function deployOrRetrieveCometExt(
 
 async function proposeCometImpl(
   deploymentManager: DeploymentManager,
-  deploySpec: DeploySpec = { all: true },
+  _deploySpec: DeploySpec = { all: true },
   configOverrides: ProtocolConfiguration = {},
-  withAssetList = false,
+  _withAssetList = false,
   adminSigner?: SignerWithAddress
 ): Promise<any> {
 
-  const admin = adminSigner ?? await deploymentManager.getSigner();
 
   const cometExt = await deploymentManager.getContractOrThrow('comet:implementation:implementation');
   const cometProxy = await deploymentManager.getContractOrThrow('comet');
@@ -669,8 +668,7 @@ async function proposeCometImpl(
     baseMinForRewards,
     baseBorrowMin,
     targetReserves,
-    assetConfigs,
-    rewardTokenAddress
+    assetConfigs
   } = await getConfiguration(deploymentManager, configOverrides);
 
   const configuration = {
@@ -696,46 +694,45 @@ async function proposeCometImpl(
     targetReserves,
     assetConfigs,
   };
+
+  const proposalManager = createProposalManager(deploymentManager, deploymentManager.network);
+  await proposalManager.clearProposalStack();
+
+  // Action 1: setFactory(address cometProxy, address newFactory)
+  await proposalManager.addAction({
+    contract: configurator,
+    signature: 'setFactory',
+    args: [cometProxy.address, cometFactory.address]
+  });
   
-  // Prepare proposal data
-  const proposalData = await createCometProposal(
-    deploymentManager,
-    configurator,
-    cometProxy,
-    cometFactory,
-    configuration,
-  );
+  // Action 2: setConfiguration(address cometProxy, Configuration calldata newConfiguration)
+  await proposalManager.addAction({
+    contract: configurator,
+    signature: 'setConfiguration',
+    args: [cometProxy.address, configuration]
+  });
+  
+  // Action 3: deploy(address cometProxy)
+  await proposalManager.addAction({
+    contract: configurator,
+    signature: 'deploy',
+    args: [cometProxy.address]
+  });
+
+  // Create the proposal
+  const description = 'Deploy and configure Comet implementation';
+  await proposalManager.setDescription(description);
 
   // Send transaction to governor to submit the proposal
-  const governorContract = await deploymentManager.getContractOrThrow('governor');
   const trace = deploymentManager.tracer();
+  trace('Starting proposal execution');
+
+  const proposalData = await proposalManager.toProposalData();
   
-  trace(`Submitting proposal to governor with ${proposalData.targets.length} actions`);
-  trace(`Proposal description: ${proposalData.description}`);
-  
-  const tx = await governorContract.connect(admin).propose(
-    proposalData.targets,
-    proposalData.values,
-    proposalData.calldatas,
-    proposalData.description
-  );
-  
-  // Trace proposal details
-  trace(`Proposal targets: ${JSON.stringify(proposalData.targets)}`);
-  trace(`Proposal values: ${JSON.stringify(proposalData.values)}`);
-  trace(`Proposal calldatas: ${JSON.stringify(proposalData.calldatas)}`);
-  trace(`Proposal description: ${proposalData.description}`);
-  trace(`Governor address: ${proposalData.governor}`);
-  trace(`Configurator address: ${proposalData.configurator}`);
-  trace(`Comet proxy address: ${proposalData.cometProxy}`);
-  trace(`Comet factory address: ${proposalData.cometFactory}`);
-  
-  
-  const receipt = await tx.wait();
-  trace(`Proposal submitted! Transaction hash: ${receipt.transactionHash}`);
-  
+  const proposalExecutionResult = await proposalManager.executeProposal(adminSigner);
+
   // Extract proposal ID from ProposalCreated event
-  const proposalId = extractProposalIdFromLogs(governorContract, receipt);
+  const proposalId = proposalExecutionResult.proposalId;
   if (proposalId !== null) {
     trace(`Proposal ID: ${proposalId}`);
     console.log(`Proposal ID: ${proposalId}`);
@@ -744,73 +741,7 @@ async function proposeCometImpl(
     console.log(`Warning: Could not find ProposalCreated event in logs`);
   }
 
-  return { proposal: proposalData, configurator, cometProxy, cometFactory, tx: receipt };
+  return { proposal: proposalData, configurator, cometProxy, cometFactory, tx: proposalExecutionResult.transactionHash };
 }
-
-async function createCometProposal(
-  deploymentManager: DeploymentManager,
-  configurator: Contract,
-  cometProxy: any,
-  cometFactory: any,
-  configuration: any,
-) {
-  const trace = deploymentManager.tracer();
-  
-  // Get the governor
-  const governor = await deploymentManager.getContractOrThrow('governor');
-  
-  // Prepare the three actions for the proposal
-  const targets: string[] = [];
-  const values: number[] = [];
-  const calldatas: string[] = [];
-  
-  // Action 1: setFactory(address cometProxy, address newFactory)
-  targets.push(configurator.address);
-  values.push(0);
-  calldatas.push(
-    configurator.interface.encodeFunctionData('setFactory', [
-      cometProxy.address,
-      cometFactory.address
-    ])
-  );
-  
-  // Action 2: setConfiguration(address cometProxy, Configuration calldata newConfiguration)
-  targets.push(configurator.address);
-  values.push(0);
-  calldatas.push(
-    configurator.interface.encodeFunctionData('setConfiguration', [
-      cometProxy.address,
-      configuration
-    ])
-  );
-  
-  // Action 3: deploy(address cometProxy)
-  targets.push(configurator.address);
-  values.push(0);
-  calldatas.push(
-    configurator.interface.encodeFunctionData('deploy', [
-      cometProxy.address
-    ])
-  );
-  // Create the proposal
-  const description = 'Deploy and configure Comet implementation';
-  
-  trace(`Creating proposal with ${targets.length} actions:`);
-  trace(`1. setFactory(${cometProxy.address}, ${cometFactory.address})`);
-  trace(`2. setConfiguration(${cometProxy.address}, [configuration])`);
-  trace(`3. deploy(${cometProxy.address})`);
-  
-  return {
-    targets,
-    values,
-    calldatas,
-    description,
-    governor: governor.address,
-    configurator: configurator.address,
-    cometProxy: cometProxy.address,
-    cometFactory: cometFactory.address
-  };
-}
-
 
 

@@ -10,25 +10,22 @@ import {
   ProposalAction,
   ProposalExecutionResult 
 } from '../types/proposalTypes';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 /**
  * Proposal Manager for handling proposal files and execution
  */
 export class ProposalManager {
   private deploymentManager: DeploymentManager;
-  private network: string;
-  private deployment: string;
   private proposalStackPath: string;
 
-  constructor(deploymentManager: DeploymentManager, network: string, deployment: string) {
+  constructor(deploymentManager: DeploymentManager, network: string, deployment?: string) {
     this.deploymentManager = deploymentManager;
-    this.network = network;
-    this.deployment = deployment;
     this.proposalStackPath = path.join(
       process.cwd(),
       'deployments',
       network,
-      deployment,
+      deployment || '',
       'proposalStack.json'
     );
   }
@@ -44,36 +41,30 @@ export class ProposalManager {
     
     let stackAction: ProposalStackAction;
     
+    let calldata: string;
+    let target: string;
     if ('contract' in action) {
       // Contract action
-      stackAction = {
-        id: actionId,
-        type: 'contract',
-        target: action.contract.address,
-        value: action.value,
-        signature: action.signature,
-        args: action.args,
-        contractAddress: action.contract.address,
-        description
-      };
+      calldata = action.contract.interface.encodeFunctionData(action.signature, action.args);
+      target = action.contract.address;
     } else {
-      // Target action
-      stackAction = {
-        id: actionId,
-        type: 'target',
-        target: action.target,
-        value: action.value,
-        signature: action.signature,
-        calldata: action.calldata,
-        description
-      };
+      target = action.target;
+      calldata = action.calldata;
     }
+    
+    stackAction = {
+      id: actionId,
+      target,
+      value: action.value,
+      calldata,
+      description
+    };
     
     stack.actions.push(stackAction);
     await this.saveProposalStack(stack);
     
     const trace = this.deploymentManager.tracer();
-    trace(`Added action to proposal stack: ${stackAction.signature} on ${stackAction.target}`);
+    trace(`Added action to proposal stack: ${stackAction.target}`);
   }
 
   /**
@@ -158,7 +149,9 @@ export class ProposalManager {
       fs.mkdirSync(dir, { recursive: true });
     }
     
-    fs.writeFileSync(this.proposalStackPath, JSON.stringify(stack, null, 2));
+    // Serialize BigInt values before saving
+    const serializedStack = serializeBigInt(stack);
+    fs.writeFileSync(this.proposalStackPath, JSON.stringify(serializedStack, null, 2));
   }
 
   /**
@@ -178,21 +171,7 @@ export class ProposalManager {
     for (const action of stack.actions) {
       targets.push(action.target);
       values.push(action.value || 0);
-      
-      if (action.type === 'contract' && action.args) {
-        // For contract actions, we need to encode the function call
-        const contract = await this.deploymentManager.contract(action.contractAddress!);
-        if (!contract) {
-          throw new Error(`Contract not found: ${action.contractAddress}`);
-        }
-        const calldata = contract.interface.encodeFunctionData(action.signature, action.args);
-        calldatas.push(calldata);
-      } else if (action.type === 'target' && action.calldata) {
-        // For target actions, use the pre-encoded calldata
-        calldatas.push(action.calldata);
-      } else {
-        throw new Error(`Invalid action data for action ${action.id}`);
-      }
+      calldatas.push(action.calldata);
     }
 
     return {
@@ -207,10 +186,10 @@ export class ProposalManager {
   /**
    * Execute the proposal by submitting it to the governor
    */
-  async executeProposal(): Promise<ProposalExecutionResult> {
+  async executeProposal(adminSigner?: SignerWithAddress): Promise<ProposalExecutionResult> {
     const proposalData = await this.toProposalData();
     const governor = await this.deploymentManager.getContractOrThrow('governor');
-    const admin = await this.deploymentManager.getSigner();
+    const admin = adminSigner ?? await this.deploymentManager.getSigner();
     
     const trace = this.deploymentManager.tracer();
     trace(`Executing proposal with ${proposalData.targets.length} actions`);
@@ -278,8 +257,35 @@ export class ProposalManager {
  */
 export function createProposalManager(
   deploymentManager: DeploymentManager, 
-  network: string, 
-  deployment: string
+  network: string,
+  deployment?: string
 ): ProposalManager {
   return new ProposalManager(deploymentManager, network, deployment);
+}
+
+/**
+ * Simple function to convert BigInt values to strings for JSON serialization
+ */
+function serializeBigInt(obj: any): any {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+  
+  if (typeof obj === 'bigint') {
+    return obj.toString();
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj.map(serializeBigInt);
+  }
+  
+  if (typeof obj === 'object') {
+    const result: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+      result[key] = serializeBigInt(value);
+    }
+    return result;
+  }
+  
+  return obj;
 }
