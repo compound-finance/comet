@@ -1,19 +1,5 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { DeploymentManager } from '../../plugins/deployment_manager';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { proposeCometUpgrade } from '../deploy/NetworkExtension';
-
-async function proposeCometUpgradeAction(
-  deploymentManager: DeploymentManager,
-  newImplementationAddress: string,
-  adminSigner?: SignerWithAddress
-): Promise<any> {
-  const admin = adminSigner ?? await deploymentManager.getSigner();
-
-  const result = await proposeCometUpgrade(deploymentManager, newImplementationAddress, admin);
-  
-  return result;
-}
 
 export default async function proposeCometUpgradeTask(
   hre: HardhatRuntimeEnvironment, 
@@ -29,7 +15,8 @@ export default async function proposeCometUpgradeTask(
   trace(`Proposing Comet upgrade to ${newImplementationAddress}...`);
   
   try {
-    const result = await proposeCometUpgradeAction(deploymentManager, newImplementationAddress);
+    const admin = await deploymentManager.getSigner();
+    const result = await proposeCometUpgrade(deploymentManager, newImplementationAddress, admin);
     
     console.log(`✅ Comet upgrade proposal submitted successfully!`);
     console.log(`   Proposal ID: ${await result.proposalId}`);
