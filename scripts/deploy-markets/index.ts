@@ -28,75 +28,35 @@ class MarketsDeployer {
       
       log(`🔧 Using BDAG custom governor`, 'info');
 
-      // Build project before deployment
-      await runCommand('yarn build', 'Building project');
-
-      if (this.options.clean) {
-        log(`🧹 Clean mode enabled`, 'info');
-        await this.cleanDeployment();
-      }
+      // Step 1: Prepare deployment environment
+      await this.prepareDeployment();
       
-      // Step 1: Clear proposal stack
-      const clearProposalStackCommand = `yarn hardhat governor:clear-stack --network ${this.options.network}`;
-      await runCommand(clearProposalStackCommand, 'Clearing proposal stack');
-
-      // Step 2: Deploy Infrastructure
-      await this.deployInfrastructure();
+      // Step 2: Deploy infrastructure and validate configurations
+      await this.deployInfrastructureAndValidate();
       
-      // Step 3: Check configuration files for all markets
-      await this.checkAllConfigurationFiles();
+      // Step 3: Deploy all markets in batch mode
+      await this.deployAllMarkets();
       
-      // Step 4: Prompt for configuration update
-      await this.promptForConfigurationUpdate();
+      // Step 4: Execute batch proposal for market implementations
+      const implBatchProposalId = await this.executeImplementationBatchProposal();
       
-      // Step 5: Deploy each market and run governance flow
-      for (let i = 0; i < this.options.deployments.length; i++) {
-        const deployment = this.options.deployments[i];
-        log(`\n🎯 Deploying market ${i + 1}/${this.options.deployments.length}: ${deployment} and proposing implementation`, 'info');
-        
-        // Deploy the market using batch deploy mode
-        await this.deployMarket(deployment);
-      }
-
-      // Step 6: Execute batch proposal for all market implementations
-      log(`\n🎯 Executing batch proposal for all market implementations...`, 'info');
-      
-      const implBatchProposalResult = await this.executeBatchProposal();
-      
-      // Extract proposal ID from the batch proposal result
-      const implBatchProposalId = extractProposalId(implBatchProposalResult);
-      log(`\n📋 Batch proposal created with ID: ${implBatchProposalId}`, 'success');
-      
-      // Run governance flow to accept implementations
+      // Step 5: Run governance flow to accept implementations
       const implementationAddresses = await this.runGovernanceToAcceptImplementations(implBatchProposalId);
 
-      // Propose upgrade to new implementation
+      // Step 6: Propose upgrades to new implementations
       await this.proposeUpgrade(implementationAddresses);
         
-      // Step 7: Execute batch proposal for all market upgrades
-      log(`\n🎯 Executing batch proposal for all market upgrades...`, 'info');
-      const upgradeBatchProposalResult = await this.executeBatchProposal();
-      const upgradeBatchProposalId = extractProposalId(upgradeBatchProposalResult);
-      log(`\n📋 Batch proposal created with ID: ${upgradeBatchProposalId}`, 'success');
+      // Step 7: Execute batch proposal for market upgrades
+      const upgradeBatchProposalId = await this.executeUpgradeBatchProposal();
 
+      // Step 8: Run governance flow to accept upgrades
       await this.runGovernanceToAcceptUpgrade(upgradeBatchProposalId, implementationAddresses, this.options.deployments);
 
+      // Step 9: Run verification tests (optional)
+      await this.runVerificationTests();
       
-      // Step 8: Run verification tests (after all deployments)
-      const runVerification = await confirm(`\nDo you want to run deployment verification tests for all markets?`);
-      
-      if (runVerification) {
-        for (const deployment of this.options.deployments) {
-          log(`\n🧪 Running verification test for ${deployment}...`, 'info');
-          await this.runDeploymentVerification(deployment);
-        }
-      }
-      
-      log(`\n🎉 All ${this.options.deployments.length} markets deployed successfully!`, 'success');
-      log(`\n📊 Deployment Summary:`, 'info');
-      for (const deployment of this.options.deployments) {
-        log(`   ✅ ${deployment}`, 'success');
-      }
+      // Step 10: Display deployment summary
+      this.displayDeploymentSummary();
       
     } catch (error) {
       log(`\n❌ Deployment failed: ${error}`, 'error');
@@ -107,6 +67,118 @@ class MarketsDeployer {
       log(`   - Check that all dependencies are installed (yarn install)`, 'info');
       process.exit(1);
     } 
+  }
+
+  /**
+   * Step 1: Prepare deployment environment
+   * - Build project
+   * - Clean deployment cache if requested
+   * - Clear proposal stack
+   */
+  private async prepareDeployment(): Promise<void> {
+    // Build project before deployment
+    await runCommand('yarn build', 'Building project');
+
+    if (this.options.clean) {
+      log(`🧹 Clean mode enabled`, 'info');
+      await this.cleanDeployment();
+    }
+    
+    // Clear proposal stack
+    const clearProposalStackCommand = `yarn hardhat governor:clear-stack --network ${this.options.network}`;
+    await runCommand(clearProposalStackCommand, 'Clearing proposal stack');
+  }
+
+  /**
+   * Step 2: Deploy infrastructure and validate configurations
+   * - Deploy infrastructure contracts
+   * - Check configuration files for all markets
+   * - Prompt for configuration updates
+   */
+  private async deployInfrastructureAndValidate(): Promise<void> {
+    // Deploy Infrastructure
+    await this.deployInfrastructure();
+    
+    // Check configuration files for all markets
+    await this.checkAllConfigurationFiles();
+    
+    // Prompt for configuration update
+    await this.promptForConfigurationUpdate();
+  }
+
+  /**
+   * Step 3: Deploy all markets in batch mode
+   * - Deploy each market using batch deploy mode
+   * - Each deployment adds actions to the proposal stack
+   */
+  private async deployAllMarkets(): Promise<void> {
+    for (let i = 0; i < this.options.deployments.length; i++) {
+      const deployment = this.options.deployments[i];
+      log(`\n🎯 Deploying market ${i + 1}/${this.options.deployments.length}: ${deployment} and proposing implementation`, 'info');
+      
+      // Deploy the market using batch deploy mode
+      await this.deployMarket(deployment);
+    }
+  }
+
+  /**
+   * Step 4: Execute batch proposal for market implementations
+   * - Execute the batch proposal containing all market implementation actions
+   * - Return the proposal ID for governance flow
+   */
+  private async executeImplementationBatchProposal(): Promise<string> {
+    log(`\n🎯 Executing batch proposal for all market implementations...`, 'info');
+    
+    const implBatchProposalResult = await this.executeBatchProposal();
+    
+    // Extract proposal ID from the batch proposal result
+    const implBatchProposalId = extractProposalId(implBatchProposalResult);
+    log(`\n📋 Batch proposal created with ID: ${implBatchProposalId}`, 'success');
+    
+    return implBatchProposalId;
+  }
+
+  /**
+   * Step 7: Execute batch proposal for market upgrades
+   * - Execute the batch proposal containing all market upgrade actions
+   * - Return the proposal ID for governance flow
+   */
+  private async executeUpgradeBatchProposal(): Promise<string> {
+    log(`\n🎯 Executing batch proposal for all market upgrades...`, 'info');
+    
+    const upgradeBatchProposalResult = await this.executeBatchProposal();
+    const upgradeBatchProposalId = extractProposalId(upgradeBatchProposalResult);
+    log(`\n📋 Batch proposal created with ID: ${upgradeBatchProposalId}`, 'success');
+    
+    return upgradeBatchProposalId;
+  }
+
+  /**
+   * Step 9: Run verification tests (optional)
+   * - Prompt user to run verification tests
+   * - Run tests for all deployed markets
+   */
+  private async runVerificationTests(): Promise<void> {
+    const runVerification = await confirm(`\nDo you want to run deployment verification tests for all markets?`);
+    
+    if (runVerification) {
+      for (const deployment of this.options.deployments) {
+        log(`\n🧪 Running verification test for ${deployment}...`, 'info');
+        await this.runDeploymentVerification(deployment);
+      }
+    }
+  }
+
+  /**
+   * Step 10: Display deployment summary
+   * - Show success message and list of deployed markets
+   */
+  private displayDeploymentSummary(): void {
+    log(`\n🎉 All ${this.options.deployments.length} markets deployed successfully!`, 'success');
+    log(`\n📊 Deployment Summary:`, 'info');
+    for (const deployment of this.options.deployments) {
+      log(`   ✅ ${deployment}`, 'success');
+    }
   }
 
   private getConfigPath(deployment: string): string {
@@ -175,6 +247,10 @@ class MarketsDeployer {
     }
   }
 
+  /**
+   * Clean deployment cache for the network
+   * Removes cached deployment artifacts and configuration files
+   */
   private async cleanDeployment(): Promise<void> {
     const network = this.options.network;
     
@@ -190,29 +266,49 @@ class MarketsDeployer {
     }
   }
 
+  /**
+   * Deploy infrastructure contracts (tokens, price feeds, etc.)
+   */
   private async deployInfrastructure(): Promise<void> {
     const command = `yarn hardhat deploy_infrastructure --network ${this.options.network} --bdag`;
     
     await runCommand(command, 'Deploying infrastructure');
   }
 
+  /**
+   * Deploy a single market using batch deploy mode
+   * @param deployment - The deployment name (e.g., 'dai', 'usdc')
+   */
   private async deployMarket(deployment: string): Promise<void> {
     const command = `yarn hardhat deploy --network ${this.options.network} --deployment ${deployment} --bdag --batchdeploy`;
     
     await runCommand(command, `Deploying market: ${deployment}`);
   }
 
+  /**
+   * Execute a batch proposal from the proposal stack
+   * @returns The proposal ID from the batch proposal execution
+   */
   private async executeBatchProposal(): Promise<string> {
     const batchProposalCommand = `yarn hardhat governor:execute-batch-proposal --network ${this.options.network}`;
     return await runCommand(batchProposalCommand, 'Executing batch proposal');
   }
 
+  /**
+   * Run deployment verification test for a specific market
+   * @param deployment - The deployment name to verify
+   */
   private async runDeploymentVerification(deployment: string): Promise<void> {
     const command = `MARKET=${deployment} yarn hardhat test test/deployment-verification-test.ts --network ${this.options.network}`;
     
     await runCommand(command, `Running deployment verification test for ${deployment}`, true);
   }
 
+  /**
+   * Step 5: Run governance flow to accept implementations
+   * @param proposalId - The proposal ID to process through governance
+   * @returns Array of implementation addresses extracted from the governance flow response
+   */
   private async runGovernanceToAcceptImplementations(proposalId: string): Promise<string[]> {
     log(`\n🎉 Market deployment completed successfully for all markets!`, 'success');
     log(`\n🚀 Starting governance flow to accept implementation for all markets...`, 'info');
@@ -235,6 +331,10 @@ class MarketsDeployer {
     return implementationAddresses;
   }
 
+  /**
+   * Step 6: Propose upgrades to new implementations
+   * @param implementationAddresses - Array of implementation addresses for each market
+   */
   private async proposeUpgrade(implementationAddresses: string[]): Promise<void> {
     // Propose upgrade (if needed)
     try {
@@ -262,6 +362,10 @@ class MarketsDeployer {
     }
   }
 
+  /**
+   * Refresh roots for a specific market using spider
+   * @param deployment - The deployment name to refresh
+   */
   private async runSpiderForMarket(deployment: string): Promise<void> {
     try {
       await runCommand(
@@ -288,6 +392,12 @@ class MarketsDeployer {
     }
   }
 
+  /**
+   * Step 8: Run governance flow to accept upgrades
+   * @param proposalId - The upgrade proposal ID to process through governance
+   * @param newImplementationAddresses - Array of new implementation addresses for each market
+   * @param deployments - Array of deployment names
+   */
   private async runGovernanceToAcceptUpgrade(proposalId: string, newImplementationAddresses: string[], deployments: string[]): Promise<void> {
     if (proposalId) {
       // Approve all upgrade governance steps at once
