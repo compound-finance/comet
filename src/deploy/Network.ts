@@ -41,7 +41,7 @@ export async function deployNetworkComet(
   
   if (useBDAG) {
     const trace = deploymentManager.tracer();
-    trace(`Using BDAG deployment for network: ${deploymentManager.hre.network.name}`);
+    trace(`Using BDAG deployment for network: ${deploymentManager.hre.network.name}, batch deploy: ${deploymentManager.config.batchdeploy}`);
     return deployBDAGNetworkComet(deploymentManager, deploySpec, configOverrides, withAssetList, adminSigner);
   }
   
@@ -696,7 +696,9 @@ async function proposeCometImpl(
   };
 
   const proposalManager = createProposalManager(deploymentManager, deploymentManager.network);
-  await proposalManager.clearProposalStack();
+  if (!deploymentManager.config.batchdeploy) {
+    await proposalManager.clearProposalStack();
+  }
 
   // Action 1: setFactory(address cometProxy, address newFactory)
   await proposalManager.addAction({
@@ -725,23 +727,13 @@ async function proposeCometImpl(
 
   // Send transaction to governor to submit the proposal
   const trace = deploymentManager.tracer();
-  trace('Starting proposal execution');
 
-  const proposalData = await proposalManager.toProposalData();
-  
-  const proposalExecutionResult = await proposalManager.executeProposal(adminSigner);
-
-  // Extract proposal ID from ProposalCreated event
-  const proposalId = proposalExecutionResult.proposalId;
-  if (proposalId !== null) {
-    trace(`Proposal ID: ${proposalId}`);
-    console.log(`Proposal ID: ${proposalId}`);
+  if (!deploymentManager.config.batchdeploy) {
+    trace('Starting proposal execution');
+    await proposalManager.executeProposal(adminSigner);
   } else {
-    trace(`Warning: Could not find ProposalCreated event in logs`);
-    console.log(`Warning: Could not find ProposalCreated event in logs`);
+    trace('Executing proposal is disabled in batch deploy mode');
   }
-
-  return { proposal: proposalData, configurator, cometProxy, cometFactory, tx: proposalExecutionResult.transactionHash };
 }
 
 

@@ -64,8 +64,9 @@ task('deploy', 'Deploys market')
   .addFlag('noVerifyImpl', 'do not verify the impl contract')
   .addFlag('overwrite', 'overwrites cache')
   .addFlag('bdag', 'use BDAG specifications')
+  .addFlag('batchdeploy', 'batch deploy mode')
   .addParam('deployment', 'The deployment to deploy')
-  .setAction(async ({ simulate, noDeploy, noVerify, noVerifyImpl, overwrite, bdag, deployment }, env) => {
+  .setAction(async ({ simulate, noDeploy, noVerify, noVerifyImpl, overwrite, bdag, deployment, batchdeploy }, env) => {
     const maybeForkEnv = simulate ? await getForkEnv(env, deployment) : env;
     const network = env.network.name;
     const tag = `${network}/${deployment}`;
@@ -76,7 +77,8 @@ task('deploy', 'Deploys market')
       {
         writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
         verificationStrategy: simulate? 'lazy' : 'eager',
-        bdag: bdag, // Pass BDAG flag through config
+        bdag, // Pass BDAG flag through config
+        batchdeploy: batchdeploy,
       }
     );
 
@@ -248,13 +250,24 @@ task('deploy_and_migrate', 'Runs deploy and migration')
   .addFlag('noVerify', 'do not verify any contracts')
   .addFlag('noVerifyImpl', 'do not verify the impl contract')
   .addFlag('overwrite', 'overwrites cache')
-  .addFlag('bdag', 'use BDAG specifications')
   .addFlag('prepare', 'runs preparation [defaults to true if enact not specified]')
   .addFlag('enact', 'enacts migration [implies prepare]')
   .addFlag('noEnacted', 'do not write enacted to the migration script')
   .addParam('deployment', 'The deployment to deploy')
   .setAction(
-    async ({ migration: migrationName, prepare, enact, noEnacted, simulate, overwrite, bdag, deployment, impersonate, noDeploy, noVerify, noVerifyImpl }, env) => {
+    async ({ 
+      migration: migrationName, 
+      prepare, 
+      enact, 
+      noEnacted, 
+      simulate, 
+      overwrite, 
+      deployment, 
+      impersonate, 
+      noDeploy, 
+      noVerify, 
+      noVerifyImpl
+    }, env) => {
       const maybeForkEnv = simulate ? await getForkEnv(env, deployment) : env;
       const network = env.network.name;
       const tag = `${network}/${deployment}`;
@@ -369,12 +382,12 @@ task('deploy_infrastructure', 'Deploys infrastructure (tokens, price feeds, etc.
   .addFlag('overwrite', 'overwrites cache')
   .addFlag('bdag', 'use BDAG specifications')
   .setAction(async ({ simulate, noDeploy, noVerify, overwrite, bdag }, env) => {
-    const maybeForkEnv = simulate ? await getForkEnv(env, "_infrastructure") : env;
+    const maybeForkEnv = simulate ? await getForkEnv(env, '_infrastructure') : env;
     const network = env.network.name;
-    const tag = `${network}/${"_infrastructure"}`;
+    const tag = `${network}/${'_infrastructure'}`;
     const dm = new DeploymentManager(
       network,
-      "_infrastructure",
+      '_infrastructure',
       maybeForkEnv,
       {
         writeCacheToDisk: !simulate || overwrite,

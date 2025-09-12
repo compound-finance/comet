@@ -47,15 +47,22 @@ export function extractProposalId(output: string): string {
 /**
  * Extracts implementation address from governance flow response logs
  * @param output - The governance flow response output to search
- * @returns string - The extracted implementation address
+ * @returns string[] - The extracted implementation addresses
  * @throws Error if implementation address cannot be found
  */
-export function extractImplementationAddress(output: string): string {
-  // Look for "newComet": "0x..." pattern in the logs
-  const implAddressMatch = output.match(/"newComet"\s*:\s*"(0x[a-fA-F0-9]{40})"/);
-  if (implAddressMatch) {
-    return implAddressMatch[1];
+export function extractImplementationAddresses(output: string): string[] {
+  // Look for "newComet": "0x..." pattern in the logs with global flag
+  const implAddressRegex = /"newComet"\s*:\s*"(0x[a-fA-F0-9]{40})"/g;
+  const addresses: string[] = [];
+  let match;
+  
+  while ((match = implAddressRegex.exec(output)) !== null) {
+    addresses.push(match[1]);
   }
   
-  throw new Error('Could not extract implementation address from governance flow response');
+  if (addresses.length > 0) {
+    return addresses;
+  }
+  
+  throw new Error('Could not extract implementation addresses from governance flow response');
 }

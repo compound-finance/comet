@@ -23,7 +23,7 @@ describe('ProposalManager', () => {
   beforeEach(async () => {
     // Create a mock deployment manager
     deploymentManager = new DeploymentManager(ethers as any, testNetwork, {} as any);
-    proposalManager = createProposalManager(deploymentManager, testNetwork, testDeployment);
+    proposalManager = createProposalManager(deploymentManager, testNetwork);
     
     // Clean up any existing test files and ensure directory exists
     const testDir = path.dirname(testProposalStackPath);

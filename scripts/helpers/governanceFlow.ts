@@ -3,34 +3,33 @@ import { log, confirm } from './ioUtil';
 
 export interface GovernanceFlowOptions {
   network: string;
-  deployment: string;
   proposalId: string;
   executionType?: string;
 }
 
 export class GovernanceFlowHelper {
   private async approveProposal(options: GovernanceFlowOptions): Promise<void> {
-    const command = `yarn hardhat governor:approve --network ${options.network} --deployment ${options.deployment} --proposal-id ${options.proposalId}`;
+    const command = `yarn hardhat governor:approve --network ${options.network} --proposal-id ${options.proposalId}`;
     
     await runCommand(command, 'Approving proposal');
   }
 
   private async queueProposal(options: GovernanceFlowOptions): Promise<void> {
-    const command = `yarn hardhat governor:queue --network ${options.network} --deployment ${options.deployment} --proposal-id ${options.proposalId}`;
+    const command = `yarn hardhat governor:queue --network ${options.network} --proposal-id ${options.proposalId}`;
     
     await runCommand(command, 'Queueing proposal');
   }
 
   private async executeProposal(options: GovernanceFlowOptions): Promise<string> {
     const executionType = options.executionType || 'governance-config';
-    const command = `yarn hardhat governor:execute --network ${options.network} --deployment ${options.deployment} --proposal-id ${options.proposalId} --execution-type ${executionType}`;
+    const command = `yarn hardhat governor:execute --network ${options.network} --proposal-id ${options.proposalId} --execution-type ${executionType}`;
     
     return await runCommand(command, 'Executing proposal');
   }
 
   /**
    * Runs the complete governance flow for a proposal
-   * @param options - Governance flow options including network, deployment, and proposal ID
+   * @param options - Governance flow options including network and proposal ID
    * @param successMessage - Custom success message to display after completion
    * @param manualCommands - Custom manual commands to display if user chooses not to run automatically
    */
@@ -67,9 +66,9 @@ export class GovernanceFlowHelper {
         manualCommands.forEach(cmd => log(`   ${cmd}`, 'info'));
       } else {
         // Default manual commands
-        log(`   yarn hardhat governor:approve --network ${options.network} --deployment ${options.deployment} --proposal-id ${options.proposalId}`, 'info');
-        log(`   yarn hardhat governor:queue --network ${options.network} --deployment ${options.deployment} --proposal-id ${options.proposalId}`, 'info');
-        log(`   yarn hardhat governor:execute --network ${options.network} --deployment ${options.deployment} --proposal-id ${options.proposalId} --execution-type ${options.executionType || 'governance-config'}`, 'info');
+        log(`   yarn hardhat governor:approve --network ${options.network} --proposal-id ${options.proposalId}`, 'info');
+        log(`   yarn hardhat governor:queue --network ${options.network} --proposal-id ${options.proposalId}`, 'info');
+        log(`   yarn hardhat governor:execute --network ${options.network} --proposal-id ${options.proposalId} --execution-type ${options.executionType || 'governance-config'}`, 'info');
       }
     }
 

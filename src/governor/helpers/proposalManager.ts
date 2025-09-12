@@ -19,13 +19,12 @@ export class ProposalManager {
   private deploymentManager: DeploymentManager;
   private proposalStackPath: string;
 
-  constructor(deploymentManager: DeploymentManager, network: string, deployment?: string) {
+  constructor(deploymentManager: DeploymentManager, network: string) {
     this.deploymentManager = deploymentManager;
     this.proposalStackPath = path.join(
       process.cwd(),
       'deployments',
       network,
-      deployment || '',
       'proposalStack.json'
     );
   }
@@ -257,10 +256,9 @@ export class ProposalManager {
  */
 export function createProposalManager(
   deploymentManager: DeploymentManager, 
-  network: string,
-  deployment?: string
+  network: string
 ): ProposalManager {
-  return new ProposalManager(deploymentManager, network, deployment);
+  return new ProposalManager(deploymentManager, network);
 }
 
 /**

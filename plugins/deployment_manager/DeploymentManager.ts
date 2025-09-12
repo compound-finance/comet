@@ -30,6 +30,7 @@ interface DeploymentManagerConfig {
   writeCacheToDisk?: boolean;
   verificationStrategy?: VerificationStrategy;
   bdag?: boolean;
+  batchdeploy?: boolean;
 }
 
 export type Deployed = { [alias: Alias]: Contract };

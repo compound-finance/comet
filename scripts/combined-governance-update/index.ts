@@ -42,7 +42,6 @@ class CombinedGovernanceUpdater {
     
     const options: GovernanceFlowOptions = {
       network: this.options.network,
-      deployment: this.options.deployment,
       proposalId: proposalId,
       executionType: 'combined-governance-update'
     };

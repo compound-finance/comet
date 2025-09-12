@@ -5,12 +5,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { runGovernanceFlow } from '../helpers/governanceFlow';
 import { log, confirm, updateCometImplAddress } from '../helpers/ioUtil';
-import { extractProposalId, extractImplementationAddress, runCommand } from '../helpers/commandUtil';
+import { extractProposalId, extractImplementationAddresses, runCommand } from '../helpers/commandUtil';
 
 interface DeployOptions {
   network: string;
   deployments: string[];
   clean?: boolean;
+  batchdeploy?: boolean;
 }
 
 class MarketsDeployer {
@@ -34,31 +35,54 @@ class MarketsDeployer {
         log(`🧹 Clean mode enabled`, 'info');
         await this.cleanDeployment();
       }
+      
+      // Step 1: Clear proposal stack
+      const clearProposalStackCommand = `yarn hardhat governor:clear-stack --network ${this.options.network}`;
+      await runCommand(clearProposalStackCommand, 'Clearing proposal stack');
 
-      // Step 1: Deploy Infrastructure
+      // Step 2: Deploy Infrastructure
       await this.deployInfrastructure();
       
-      // Step 2: Check configuration files for all markets
+      // Step 3: Check configuration files for all markets
       await this.checkAllConfigurationFiles();
       
-      // Step 3: Prompt for configuration update
+      // Step 4: Prompt for configuration update
       await this.promptForConfigurationUpdate();
       
-      // Step 4: Deploy each market and run governance flow
+      // Step 5: Deploy each market and run governance flow
       for (let i = 0; i < this.options.deployments.length; i++) {
         const deployment = this.options.deployments[i];
-        log(`\n🎯 Deploying market ${i + 1}/${this.options.deployments.length}: ${deployment}`, 'info');
+        log(`\n🎯 Deploying market ${i + 1}/${this.options.deployments.length}: ${deployment} and proposing implementation`, 'info');
         
-        // Deploy the market
-        const proposalId = await this.deployMarket(deployment);
-        
-        // Run governance flow to accept implementation
-        await this.runGovernanceToAcceptImplementation(proposalId, deployment);
-        
-        log(`\n✅ Market ${deployment} deployment and governance completed successfully!`, 'success');
+        // Deploy the market using batch deploy mode
+        await this.deployMarket(deployment);
       }
+
+      // Step 6: Execute batch proposal for all market implementations
+      log(`\n🎯 Executing batch proposal for all market implementations...`, 'info');
       
-      // Step 5: Run verification tests (after all deployments)
+      const implBatchProposalResult = await this.executeBatchProposal();
+      
+      // Extract proposal ID from the batch proposal result
+      const implBatchProposalId = extractProposalId(implBatchProposalResult);
+      log(`\n📋 Batch proposal created with ID: ${implBatchProposalId}`, 'success');
+      
+      // Run governance flow to accept implementations
+      const implementationAddresses = await this.runGovernanceToAcceptImplementations(implBatchProposalId);
+
+      // Propose upgrade to new implementation
+      await this.proposeUpgrade(implementationAddresses);
+        
+      // Step 7: Execute batch proposal for all market upgrades
+      log(`\n🎯 Executing batch proposal for all market upgrades...`, 'info');
+      const upgradeBatchProposalResult = await this.executeBatchProposal();
+      const upgradeBatchProposalId = extractProposalId(upgradeBatchProposalResult);
+      log(`\n📋 Batch proposal created with ID: ${upgradeBatchProposalId}`, 'success');
+
+      await this.runGovernanceToAcceptUpgrade(upgradeBatchProposalId, implementationAddresses, this.options.deployments);
+
+      
+      // Step 8: Run verification tests (after all deployments)
       const runVerification = await confirm(`\nDo you want to run deployment verification tests for all markets?`);
       
       if (runVerification) {
@@ -172,10 +196,15 @@ class MarketsDeployer {
     await runCommand(command, 'Deploying infrastructure');
   }
 
-  private async deployMarket(deployment: string): Promise<string> {
-    const command = `yarn hardhat deploy --network ${this.options.network} --deployment ${deployment} --bdag`;
+  private async deployMarket(deployment: string): Promise<void> {
+    const command = `yarn hardhat deploy --network ${this.options.network} --deployment ${deployment} --bdag --batchdeploy`;
     
-    return extractProposalId(await runCommand(command, `Deploying market: ${deployment}`));
+    await runCommand(command, `Deploying market: ${deployment}`);
+  }
+
+  private async executeBatchProposal(): Promise<string> {
+    const batchProposalCommand = `yarn hardhat governor:execute-batch-proposal --network ${this.options.network}`;
+    return await runCommand(batchProposalCommand, 'Executing batch proposal');
   }
 
   private async runDeploymentVerification(deployment: string): Promise<void> {
@@ -184,43 +213,53 @@ class MarketsDeployer {
     await runCommand(command, `Running deployment verification test for ${deployment}`, true);
   }
 
-  private async runGovernanceToAcceptImplementation(proposalId: string, deployment: string): Promise<void> {
-    log(`\n🎉 Market deployment completed successfully for ${deployment}!`, 'success');
-    log(`\n🚀 Starting governance flow to accept implementation for ${deployment}...`, 'info');
+  private async runGovernanceToAcceptImplementations(proposalId: string): Promise<string[]> {
+    log(`\n🎉 Market deployment completed successfully for all markets!`, 'success');
+    log(`\n🚀 Starting governance flow to accept implementation for all markets...`, 'info');
     
     // Step 1: Run governance flow to accept implementation
     const governanceFlowResponse = await runGovernanceFlow({
       network: this.options.network,
-      deployment: deployment,
       proposalId,
       executionType: 'comet-impl-in-configuration'
     });
-    log(`\n🎉 Governance flow response for ${deployment}: ${governanceFlowResponse}`, 'success');
-    log(`\n🎉 Governance flow to accept implementation completed successfully for ${deployment}!`, 'success');
-    
-    // Step 2: Propose upgrade (if needed)
-    try {
-      const shouldProposeUpgrade = await confirm(`\nDo you want to propose an upgrade to a new implementation for ${deployment}?`);
+    log(`\n🎉 Governance flow response for all markets: ${governanceFlowResponse}`, 'success');
+    log(`\n🎉 Governance flow to accept implementation completed successfully for all markets!`, 'success');
+    // Extract implementation address from governance flow response
+    const implementationAddresses = extractImplementationAddresses(governanceFlowResponse);
+    log(`\n📋 Extracted implementation addresses for all markets:`, 'info');
+    implementationAddresses.forEach((addr, index) => {
+      log(`   ${this.options.deployments[index]}: ${addr}`, 'info');
+    });
 
-      log(`\n🔧 Proposing upgrade to a new implementation for ${deployment}...`, 'info');
+    return implementationAddresses;
+  }
+
+  private async proposeUpgrade(implementationAddresses: string[]): Promise<void> {
+    // Propose upgrade (if needed)
+    try {
+      const shouldProposeUpgrade = await confirm(`\nDo you want to propose an upgrade to a new implementation for all markets?`);
+
+      log(`\n🔧 Proposing upgrade to a new implementation for all markets...`, 'info');
       if (shouldProposeUpgrade) {
-        // Extract implementation address from governance flow response
-        const implementationAddress = extractImplementationAddress(governanceFlowResponse);
-        log(`\n📋 Extracted implementation address for ${deployment}: ${implementationAddress}`, 'info');
-        
-        const proposalId = extractProposalId(await runCommand(
-          `yarn hardhat governor:propose-upgrade --network ${this.options.network} --deployment ${deployment} --implementation ${implementationAddress}`,
-          `Proposing upgrade for ${deployment}`
-        ));
-        
-        // Step 3: Process upgrade proposal
-        await this.runGovernanceToAcceptUpgrade(proposalId, implementationAddress, deployment);
+        // Propose upgrade to new implementation using batch deploy mode for each deployment
+        for (let i = 0; i < this.options.deployments.length; i++) {
+          const deployment = this.options.deployments[i];
+          const implementationAddress = implementationAddresses[i];
+          
+          if (implementationAddress) {
+            await runCommand(
+              `yarn hardhat governor:propose-upgrade --network ${this.options.network} --deployment ${deployment} --implementation ${implementationAddress} --batchdeploy`,
+              `Proposing upgrade for ${deployment}`
+            );
+          } else {
+            log(`\n⚠️  No implementation address found for deployment ${deployment}`, 'warning');
+          }
+        }
       }
     } catch (error) {
-      log(`\n⚠️  Failed to propose upgrade for ${deployment}: ${error}`, 'error');
+      log(`\n⚠️  Failed to propose upgrade for all markets: ${error}`, 'error');
     }
-  
-    log(`\n🎉 Governance flow completed successfully for ${deployment}!`, 'success');
   }
 
   private async runSpiderForMarket(deployment: string): Promise<void> {
@@ -249,23 +288,24 @@ class MarketsDeployer {
     }
   }
 
-  private async runGovernanceToAcceptUpgrade(proposalId: string, newImplementationAddress: string, deployment: string): Promise<void> {
+  private async runGovernanceToAcceptUpgrade(proposalId: string, newImplementationAddresses: string[], deployments: string[]): Promise<void> {
     if (proposalId) {
       // Approve all upgrade governance steps at once
       const governanceFlowResponse = await runGovernanceFlow({
         network: this.options.network,
-        deployment: deployment,
         proposalId,
         executionType: 'comet-upgrade'
       });
 
-      log(`\n🎉 Governance flow response for ${deployment}: ${governanceFlowResponse}`, 'success');
+      log(`\n🎉 Governance flow response for ${deployments}: ${governanceFlowResponse}`, 'success');
       
       // Update aliases.json and roots.json with the new implementation address
-      updateCometImplAddress(this.options.network, deployment, newImplementationAddress);
-      
-      // Refresh roots after upgrade
-      await this.runSpiderForMarket(deployment);
+      for (let i = 0; i < deployments.length; i++) {
+        const deployment = deployments[i];
+        const newImplementationAddress = newImplementationAddresses[i];
+        updateCometImplAddress(this.options.network, deployment, newImplementationAddress);
+        await this.runSpiderForMarket(deployment);
+      }
     }
   }
 }

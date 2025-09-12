@@ -38,7 +38,6 @@ class GovernanceConfigProposer {
     
     const options: GovernanceFlowOptions = {
       network: this.options.network,
-      deployment: this.options.deployment,
       proposalId: proposalId,
       executionType: 'governance-config'
     };

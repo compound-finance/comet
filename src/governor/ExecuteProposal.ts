@@ -97,7 +97,7 @@ async function extractLogsFromTransaction(
       case 'comet-impl-in-configuration': {
         const cometDeployedData = extractCometDeployedEvent(receipt, trace);
         if (cometDeployedData) {
-          extractedLogs.parsedLogs.cometDeployed = cometDeployedData;
+          extractedLogs.parsedLogs.cometsDeployed = cometDeployedData;
         }
         break;
       }
@@ -169,22 +169,24 @@ function extractCometDeployedEvent(receipt: any, trace: any): any {
     })
     .filter((parsedLog: any) => parsedLog !== null && parsedLog.name === 'CometDeployed');
   
-  if (cometDeployedEvents.length > 0) {
-    const cometDeployedEvent = cometDeployedEvents[0];
+  const cometsDeployed = [];
+  for (const cometDeployedEvent of cometDeployedEvents) {
     const cometProxy = cometDeployedEvent.args.cometProxy;
     const newComet = cometDeployedEvent.args.newComet;
-    
+
     trace(`Found CometDeployed event: proxy=${cometProxy}, newComet=${newComet}`);
     
-    return {
+    cometsDeployed.push({
       cometProxy,
       newComet,
       eventName: 'CometDeployed'
-    };
-  } else {
-    trace('No CometDeployed event found in transaction logs');
-    return null;
+    });
   }
+  if (cometsDeployed.length === 0) {
+    trace('No CometDeployed event found in transaction logs');
+  }
+
+  return cometsDeployed;
 }
 
 /**
