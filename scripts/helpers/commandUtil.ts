@@ -66,3 +66,86 @@ export function extractImplementationAddresses(output: string): string[] {
   
   throw new Error('Could not extract implementation addresses from governance flow response');
 }
+
+/**
+ * Build the project using yarn build
+ * @returns Promise<string> - The command output
+ */
+export async function buildProject(): Promise<string> {
+  return await runCommand('yarn build', 'Building project');
+}
+
+/**
+ * Clear the proposal stack
+ * @param network - The network to clear the stack for
+ * @returns Promise<string> - The command output
+ */
+export async function clearProposalStack(network: string): Promise<string> {
+  const command = `yarn hardhat governor:clear-stack --network ${network}`;
+  return await runCommand(command, 'Clearing proposal stack');
+}
+
+/**
+ * Deploy infrastructure contracts
+ * @param network - The network to deploy to
+ * @returns Promise<string> - The command output
+ */
+export async function deployInfrastructure(network: string): Promise<string> {
+  const command = `yarn hardhat deploy_infrastructure --network ${network} --bdag`;
+  return await runCommand(command, 'Deploying infrastructure');
+}
+
+/**
+ * Deploy a single market using batch deploy mode
+ * @param network - The network to deploy to
+ * @param deployment - The deployment name (e.g., 'dai', 'usdc')
+ * @returns Promise<string> - The command output
+ */
+export async function deployMarket(network: string, deployment: string): Promise<string> {
+  const command = `yarn hardhat deploy --network ${network} --deployment ${deployment} --bdag --batchdeploy`;
+  return await runCommand(command, `Deploying market: ${deployment}`);
+}
+
+/**
+ * Execute a batch proposal from the proposal stack
+ * @param network - The network to execute the proposal on
+ * @returns Promise<string> - The command output
+ */
+export async function executeBatchProposal(network: string): Promise<string> {
+  const command = `yarn hardhat governor:execute-batch-proposal --network ${network}`;
+  return await runCommand(command, 'Executing batch proposal');
+}
+
+/**
+ * Run deployment verification test for a specific market
+ * @param network - The network to run the test on
+ * @param deployment - The deployment name to verify
+ * @returns Promise<string> - The command output
+ */
+export async function runDeploymentVerification(network: string, deployment: string): Promise<string> {
+  const command = `MARKET=${deployment} yarn hardhat test test/deployment-verification-test.ts --network ${network}`;
+  return await runCommand(command, `Running deployment verification test for ${deployment}`, true);
+}
+
+/**
+ * Propose an upgrade for a specific market
+ * @param network - The network to propose the upgrade on
+ * @param deployment - The deployment name
+ * @param implementationAddress - The new implementation address
+ * @returns Promise<string> - The command output
+ */
+export async function proposeUpgrade(network: string, deployment: string, implementationAddress: string): Promise<string> {
+  const command = `yarn hardhat governor:propose-upgrade --network ${network} --deployment ${deployment} --implementation ${implementationAddress} --batchdeploy`;
+  return await runCommand(command, `Proposing upgrade for ${deployment}`);
+}
+
+/**
+ * Refresh roots for a specific market using spider
+ * @param network - The network to refresh roots on
+ * @param deployment - The deployment name to refresh
+ * @returns Promise<string> - The command output
+ */
+export async function runSpiderForMarket(network: string, deployment: string): Promise<string> {
+  const command = `yarn hardhat spider --network ${network} --deployment ${deployment}`;
+  return await runCommand(command, `Refreshing roots for ${deployment}`);
+}

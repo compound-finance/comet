@@ -5,7 +5,18 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { runGovernanceFlow } from '../helpers/governanceFlow';
 import { log, confirm, updateCometImplAddress } from '../helpers/ioUtil';
-import { extractProposalId, extractImplementationAddresses, runCommand } from '../helpers/commandUtil';
+import { 
+  extractProposalId, 
+  extractImplementationAddresses, 
+  buildProject,
+  clearProposalStack,
+  deployInfrastructure as deployInfrastructureCommand,
+  deployMarket as deployMarketCommand,
+  executeBatchProposal as executeBatchProposalCommand,
+  runDeploymentVerification as runDeploymentVerificationCommand,
+  proposeUpgrade as proposeUpgradeCommand,
+  runSpiderForMarket as runSpiderForMarketCommand
+} from '../helpers/commandUtil';
 
 interface DeployOptions {
   network: string;
@@ -77,7 +88,7 @@ class MarketsDeployer {
    */
   private async prepareDeployment(): Promise<void> {
     // Build project before deployment
-    await runCommand('yarn build', 'Building project');
+    await buildProject();
 
     if (this.options.clean) {
       log(`🧹 Clean mode enabled`, 'info');
@@ -85,8 +96,7 @@ class MarketsDeployer {
     }
     
     // Clear proposal stack
-    const clearProposalStackCommand = `yarn hardhat governor:clear-stack --network ${this.options.network}`;
-    await runCommand(clearProposalStackCommand, 'Clearing proposal stack');
+    await clearProposalStack(this.options.network);
   }
 
   /**
@@ -97,7 +107,7 @@ class MarketsDeployer {
    */
   private async deployInfrastructureAndValidate(): Promise<void> {
     // Deploy Infrastructure
-    await this.deployInfrastructure();
+    await deployInfrastructureCommand(this.options.network);
     
     // Check configuration files for all markets
     await this.checkAllConfigurationFiles();
@@ -117,7 +127,7 @@ class MarketsDeployer {
       log(`\n🎯 Deploying market ${i + 1}/${this.options.deployments.length}: ${deployment} and proposing implementation`, 'info');
       
       // Deploy the market using batch deploy mode
-      await this.deployMarket(deployment);
+      await deployMarketCommand(this.options.network, deployment);
     }
   }
 
@@ -129,7 +139,7 @@ class MarketsDeployer {
   private async executeImplementationBatchProposal(): Promise<string> {
     log(`\n🎯 Executing batch proposal for all market implementations...`, 'info');
     
-    const implBatchProposalResult = await this.executeBatchProposal();
+    const implBatchProposalResult = await executeBatchProposalCommand(this.options.network);
     
     // Extract proposal ID from the batch proposal result
     const implBatchProposalId = extractProposalId(implBatchProposalResult);
@@ -146,7 +156,7 @@ class MarketsDeployer {
   private async executeUpgradeBatchProposal(): Promise<string> {
     log(`\n🎯 Executing batch proposal for all market upgrades...`, 'info');
     
-    const upgradeBatchProposalResult = await this.executeBatchProposal();
+    const upgradeBatchProposalResult = await executeBatchProposalCommand(this.options.network);
     const upgradeBatchProposalId = extractProposalId(upgradeBatchProposalResult);
     log(`\n📋 Batch proposal created with ID: ${upgradeBatchProposalId}`, 'success');
     
@@ -164,7 +174,7 @@ class MarketsDeployer {
     if (runVerification) {
       for (const deployment of this.options.deployments) {
         log(`\n🧪 Running verification test for ${deployment}...`, 'info');
-        await this.runDeploymentVerification(deployment);
+        await runDeploymentVerificationCommand(this.options.network, deployment);
       }
     }
   }
@@ -266,43 +276,6 @@ class MarketsDeployer {
     }
   }
 
-  /**
-   * Deploy infrastructure contracts (tokens, price feeds, etc.)
-   */
-  private async deployInfrastructure(): Promise<void> {
-    const command = `yarn hardhat deploy_infrastructure --network ${this.options.network} --bdag`;
-    
-    await runCommand(command, 'Deploying infrastructure');
-  }
-
-  /**
-   * Deploy a single market using batch deploy mode
-   * @param deployment - The deployment name (e.g., 'dai', 'usdc')
-   */
-  private async deployMarket(deployment: string): Promise<void> {
-    const command = `yarn hardhat deploy --network ${this.options.network} --deployment ${deployment} --bdag --batchdeploy`;
-    
-    await runCommand(command, `Deploying market: ${deployment}`);
-  }
-
-  /**
-   * Execute a batch proposal from the proposal stack
-   * @returns The proposal ID from the batch proposal execution
-   */
-  private async executeBatchProposal(): Promise<string> {
-    const batchProposalCommand = `yarn hardhat governor:execute-batch-proposal --network ${this.options.network}`;
-    return await runCommand(batchProposalCommand, 'Executing batch proposal');
-  }
-
-  /**
-   * Run deployment verification test for a specific market
-   * @param deployment - The deployment name to verify
-   */
-  private async runDeploymentVerification(deployment: string): Promise<void> {
-    const command = `MARKET=${deployment} yarn hardhat test test/deployment-verification-test.ts --network ${this.options.network}`;
-    
-    await runCommand(command, `Running deployment verification test for ${deployment}`, true);
-  }
 
   /**
    * Step 5: Run governance flow to accept implementations
@@ -348,10 +321,7 @@ class MarketsDeployer {
           const implementationAddress = implementationAddresses[i];
           
           if (implementationAddress) {
-            await runCommand(
-              `yarn hardhat governor:propose-upgrade --network ${this.options.network} --deployment ${deployment} --implementation ${implementationAddress} --batchdeploy`,
-              `Proposing upgrade for ${deployment}`
-            );
+            await proposeUpgradeCommand(this.options.network, deployment, implementationAddress);
           } else {
             log(`\n⚠️  No implementation address found for deployment ${deployment}`, 'warning');
           }
@@ -368,10 +338,7 @@ class MarketsDeployer {
    */
   private async runSpiderForMarket(deployment: string): Promise<void> {
     try {
-      await runCommand(
-        `yarn hardhat spider --network ${this.options.network} --deployment ${deployment}`,
-        `Refreshing roots for ${deployment}`
-      );
+      await runSpiderForMarketCommand(this.options.network, deployment);
     } catch (error) {
       log(`\n⚠️  Spider failed for ${deployment}, but this is expected behavior after upgrades.`, 'warning');
       log(`📝 This happens because the implementation address doesn't match the expected one.`, 'info');
