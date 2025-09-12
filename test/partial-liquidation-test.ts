@@ -4,6 +4,7 @@ import {
 } from '../build/types';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { takeSnapshot, SnapshotRestorer } from "@nomicfoundation/hardhat-network-helpers";
+import { BigNumber, ContractReceipt } from 'ethers';
 
 async function borrowCapacityForAsset(comet: CometInterface, actor: SignerWithAddress, assetIndex: number) {
   const {
@@ -34,7 +35,19 @@ describe('CometWithPartialLiquidation', function() {
   let priceFeeds: any;
   let governor: any;
   let users: any;
+  let user1: any;
+  let userToLiquidate: any;
+  let user2: any;
   let snapshot: SnapshotRestorer;
+  let debtBefore: BigNumber;
+  let collBefore: BigNumber;
+  let userBasicBefore: any;
+  let absorbReceipt: ContractReceipt;
+  let USDC: any;
+  let COMP: any;
+  let USDT: any;
+  let WETH: any;
+  let WBTC: any;
 
   before(async function() {
     protocol = await makeProtocol({
@@ -86,14 +99,22 @@ describe('CometWithPartialLiquidation', function() {
     
     ({ cometWithPartialLiquidation, tokens, priceFeeds, governor, users } = protocol);
     
-    const [user1, userToLiquidate] = users;
-    const { USDC, COMP, USDT } = tokens;
-    const { COMP: priceFeedCOMP, USDT: priceFeedUSDT } = priceFeeds;
+      // Setup users
+      [user1, userToLiquidate, user2] = users;
+      const { USDC: USDC_token, COMP: COMP_token, USDT: USDT_token, WETH: WETH_token, WBTC: WBTC_token } = tokens;
+      USDC = USDC_token;
+      COMP = COMP_token;
+      USDT = USDT_token;
+      WETH = WETH_token;
+      WBTC = WBTC_token;
+      const { COMP: priceFeedCOMP, USDT: priceFeedUSDT } = priceFeeds;
 
+    // Setup user1 (liquidator)
     await USDC.connect(governor).transfer(user1.address, exp(8000, 6));
     await USDC.connect(user1).approve(cometWithPartialLiquidation.address, exp(8000, 6));
     await cometWithPartialLiquidation.connect(user1).supply(USDC.address, exp(8000, 6));
 
+    // Setup userToLiquidate (user to be liquidated)
     await COMP.connect(governor).transfer(userToLiquidate.address, exp(100, 18));
     await COMP.connect(userToLiquidate).approve(cometWithPartialLiquidation.address, exp(100, 18));
     await cometWithPartialLiquidation.connect(userToLiquidate).supply(COMP.address, exp(100, 18));
@@ -102,13 +123,23 @@ describe('CometWithPartialLiquidation', function() {
     await USDT.connect(userToLiquidate).approve(cometWithPartialLiquidation.address, exp(100, 6));
     await cometWithPartialLiquidation.connect(userToLiquidate).supply(USDT.address, exp(100, 6));
     
-    await cometWithPartialLiquidation.connect(userToLiquidate).withdraw(COMP.address, exp(100, 18));
     const borrowCapacityCOMP = await borrowCapacityForAsset(cometWithPartialLiquidation, userToLiquidate, 0);
     const borrowCapacityUSDT = await borrowCapacityForAsset(cometWithPartialLiquidation, userToLiquidate, 1);
     const borrowCapacity = borrowCapacityCOMP.add(borrowCapacityUSDT);
     await cometWithPartialLiquidation.connect(userToLiquidate).withdraw(USDC.address, borrowCapacity);
+    
+    // Setup user2 (additional user for multi-user tests) - make them liquidatable too
+    await COMP.connect(governor).transfer(user2.address, exp(50, 18));
+    await COMP.connect(user2).approve(cometWithPartialLiquidation.address, exp(50, 18));
+    await cometWithPartialLiquidation.connect(user2).supply(COMP.address, exp(50, 18));
+    
+    const borrowCapacity2 = await borrowCapacityForAsset(cometWithPartialLiquidation, user2, 0);
+    await cometWithPartialLiquidation.connect(user2).withdraw(USDC.address, borrowCapacity2);
+    
+    // Make users liquidatable by reducing prices
     let iterations = 0;
-    while(!(await cometWithPartialLiquidation.isLiquidatable(userToLiquidate.address)) && iterations < 50) {
+    while((!(await cometWithPartialLiquidation.isLiquidatable(userToLiquidate.address)) || 
+          !(await cometWithPartialLiquidation.isLiquidatable(user2.address))) && iterations < 50) {
       const currentCOMPData = await priceFeedCOMP.latestRoundData();
       await priceFeedCOMP.connect(governor).setRoundData(
         currentCOMPData._roundId,
@@ -129,6 +160,11 @@ describe('CometWithPartialLiquidation', function() {
       await ethers.provider.send('evm_mine', []);
       iterations++;
     }
+
+    debtBefore = await cometWithPartialLiquidation.borrowBalanceOf(userToLiquidate.address);
+    const collateralBeforeStruct = await cometWithPartialLiquidation.userCollateral(userToLiquidate.address, USDC.address);
+    collBefore = collateralBeforeStruct.balance;
+    userBasicBefore = await cometWithPartialLiquidation.userBasic(userToLiquidate.address);
     
     snapshot = await takeSnapshot();
   });
@@ -139,89 +175,54 @@ describe('CometWithPartialLiquidation', function() {
     });
 
     it('should successfully execute partial liquidation', async function () {
-      const [user1, userToLiquidate] = users;
-      const { USDC, COMP, USDT } = tokens;
-      
       expect(await cometWithPartialLiquidation.isLiquidatable(userToLiquidate.address)).to.be.true;
       
-      const userBasicBefore = await cometWithPartialLiquidation.userBasic(userToLiquidate.address);
-      const debtBefore = await cometWithPartialLiquidation.borrowBalanceOf(userToLiquidate.address);
-      const userCollateralBefore = await cometWithPartialLiquidation.userCollateral(userToLiquidate.address, USDC.address);
+    const tx = await cometWithPartialLiquidation.connect(user1).absorb(user1.address, [userToLiquidate.address]);
+    absorbReceipt = await tx.wait();
+    expect(absorbReceipt.status).to.equal(1);             
+    expect(await cometWithPartialLiquidation.isLiquidatable(userToLiquidate.address)).to.be.false;
+    });
       
-      console.log('User basic before:', userBasicBefore);
-      
-      const absorbTx = await cometWithPartialLiquidation.connect(user1).absorb(user1.address, [userToLiquidate.address]);
-      const receipt = await absorbTx.wait();
-      
-      expect(receipt.status).to.equal(1);
-      
-      const userBasicAfter = await cometWithPartialLiquidation.userBasic(userToLiquidate.address);
-      console.log('User basic after:', userBasicAfter);
-      
-      expect(await cometWithPartialLiquidation.isLiquidatable(userToLiquidate.address)).to.be.false;
-      
+    it('should reduce debt and collateral after liquidation', async function() {
       const debtAfter = await cometWithPartialLiquidation.borrowBalanceOf(userToLiquidate.address);
-      expect(debtAfter.toBigInt()).to.be.lt(debtBefore.toBigInt());
+      const collateralAfterStruct = await cometWithPartialLiquidation.userCollateral(userToLiquidate.address, USDC.address);
+      const collAfter = collateralAfterStruct.balance;
+      const userBasicAfter = await cometWithPartialLiquidation.userBasic(userToLiquidate.address);
       
-      const userCollateralAfter = await cometWithPartialLiquidation.userCollateral(userToLiquidate.address, USDC.address);
-      expect(userCollateralAfter.balance.toBigInt()).to.be.lt(userCollateralBefore.balance.toBigInt());
-      
+      expect(debtAfter).to.be.lt(debtBefore);
+      expect(collAfter).to.be.lt(collBefore);
       expect(userBasicAfter.principal).to.be.gt(userBasicBefore.principal);
       expect(userBasicAfter.assetsIn).to.equal(0);
     });
 
     it('should emit AbsorbCollateral events with correct parameters', async function () {
-      const [user1, userToLiquidate] = users;
       
-      const absorbTx = await cometWithPartialLiquidation.connect(user1).absorb(user1.address, [userToLiquidate.address]);
-      const receipt = await absorbTx.wait();
-      
-      const absorbCollateralEvents = receipt.events?.filter(e => e.event === 'AbsorbCollateral') || [];
-      expect(absorbCollateralEvents.length).to.be.greaterThan(0);
-      
-      if (absorbCollateralEvents.length > 0) {
-        const event = absorbCollateralEvents[0];
-        expect(event.args?.absorber).to.equal(user1.address);
-        expect(event.args?.user).to.equal(userToLiquidate.address);
-        expect(event.args?.seizeAmount).to.be.gt(0);
-        expect(event.args?.seizedValue).to.be.gt(0);
-      }
+    const absorbEvents = absorbReceipt.events?.filter(e => e.event === 'AbsorbCollateral') || [];
+    expect(absorbEvents.length).to.be.greaterThan(0);
+    if (absorbEvents.length > 0) {
+      const event = absorbEvents[0];
+      expect(event.args?.absorber).to.equal(user1.address);
+      expect(event.args?.user).to.equal(userToLiquidate.address);
+      expect(event.args?.seizeAmount).to.be.gt(0);
+      expect(event.args?.seizedValue).to.be.gt(0);
+    }
     });
 
     it('should handle multiple users in single absorb call', async function () {
-      const [user1, userToLiquidate] = users;
-      
-      const user2 = users[2];
-      const { COMP, USDT } = tokens;
-      
-      await COMP.connect(governor).transfer(user2.address, exp(50, 18));
-      await COMP.connect(user2).approve(cometWithPartialLiquidation.address, exp(50, 18));
-      await cometWithPartialLiquidation.connect(user2).supply(COMP.address, exp(50, 18));
-      
-      const borrowCapacity2 = await borrowCapacityForAsset(cometWithPartialLiquidation, user2, 0);
-      await cometWithPartialLiquidation.connect(user2).withdraw(COMP.address, exp(50, 18));
-      await cometWithPartialLiquidation.connect(user2).withdraw(tokens.USDC.address, borrowCapacity2);
-      
-      const { COMP: priceFeedCOMP } = priceFeeds;
-      const currentCOMPData = await priceFeedCOMP.latestRoundData();
-      await priceFeedCOMP.connect(governor).setRoundData(
-        currentCOMPData._roundId,
-        currentCOMPData._answer.mul(90).div(100),
-        currentCOMPData._startedAt,
-        currentCOMPData._updatedAt,
-        currentCOMPData._answeredInRound
-      );
-      
-      const absorbTx = await cometWithPartialLiquidation.connect(user1).absorb(
+      await snapshot.restore();
+
+      expect(await cometWithPartialLiquidation.isLiquidatable(userToLiquidate.address)).to.be.true;
+      expect(await cometWithPartialLiquidation.isLiquidatable(user2.address)).to.be.true;
+    
+      const tx = await cometWithPartialLiquidation.connect(user1).absorb(
         user1.address, 
         [userToLiquidate.address, user2.address]
       );
-      const receipt = await absorbTx.wait();
-      
+      const receipt = await tx.wait();
+    
       expect(receipt.status).to.equal(1);
       expect(await cometWithPartialLiquidation.isLiquidatable(userToLiquidate.address)).to.be.false;
       expect(await cometWithPartialLiquidation.isLiquidatable(user2.address)).to.be.false;
-    });
   });
 
   describe('absorb function - reverts', () => {
@@ -230,7 +231,6 @@ describe('CometWithPartialLiquidation', function() {
     });
 
     it('should revert when trying to absorb non-liquidatable user', async function () {
-      const [user1, user2] = users;
       
       await expect(
         cometWithPartialLiquidation.connect(user1).absorb(user1.address, [user2.address])
@@ -238,7 +238,6 @@ describe('CometWithPartialLiquidation', function() {
     });
 
     it('should revert when absorb is paused', async function () {
-      const [user1, userToLiquidate] = users;
       
       await cometWithPartialLiquidation.connect(governor).pause(false, false, false, true, false);
       
@@ -247,9 +246,7 @@ describe('CometWithPartialLiquidation', function() {
       ).to.be.revertedWithCustomError(cometWithPartialLiquidation, 'Paused');
     });
 
-    it('should revert when trying to absorb empty accounts array', async function () {
-      const [user1] = users;
-      
+    it('should not revert when trying to absorb empty accounts array', async function () {
       await expect(
         cometWithPartialLiquidation.connect(user1).absorb(user1.address, [])
       ).to.not.be.reverted;
@@ -262,19 +259,14 @@ describe('CometWithPartialLiquidation', function() {
     });
 
     it('should correctly identify liquidatable user', async function () {
-      const [, userToLiquidate] = users;
-      
       expect(await cometWithPartialLiquidation.isLiquidatable(userToLiquidate.address)).to.be.true;
     });
 
     it('should correctly identify non-liquidatable user', async function () {
-      const [, , user2] = users;
-      
       expect(await cometWithPartialLiquidation.isLiquidatable(user2.address)).to.be.false;
     });
 
     it('should update liquidatable status after price changes', async function () {
-      const [, userToLiquidate] = users;
       const { COMP: priceFeedCOMP } = priceFeeds;
       
       expect(await cometWithPartialLiquidation.isLiquidatable(userToLiquidate.address)).to.be.true;
@@ -298,37 +290,37 @@ describe('CometWithPartialLiquidation', function() {
     });
 
     it('should return false when user has no debt', async function () {
-    const [user1, liquidator] = users;
-    const { USDC, COMP } = tokens;
-    const { COMP: priceFeedCOMP } = priceFeeds;
+      const [user1, liquidator] = users;
+      const { USDC, COMP } = tokens;
+      const { COMP: priceFeedCOMP } = priceFeeds;
 
-    // Setup liquidator with USDC
-    await USDC.connect(governor).transfer(liquidator.address, exp(10000, 6));
-    await USDC.connect(liquidator).approve(cometWithPartialLiquidation.address, exp(10000, 6));
-    await cometWithPartialLiquidation.connect(liquidator).supply(USDC.address, exp(10000, 6));
+      // Setup liquidator with USDC
+      await USDC.connect(governor).transfer(liquidator.address, exp(10000, 6));
+      await USDC.connect(liquidator).approve(cometWithPartialLiquidation.address, exp(10000, 6));
+      await cometWithPartialLiquidation.connect(liquidator).supply(USDC.address, exp(10000, 6));
 
-    // Setup user with collateral but no debt
-    await COMP.connect(governor).transfer(user1.address, exp(100, 18));
-    await COMP.connect(user1).approve(cometWithPartialLiquidation.address, exp(100, 18));
-    await cometWithPartialLiquidation.connect(user1).supply(COMP.address, exp(100, 18));
+      // Setup user with collateral but no debt
+      await COMP.connect(governor).transfer(user1.address, exp(100, 18));
+      await COMP.connect(user1).approve(cometWithPartialLiquidation.address, exp(100, 18));
+      await cometWithPartialLiquidation.connect(user1).supply(COMP.address, exp(100, 18));
 
-    const isLiquidatable = await cometWithPartialLiquidation.isLiquidatable(user1.address);
-    expect(isLiquidatable).to.be.false;
+      const isLiquidatable = await cometWithPartialLiquidation.isLiquidatable(user1.address);
+      expect(isLiquidatable).to.be.false;
 
-    // Try to absorb - should fail because user is not liquidatable
-    try {
-      const absorbTx = await cometWithPartialLiquidation.connect(liquidator).absorb(liquidator.address, [user1.address]);
-      await absorbTx.wait();
-      expect.fail('Absorb should have failed because user is not liquidatable');
-    } catch (error) {
-      expect(error.message).to.include('NotLiquidatable');
-    }
-  });
+      // Try to absorb - should fail because user is not liquidatable
+      try {
+        const absorbTx = await cometWithPartialLiquidation.connect(liquidator).absorb(liquidator.address, [user1.address]);
+        await absorbTx.wait();
+        expect.fail('Absorb should have failed because user is not liquidatable');
+      } catch (error) {
+        expect(error.message).to.include('NotLiquidatable');
+      }
+    });
 
-  it('should return false when user has deposit', async function () {
-    const [user1, liquidator] = users;
-    const { USDC, COMP } = tokens;
-    const { COMP: priceFeedCOMP } = priceFeeds;
+    it('should return false when user has deposit', async function () {
+      const [user1, liquidator] = users;
+      const { USDC, COMP } = tokens;
+      const { COMP: priceFeedCOMP } = priceFeeds;
 
     // Setup liquidator with USDC
     await USDC.connect(governor).transfer(liquidator.address, exp(10000, 6));
@@ -896,3 +888,5 @@ describe('CometWithPartialLiquidation', function() {
   });
   });
 });
+});
+

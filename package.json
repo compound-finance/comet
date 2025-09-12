@@ -59,6 +59,7 @@
   },
   "devDependencies": {
     "@nomicfoundation/ethereumjs-rlp": "^5.0.4",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
     "@arbitrum/sdk": "^3.1.2",
     "@compound-finance/hardhat-import": "^1.0.3",
     "@ethersproject/experimental": "^5.7.0",
