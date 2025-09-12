@@ -107,7 +107,7 @@ class MarketsDeployer {
    */
   private async deployInfrastructureAndValidate(): Promise<void> {
     // Deploy Infrastructure
-    await deployInfrastructureCommand(this.options.network);
+    await deployInfrastructureCommand(this.options.network, true);
     
     // Check configuration files for all markets
     await this.checkAllConfigurationFiles();
@@ -127,7 +127,7 @@ class MarketsDeployer {
       log(`\n🎯 Deploying market ${i + 1}/${this.options.deployments.length}: ${deployment} and proposing implementation`, 'info');
       
       // Deploy the market using batch deploy mode
-      await deployMarketCommand(this.options.network, deployment);
+      await deployMarketCommand(this.options.network, deployment, true, true);
     }
   }
 
@@ -174,7 +174,7 @@ class MarketsDeployer {
     if (runVerification) {
       for (const deployment of this.options.deployments) {
         log(`\n🧪 Running verification test for ${deployment}...`, 'info');
-        await runDeploymentVerificationCommand(this.options.network, deployment);
+        await runDeploymentVerificationCommand(this.options.network, deployment, true);
       }
     }
   }
@@ -321,7 +321,7 @@ class MarketsDeployer {
           const implementationAddress = implementationAddresses[i];
           
           if (implementationAddress) {
-            await proposeUpgradeCommand(this.options.network, deployment, implementationAddress);
+            await proposeUpgradeCommand(this.options.network, deployment, implementationAddress, true);
           } else {
             log(`\n⚠️  No implementation address found for deployment ${deployment}`, 'warning');
           }

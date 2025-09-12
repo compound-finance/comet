@@ -88,21 +88,33 @@ export async function clearProposalStack(network: string): Promise<string> {
 /**
  * Deploy infrastructure contracts
  * @param network - The network to deploy to
+ * @param bdag - Whether to use BDAG custom governor (adds --bdag flag)
  * @returns Promise<string> - The command output
  */
-export async function deployInfrastructure(network: string): Promise<string> {
-  const command = `yarn hardhat deploy_infrastructure --network ${network} --bdag`;
+export async function deployInfrastructure(network: string, bdag: boolean = true): Promise<string> {
+  let command = `yarn hardhat deploy_infrastructure --network ${network}`;
+  if (bdag) {
+    command += ' --bdag';
+  }
   return await runCommand(command, 'Deploying infrastructure');
 }
 
 /**
- * Deploy a single market using batch deploy mode
+ * Deploy a single market
  * @param network - The network to deploy to
  * @param deployment - The deployment name (e.g., 'dai', 'usdc')
+ * @param bdag - Whether to use BDAG custom governor (adds --bdag flag)
+ * @param batchDeploy - Whether to use batch deploy mode (adds --batchdeploy flag)
  * @returns Promise<string> - The command output
  */
-export async function deployMarket(network: string, deployment: string): Promise<string> {
-  const command = `yarn hardhat deploy --network ${network} --deployment ${deployment} --bdag --batchdeploy`;
+export async function deployMarket(network: string, deployment: string, bdag: boolean = true, batchDeploy: boolean = false): Promise<string> {
+  let command = `yarn hardhat deploy --network ${network} --deployment ${deployment}`;
+  if (bdag) {
+    command += ' --bdag';
+  }
+  if (batchDeploy) {
+    command += ' --batchdeploy';
+  }
   return await runCommand(command, `Deploying market: ${deployment}`);
 }
 
@@ -120,11 +132,12 @@ export async function executeBatchProposal(network: string): Promise<string> {
  * Run deployment verification test for a specific market
  * @param network - The network to run the test on
  * @param deployment - The deployment name to verify
+ * @param printOutput - Whether to print the command output
  * @returns Promise<string> - The command output
  */
-export async function runDeploymentVerification(network: string, deployment: string): Promise<string> {
+export async function runDeploymentVerification(network: string, deployment: string, printOutput: boolean = true): Promise<string> {
   const command = `MARKET=${deployment} yarn hardhat test test/deployment-verification-test.ts --network ${network}`;
-  return await runCommand(command, `Running deployment verification test for ${deployment}`, true);
+  return await runCommand(command, `Running deployment verification test for ${deployment}`, printOutput);
 }
 
 /**
@@ -132,10 +145,14 @@ export async function runDeploymentVerification(network: string, deployment: str
  * @param network - The network to propose the upgrade on
  * @param deployment - The deployment name
  * @param implementationAddress - The new implementation address
+ * @param batchDeploy - Whether to use batch deploy mode (adds --batchdeploy flag)
  * @returns Promise<string> - The command output
  */
-export async function proposeUpgrade(network: string, deployment: string, implementationAddress: string): Promise<string> {
-  const command = `yarn hardhat governor:propose-upgrade --network ${network} --deployment ${deployment} --implementation ${implementationAddress} --batchdeploy`;
+export async function proposeUpgrade(network: string, deployment: string, implementationAddress: string, batchDeploy: boolean = false): Promise<string> {
+  let command = `yarn hardhat governor:propose-upgrade --network ${network} --deployment ${deployment} --implementation ${implementationAddress}`;
+  if (batchDeploy) {
+    command += ' --batchdeploy';
+  }
   return await runCommand(command, `Proposing upgrade for ${deployment}`);
 }
 
