@@ -33,7 +33,7 @@ print_error() {
 show_help() {
     echo -e "${BLUE}🚀 Market Deployment Script Wrapper${NC}"
     echo ""
-    echo "Usage: ./scripts/deploy-market.sh [options]"
+    echo "Usage: ./scripts/deploy-markets.sh [options]"
     echo ""
     echo "Options:"
     echo "  -n, --network <network>     Network to deploy to (default: local)"
@@ -45,13 +45,13 @@ echo "  -c, --clean                 Clean deployment cache before deploying"
     echo ""
     echo "Examples:"
     echo "  # Deploy DAI market on local network"
-    echo "  ./scripts/deploy-market.sh -n local -d dai"
+    echo "  ./scripts/deploy-markets.sh -n local -d dai"
     echo ""
     echo "  # Deploy USDC market on polygon network"
-echo "  ./scripts/deploy-market.sh -n polygon -d usdc"
+echo "  ./scripts/deploy-markets.sh -n polygon -d usdc"
 echo ""
 echo "  # Deploy with clean cache"
-echo "  ./scripts/deploy-market.sh -n local -d dai -c"
+echo "  ./scripts/deploy-markets.sh -n local -d dai -c"
     echo ""
     
     echo ""
@@ -135,7 +135,7 @@ main() {
     # Run the deployment script
     print_info "Executing deployment script..."
     
-    yarn ts-node scripts/deploy-market/index.ts \
+    yarn ts-node scripts/deploy-markets/index.ts \
         --network "$NETWORK" \
         --deployment "$DEPLOYMENT" \
         $CLEAN_FLAG
