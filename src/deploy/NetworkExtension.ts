@@ -23,7 +23,9 @@ export async function proposeCometUpgrade(
   
   // Create proposal manager
   const proposalManager = createProposalManager(deploymentManager, deploymentManager.network);
-  await proposalManager.clearProposalStack();
+  if (!deploymentManager.config.batchdeploy) {
+    await proposalManager.clearProposalStack();
+  }
   
   // Action 1: upgrade the Comet proxy to the new implementation
   await proposalManager.addAction({
@@ -73,30 +75,16 @@ export async function proposeCometUpgrade(
   
   // Set proposal description
   await proposalManager.setDescription(description);
+
+  const proposalData = await proposalManager.toProposalData();
   
-  // Execute the proposal
-  trace(`Starting proposal execution`);
-  const proposalExecutionResult = await proposalManager.executeProposal(adminSigner);
-  
-  // Extract proposal ID from ProposalCreated event
-  const proposalId = proposalExecutionResult.proposalId;
-  if (proposalId !== null) {
-    trace(`Proposal ID: ${proposalId}`);
+  if (!deploymentManager.config.batchdeploy) {
+    // Execute the proposal
+    trace('Starting proposal execution');
+    await proposalManager.executeProposal(adminSigner);
   } else {
-    trace(`Warning: Could not find ProposalCreated event in logs`);
+    trace('Executing proposal is disabled');
   }
 
-  return {
-    targets: proposalExecutionResult.targets,
-    values: proposalExecutionResult.values,
-    calldatas: proposalExecutionResult.calldatas,
-    description: proposalExecutionResult.description,
-    cometAdmin: cometAdmin.address,
-    comet: comet.address,
-    rewards: rewards.address,
-    newImplementation: newImplementationAddress,
-    rewardToken: rewardTokenAddress,
-    proposalId,
-    tx: proposalExecutionResult
-  };
+  return proposalData;
 } 

@@ -28,7 +28,6 @@ class TimelockDelayChanger {
     
     const options: GovernanceFlowOptions = {
       network: this.options.network,
-      deployment: '', // Not needed for this script
       proposalId: proposalId,
       executionType: 'timelock-delay-change'
     };

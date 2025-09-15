@@ -28,7 +28,6 @@ class CometRewardFunder {
     
     const options: GovernanceFlowOptions = {
       network: this.options.network,
-      deployment: '', // Not needed for this script
       proposalId: proposalId,
       executionType: 'comet-reward-funding'
     };
