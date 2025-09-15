@@ -17,6 +17,7 @@ function applyL1ToL2Alias(address: string) {
   return `0x${(BigInt(address) + offset).toString(16)}`;
 }
 
+
 export default async function relayBaseMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
@@ -36,27 +37,30 @@ export default async function relayBaseMessage(
     fromBlock: startingBlockNumber,
     toBlock: 'latest',
     address: baseL1CrossDomainMessenger.address,
-    topics: filter.topics!
+    topics: filter.topics!,
   });
 
   for (let sentMessageEvent of sentMessageEvents) {
-    const { args: { target, sender, message, messageNonce, gasLimit } } = baseL1CrossDomainMessenger.interface.parseLog(sentMessageEvent);
+    const parsedLog = baseL1CrossDomainMessenger.interface.parseLog(sentMessageEvent);
+
+    const {
+      args: { target, sender, message, messageNonce, gasLimit },
+    } = parsedLog;
+
     const aliasedSigner = await impersonateAddress(
       bridgeDeploymentManager,
       applyL1ToL2Alias(baseL1CrossDomainMessenger.address)
     );
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
+
     const relayMessageTxn = await (
-      await l2CrossDomainMessenger.connect(aliasedSigner).relayMessage(
-        messageNonce,
-        sender,
-        target,
-        0,
-        0,
-        message,
-        { gasPrice: 0, gasLimit }
-      )
+      await l2CrossDomainMessenger
+        .connect(aliasedSigner)
+        .relayMessage(messageNonce, sender, target, 0, 0, message, {
+          gasPrice: 0,
+          gasLimit,
+        })
     ).wait();
 
     // Try to decode the SentMessage data to determine what type of cross-chain activity this is. So far,
@@ -69,10 +73,11 @@ export default async function relayBaseMessage(
       const messageWithoutSigHash = '0x' + messageWithoutPrefix.slice(8);
       try {
         // 1a. Bridging ERC20 token
-        const { _l2Token, l1Token, _from, to, amount, _data } = ethers.utils.defaultAbiCoder.decode(
-          ['address l2Token', 'address l1Token', 'address from', 'address to', 'uint256 amount', 'bytes data'],
-          messageWithoutSigHash
-        );
+        const { _l2Token, l1Token, _from, to, amount, _data } =
+          ethers.utils.defaultAbiCoder.decode(
+            ['address l2Token', 'address l1Token', 'address from', 'address to', 'uint256 amount', 'bytes data'],
+            messageWithoutSigHash
+          );
 
         console.log(
           `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Bridged over ${amount} of ${l1Token} to user ${to}`
@@ -98,13 +103,21 @@ export default async function relayBaseMessage(
       }
     } else if (target === bridgeReceiver.address) {
       // Cross-chain message passing
-      const proposalCreatedEvent = relayMessageTxn.events.find(event => event.address === bridgeReceiver.address);
-      const { args: { id, eta } } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
+      if (relayMessageTxn) {
+        const proposalCreatedEvent = relayMessageTxn.events.find(
+          (event) => event.address === bridgeReceiver.address
+        );
+        const {
+          args: { id, eta },
+        } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
 
-      // Add the proposal to the list of open bridged proposals to be executed after all the messages have been relayed
-      openBridgedProposals.push({ id, eta });
+        // Add the proposal to the list of open bridged proposals to be executed after all the messages have been relayed
+        openBridgedProposals.push({ id, eta });
+      }
     } else {
-      throw new Error(`[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Unrecognized target for cross-chain message`);
+      throw new Error(
+        `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Unrecognized target for cross-chain message`
+      );
     }
   }
 
@@ -121,4 +134,6 @@ export default async function relayBaseMessage(
       `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
     );
   }
+
+  return openBridgedProposals;
 }

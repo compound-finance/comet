@@ -61,7 +61,6 @@ export class DeploymentManager {
     this.config = config;
     this.counter = 0;
     this.spent = 0;
-
     this.cache = new Cache(
       this.network,
       this.deployment,
@@ -202,7 +201,7 @@ export class DeploymentManager {
         [].concat(addresses).map(async (address) => {
           let buildFile;
           if (artifact !== undefined) {
-            buildFile = await readContract(this.cache, this.hre, artifact, network, address, !this.cache);
+            buildFile = await readContract(this.cache, this.hre, artifact, network, address, !this.cache || (artifact.length > 0));
           } else {
             buildFile = await this.import(address, network);
           }
@@ -243,7 +242,15 @@ export class DeploymentManager {
   /* Deploys a contract from Hardhat artifacts */
   async _deploy<C extends Contract>(contractFile: string, deployArgs: any[], retries?: number): Promise<C> {
     const contract = await this.retry(
-      async () => deploy(contractFile, deployArgs, this.hre, await this.deployOpts()),
+      async () => {
+        const signer = await this.getSigner();
+
+        // check tx in pending state
+        const pendingTx = await signer.provider.getTransactionCount(signer.address, 'pending');
+        console.log(`Pending transactions for ${contractFile} deployment: ${pendingTx}`);
+
+        return deploy(contractFile, deployArgs, this.hre, await this.deployOpts());
+      },
       retries
     );
     this.counter++;

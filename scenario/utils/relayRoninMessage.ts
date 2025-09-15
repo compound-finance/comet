@@ -10,7 +10,7 @@ const roninChainSelector = '6916147374840168594';
 export default async function relayRoninMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
-  _: number
+  _startingBlockNumber: number
 ) {
 
   const l1CCIPOnRamp = await governanceDeploymentManager.getContractOrThrow('roninl1CCIPOnRamp');
@@ -18,14 +18,21 @@ export default async function relayRoninMessage(
   const l2CCIPOffRamp = (await bridgeDeploymentManager.getContractOrThrow('l2CCIPOffRamp'));
   const bridgeReceiver = (await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver'));
   const l1TokenAdminRegistry = await governanceDeploymentManager.getContractOrThrow('l1TokenAdminRegistry');
-  const l2TokenAdminRegistry = await bridgeDeploymentManager.getContractOrThrow('l2TokenAdminRegistry');
+
+  const l2TokenAdminRegistry = await bridgeDeploymentManager.existing(
+    'l2TokenAdminRegistry',
+    '0x90e83d532A4aD13940139c8ACE0B93b0DdbD323a',
+    'ronin'
+  );
+
   const offRampSigner = await impersonateAddress(bridgeDeploymentManager, l2CCIPOffRamp.address);
 
   const openBridgedProposals: OpenBridgedProposal[] = [];
 
   const filterCCIP = l1CCIPOnRamp.filters.CCIPSendRequested();
+  let logsCCIP: Log[] = [];
   const latestBlock = (await governanceDeploymentManager.hre.ethers.provider.getBlock('latest')).number;
-  const logsCCIP: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+  logsCCIP = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: latestBlock - 500,
     toBlock: 'latest',
     address: l1CCIPOnRamp.address,
@@ -33,10 +40,15 @@ export default async function relayRoninMessage(
   });
 
   let routeReceipt: { events: any[] };
-  let routeTx: { wait: () => any };
+  
   for (const log of logsCCIP) {
     const parsedLog = l1CCIPOnRamp.interface.parseLog(log);
+
     const internalMsg = parsedLog.args.message;
+    if (internalMsg.receiver.toLowerCase() !== bridgeReceiver.address.toLowerCase()) {
+      console.log(`[CCIP L1->L2] Skipping message with receiver ${internalMsg.receiver} not matching bridgeReceiver ${bridgeReceiver.address}`);
+      continue;
+    }
 
     console.log(`[CCIP L1->L2] Found CCIPSendRequested with messageId=${internalMsg.messageId}`);
 
@@ -57,7 +69,7 @@ export default async function relayRoninMessage(
       })),
     };
 
-    routeTx = await l2Router.connect(offRampSigner).routeMessage(
+    const routeTx = await l2Router.connect(offRampSigner).routeMessage(
       any2EVMMessage,
       25_000,
       2_000_000,
@@ -71,13 +83,10 @@ export default async function relayRoninMessage(
         const l1TokenPoolAddress = await l1TokenAdminRegistry.getPool(tokenTransferData.token);
         const l1TokenPool = new ethers.Contract(
           l1TokenPoolAddress,
-          [
-            'function getRemoteToken(uint64) external view returns (bytes)'
-          ],
+          ['function getRemoteToken(uint64) external view returns (bytes)'],
           governanceDeploymentManager.hre.ethers.provider
         );
         const l2Token64 = await l1TokenPool.getRemoteToken(roninChainSelector);
-        // parse the address from the bytes
         const l2TokenAddress = ethers.utils.defaultAbiCoder.decode(['address'], l2Token64)[0];
         const l2TokenPool = await l2TokenAdminRegistry.getPool(l2TokenAddress);
         const l2Token = new ethers.Contract(
@@ -138,8 +147,9 @@ export default async function relayRoninMessage(
     const { id, eta } = proposal;
     await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
     await setNextBaseFeeToZero(bridgeDeploymentManager);
-
     await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
     console.log(`[CCIP L2] Executed bridged proposal ${id.toString()}`);
   }
+
+  return openBridgedProposals;
 }

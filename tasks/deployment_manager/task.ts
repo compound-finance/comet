@@ -10,7 +10,7 @@ import hreForBase from '../../plugins/scenario/utils/hreForBase';
 async function getForkEnv(env: HardhatRuntimeEnvironment, deployment: string): Promise<HardhatRuntimeEnvironment> {
   const base = env.config.scenario.bases.find(b => b.network == env.network.name && b.deployment == deployment);
   if (!base) {
-    throw new Error(`No fork spec for ${env.network.name}`);
+    throw new Error(`No fork spec for ${env.network.name}-${deployment}`);
   }
   return await hreForBase(base);
 }
@@ -50,9 +50,12 @@ async function runMigration<T>(
     }
   }
 
-  if (enact) {
-    console.log('Running enactment step with artifact...', artifact);
-    await migration.actions.enact(deploymentManager, govDeploymentManager, artifact);
+  if (enact) {    
+    await migration.actions.enact(
+      deploymentManager,
+      govDeploymentManager,
+      artifact
+    );
     console.log('Enactment complete');
   }
 }
@@ -173,9 +176,25 @@ task('migrate', 'Runs migration')
   .addFlag('simulate', 'only simulates the blockchain effects')
   .addFlag('overwrite', 'overwrites artifact if exists, fails otherwise')
   .setAction(
-    async ({ migration: migrationName, prepare, enact, noEnacted, simulate, overwrite, deployment, impersonate }, env) => {
+    async (
+      {
+        migration: migrationName,
+        prepare,
+        enact,
+        noEnacted,
+        simulate,
+        overwrite,
+        deployment,
+        impersonate,
+      },
+      env
+    ) => {
+      const origNetwork = env.network.name;
+
       const maybeForkEnv = simulate ? await getForkEnv(env, deployment) : env;
-      const network = env.network.name;
+
+
+      const network = origNetwork;
       const dm = new DeploymentManager(
         network,
         deployment,
@@ -183,8 +202,9 @@ task('migrate', 'Runs migration')
         {
           writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
           verificationStrategy: 'eager', // We use eager here to verify contracts right after they are deployed
-        }
+        },
       );
+
       await dm.spider();
 
       let governanceDm: DeploymentManager;
@@ -201,7 +221,7 @@ task('migrate', 'Runs migration')
           {
             writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
             verificationStrategy: 'eager', // We use eager here to verify contracts right after they are deployed
-          }
+          },
         );
         await governanceDm.spider();
       } else {
@@ -222,6 +242,7 @@ task('migrate', 'Runs migration')
       }
 
       const migrationPath = `${__dirname}/../../deployments/${network}/${deployment}/migrations/${migrationName}.ts`;
+      console.log(`Loading migration from ${migrationPath}`);
       const [migration] = await loadMigrations([migrationPath]);
       if (!migration) {
         throw new Error(`Unknown migration for network ${network}/${deployment}: \`${migrationName}\`.`);

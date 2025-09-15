@@ -13,7 +13,7 @@ function applyL1ToL2Alias(address: string) {
 export async function relayUnichainMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
-  startingBlockNumber: number
+  startingBlockNumber: number,
 ) {
   const unichainL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow('unichainL1CrossDomainMessenger');
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
@@ -24,7 +24,10 @@ export async function relayUnichainMessage(
 
   // Grab all events on the L1CrossDomainMessenger contract since the `startingBlockNumber`
   const filter = unichainL1CrossDomainMessenger.filters.SentMessage();
-  const sentMessageEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+  let sentMessageEvents: Log[] = [];
+
+
+  sentMessageEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: startingBlockNumber,
     toBlock: 'latest',
     address: unichainL1CrossDomainMessenger.address,
@@ -32,14 +35,19 @@ export async function relayUnichainMessage(
   });
 
   for (let sentMessageEvent of sentMessageEvents) {
-    const { args: { target, sender, message, messageNonce, gasLimit } } = unichainL1CrossDomainMessenger.interface.parseLog(sentMessageEvent);
+    let parsed;
+    parsed = unichainL1CrossDomainMessenger.interface.parseLog(sentMessageEvent);
+
+    const { sender, target, message, messageNonce, gasLimit } = parsed.args;
     const aliasedSigner = await impersonateAddress(
       bridgeDeploymentManager,
       applyL1ToL2Alias(unichainL1CrossDomainMessenger.address)
     );
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
-    const relayMessageTxn = await (
+
+    let relayMessageTxn: { events: any[] };
+    relayMessageTxn = await (
       await l2CrossDomainMessenger.connect(aliasedSigner).relayMessage(
         messageNonce,
         sender,
@@ -50,6 +58,7 @@ export async function relayUnichainMessage(
         { gasPrice: 0, gasLimit: 7_500_000 }
       )
     ).wait();
+    
 
     // Try to decode the SentMessage data to determine what type of cross-chain activity this is. So far,
     // there are two types:
@@ -90,11 +99,13 @@ export async function relayUnichainMessage(
       }
     } else if (target === bridgeReceiver.address) {
       // Cross-chain message passing
-      const proposalCreatedEvent = relayMessageTxn.events.find(event => event.address === bridgeReceiver.address);
-      const { args: { id, eta } } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
+      if (relayMessageTxn) {
+        const proposalCreatedEvent = relayMessageTxn.events.find(event => event.address === bridgeReceiver.address);
+        const { args: { id, eta } } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
 
-      // Add the proposal to the list of open bridged proposals to be executed after all the messages have been relayed
-      openBridgedProposals.push({ id, eta });
+        // Add the proposal to the list of open bridged proposals to be executed after all the messages have been relayed
+        openBridgedProposals.push({ id, eta });
+      }
     } else {
       throw new Error(`[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Unrecognized target for cross-chain message`);
     }
@@ -113,6 +124,8 @@ export async function relayUnichainMessage(
       `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
     );
   }
+
+  return openBridgedProposals;
 }
 
 export async function relayUnichainCCTPMint(
@@ -120,13 +133,16 @@ export async function relayUnichainCCTPMint(
   bridgeDeploymentManager: DeploymentManager,
   startingBlockNumber: number
 ){
+
   // CCTP relay
   // L1 contracts
   const L1MessageTransmitter = await governanceDeploymentManager.getContractOrThrow('CCTPMessageTransmitter');
   // L2 TokenMinter
   const TokenMinter = await bridgeDeploymentManager.getContractOrThrow('TokenMinter');
 
-  const depositForBurnEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+  let depositForBurnEvents: Log[] = [];
+
+  depositForBurnEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: startingBlockNumber,
     toBlock: 'latest',
     address: L1MessageTransmitter.address,
@@ -134,7 +150,12 @@ export async function relayUnichainCCTPMint(
   });
 
   // Decode message body
-  const burnEvents = depositForBurnEvents.map(({ data }) => {
+  console.log(`Found ${depositForBurnEvents.length} CCTP deposit for burn events`);
+
+  const burnEvents = depositForBurnEvents.map((event) => {
+    let data;
+    data = event.data;
+
     const dataBytes = utils.arrayify(data);
     // Since data is encodePacked, so can't simply decode via AbiCoder.decode
     const offset = 64;
@@ -224,7 +245,6 @@ export async function relayUnichainCCTPMint(
     });
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
-
     await (
       await localTokenMessengerSigner.sendTransaction(transactionRequest)
     ).wait();

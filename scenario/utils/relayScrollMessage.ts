@@ -35,16 +35,19 @@ export default async function relayScrollMessage(
 
   // Grab all events on the L1CrossDomainMessenger contract since the `startingBlockNumber`
   const filter = scrollMessenger.filters.SentMessage();
-  const messageSentEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+  let messageSentEvents: Log[] = [];
+
+  messageSentEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: startingBlockNumber,
     toBlock: 'latest',
     address: scrollMessenger.address,
     topics: filter.topics!
   });
+
   for (let messageSentEvent of messageSentEvents) {
-    const {
-      args: { sender, target, value, messageNonce, gasLimit, message }
-    } = scrollMessenger.interface.parseLog(messageSentEvent);
+    const parsed = scrollMessenger.interface.parseLog(messageSentEvent);
+
+    const { sender, target, value, messageNonce, gasLimit, message } = parsed.args;
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
 
@@ -59,7 +62,7 @@ export default async function relayScrollMessage(
         bridgeDeploymentManager,
         applyL1ToL2Alias(scrollMessenger.address)
       );
-    }    
+    }
 
     const relayMessageTxn = await (
       await l2Messenger.connect(aliasAccount).relayMessage(
@@ -152,4 +155,6 @@ export default async function relayScrollMessage(
       `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
     );
   }
+
+  return openBridgedProposals;
 }

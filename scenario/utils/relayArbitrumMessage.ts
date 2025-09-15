@@ -4,6 +4,7 @@ import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
 import { utils, BigNumber } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
+import { OpenBridgedProposal } from '../context/Gov';
 
 export async function relayArbitrumMessage(
   governanceDeploymentManager: DeploymentManager,
@@ -17,14 +18,29 @@ export async function relayArbitrumMessage(
   // L2 contracts
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
 
-  const inboxMessageDeliveredEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+  let inboxMessageDeliveredEvents: Log[] = [];
+  let messageDeliveredEvents: Log[] = [];
+  const openBridgedProposals: OpenBridgedProposal[] = [];
+
+  inboxMessageDeliveredEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: startingBlockNumber,
     toBlock: 'latest',
     address: inbox.address,
     topics: [utils.id('InboxMessageDelivered(uint256,bytes)')]
   });
 
-  const dataAndTargets = inboxMessageDeliveredEvents.map(({ data, topics }) => {
+  messageDeliveredEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+    fromBlock: startingBlockNumber,
+    toBlock: 'latest',
+    address: bridge.address,
+    topics: [utils.id('MessageDelivered(uint256,bytes32,address,uint8,address,bytes32,uint256,uint64)')]
+  });
+
+  const dataAndTargets = inboxMessageDeliveredEvents.map((event) => {
+    let data, topics;
+    data = event.data;
+    topics = event.topics;
+
     const header = '0x';
     const headerLength = header.length;
     const wordLength = 2 * 32;
@@ -45,14 +61,11 @@ export async function relayArbitrumMessage(
     };
   });
 
-  const messageDeliveredEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
-    fromBlock: startingBlockNumber,
-    toBlock: 'latest',
-    address: bridge.address,
-    topics: [utils.id('MessageDelivered(uint256,bytes32,address,uint8,address,bytes32,uint256,uint64)')]
-  });
+  const senders = messageDeliveredEvents.map((event) => {
+    let data, topics;
+    data = event.data;
+    topics = event.topics;
 
-  const senders = messageDeliveredEvents.map(({ data, topics }) => {
     const decodedData = utils.defaultAbiCoder.decode(
       [
         'address inbox',
@@ -104,6 +117,7 @@ export async function relayArbitrumMessage(
           address: to,
           blacklist: [],
         });
+
         continue;
       }
     }
@@ -119,7 +133,6 @@ export async function relayArbitrumMessage(
     const tx = await (
       await arbitrumSigner.sendTransaction(transactionRequest)
     ).wait();
-
     const proposalCreatedLog = tx.logs.find(
       event => event.address === bridgeReceiver.address
     );
@@ -134,8 +147,14 @@ export async function relayArbitrumMessage(
       // execute queued proposal
       await setNextBaseFeeToZero(bridgeDeploymentManager);
       await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
+      openBridgedProposals.push({
+        id: BigNumber.from(id),
+        eta: BigNumber.from(eta)
+      });
     }
   }
+
+  return openBridgedProposals;
 }
 
 export async function relayArbitrumCCTPMint(
@@ -149,8 +168,9 @@ export async function relayArbitrumCCTPMint(
   // Arbitrum TokenMinter which is L2 contracts
   const TokenMinter = await bridgeDeploymentManager.existing('TokenMinter', '0xE7Ed1fa7f45D05C508232aa32649D89b73b8bA48', 'arbitrum');
 
+  let depositForBurnEvents: Log[] = [];
 
-  const depositForBurnEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+  depositForBurnEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: startingBlockNumber,
     toBlock: 'latest',
     address: L1MessageTransmitter.address,
@@ -158,7 +178,11 @@ export async function relayArbitrumCCTPMint(
   });
 
   // Decode message body
-  const burnEvents = depositForBurnEvents.map(({ data }) => {
+  const burnEvents = depositForBurnEvents.map((event) => {
+    let data;
+  
+    data = event.data;
+
     const dataBytes = utils.arrayify(data);
     // Since data is encodePacked, so can't simply decode via AbiCoder.decode
     const offset = 64;
@@ -246,7 +270,6 @@ export async function relayArbitrumCCTPMint(
     });
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
-
     await (
       await localTokenMessengerSigner.sendTransaction(transactionRequest)
     ).wait();

@@ -22,9 +22,8 @@ export default async function relayMantleMessage(
 
   const openBridgedProposals: OpenBridgedProposal[] = [];
 
-  // Grab all events on the L1CrossDomainMessenger contract since the `startingBlockNumber`
   const filter = mantleL1CrossDomainMessenger.filters.SentMessage();
-  const sentMessageEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+  let sentMessageEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: startingBlockNumber,
     toBlock: 'latest',
     address: mantleL1CrossDomainMessenger.address,
@@ -32,13 +31,15 @@ export default async function relayMantleMessage(
   });
 
   for (let sentMessageEvent of sentMessageEvents) {
-    const { args: { target, sender, message, messageNonce, gasLimit } } = mantleL1CrossDomainMessenger.interface.parseLog(sentMessageEvent);
+    const { args: { target, sender, message, messageNonce } } = mantleL1CrossDomainMessenger.interface.parseLog(sentMessageEvent);
+
     const aliasedSigner = await impersonateAddress(
       bridgeDeploymentManager,
       applyL1ToL2Alias(mantleL1CrossDomainMessenger.address)
     );
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
+
     const relayMessageTxn = await (
       await l2CrossDomainMessenger.connect(aliasedSigner).relayMessage(
         messageNonce,
@@ -46,7 +47,7 @@ export default async function relayMantleMessage(
         target,
         0,
         0,
-        gasLimit,
+        0,
         message,
         { gasPrice: 0, gasLimit: 7_500_000 }
       )
@@ -109,9 +110,11 @@ export default async function relayMantleMessage(
 
     // Execute queued proposal
     await setNextBaseFeeToZero(bridgeDeploymentManager);
+
     await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
     console.log(
       `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
     );
   }
+  return openBridgedProposals;
 }

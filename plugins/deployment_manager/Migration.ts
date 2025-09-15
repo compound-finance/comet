@@ -28,7 +28,13 @@ export async function loadMigration(path: string): Promise<Migration<any>> {
 export async function loadMigrations(paths: string[]): Promise<Migration<any>[]> {
   const migrations = [];
   for (const path of paths) {
-    migrations.push(await loadMigration(path));
+    const enacted = (await loadMigration(path)).actions?.enacted;
+    if(!enacted){
+      migrations.push(await loadMigration(path));
+      continue;
+    }
+    if(!await enacted(undefined, undefined))
+      migrations.push(await loadMigration(path));
   }
   return migrations;
 }

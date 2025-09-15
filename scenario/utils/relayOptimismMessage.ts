@@ -22,9 +22,8 @@ export default async function relayOptimismMessage(
 
   const openBridgedProposals: OpenBridgedProposal[] = [];
 
-  // Grab all events on the L1CrossDomainMessenger contract since the `startingBlockNumber`
   const filter = opL1CrossDomainMessenger.filters.SentMessage();
-  const sentMessageEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+  let sentMessageEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: startingBlockNumber,
     toBlock: 'latest',
     address: opL1CrossDomainMessenger.address,
@@ -32,13 +31,17 @@ export default async function relayOptimismMessage(
   });
 
   for (let sentMessageEvent of sentMessageEvents) {
-    const { args: { target, sender, message, messageNonce, gasLimit } } = opL1CrossDomainMessenger.interface.parseLog(sentMessageEvent);
+    const parsed = opL1CrossDomainMessenger.interface.parseLog(sentMessageEvent);
+
+    const { target, sender, message, messageNonce, gasLimit } = parsed.args;
+
     const aliasedSigner = await impersonateAddress(
       bridgeDeploymentManager,
       applyL1ToL2Alias(opL1CrossDomainMessenger.address)
     );
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
+
     const relayMessageTxn = await (
       await l2CrossDomainMessenger.connect(aliasedSigner).relayMessage(
         messageNonce,
@@ -105,19 +108,22 @@ export default async function relayOptimismMessage(
     } else {
       throw new Error(`[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Unrecognized target for cross-chain message`);
     }
-  }
 
-  // Execute open bridged proposals now that all messages have been bridged
-  for (let proposal of openBridgedProposals) {
-    const { eta, id } = proposal;
-    // Fast forward l2 time
-    await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
+    // Execute open bridged proposals now that all messages have been bridged
+    for (let proposal of openBridgedProposals) {
+      const { eta, id } = proposal;
+      // Fast forward l2 time
+      await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
 
-    // Execute queued proposal
-    await setNextBaseFeeToZero(bridgeDeploymentManager);
-    await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
-    console.log(
-      `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
-    );
+      // Execute queued proposal
+      await setNextBaseFeeToZero(bridgeDeploymentManager);
+
+      await bridgeReceiver.executeProposal(id, { gasPrice: 0 });  
+      console.log(
+        `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
+      );
+    }
+
+    return openBridgedProposals;
   }
 }
