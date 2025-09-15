@@ -381,7 +381,8 @@ task('deploy_infrastructure', 'Deploys infrastructure (tokens, price feeds, etc.
   .addFlag('noVerify', 'do not verify any contracts')
   .addFlag('overwrite', 'overwrites cache')
   .addFlag('bdag', 'use BDAG specifications')
-  .setAction(async ({ simulate, noDeploy, noVerify, overwrite, bdag }, env) => {
+  .addFlag('batchdeploy', 'batch deploy mode')
+  .setAction(async ({ simulate, noDeploy, noVerify, overwrite, bdag, batchdeploy }, env) => {
     const maybeForkEnv = simulate ? await getForkEnv(env, '_infrastructure') : env;
     const network = env.network.name;
     const tag = `${network}/${'_infrastructure'}`;
@@ -392,7 +393,8 @@ task('deploy_infrastructure', 'Deploys infrastructure (tokens, price feeds, etc.
       {
         writeCacheToDisk: !simulate || overwrite,
         verificationStrategy: simulate? 'lazy' : 'eager',
-        bdag: bdag,
+        bdag,
+        batchdeploy,
       }
     );
 

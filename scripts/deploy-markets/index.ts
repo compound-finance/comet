@@ -15,14 +15,15 @@ import {
   executeBatchProposal as executeBatchProposalCommand,
   runDeploymentVerification as runDeploymentVerificationCommand,
   proposeUpgrade as proposeUpgradeCommand,
-  runSpiderForMarket as runSpiderForMarketCommand
+  runSpiderForMarket as runSpiderForMarketCommand,
+  proposeCombinedUpdate as proposeCombinedUpdateCommand
 } from '../helpers/commandUtil';
+import { validateGovEnvironmentVariables } from '../../src/deploy/helpers/govValidation';
 
 interface DeployOptions {
   network: string;
   deployments: string[];
   clean?: boolean;
-  batchdeploy?: boolean;
 }
 
 class MarketsDeployer {
@@ -63,10 +64,14 @@ class MarketsDeployer {
       // Step 8: Run governance flow to accept upgrades
       await this.runGovernanceToAcceptUpgrade(upgradeBatchProposalId, implementationAddresses, this.options.deployments);
 
-      // Step 9: Run verification tests (optional)
+      // Step 9: Propose combined governance update
+      const { governorSigners, multisigThreshold, timelockDelay } = validateGovEnvironmentVariables();
+      await this.combinedGovernanceUpdate(governorSigners, multisigThreshold, timelockDelay);
+
+      // Step 10: Run verification tests (optional)
       await this.runVerificationTests();
       
-      // Step 10: Display deployment summary
+      // Step 11: Display deployment summary
       this.displayDeploymentSummary();
       
     } catch (error) {
@@ -107,7 +112,7 @@ class MarketsDeployer {
    */
   private async deployInfrastructureAndValidate(): Promise<void> {
     // Deploy Infrastructure
-    await deployInfrastructureCommand(this.options.network, true);
+    await deployInfrastructureCommand(this.options.network, true, true);
     
     // Check configuration files for all markets
     await this.checkAllConfigurationFiles();
@@ -149,7 +154,7 @@ class MarketsDeployer {
   }
 
   /**
-   * Step 7: Execute batch proposal for market upgrades
+   * Step 6: Execute batch proposal for market upgrades
    * - Execute the batch proposal containing all market upgrade actions
    * - Return the proposal ID for governance flow
    */
@@ -164,7 +169,42 @@ class MarketsDeployer {
   }
 
   /**
-   * Step 9: Run verification tests (optional)
+   * Step 9: Propose combined governance update
+   * - Propose a combined governance update to set the new admins and threshold
+   * - Return the proposal ID for governance flow
+   */
+  private async combinedGovernanceUpdate(admins: string[], threshold: number, timelockDelay?: number): Promise<string> {
+    const shouldProposeCombinedUpdate = await confirm(`\nDo you want to propose a combined governance update?`);
+
+    if (!shouldProposeCombinedUpdate) {
+      log(`\n⏸️  Combined governance update cancelled.`, 'warning');
+      return;
+    }
+
+    const output = await proposeCombinedUpdateCommand(
+      this.options.network, 
+      this.options.deployments[0], // Use first deployment for combined governance update
+      admins, 
+      threshold, 
+      timelockDelay
+    );
+    
+    const proposalId = extractProposalId(output);
+
+    const governanceFlowResponse = await runGovernanceFlow({
+      network: this.options.network,
+      proposalId,
+      executionType: 'combined-governance-update'
+    });
+
+    log(`\n🎉 Governance flow response for combined governance update: ${governanceFlowResponse}`, 'success');
+
+    return governanceFlowResponse;
+  }
+
+
+  /**
+   * Step 10: Run verification tests (optional)
    * - Prompt user to run verification tests
    * - Run tests for all deployed markets
    */
@@ -180,7 +220,7 @@ class MarketsDeployer {
   }
 
   /**
-   * Step 10: Display deployment summary
+   * Step 11: Display deployment summary
    * - Show success message and list of deployed markets
    */
   private displayDeploymentSummary(): void {
