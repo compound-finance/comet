@@ -390,7 +390,7 @@ async function createBDAGGov(
   adminSigner?: SignerWithAddress
 ): Promise<Deployed> {
   const trace = deploymentManager.tracer();
-  let govConfig = validateGovEnvironmentVariables();
+  const govConfig = validateGovEnvironmentVariables();
   const admin = adminSigner ?? await deploymentManager.getSigner();
   // If using batch deploy, the timelock delay and governance configuration will 
   // be set after all markets are deployed
