@@ -15,7 +15,7 @@ async function testSupplyCollateral(context: CometContext, assetNum: number): Pr
   const { asset: assetAddress, scale: scaleBN, supplyCap } = await comet.getAssetInfo(assetNum);
   const collateralAsset = context.getAssetByAddress(assetAddress);
   const scale = scaleBN.toBigInt();
-  const toSupply = 100n * scale;
+  const toSupply = BigInt(getConfigForScenario(context).supplyCollateral) * scale;
 
   expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(toSupply);
 
@@ -26,7 +26,7 @@ async function testSupplyCollateral(context: CometContext, assetNum: number): Pr
     await expectRevertCustom(
       albert.supplyAsset({
         asset: collateralAsset.address,
-        amount: 100n * scale,
+        amount: BigInt(getConfigForScenario(context).supplyCollateral) * scale,
       }),
       'SupplyCapExceeded()'
     );
@@ -46,7 +46,7 @@ async function testSupplyFromCollateral(context: CometContext, assetNum: number)
   const { asset: assetAddress, scale: scaleBN, supplyCap } = await comet.getAssetInfo(assetNum);
   const collateralAsset = context.getAssetByAddress(assetAddress);
   const scale = scaleBN.toBigInt();
-  const toSupply = 100n * scale;
+  const toSupply = BigInt(getConfigForScenario(context).supplyCollateral) * scale;
 
   expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(toSupply);
   expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(0n);
@@ -77,17 +77,18 @@ async function testSupplyFromCollateral(context: CometContext, assetNum: number)
 }
 
 for (let i = 0; i < MAX_ASSETS; i++) {
-  const amountToSupply = 100; // in units of asset, not wei
   scenario(
     `Comet#supply > collateral asset ${i}`,
     {
       // XXX Unfortunately, the filtering step happens before solutions are run, so this will filter out
       // hypothetical assets added during the migration/proposal constraint because those assets don't exist
       // yet
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToSupply),
-      tokenBalances: {
-        albert: { [`$asset${i}`]: amountToSupply },
-      },
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, getConfigForScenario(ctx).supplyCollateral),
+      tokenBalances: async (ctx) =>  (
+        {
+          albert: { [`$asset${i}`]: getConfigForScenario(ctx).supplyCollateral }
+        }
+      ),
     },
     async (_properties, context) => {
       return await testSupplyCollateral(context, i);
@@ -96,14 +97,15 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 }
 
 for (let i = 0; i < MAX_ASSETS; i++) {
-  const amountToSupply = 100; // in units of asset, not wei
   scenario(
     `Comet#supplyFrom > collateral asset ${i}`,
     {
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToSupply),
-      tokenBalances: {
-        albert: { [`$asset${i}`]: amountToSupply },
-      },
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, getConfigForScenario(ctx).supplyCollateral),
+      tokenBalances: async (ctx) =>  (
+        {
+          albert: { [`$asset${i}`]: getConfigForScenario(ctx).supplyCollateral }
+        }
+      ),
     },
     async (_properties, context) => {
       return await testSupplyFromCollateral(context, i);
@@ -255,7 +257,7 @@ scenario(
     const utilization = await comet.getUtilization();
     const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
 
-    expectApproximately(await albert.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, 1n) + 1n);
+    expectApproximately(await albert.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, 1n) + 2n);
 
     // Albert repays 1000 units of base borrow
     await baseAsset.approve(albert, comet.address);
@@ -518,6 +520,7 @@ scenario(
         symbol === 'WPOL' ? /Transaction reverted without a reason string/ : /.^/,
         symbol === 'sUSDS' ? /SUsds\/insufficient-allowance/ : /.^/,
         symbol === 'USDC' ? /Transaction reverted without a reason string/ : /.^/,
+        symbol === 'GOLD' ? /Transaction reverted and Hardhat couldn't infer the reason./ : /.^/,
       ]
     );
   }

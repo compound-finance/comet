@@ -53,6 +53,7 @@ async function deployContracts(
 
   // Import shared contracts from cUSDbCv3
   // We do not import cometFactory, because we will deploy the new one with 24 collaterals
+  const cometFactory = await deploymentManager.fromDep('cometFactory', 'base', 'usdbc');
   const _cometAdmin = await deploymentManager.fromDep('cometAdmin', 'base', 'usdbc');
   const _configurator = await deploymentManager.fromDep('configurator', 'base', 'usdbc');
   const _rewards = await deploymentManager.fromDep('rewards', 'base', 'usdbc');
@@ -69,6 +70,7 @@ async function deployContracts(
 
   return {
     ...deployed,
+    cometFactory,
     bridgeReceiver,
     l2CrossDomainMessenger, // TODO: don't have to part of roots. can be pulled via relations
     l2StandardBridge,

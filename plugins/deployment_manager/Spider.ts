@@ -252,12 +252,13 @@ export async function spider(
   const contracts = new Map();
 
   for (const [alias, address] of roots) {
+    const node = { aliasRender: { template: alias, i: 0 }, address, path: [] };
     await crawl(
       cache,
       network,
       hre,
       relations,
-      { aliasRender: { template: alias, i: 0 }, address, path: [] },
+      node,
       context,
       aliases,
       contracts,

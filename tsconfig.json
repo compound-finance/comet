@@ -1,15 +1,45 @@
-{
+ {
   "compilerOptions": {
     "target": "es2021",
     "module": "commonjs",
+    
     "esModuleInterop": true,
     "outDir": "dist",
+   
     "moduleResolution": "node",
-    "declaration": true
+    "declaration": true,
+    "baseUrl": ".", 
+    "paths": {
+      
+      "@nomicfoundation/hardhat-ethers": [
+        "node_modules/@nomiclabs/hardhat-ethers"
+      ],
+      "@nomicfoundation/hardhat-ethers/*": [
+        "node_modules/@nomiclabs/hardhat-ethers/*"
+      ],
+      "@nomicfoundation/hardhat-ethers/signers": [
+        "node_modules/@nomiclabs/hardhat-ethers/signers"
+      ]
+    },
+    "types": [
+      "node",
+      "chai",
+      "mocha",
+      "hardhat/config",
+      "@nomiclabs/hardhat-ethers",
+      "@nomiclabs/hardhat-etherscan",
+      "./types/tenderly"
+    ],
+    "skipLibCheck": true
   },
-  "include": ["./scripts", "./test", "./tasks", "./plugins", "./scenario"],
-  "files": [
-    "./index.ts",
-    "./hardhat.config.ts",
+
+  "include": [
+    "hardhat.config.ts",
+    "scripts",
+    "tasks",
+    "plugins",
+    "scenario",
+    "test",
+    "types/**/*.d.ts"
   ]
 }
