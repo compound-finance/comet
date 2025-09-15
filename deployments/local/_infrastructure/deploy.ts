@@ -22,7 +22,7 @@ async function makePriceFeed(
   return deploymentManager.deploy(alias, 'test/SimplePriceFeed.sol', [initialPrice * decimals, decimals]);
 }
 
-export default async function deploy(deploymentManager: DeploymentManager, deploySpec: any): Promise<Deployed> {
+export default async function deploy(deploymentManager: DeploymentManager, _deploySpec: any): Promise<Deployed> {
   console.log('Deploying infrastructure components...');
 
   // Set verification strategy to none to skip contract verification

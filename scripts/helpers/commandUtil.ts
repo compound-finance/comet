@@ -91,10 +91,13 @@ export async function clearProposalStack(network: string): Promise<string> {
  * @param bdag - Whether to use BDAG custom governor (adds --bdag flag)
  * @returns Promise<string> - The command output
  */
-export async function deployInfrastructure(network: string, bdag: boolean = true): Promise<string> {
+export async function deployInfrastructure(network: string, bdag: boolean = true, batchdeploy: boolean = false): Promise<string> {
   let command = `yarn hardhat deploy_infrastructure --network ${network}`;
   if (bdag) {
     command += ' --bdag';
+  }
+  if (batchdeploy) {
+    command += ' --batchdeploy';
   }
   return await runCommand(command, 'Deploying infrastructure');
 }
@@ -165,4 +168,30 @@ export async function proposeUpgrade(network: string, deployment: string, implem
 export async function runSpiderForMarket(network: string, deployment: string): Promise<string> {
   const command = `yarn hardhat spider --network ${network} --deployment ${deployment}`;
   return await runCommand(command, `Refreshing roots for ${deployment}`);
+}
+
+/**
+ * Propose a combined governance update
+ * @param network - The network to propose the update on
+ * @param deployment - The deployment name
+ * @param admins - Array of admin addresses
+ * @param threshold - Number of required approvals
+ * @param timelockDelay - Optional timelock delay in seconds
+ * @returns Promise<string> - The command output
+ */
+export async function proposeCombinedUpdate(
+  network: string, 
+  deployment: string, 
+  admins: string[], 
+  threshold: number, 
+  timelockDelay?: number
+): Promise<string> {
+  const adminsParam = admins.join(',');
+  let command = `yarn hardhat governor:propose-combined-update --network ${network} --deployment ${deployment} --admins "${adminsParam}" --threshold ${threshold}`;
+  
+  if (timelockDelay) {
+    command += ` --timelock-delay ${timelockDelay}`;
+  }
+  
+  return await runCommand(command, 'Proposing combined governance update');
 }

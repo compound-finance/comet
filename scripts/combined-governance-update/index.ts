@@ -2,7 +2,7 @@
 
 import { runGovernanceFlow, GovernanceFlowOptions } from '../helpers/governanceFlow';
 import { log, question, confirm } from '../helpers/ioUtil';
-import { runCommand, extractProposalId } from '../helpers/commandUtil';
+import { proposeCombinedUpdate as proposeCombinedUpdateCommand, extractProposalId } from '../helpers/commandUtil';
 
 interface CombinedUpdateOptions {
   network: string;
@@ -25,14 +25,13 @@ class CombinedGovernanceUpdater {
   }
 
   private async proposeCombinedUpdate(admins: string[], threshold: number, timelockDelay?: number): Promise<string> {
-    const adminsParam = admins.join(',');
-    let command = `yarn hardhat governor:propose-combined-update --network ${this.options.network} --deployment ${this.options.deployment} --admins "${adminsParam}" --threshold ${threshold}`;
-    
-    if (timelockDelay) {
-      command += ` --timelock-delay ${timelockDelay}`;
-    }
-    
-    const output = await runCommand(command, 'Proposing combined governance update');
+    const output = await proposeCombinedUpdateCommand(
+      this.options.network, 
+      this.options.deployment, 
+      admins, 
+      threshold, 
+      timelockDelay
+    );
     
     return extractProposalId(output);
   }
