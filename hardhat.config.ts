@@ -90,7 +90,6 @@ export function requireEnv(varName, msg?: string): string {
 [
   'ETHERSCAN_KEY',
   'SNOWTRACE_KEY',
-  'INFURA_KEY',
   'ANKR_KEY',
   'UNICHAIN_QUICKNODE_KEY'
 ].map((v) => requireEnv(v));
