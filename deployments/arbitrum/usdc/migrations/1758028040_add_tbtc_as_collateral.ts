@@ -118,7 +118,7 @@ export default migration('1758028040_add_tbtc_as_collateral', {
       },
     ];
 
-    const description = `# Add tBTC as collateral into cUSDTv3 on Arbitrum
+    const description = `# Add tBTC as collateral into cUSDCv3 on Arbitrum
 
 ## Proposal summary
 
