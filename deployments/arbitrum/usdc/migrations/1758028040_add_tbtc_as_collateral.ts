@@ -124,7 +124,7 @@ export default migration('1758028040_add_tbtc_as_collateral', {
 
 WOOF! proposes to add tBTC into cUSDCv3 on Arbitrum network. This proposal takes the governance steps recommended and necessary to update a Compound III USDC market on Arbitrum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/gauntlet-tbtc-recommendations-across-comets-12-6-24/6036).
 
-Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/<>) and [forum discussion](https://www.comp.xyz/t/gauntlet-tbtc-recommendations-across-comets-12-6-24/6036).
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1027) and [forum discussion](https://www.comp.xyz/t/gauntlet-tbtc-recommendations-across-comets-12-6-24/6036).
 
 ## Proposal Actions
 
