@@ -9,26 +9,6 @@ export interface Result {
 
 // Updated because of Etherscan V2 update. Not tested and could lead to issues
 export function getEtherscanApiUrl(network: string): string {
-  // let host = {
-  //   rinkeby: 'api-rinkeby.etherscan.io',
-  //   ropsten: 'api-ropsten.etherscan.io',
-  //   sepolia: 'api-sepolia.etherscan.io',
-  //   mainnet: 'api.etherscan.io',
-  //   fuji: 'api-testnet.snowtrace.io',
-  //   avalanche: 'api.snowtrace.io',
-  //   polygon: 'api.polygonscan.com',
-  //   arbitrum: 'api.arbiscan.io',
-  //   base: 'api.basescan.org',
-  //   optimism: 'api-optimistic.etherscan.io',
-  //   mantle: 'api.mantlescan.xyz',
-  //   'ronin': 'explorer-kintsugi.roninchain.com/v2/2020',
-  //   scroll: 'api.scrollscan.com'
-  // }[network];
-
-  // if (!host) {
-  //   throw new Error(`Unknown etherscan API host for network ${network}`);
-  // }
-
   const chainId = networkConfigs.find(config => config.network.toLowerCase() === network.toLowerCase())?.chainId;
 
   if (!chainId) {

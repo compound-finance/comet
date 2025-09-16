@@ -48,8 +48,6 @@ import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
 import roninRelationConfigMap from './deployments/ronin/weth/relations';
 import roninWronRelationConfigMap from './deployments/ronin/wron/relations';
 import lineaUsdcRelationConfigMap from './deployments/linea/usdc/relations';
-import lineaUsdtRelationConfigMap from './deployments/linea/usdt/relations';
-import lineaWethRelationConfigMap from './deployments/linea/weth/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -61,12 +59,6 @@ const {
   ETH_PK,
   ETHERSCAN_KEY,
   SNOWTRACE_KEY,
-  // POLYGONSCAN_KEY,
-  // ARBISCAN_KEY,
-  // BASESCAN_KEY,
-  // OPTIMISMSCAN_KEY,
-  // MANTLESCAN_KEY,
-  // SCROLLSCAN_KEY,
   ANKR_KEY,
   _TENDERLY_KEY_RONIN,
   _TENDERLY_KEY_POLYGON,
@@ -100,13 +92,7 @@ export function requireEnv(varName, msg?: string): string {
   'SNOWTRACE_KEY',
   'INFURA_KEY',
   'ANKR_KEY',
-  // 'POLYGONSCAN_KEY',
-  // 'ARBISCAN_KEY',
-  // 'LINEASCAN_KEY',
-  // 'OPTIMISMSCAN_KEY',
-  // 'MANTLESCAN_KEY',
-  'UNICHAIN_QUICKNODE_KEY',
-  // 'SCROLLSCAN_KEY'
+  'UNICHAIN_QUICKNODE_KEY'
 ].map((v) => requireEnv(v));
 
 // Networks
@@ -133,13 +119,11 @@ export const networkConfigs: NetworkConfig[] = [
     network: 'ronin',
     chainId: 2020,
     url: `https://ronin.gateway.tenderly.co/${_TENDERLY_KEY_RONIN}`,
-    // url: 'https://ronin.lgns.net/rpc',
   },
   {
     network: 'polygon',
     chainId: 137,
     url: `https://polygon.gateway.tenderly.co/${_TENDERLY_KEY_POLYGON}`,
-    // url: `https://rpc.ankr.com/polygon/${ANKR_KEY}`,
   },
   {
     network: 'optimism',
@@ -487,9 +471,7 @@ const config: HardhatUserConfig = {
         wron: roninWronRelationConfigMap
       },
       'linea': {
-        usdc: lineaUsdcRelationConfigMap,
-        usdt: lineaUsdtRelationConfigMap,
-        weth: lineaWethRelationConfigMap
+        usdc: lineaUsdcRelationConfigMap
       },
     },
   },
@@ -659,18 +641,6 @@ const config: HardhatUserConfig = {
         name: 'linea-usdc',
         network: 'linea',
         deployment: 'usdc',
-        auxiliaryBase: 'mainnet'
-      },
-      {
-        name: 'linea-usdt',
-        network: 'linea',
-        deployment: 'usdt',
-        auxiliaryBase: 'mainnet'
-      },
-      {
-        name: 'linea-weth',
-        network: 'linea',
-        deployment: 'weth',
         auxiliaryBase: 'mainnet'
       },
       {

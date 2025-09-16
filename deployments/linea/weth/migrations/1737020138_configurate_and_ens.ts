@@ -130,7 +130,7 @@ export default migration('1737020138_configurate_and_ens', {
       trace(await governor.propose(...(await proposal(mainnetActions, description))))
     );
 
-    const event = txn.events.find(event => event.event === 'ProposalCreated');
+    const event = txn.events.find((event: { event: string }) => event.event === 'ProposalCreated');
     const [proposalId] = event.args;
 
     trace(`Created proposal ${proposalId}.`);
