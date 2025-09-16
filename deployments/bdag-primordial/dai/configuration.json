@@ -2,7 +2,7 @@
   "name": "Compound DAI",
   "symbol": "cDAIv3",
   "baseToken": "DAI",
-  "baseTokenPriceFeed": "0xf0Ab8717140Ab0E92e6D2bF31163bf4ABfb25A2f",
+  "baseTokenPriceFeed": "0xD6195d658035a79a451641f9dC26e119917f5423",
   "borrowMin": "1000e6",
   "storeFrontPriceFactor": 0.5,
   "targetReserves": "5000000e6",
@@ -24,8 +24,16 @@
   },
   "rewardToken": "COMP",
   "assets": {
+    "USDC": {
+      "priceFeed": "0x3e85Df394632779797361e7725DC1A3E355b0aFc",
+      "decimals": "6",
+      "borrowCF": 0.85,
+      "liquidateCF": 0.90,
+      "liquidationFactor": 0.95,
+      "supplyCap": "10000000e6"
+    },
     "WBTC": {
-      "priceFeed": "0x9B68814F58EEB9eDf8453f0db333F4D52f96dBcf",
+      "priceFeed": "0x113E467d68377f62225eC1E7680062BE1172cc02",
       "decimals": "8",
       "borrowCF": 0.75,
       "liquidateCF": 0.8,
@@ -33,7 +41,7 @@
       "supplyCap": "7500e8"
     },
     "WETH": {
-      "priceFeed": "0xf9e3F254D266a95c0f2c22BEdEdfA0D39E4FEa58",
+      "priceFeed": "0x9a092a9924792e12FBCe0F2e7D5Ed0BBAdc11901",
       "decimals": "18",
       "borrowCF": 0.80,
       "liquidateCF": 0.90,
