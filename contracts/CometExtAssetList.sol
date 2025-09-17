@@ -32,6 +32,6 @@ contract CometExtAssetList is CometExt {
     function maxAssets() override external pure returns (uint8) { return MAX_ASSETS_FOR_ASSET_LIST; }
     
     function targetHealthFactor(address comet) external view returns (uint256) {
-        return IHealthFactorHolder(configuratorProxy).targetHealthFactors(comet);
+        return IHealthFactorHolder(configuratorProxy).targetHealthFactor(comet);
     }
 }

@@ -7,9 +7,8 @@ pragma solidity 0.8.15;
  */
 interface IHealthFactorHolder {
     /**
-     * @notice Get the target health factor for a specific Comet address (from a configurator)
-     * @param comet The address of the Comet
-     * @return targetHealthFactors The target health factors for the given Comet address
+     * @notice Get the target health factor
+     * @return targetHealthFactor The target health factor
      */
-    function targetHealthFactors(address comet) external view returns (uint256);
+    function targetHealthFactor(address comet) external view returns (uint256);
 }
