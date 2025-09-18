@@ -4,9 +4,8 @@ pragma solidity 0.8.15;
 import "./CometFactory.sol";
 import "./CometConfiguration.sol";
 import "./ConfiguratorStorage.sol";
-import "./IHealthFactorHolder.sol";
 
-contract Configurator is ConfiguratorStorage, IHealthFactorHolder {
+contract Configurator is ConfiguratorStorage {
 
     /** Custom events **/
 
@@ -359,12 +358,4 @@ contract Configurator is ConfiguratorStorage, IHealthFactorHolder {
         emit GovernorTransferred(oldGovernor, newGovernor);
     }
 
-    /**
-     * @notice Get the target health factor for a specific Comet address
-     * @param comet The address of the Comet
-     * @return The target health factor
-     */
-    function targetHealthFactor(address comet) external view override returns (uint256) {
-        return targetHealthFactors[comet];
-    }
 }

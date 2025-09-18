@@ -357,9 +357,14 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   );
   await configuratorProxy.deployed();
 
-  // Deploy CometExtAssetList for CometWithExtendedAssetList
+  // Deploy SimpleHealthFactorHolder first
+  const SimpleHealthFactorHolderFactory = await ethers.getContractFactory('SimpleHealthFactorHolder');
+  const healthFactorHolder = await SimpleHealthFactorHolderFactory.deploy();
+  await healthFactorHolder.deployed();
+  
+  // Deploy CometExtAssetList for CometWithExtendedAssetList with healthFactorHolder
   const CometExtAssetListFactory = (await ethers.getContractFactory('CometExtAssetList')) as CometExtAssetList__factory;
-  const extensionDelegateAssetList = await CometExtAssetListFactory.deploy({ name32, symbol32 }, assetListFactory.address, configuratorProxy.address);
+  const extensionDelegateAssetList = await CometExtAssetListFactory.deploy({ name32, symbol32 }, assetListFactory.address, healthFactorHolder.address);
   await extensionDelegateAssetList.deployed();
 
   // Set extensionDelegate for CometWithExtendedAssetList
@@ -375,8 +380,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   await cometWithExtendedAssetList.initializeStorage();
 
   // Set target health factor for CometWithExtendedAssetList
-  const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-  await configuratorAsProxy.setTargetHealthFactor(cometWithExtendedAssetList.address, exp(1.05, 18));
+  await healthFactorHolder.setTargetHealthFactor(cometWithExtendedAssetList.address, exp(1.05, 18));
 
   const baseTokenBalance = opts.baseTokenBalance;
   if (baseTokenBalance) {
