@@ -47,11 +47,14 @@ async function doDeploy<C extends Contract>(
   factory: ContractFactory,
   args: any[],
   opts: DeployOpts,
-  src: string
+  src: string,
+  gasPrice?: bigint
 ): Promise<C> {
   const trace = opts.trace ?? debug;
   trace(`Deploying ${name} with args ${stringifyJson(args)} via ${src}`);
-  const contract = await factory.deploy(...args);
+  const contract = await factory.deploy(...args, {
+    gasPrice,
+  });
   await contract.deployed();
   trace(contract.deployTransaction, `Deployed ${name} @ ${contract.address}`);
   return contract as C;
@@ -114,7 +117,8 @@ export async function deploy<C extends Contract>(
     factory = factory.connect(deployOpts.connect);
   }
 
-  const contract = await doDeploy(contractName, factory, deployArgs, deployOpts, 'artifact');
+  const gasPrice = await hre.ethers.provider.getGasPrice();
+  const contract = await doDeploy(contractName, factory, deployArgs, deployOpts, 'artifact', gasPrice.toBigInt() * 12n / 10n);
   const buildFile = await getBuildFileFromArtifacts(contractFile, contractFileName);
   if (!buildFile.contract) {
     // This is just to make it clear which contract was deployed, when reading the build file

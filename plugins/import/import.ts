@@ -256,8 +256,13 @@ async function getEtherscanApiData(network: string, address: string, apiKey: str
 
   let s = <EtherscanSource>(<unknown>result.result[0]);
 
+  // check if this is a contract and not a wallet
+  if (!s.SourceCode || !s.ABI || !s.ContractName) {
+    throw new Error(`No source code found for address ${address} on network ${network}.`);
+  }
+
   if (s.ABI === 'Contract source code not verified') {
-    throw new Error('Contract source code not verified');
+    throw new Error(`Contract source code not verified for address ${address} on network ${network}.`);
   }
 
   return {

@@ -4,7 +4,7 @@ import { getBuildFile, storeBuildFile } from './ContractMap';
 import { Cache } from './Cache';
 import { loadContract } from '../import/import';
 
-const DEFAULT_RETRIES = 5;
+const DEFAULT_RETRIES = 7;
 const DEFAULT_RETRY_DELAY = 10_000;
 
 /**

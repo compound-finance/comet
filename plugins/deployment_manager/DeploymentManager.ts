@@ -204,7 +204,7 @@ export class DeploymentManager {
         [].concat(addresses).map(async (address) => {
           let buildFile;
           if (artifact !== undefined) {
-            buildFile = await readContract(this.cache, this.hre, artifact, network, address, !this.cache);
+            buildFile = await readContract(this.cache, this.hre, artifact, network, address, !this.cache || (artifact.length > 0));
           } else {
             buildFile = await this.import(address, network);
           }
@@ -254,11 +254,18 @@ export class DeploymentManager {
       const bytecodeWithArgs =
           artifact.bytecode +
                 iface.encodeDeploy(deployArgs).slice(2);
-      // Storing depoloyment bytecodes in case we ll have to do tenderly simulation
       this.stashBytecode(bytecodeWithArgs);
     }
     const contract = await this.retry(
-      async () => deploy(contractFile, deployArgs, this.hre, await this.deployOpts()),
+      async () => {
+        const signer = await this.getSigner();
+
+        // check tx in pending state
+        const pendingTx = await signer.provider.getTransactionCount(signer.address, 'pending');
+        console.log(`Pending transactions for ${contractFile} deployment: ${pendingTx}`);
+
+        return deploy(contractFile, deployArgs, this.hre, await this.deployOpts());
+      },
       retries
     );
     this.counter++;
@@ -266,8 +273,9 @@ export class DeploymentManager {
   }
 
 
-  cleanCache() {
+  async cleanCache() {
     const files = [
+      path.resolve(__dirname, '../../cache/relay.json'),
       path.resolve(__dirname, '../../cache/currentProposal.json'),
       path.resolve(__dirname, '../../cache/bytecodes.json'),
     ];
@@ -278,6 +286,36 @@ export class DeploymentManager {
     }
   }
 
+  stashRelayMessage(messanger: string, callData: string, signer: string) {
+    try {
+      const cacheDir = path.resolve(__dirname, '../..', 'cache');
+      mkdirSync(cacheDir, { recursive: true });
+      const file = path.join(cacheDir, 'relay.json');
+      let data: any[] = [];
+      
+      if (existsSync(file)) {
+        try {
+          const raw = readFileSync(file, 'utf8').trim();
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            data = Array.isArray(parsed) ? parsed : [parsed];
+          }
+        } catch (err) {
+          console.warn('Invalid cache, recreating:', err);
+        }
+      }
+
+      const newEntry = { messanger, callData, signer };
+      if (!data.some(entry => JSON.stringify(entry) === JSON.stringify(newEntry))) {
+        data.push(newEntry);
+        writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
+      } else {
+        console.log('Entry already exists in cache, not rewriting.');
+      }
+    } catch (e) {
+      console.warn('Failed to cache proposal:', e);
+    }
+  }
 
   stashBytecode(bytecodeWithArgs: string) {
     try {
@@ -301,7 +339,7 @@ export class DeploymentManager {
 
       data.push(bytecodeWithArgs);
       writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
-      console.log(`Proposal cached → ${file}`);
+      console.log(`Proposal cached ${file}`);
     } catch (e) {
       console.warn('Failed to cache proposal:', e);
     }

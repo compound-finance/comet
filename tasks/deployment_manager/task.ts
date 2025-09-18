@@ -10,7 +10,7 @@ import hreForBase from '../../plugins/scenario/utils/hreForBase';
 async function getForkEnv(env: HardhatRuntimeEnvironment, deployment: string): Promise<HardhatRuntimeEnvironment> {
   const base = env.config.scenario.bases.find(b => b.network == env.network.name && b.deployment == deployment);
   if (!base) {
-    throw new Error(`No fork spec for ${env.network.name}`);
+    throw new Error(`No fork spec for ${env.network.name}-${deployment}`);
   }
   return await hreForBase(base);
 }
@@ -54,11 +54,10 @@ async function runMigration<T>(
   }
 
   if (enact) {
-
     const {
       governor,
       timelock
-    } = await deploymentManager.getContracts();
+    } = await govDeploymentManager.getContracts();
     
     await migration.actions.enact(
       deploymentManager,
@@ -69,8 +68,9 @@ async function runMigration<T>(
 
     if (tenderly) {
       const { tenderlyExecute } = await import('../../scenario/utils');
-      await tenderlyExecute(deploymentManager, governor, timelock);
+      await tenderlyExecute(govDeploymentManager, deploymentManager, governor, timelock);
     }
+    await govDeploymentManager.cleanCache();
   }
   deploymentManager.cleanCache();
 }
@@ -261,6 +261,7 @@ task('migrate', 'Runs migration')
       }
 
       const migrationPath = `${__dirname}/../../deployments/${network}/${deployment}/migrations/${migrationName}.ts`;
+      console.log(`Loading migration from ${migrationPath}`);
       const [migration] = await loadMigrations([migrationPath]);
       if (!migration) {
         throw new Error(`Unknown migration for network ${network}/${deployment}: \`${migrationName}\`.`);
