@@ -134,8 +134,7 @@ export default async function relayLineaMessage(
       bridgeDeploymentManager,
       LINEA_SETTER_ROLE_ACCOUNT
     );
-    
-    
+
     let callData;
     // First the message's hash has to be added by a specific account in the "contract's queue"
     if((await l2MessageService.lastAnchoredL1MessageNumber()).lte(messageNumber)){
@@ -161,7 +160,6 @@ export default async function relayLineaMessage(
         rollingHash
       );
     }
-      
 
     let relayMessageTxn: { events: any[] }; 
 
@@ -282,7 +280,6 @@ export default async function relayLineaMessage(
   }
   return openBridgedProposals;
 }
-
 
 // Helper to fetch logs in chunks of 10,000 blocks
 async function fetchLogsInChunks(provider: any, filter: any, fromBlock: number, toBlock: number, address: string) {

@@ -29,7 +29,7 @@ export default {
       }
     }
   },
-  ERC1967Proxy: {
+  TransparentUpgradeableProxy: {
     artifact: 'contracts/ERC20.sol:ERC20',
     delegates: {
       field: {
@@ -37,7 +37,7 @@ export default {
       }
     }
   },
-  TransparentUpgradeableProxy: {
+  ERC1967Proxy: {
     artifact: 'contracts/ERC20.sol:ERC20',
     delegates: {
       field: {
