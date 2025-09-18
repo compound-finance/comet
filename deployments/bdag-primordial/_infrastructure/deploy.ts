@@ -1,25 +1,23 @@
 import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
-import { FaucetToken, SimplePriceFeed } from '../../../build/types';
+import { FaucetToken } from '../../../build/types';
 import { cloneGov, exp, wait } from '../../../src/deploy';
 
 // Helper function to create tokens (same pattern as other deployment scripts)
-async function makeToken(
+async function getExistingOrMakeToken(
   deploymentManager: DeploymentManager,
   symbol: string,
   name: string,
-  decimals: number
+  decimals: number,
+  address: string
 ): Promise<FaucetToken> {
+  if (address && address !== '') {
+    const existing = await deploymentManager.existing(symbol, address, 'bdag-primordial', 'contracts/test/FaucetToken.sol:FaucetToken');
+    if (existing) {
+      return existing as FaucetToken;
+    }
+  }
   const mint = (BigInt(1000000) * 10n ** BigInt(decimals)).toString();
   return deploymentManager.deploy(symbol, 'test/FaucetToken.sol', [mint, name, decimals, symbol]);
-}
-
-async function makePriceFeed(
-  deploymentManager: DeploymentManager,
-  alias: string,
-  initialPrice: number,
-  decimals: number
-): Promise<SimplePriceFeed> {
-  return deploymentManager.deploy(alias, 'test/SimplePriceFeed.sol', [initialPrice * 1e8, decimals]);
 }
 
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: any): Promise<Deployed> {
@@ -89,20 +87,13 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     }
   );
 
-  // Deploy test tokens
-  const DAI = await makeToken(deploymentManager, 'DAI', 'DAI', 18);
-  const WETH = await makeToken(deploymentManager, 'WETH', 'Wrapped Ether', 18);
-  const WBTC = await makeToken(deploymentManager, 'WBTC', 'Wrapped Bitcoin', 8);
-  const LINK = await makeToken(deploymentManager, 'LINK', 'Chainlink', 18);
-  const UNI = await makeToken(deploymentManager, 'UNI', 'Uniswap', 18);
-
-  // Deploy price feeds using makePriceFeed function
-  const daiPriceFeed = await makePriceFeed(deploymentManager, 'daiPriceFeed', 1, 8); // $1.00 price
-  const wethPriceFeed = await makePriceFeed(deploymentManager, 'wethPriceFeed', 2000, 8); // $2000 price
-  const wbtcPriceFeed = await makePriceFeed(deploymentManager, 'wbtcPriceFeed', 40000, 8); // $40000 price
-  const compPriceFeed = await makePriceFeed(deploymentManager, 'compPriceFeed', 50, 8); // $50 price
-  const linkPriceFeed = await makePriceFeed(deploymentManager, 'linkPriceFeed', 15, 8); // $15 price
-  const uniPriceFeed = await makePriceFeed(deploymentManager, 'uniPriceFeed', 10, 8); // $10 price
+  // Deploy test tokens (use existing deployed addresses)
+  const DAI = await getExistingOrMakeToken(deploymentManager, 'DAI', 'DAI', 18, '0xeF4555a8ee300250DeFa1f929FEfa2A3a9af628a');
+  const WETH = await getExistingOrMakeToken(deploymentManager, 'WETH', 'Wrapped Ether', 18, '0xf5aD60F3B4F86D1Ef076fB4e26b4A4FeDbE7a93b');
+  const WBTC = await getExistingOrMakeToken(deploymentManager, 'WBTC', 'Wrapped Bitcoin', 8, '0x7c9Dfdc92A707937C4CfD1C21B3BBA5220D4f3A2');
+  const LINK = await getExistingOrMakeToken(deploymentManager, 'LINK', 'Chainlink', 18, '0x4686A8C76a095584112AC3Fd0362Cb65f7C11b8B');
+  const UNI = await getExistingOrMakeToken(deploymentManager, 'UNI', 'Uniswap', 18, '0xc1031Cfd04d0c68505B0Fc3dFdfC41DF391Cf6A6');
+  const USDC = await getExistingOrMakeToken(deploymentManager, 'USDC', 'USD Coin', 6, '0x27E8e32f076e1B4cc45bdcA4dbA5D9D8505Bab43');
 
   trace(`Attempting to mint tokens to fauceteer as ${admin.address}...`);
 
@@ -113,6 +104,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     { token: WBTC, units: 1e4, name: 'WBTC' },
     { token: LINK, units: 1e7, name: 'LINK' },
     { token: UNI, units: 1e7, name: 'UNI' },
+    { token: USDC, units: 1e6, name: 'USDC' },
   ];
 
   await Promise.all(
@@ -150,13 +142,6 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     WBTC,
     LINK,
     UNI,
-    
-    // Price Feeds
-    daiPriceFeed,
-    wethPriceFeed,
-    wbtcPriceFeed,
-    compPriceFeed,
-    linkPriceFeed,
-    uniPriceFeed,
+    USDC,
   };
 } 

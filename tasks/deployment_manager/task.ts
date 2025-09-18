@@ -378,11 +378,11 @@ task('deploy_and_migrate', 'Runs deploy and migration')
 task('deploy_infrastructure', 'Deploys infrastructure (tokens, price feeds, etc.)')
   .addFlag('simulate', 'only simulates the blockchain effects')
   .addFlag('noDeploy', 'skip the actual deploy step')
-  .addFlag('noVerify', 'do not verify any contracts')
+  .addFlag('noverify', 'do not verify any contracts')
   .addFlag('overwrite', 'overwrites cache')
   .addFlag('bdag', 'use BDAG specifications')
   .addFlag('batchdeploy', 'batch deploy mode')
-  .setAction(async ({ simulate, noDeploy, noVerify, overwrite, bdag, batchdeploy }, env) => {
+  .setAction(async ({ simulate, noDeploy, noverify, overwrite, bdag, batchdeploy }, env) => {
     const maybeForkEnv = simulate ? await getForkEnv(env, '_infrastructure') : env;
     const network = env.network.name;
     const tag = `${network}/${'_infrastructure'}`;
@@ -411,9 +411,9 @@ task('deploy_infrastructure', 'Deploys infrastructure (tokens, price feeds, etc.
       }
     }
 
-    const verify = noVerify ? false : !simulate;
+    const verify = noverify ? false : !simulate;
     const desc = verify ? 'Verify' : 'Would verify';
-    if (noVerify && simulate) {
+    if (noverify && simulate) {
       // Don't even print if --no-verify is set with --simulate
     } else {
       await dm.verifyContracts(async (address, args) => {
