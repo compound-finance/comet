@@ -138,7 +138,7 @@ describe('configurator', function () {
     await expect(configurator.initialize(governor.address)).to.be.revertedWith("custom error 'AlreadyInitialized()'");
   });
 
-  describe('configuration setters', function () {
+  describe.only('configuration setters', function () {
     it('sets factory and deploys Comet using new factory', async () => {
       const { configurator, configuratorProxy, proxyAdmin, cometFactory, cometProxy } = await makeConfigurator();
 

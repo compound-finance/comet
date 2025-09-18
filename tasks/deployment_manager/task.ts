@@ -15,6 +15,7 @@ async function getForkEnv(env: HardhatRuntimeEnvironment, deployment: string): P
   return await hreForBase(base);
 }
 
+
 function getDefaultDeployment(config: HardhatConfig, network: string): string {
   const base = config.scenario.bases.find(b => b.name == network);
   if (!base) {
@@ -29,8 +30,10 @@ async function runMigration<T>(
   prepare: boolean,
   enact: boolean,
   migration: Migration<T>,
-  overwrite: boolean
+  overwrite: boolean,
+  tenderly: boolean = false
 ) {
+  deploymentManager.cleanCache();
   let artifact: T = await deploymentManager.readArtifact(migration);
   if (prepare) {
     if (artifact && !overwrite) {
@@ -50,14 +53,26 @@ async function runMigration<T>(
     }
   }
 
-  if (enact) {    
+  if (enact) {
+    const {
+      governor,
+      timelock
+    } = await govDeploymentManager.getContracts();
+    
     await migration.actions.enact(
       deploymentManager,
       govDeploymentManager,
       artifact
     );
     console.log('Enactment complete');
+
+    if (tenderly) {
+      const { tenderlyExecute } = await import('../../scenario/utils');
+      await tenderlyExecute(govDeploymentManager, deploymentManager, governor, timelock);
+    }
+    await govDeploymentManager.cleanCache();
   }
+  deploymentManager.cleanCache();
 }
 
 task('deploy', 'Deploys market')
@@ -174,6 +189,7 @@ task('migrate', 'Runs migration')
   .addFlag('enact', 'enacts migration [implies prepare]')
   .addFlag('noEnacted', 'do not write enacted to the migration script')
   .addFlag('simulate', 'only simulates the blockchain effects')
+  .addFlag('tenderly', 'use tenderly to simulate the migration')
   .addFlag('overwrite', 'overwrites artifact if exists, fails otherwise')
   .setAction(
     async (
@@ -183,6 +199,7 @@ task('migrate', 'Runs migration')
         enact,
         noEnacted,
         simulate,
+        tenderly,
         overwrite,
         deployment,
         impersonate,
@@ -202,6 +219,7 @@ task('migrate', 'Runs migration')
         {
           writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
           verificationStrategy: 'eager', // We use eager here to verify contracts right after they are deployed
+          saveBytecode: tenderly, // Save bytecode to cache if tenderly is enabled
         },
       );
 
@@ -221,6 +239,7 @@ task('migrate', 'Runs migration')
           {
             writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
             verificationStrategy: 'eager', // We use eager here to verify contracts right after they are deployed
+            saveBytecode: tenderly
           },
         );
         await governanceDm.spider();
@@ -251,7 +270,7 @@ task('migrate', 'Runs migration')
         prepare = true;
       }
 
-      await runMigration(dm, governanceDm, prepare, enact, migration, overwrite);
+      await runMigration(dm, governanceDm, prepare, enact, migration, overwrite, tenderly);
 
       if (enact && !noEnacted) {
         await writeEnacted(migration, dm, true);
@@ -377,5 +396,4 @@ task('deploy_and_migrate', 'Runs deploy and migration')
       if (enact && !noEnacted) {
         await writeEnacted(migration, dm, true);
       }
-
     });
