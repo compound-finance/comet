@@ -60,13 +60,13 @@ async function runMigration<T>(
 task('deploy', 'Deploys market')
   .addFlag('simulate', 'only simulates the blockchain effects')
   .addFlag('noDeploy', 'skip the actual deploy step')
-  .addFlag('noVerify', 'do not verify any contracts')
+  .addFlag('noverify', 'do not verify any contracts')
   .addFlag('noVerifyImpl', 'do not verify the impl contract')
   .addFlag('overwrite', 'overwrites cache')
   .addFlag('bdag', 'use BDAG specifications')
   .addFlag('batchdeploy', 'batch deploy mode')
   .addParam('deployment', 'The deployment to deploy')
-  .setAction(async ({ simulate, noDeploy, noVerify, noVerifyImpl, overwrite, bdag, deployment, batchdeploy }, env) => {
+  .setAction(async ({ simulate, noDeploy, noverify, noVerifyImpl, overwrite, bdag, deployment, batchdeploy }, env) => {
     const maybeForkEnv = simulate ? await getForkEnv(env, deployment) : env;
     const network = env.network.name;
     const tag = `${network}/${deployment}`;
@@ -95,9 +95,9 @@ task('deploy', 'Deploys market')
       }
     }
 
-    const verify = noVerify ? false : !simulate;
+    const verify = noverify ? false : !simulate;
     const desc = verify ? 'Verify' : 'Would verify';
-    if (noVerify && simulate) {
+    if (noverify && simulate) {
       // Don't even print if --no-verify is set with --simulate
     } else {
       await dm.verifyContracts(async (address, args) => {

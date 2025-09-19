@@ -13,16 +13,13 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     await deploymentManager.putAlias(alias, contract);
   }
 
-  // Pull in existing assets from bdag-primordial network
-  const DAI = await deploymentManager.existing('DAI', '0xC6F11e6124D8c4864951229652497c782EC17e38', 'bdag-primordial');
-  const WETH = await deploymentManager.existing('WETH', '0x76b6383fB0bAeE78fF330Ae4E5674cF60798f651', 'bdag-primordial');
-  const WBTC = await deploymentManager.existing('WBTC', '0xf24B549f81c9de7a99e5247Bc29328B4CAf44dF3', 'bdag-primordial');
-  const LINK = await deploymentManager.existing('LINK', '0x9ff3e5E11BAec69594a14392791F4689f1d4c7f4', 'bdag-primordial');
-  const UNI = await deploymentManager.existing('UNI', '0x2F6884Bd5AEb852b4557B72B63c62471183E3c2f', 'bdag-primordial');
-  
-  // Note: USDC needs to be deployed in bdag-primordial network first
-  // For now, we'll add it as a placeholder that needs to be updated
-  const USDC = await deploymentManager.existing('USDC', '0x0000000000000000000000000000000000000000', 'bdag-primordial');
+  // Pull in existing assets from bdag-primordial network (using deployed addresses)
+  const DAI = await deploymentManager.existing('DAI', '0xeF4555a8ee300250DeFa1f929FEfa2A3a9af628a', 'bdag-primordial');
+  const WETH = await deploymentManager.existing('WETH', '0xf5aD60F3B4F86D1Ef076fB4e26b4A4FeDbE7a93b', 'bdag-primordial');
+  const WBTC = await deploymentManager.existing('WBTC', '0x7c9Dfdc92A707937C4CfD1C21B3BBA5220D4f3A2', 'bdag-primordial');
+  const LINK = await deploymentManager.existing('LINK', '0x4686A8C76a095584112AC3Fd0362Cb65f7C11b8B', 'bdag-primordial');
+  const UNI = await deploymentManager.existing('UNI', '0xc1031Cfd04d0c68505B0Fc3dFdfC41DF391Cf6A6', 'bdag-primordial');
+  const USDC = await deploymentManager.existing('USDC', '0x27E8e32f076e1B4cc45bdcA4dbA5D9D8505Bab43', 'bdag-primordial');
 
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);
