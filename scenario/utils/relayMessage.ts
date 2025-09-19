@@ -13,6 +13,7 @@ export default async function relayMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
   startingBlockNumber: number,
+  tenderlyLogs?: any[]
 ) {
   const bridgeNetwork = bridgeDeploymentManager.network;
   let proposal;
@@ -22,29 +23,34 @@ export default async function relayMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber,
+        tenderlyLogs
       );
     case 'optimism':
       return await relayOptimismMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber,
+        tenderlyLogs
       );
     case 'mantle':
       return await relayMantleMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber,
+        tenderlyLogs
       );
     case 'unichain':
       proposal = await relayUnichainMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber,
+        tenderlyLogs
       );
       await relayUnichainCCTPMint(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber,
+        tenderlyLogs
       );
       return proposal;
     case 'polygon':
@@ -52,17 +58,20 @@ export default async function relayMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber,
+        tenderlyLogs
       );
     case 'arbitrum':
       proposal = await relayArbitrumMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber,
+        tenderlyLogs
       );
       await relayArbitrumCCTPMint(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber,
+        tenderlyLogs
       );
       return proposal;
     case 'linea':
@@ -70,18 +79,21 @@ export default async function relayMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber,
+        tenderlyLogs
       );
     case 'scroll':
       return await relayScrollMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber,
+        tenderlyLogs
       );
     case 'ronin':
       return await relayRoninMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber,
+        tenderlyLogs
       );
     default:
       throw new Error(
