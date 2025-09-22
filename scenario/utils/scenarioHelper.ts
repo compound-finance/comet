@@ -160,24 +160,6 @@ export function getConfigForScenario(ctx: CometContext) {
     config.withdrawCollateral = 10;    
   }
 
-  if (ctx.world.base.network === 'linea' && ctx.world.base.deployment === 'usdt') {
-    config.bulkerBase = 10000;
-    config.bulkerAsset = 500;
-    config.bulkerAsset1 = 100;
-    config.supplyCollateral = 10;
-    config.transferCollateral = 10;
-    config.withdrawCollateral = 10;
-  }
-
-  if (ctx.world.base.network === 'linea' && ctx.world.base.deployment === 'weth') {
-    config.liquidationBase = 1000;
-    config.rewardsAsset = 1000;
-    config.rewardsBase = 50;
-    config.supplyCollateral = 10;
-    config.transferCollateral = 10;
-    config.withdrawCollateral = 10;
-  }
-
   if (ctx.world.base.network === 'unichain' && ctx.world.base.deployment === 'weth') {
     config.liquidationBase = 1000;
     config.liquidationBase1 = 350;
