@@ -427,3 +427,64 @@ task('deploy_infrastructure', 'Deploys infrastructure (tokens, price feeds, etc.
       });
     }
   });
+
+task('validate:config', 'Validates BDAG configuration against Comet constructor requirements')
+  .addParam('deployment', 'The deployment to validate')
+  .setAction(async ({ deployment }, env) => {
+    const network = env.network.name;
+    const tag = `${network}/${deployment}`;
+    
+    console.log(`[${tag}] Validating configuration against Comet constructor requirements...`);
+    
+    try {
+      const dm = new DeploymentManager(
+        network,
+        deployment,
+        env,
+        {
+          writeCacheToDisk: false,
+          verificationStrategy: 'lazy',
+        }
+      );
+
+      // Load configuration
+      const config = await dm.readConfig();
+      
+      // Load infrastructure contracts first (if they exist)
+      try {
+        const infrastructureSpider = await dm.spiderOther('bdag-primordial', '_infrastructure');
+        if (infrastructureSpider && infrastructureSpider.contracts) {
+          for (const [alias, contract] of infrastructureSpider.contracts) {
+            await dm.putAlias(alias, contract);
+          }
+          console.log(`[${tag}] Loaded ${infrastructureSpider.contracts.size} infrastructure contracts`);
+        }
+      } catch (error) {
+        console.log(`[${tag}] Warning: Could not load infrastructure contracts: ${error.message}`);
+        console.log(`[${tag}] This is expected if infrastructure hasn't been deployed yet.`);
+      }
+
+      const contracts = await dm.contracts();
+      
+      // Import validation functions
+      const { validateConfiguration } = await import('../../src/validate/ConfigurationValidator');
+      
+      // Run validation
+      const validationResult = await validateConfiguration(config, contracts, env);
+      
+      if (validationResult.isValid) {
+        console.log(`[${tag}] ✅ Configuration validation passed!`);
+        console.log(`[${tag}] All Comet constructor requirements are satisfied.`);
+      } else {
+        console.log(`[${tag}] ❌ Configuration validation failed!`);
+        console.log(`[${tag}] Issues found:`);
+        validationResult.errors.forEach((error, index) => {
+          console.log(`[${tag}]   ${index + 1}. ${error}`);
+        });
+        process.exit(1);
+      }
+    } catch (error) {
+      console.log(`[${tag}] ❌ Configuration validation failed with error: ${error}`);
+      process.exit(1);
+    }
+  });
