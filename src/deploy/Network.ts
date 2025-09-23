@@ -472,7 +472,6 @@ async function deployBDAGNetworkComet(
   
   const contracts = await deploymentManager.contracts();
   const { comet, configurator, rewards, cometFactory } = Object.fromEntries(contracts);
-  // deploymentManager.tracer()('Deployed contracts', Object.keys(deployed));
   return { 
     comet,
     configurator,

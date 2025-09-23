@@ -204,9 +204,7 @@ export async function getPriceFeeds(
   priceFeeds[config.baseTokenSymbol] = baseAssetPriceFeed;
   
   // Add asset price feeds
-  deploymentManager.tracer()('Asset configs', config);
   Object.entries(config.assetConfigs).forEach(([assetIndex, assetConfig]) => {
-    // deploymentManager.tracer()('Asset config', assetConfig, assetIndex);
     const assetName = config.assetConfigs[assetIndex].symbol;
     priceFeeds[assetName] = assetConfig.priceFeed;
   });
