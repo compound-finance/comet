@@ -118,6 +118,7 @@ function getAssetConfigs(
   contracts: ContractMap,
 ): AssetConfigStruct[] {
   return Object.entries(assets).map(([assetName, assetConfig]) => ({
+    symbol: assetName,
     asset: getContractAddress(assetName, contracts, assetConfig.address),
     priceFeed: getContractAddress(`${assetName}:priceFeed`, contracts, assetConfig.priceFeed),
     decimals: number(assetConfig.decimals),
@@ -155,6 +156,7 @@ function getOverridesOrConfig(
     governor: _ => config.governor ? address(config.governor) : getContractAddress('timelock', contracts),
     pauseGuardian: _ => config.pauseGuardian ? address(config.pauseGuardian) : getContractAddress('timelock', contracts),
     baseToken: _ => getContractAddress(config.baseToken, contracts, config.baseTokenAddress),
+    baseTokenSymbol: _ => config.baseToken,
     baseTokenPriceFeed: _ => getContractAddress(`${config.baseToken}:priceFeed`, contracts, config.baseTokenPriceFeed),
     baseBorrowMin: _ => stringToBigInt(config.borrowMin),
     storeFrontPriceFactor: _ => percentage(config.storeFrontPriceFactor),
@@ -188,4 +190,26 @@ export async function getConfigurationStruct(
   const configuration = (await getConfiguration(deploymentManager, configOverrides)) as ConfigurationStruct;
   const extensionDelegate = configOverrides.extensionDelegate ?? getContractAddress('comet:implementation:implementation', contracts);
   return { ...configuration, extensionDelegate };
+}
+
+export async function getPriceFeeds(
+  deploymentManager: DeploymentManager,
+): Promise<{ [name: string]: string }> {
+  const config = await getConfiguration(deploymentManager, {});
+  const baseAssetPriceFeed = config.baseToken;
+  // Convert assets object to array of price feeds
+  const priceFeeds: { [name: string]: string } = {};
+  
+  // Add base token price feed    
+  priceFeeds[config.baseTokenSymbol] = baseAssetPriceFeed;
+  
+  // Add asset price feeds
+  deploymentManager.tracer()('Asset configs', config);
+  Object.entries(config.assetConfigs).forEach(([assetIndex, assetConfig]) => {
+    // deploymentManager.tracer()('Asset config', assetConfig, assetIndex);
+    const assetName = config.assetConfigs[assetIndex].symbol;
+    priceFeeds[assetName] = assetConfig.priceFeed;
+  });
+
+  return priceFeeds;
 }

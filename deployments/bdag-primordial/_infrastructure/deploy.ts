@@ -1,24 +1,7 @@
 import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
-import { FaucetToken } from '../../../build/types';
 import { cloneGov, exp, wait } from '../../../src/deploy';
+import { getExistingTokens } from '../helpers';
 
-// Helper function to create tokens (same pattern as other deployment scripts)
-async function getExistingOrMakeToken(
-  deploymentManager: DeploymentManager,
-  symbol: string,
-  name: string,
-  decimals: number,
-  address: string
-): Promise<FaucetToken> {
-  if (address && address !== '') {
-    const existing = await deploymentManager.existing(symbol, address, 'bdag-primordial', 'contracts/test/FaucetToken.sol:FaucetToken');
-    if (existing) {
-      return existing as FaucetToken;
-    }
-  }
-  const mint = (BigInt(1000000) * 10n ** BigInt(decimals)).toString();
-  return deploymentManager.deploy(symbol, 'test/FaucetToken.sol', [mint, name, decimals, symbol]);
-}
 
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: any): Promise<Deployed> {
   console.log('Deploying infrastructure components...');
@@ -87,17 +70,11 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     }
   );
 
-  // Deploy test tokens (use existing deployed addresses)
-  const DAI = await getExistingOrMakeToken(deploymentManager, 'DAI', 'DAI', 18, '0xeF4555a8ee300250DeFa1f929FEfa2A3a9af628a');
-  const WETH = await getExistingOrMakeToken(deploymentManager, 'WETH', 'Wrapped Ether', 18, '0xf5aD60F3B4F86D1Ef076fB4e26b4A4FeDbE7a93b');
-  const WBTC = await getExistingOrMakeToken(deploymentManager, 'WBTC', 'Wrapped Bitcoin', 8, '0x7c9Dfdc92A707937C4CfD1C21B3BBA5220D4f3A2');
-  const LINK = await getExistingOrMakeToken(deploymentManager, 'LINK', 'Chainlink', 18, '0x4686A8C76a095584112AC3Fd0362Cb65f7C11b8B');
-  const UNI = await getExistingOrMakeToken(deploymentManager, 'UNI', 'Uniswap', 18, '0xc1031Cfd04d0c68505B0Fc3dFdfC41DF391Cf6A6');
-  const USDC = await getExistingOrMakeToken(deploymentManager, 'USDC', 'USD Coin', 6, '0x27E8e32f076e1B4cc45bdcA4dbA5D9D8505Bab43');
+  // Get existing test tokens using helper function
+  const { DAI, WETH, WBTC, LINK, UNI, USDC } = await getExistingTokens(deploymentManager);
 
   trace(`Attempting to mint tokens to fauceteer as ${admin.address}...`);
 
-  // Mint tokens to fauceteer
   const tokenConfigs = [
     { token: DAI, units: 1e8, name: 'DAI' },
     { token: WETH, units: 1e6, name: 'WETH' },
@@ -134,14 +111,6 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     cometAdmin,
     cometFactory,
     configurator,
-    rewards,
-    
-    // Tokens
-    DAI,
-    WETH,
-    WBTC,
-    LINK,
-    UNI,
-    USDC,
+    rewards
   };
 } 
