@@ -4,16 +4,13 @@ import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
 import { BigNumber, ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { OpenBridgedProposal } from '../context/Gov';
-
-function applyL1ToL2Alias(address: string) {
-  const offset = BigInt('0x1111000000000000000000000000000000001111');
-  return `0x${(BigInt(address) + offset).toString(16)}`;
-}
+import { applyL1ToL2Alias, isTenderlyLog } from './index';
 
 export default async function relayMantleMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
-  startingBlockNumber: number
+  startingBlockNumber: number,
+  tenderlyLogs?: any[]
 ) {
   const mantleL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow('mantleL1CrossDomainMessenger');
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
@@ -23,15 +20,34 @@ export default async function relayMantleMessage(
   const openBridgedProposals: OpenBridgedProposal[] = [];
 
   const filter = mantleL1CrossDomainMessenger.filters.SentMessage();
-  let sentMessageEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
-    fromBlock: startingBlockNumber,
-    toBlock: 'latest',
-    address: mantleL1CrossDomainMessenger.address,
-    topics: filter.topics!
-  });
+  let sentMessageEvents: Log[] = [];
+
+  if (tenderlyLogs) {
+    const topic = mantleL1CrossDomainMessenger.interface.getEventTopic('SentMessage');
+    const tenderlyParsed = tenderlyLogs.filter(log => log.raw?.topics?.[0] === topic);
+    const realLogs = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+      fromBlock: startingBlockNumber,
+      toBlock: 'latest',
+      address: mantleL1CrossDomainMessenger.address,
+      topics: filter.topics!
+    });
+    sentMessageEvents = [...realLogs, ...tenderlyParsed];
+  } else {
+    sentMessageEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+      fromBlock: startingBlockNumber,
+      toBlock: 'latest',
+      address: mantleL1CrossDomainMessenger.address,
+      topics: filter.topics!
+    });
+  }
 
   for (let sentMessageEvent of sentMessageEvents) {
-    const { args: { target, sender, message, messageNonce } } = mantleL1CrossDomainMessenger.interface.parseLog(sentMessageEvent);
+    const { args: { target, sender, message, messageNonce } } = isTenderlyLog(sentMessageEvent)
+      ? mantleL1CrossDomainMessenger.interface.parseLog({
+        topics: sentMessageEvent.raw.topics,
+        data: sentMessageEvent.raw.data
+      })
+      : mantleL1CrossDomainMessenger.interface.parseLog(sentMessageEvent);
 
     const aliasedSigner = await impersonateAddress(
       bridgeDeploymentManager,
@@ -40,7 +56,20 @@ export default async function relayMantleMessage(
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
 
-    const relayMessageTxn = await (
+    let relayMessageTxn;
+    if (tenderlyLogs) {
+      const callData = l2CrossDomainMessenger.interface.encodeFunctionData(
+        'relayMessage',
+        [messageNonce, sender, target, 0, 0, 0, message]
+      );
+      bridgeDeploymentManager.stashRelayMessage(
+        l2CrossDomainMessenger.address,
+        callData,
+        aliasedSigner.address
+      );
+    } 
+
+    relayMessageTxn = await (
       await l2CrossDomainMessenger.connect(aliasedSigner).relayMessage(
         messageNonce,
         sender,
@@ -111,7 +140,20 @@ export default async function relayMantleMessage(
     // Execute queued proposal
     await setNextBaseFeeToZero(bridgeDeploymentManager);
 
-    await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
+    if (tenderlyLogs) {
+      const callData = bridgeReceiver.interface.encodeFunctionData(
+        'executeProposal',
+        [id]
+      );
+      const signer = await bridgeDeploymentManager.getSigner();
+      bridgeDeploymentManager.stashRelayMessage(
+        bridgeReceiver.address,
+        callData,
+        signer.address
+      );
+    } else {
+      await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
+    }
     console.log(
       `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
     );
