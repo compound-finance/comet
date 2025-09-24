@@ -4,6 +4,7 @@ import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
 import { BigNumber, ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { OpenBridgedProposal } from '../context/Gov';
+import { isTenderlyLog } from './index';
 
 const roninChainSelector = '6916147374840168594';
 

@@ -1475,3 +1475,12 @@ export async function timeUntilUnderwater({
       fudgeFactor
   );
 }
+
+export function applyL1ToL2Alias(address: string) {
+  const offset = BigInt('0x1111000000000000000000000000000000001111');
+  return `0x${(BigInt(address) + offset).toString(16)}`;
+}
+
+export function isTenderlyLog(log: any): log is { raw: { topics: string[], data: string } } {
+  return !!log?.raw?.topics && !!log?.raw?.data;
+}
