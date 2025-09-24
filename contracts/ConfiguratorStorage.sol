@@ -26,5 +26,5 @@ contract ConfiguratorStorage is CometConfiguration {
     mapping(address => address) public factory;
     
     /// @notice Mapping of Comet proxy addresses to their target health factors
-    mapping(address => uint256) public targetHealthFactors;
+    mapping(address => uint256) public targetHealthFactor;
 }

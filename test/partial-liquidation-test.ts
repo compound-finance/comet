@@ -3,7 +3,7 @@ import {
   CometInterface
 } from '../build/types';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
-import { takeSnapshot, SnapshotRestorer } from "@nomicfoundation/hardhat-network-helpers";
+import { takeSnapshot, SnapshotRestorer } from '@nomicfoundation/hardhat-network-helpers';
 import { BigNumber, ContractReceipt } from 'ethers';
 
 async function borrowCapacityForAsset(comet: CometInterface, actor: SignerWithAddress, assetIndex: number) {
@@ -99,15 +99,15 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
     
     ({ cometWithExtendedAssetList, tokens, priceFeeds, governor, users } = protocol);
     
-      // Setup users
-      [user1, userToLiquidate, user2] = users;
-      const { USDC: USDC_token, COMP: COMP_token, USDT: USDT_token, WETH: WETH_token, WBTC: WBTC_token } = tokens;
-      USDC = USDC_token;
-      COMP = COMP_token;
-      USDT = USDT_token;
-      WETH = WETH_token;
-      WBTC = WBTC_token;
-      const { COMP: priceFeedCOMP, USDT: priceFeedUSDT } = priceFeeds;
+    // Setup users
+    [user1, userToLiquidate, user2] = users;
+    const { USDC: USDC_token, COMP: COMP_token, USDT: USDT_token, WETH: WETH_token, WBTC: WBTC_token } = tokens;
+    USDC = USDC_token;
+    COMP = COMP_token;
+    USDT = USDT_token;
+    WETH = WETH_token;
+    WBTC = WBTC_token;
+    const { COMP: priceFeedCOMP, USDT: priceFeedUSDT } = priceFeeds;
 
     // Setup user1 (liquidator)
     await USDC.connect(governor).transfer(user1.address, exp(8000, 6));
@@ -186,10 +186,10 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
         console.log(' Could not get target health factor:', error.message);
       }
       
-    const tx = await cometWithExtendedAssetList.connect(user1).absorb(user1.address, [userToLiquidate.address]);
-    absorbReceipt = await tx.wait();
-    expect(absorbReceipt.status).to.equal(1);             
-    expect(await cometWithExtendedAssetList.isLiquidatable(userToLiquidate.address)).to.be.false;
+      const tx = await cometWithExtendedAssetList.connect(user1).absorb(user1.address, [userToLiquidate.address]);
+      absorbReceipt = await tx.wait();
+      expect(absorbReceipt.status).to.equal(1);             
+      expect(await cometWithExtendedAssetList.isLiquidatable(userToLiquidate.address)).to.be.false;
     });
       
     it('should reduce debt and collateral after liquidation', async function() {
@@ -206,15 +206,15 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
 
     it('should emit AbsorbCollateral events with correct parameters', async function () {
       
-    const absorbEvents = absorbReceipt.events?.filter(e => e.event === 'AbsorbCollateral') || [];
-    expect(absorbEvents.length).to.be.greaterThan(0);
-    if (absorbEvents.length > 0) {
-      const event = absorbEvents[0];
-      expect(event.args?.absorber).to.equal(user1.address);
-      expect(event.args?.user).to.equal(userToLiquidate.address);
-      expect(event.args?.seizeAmount).to.be.gt(0);
-      expect(event.args?.seizedValue).to.be.gt(0);
-    }
+      const absorbEvents = absorbReceipt.events?.filter(e => e.event === 'AbsorbCollateral') || [];
+      expect(absorbEvents.length).to.be.greaterThan(0);
+      if (absorbEvents.length > 0) {
+        const event = absorbEvents[0];
+        expect(event.args?.absorber).to.equal(user1.address);
+        expect(event.args?.user).to.equal(userToLiquidate.address);
+        expect(event.args?.seizeAmount).to.be.gt(0);
+        expect(event.args?.seizedValue).to.be.gt(0);
+      }
     });
 
     it('should handle multiple users in single absorb call', async function () {
@@ -232,134 +232,134 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
       expect(receipt.status).to.equal(1);
       expect(await cometWithExtendedAssetList.isLiquidatable(userToLiquidate.address)).to.be.false;
       expect(await cometWithExtendedAssetList.isLiquidatable(user2.address)).to.be.false;
-  });
-
-  describe('absorb function - reverts', () => {
-    after(async () => {
-      await snapshot.restore();
     });
 
-    it('should revert when trying to absorb non-liquidatable user', async function () {
+    describe('absorb function - reverts', () => {
+      after(async () => {
+        await snapshot.restore();
+      });
+
+      it('should revert when trying to absorb non-liquidatable user', async function () {
       
-      await expect(
-        cometWithExtendedAssetList.connect(user1).absorb(user1.address, [user2.address])
-      ).to.be.revertedWithCustomError(cometWithExtendedAssetList, 'NotLiquidatable');
-    });
+        await expect(
+          cometWithExtendedAssetList.connect(user1).absorb(user1.address, [user2.address])
+        ).to.be.revertedWithCustomError(cometWithExtendedAssetList, 'NotLiquidatable');
+      });
 
-    it('should revert when absorb is paused', async function () {
+      it('should revert when absorb is paused', async function () {
       
-      await cometWithExtendedAssetList.connect(governor).pause(false, false, false, true, false);
+        await cometWithExtendedAssetList.connect(governor).pause(false, false, false, true, false);
       
-      await expect(
-        cometWithExtendedAssetList.connect(user1).absorb(user1.address, [userToLiquidate.address])
-      ).to.be.revertedWithCustomError(cometWithExtendedAssetList, 'Paused');
+        await expect(
+          cometWithExtendedAssetList.connect(user1).absorb(user1.address, [userToLiquidate.address])
+        ).to.be.revertedWithCustomError(cometWithExtendedAssetList, 'Paused');
+      });
+
+      it('should not revert when trying to absorb empty accounts array', async function () {
+        await expect(
+          cometWithExtendedAssetList.connect(user1).absorb(user1.address, [])
+        ).to.not.be.reverted;
+      });
     });
 
-    it('should not revert when trying to absorb empty accounts array', async function () {
-      await expect(
-        cometWithExtendedAssetList.connect(user1).absorb(user1.address, [])
-      ).to.not.be.reverted;
-    });
-  });
+    describe('isLiquidatable function', () => {
+      after(async () => {
+        await snapshot.restore();
+      });
 
-  describe('isLiquidatable function', () => {
-    after(async () => {
-      await snapshot.restore();
-    });
+      it('should correctly identify liquidatable user', async function () {
+        expect(await cometWithExtendedAssetList.isLiquidatable(userToLiquidate.address)).to.be.true;
+      });
 
-    it('should correctly identify liquidatable user', async function () {
-      expect(await cometWithExtendedAssetList.isLiquidatable(userToLiquidate.address)).to.be.true;
-    });
-
-    it('should return false when user has no debt', async function () {
+      it('should return false when user has no debt', async function () {
       // Create user with only collateral, no debt
-      const newUser = users[3];
-      await COMP.connect(governor).transfer(newUser.address, exp(50, 18));
-      await COMP.connect(newUser).approve(cometWithExtendedAssetList.address, exp(50, 18));
-      await cometWithExtendedAssetList.connect(newUser).supply(COMP.address, exp(50, 18));
+        const newUser = users[3];
+        await COMP.connect(governor).transfer(newUser.address, exp(50, 18));
+        await COMP.connect(newUser).approve(cometWithExtendedAssetList.address, exp(50, 18));
+        await cometWithExtendedAssetList.connect(newUser).supply(COMP.address, exp(50, 18));
       
-      expect(await cometWithExtendedAssetList.isLiquidatable(newUser.address)).to.be.false;
-    });
+        expect(await cometWithExtendedAssetList.isLiquidatable(newUser.address)).to.be.false;
+      });
 
-    it('should return false when user has healthy position', async function () {
+      it('should return false when user has healthy position', async function () {
       // Create user with small debt relative to collateral
-      const healthyUser = users[4];
-      await COMP.connect(governor).transfer(healthyUser.address, exp(100, 18));
-      await COMP.connect(healthyUser).approve(cometWithExtendedAssetList.address, exp(100, 18));
-      await cometWithExtendedAssetList.connect(healthyUser).supply(COMP.address, exp(100, 18));
+        const healthyUser = users[4];
+        await COMP.connect(governor).transfer(healthyUser.address, exp(100, 18));
+        await COMP.connect(healthyUser).approve(cometWithExtendedAssetList.address, exp(100, 18));
+        await cometWithExtendedAssetList.connect(healthyUser).supply(COMP.address, exp(100, 18));
       
-      // Borrow only 50% of capacity
-      const borrowCapacity = await borrowCapacityForAsset(cometWithExtendedAssetList, healthyUser, 0);
-      const smallBorrowAmount = borrowCapacity.div(2);
-      await cometWithExtendedAssetList.connect(healthyUser).withdraw(USDC.address, smallBorrowAmount);
+        // Borrow only 50% of capacity
+        const borrowCapacity = await borrowCapacityForAsset(cometWithExtendedAssetList, healthyUser, 0);
+        const smallBorrowAmount = borrowCapacity.div(2);
+        await cometWithExtendedAssetList.connect(healthyUser).withdraw(USDC.address, smallBorrowAmount);
       
-      expect(await cometWithExtendedAssetList.isLiquidatable(healthyUser.address)).to.be.false;
-    });
+        expect(await cometWithExtendedAssetList.isLiquidatable(healthyUser.address)).to.be.false;
+      });
 
-    it('should correctly identify non-liquidatable user', async function () {
+      it('should correctly identify non-liquidatable user', async function () {
       // user2 is liquidatable from before() setup, so we need to make them healthy first
-      const currentDebt = await cometWithExtendedAssetList.borrowBalanceOf(user2.address);
-      const repayAmount = currentDebt.div(2);
+        const currentDebt = await cometWithExtendedAssetList.borrowBalanceOf(user2.address);
+        const repayAmount = currentDebt.div(2);
       
-      await USDC.connect(user1).transfer(user2.address, repayAmount);
-      await cometWithExtendedAssetList.connect(user2).supply(USDC.address, repayAmount);
+        await USDC.connect(user1).transfer(user2.address, repayAmount);
+        await cometWithExtendedAssetList.connect(user2).supply(USDC.address, repayAmount);
       
-      expect(await cometWithExtendedAssetList.isLiquidatable(user2.address)).to.be.false;
-    });
+        expect(await cometWithExtendedAssetList.isLiquidatable(user2.address)).to.be.false;
+      });
 
-    it('should return true when user becomes liquidatable after price drop', async function () {
-      const { COMP: priceFeedCOMP } = priceFeeds;
+      it('should return true when user becomes liquidatable after price drop', async function () {
+        const { COMP: priceFeedCOMP } = priceFeeds;
       
-      // First make user healthy by increasing price
-      const currentCOMPData = await priceFeedCOMP.latestRoundData();
-      await priceFeedCOMP.connect(governor).setRoundData(
-        currentCOMPData._roundId,
-        currentCOMPData._answer.mul(120).div(100),
-        currentCOMPData._startedAt,
-        currentCOMPData._updatedAt,
-        currentCOMPData._answeredInRound
-      );
+        // First make user healthy by increasing price
+        const currentCOMPData = await priceFeedCOMP.latestRoundData();
+        await priceFeedCOMP.connect(governor).setRoundData(
+          currentCOMPData._roundId,
+          currentCOMPData._answer.mul(120).div(100),
+          currentCOMPData._startedAt,
+          currentCOMPData._updatedAt,
+          currentCOMPData._answeredInRound
+        );
       
-      expect(await cometWithExtendedAssetList.isLiquidatable(userToLiquidate.address)).to.be.false;
+        expect(await cometWithExtendedAssetList.isLiquidatable(userToLiquidate.address)).to.be.false;
       
-      // Now reduce price to make liquidatable
-      const newCOMPData = await priceFeedCOMP.latestRoundData();
-      await priceFeedCOMP.connect(governor).setRoundData(
-        newCOMPData._roundId,
-        newCOMPData._answer.mul(80).div(100),
-        newCOMPData._startedAt,
-        newCOMPData._updatedAt,
-        newCOMPData._answeredInRound
-      );
+        // Now reduce price to make liquidatable
+        const newCOMPData = await priceFeedCOMP.latestRoundData();
+        await priceFeedCOMP.connect(governor).setRoundData(
+          newCOMPData._roundId,
+          newCOMPData._answer.mul(80).div(100),
+          newCOMPData._startedAt,
+          newCOMPData._updatedAt,
+          newCOMPData._answeredInRound
+        );
       
-      expect(await cometWithExtendedAssetList.isLiquidatable(userToLiquidate.address)).to.be.true;
-    });
+        expect(await cometWithExtendedAssetList.isLiquidatable(userToLiquidate.address)).to.be.true;
+      });
 
-    it('should return false when user becomes healthy after price increase', async function () {
-      const { COMP: priceFeedCOMP } = priceFeeds;
+      it('should return false when user becomes healthy after price increase', async function () {
+        const { COMP: priceFeedCOMP } = priceFeeds;
       
-      // Increase price to make user healthy
-      const currentCOMPData = await priceFeedCOMP.latestRoundData();
-      await priceFeedCOMP.connect(governor).setRoundData(
-        currentCOMPData._roundId,
-        currentCOMPData._answer.mul(120).div(100),
-        currentCOMPData._startedAt,
-        currentCOMPData._updatedAt,
-        currentCOMPData._answeredInRound
-      );
+        // Increase price to make user healthy
+        const currentCOMPData = await priceFeedCOMP.latestRoundData();
+        await priceFeedCOMP.connect(governor).setRoundData(
+          currentCOMPData._roundId,
+          currentCOMPData._answer.mul(120).div(100),
+          currentCOMPData._startedAt,
+          currentCOMPData._updatedAt,
+          currentCOMPData._answeredInRound
+        );
       
-      expect(await cometWithExtendedAssetList.isLiquidatable(userToLiquidate.address)).to.be.false;
-    });
+        expect(await cometWithExtendedAssetList.isLiquidatable(userToLiquidate.address)).to.be.false;
+      });
 
-    it('should handle multiple collateral types correctly', async function () {
+      it('should handle multiple collateral types correctly', async function () {
   
-      expect(await cometWithExtendedAssetList.isLiquidatable(user2.address)).to.be.true;
-    });
+        expect(await cometWithExtendedAssetList.isLiquidatable(user2.address)).to.be.true;
+      });
 
-    it('should return false for zero address', async function () {
-      expect(await cometWithExtendedAssetList.isLiquidatable(ethers.constants.AddressZero)).to.be.false;
+      it('should return false for zero address', async function () {
+        expect(await cometWithExtendedAssetList.isLiquidatable(ethers.constants.AddressZero)).to.be.false;
+      });
     });
   });
-});
 });
 

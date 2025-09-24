@@ -29,6 +29,8 @@ import {
   CometProxyAdmin__factory,
   CometFactory,
   CometFactory__factory,
+  CometFactoryWithExtendedAssetList,
+  CometFactoryWithExtendedAssetList__factory,
   CometHarnessInterface,
   CometInterface,
   NonStandardFaucetFeeToken,
@@ -120,6 +122,9 @@ export type ConfiguratorAndProtocol = {
   proxyAdmin: CometProxyAdmin;
   cometFactory: CometFactory;
   cometProxy: TransparentUpgradeableProxy;
+  cometWithExtendedAssetList: CometWithExtendedAssetList;
+  cometProxyWithExtendedAssetList: TransparentUpgradeableProxy;
+  cometFactoryWithExtendedAssetList: CometFactoryWithExtendedAssetList;
 } & Protocol;
 
 export type RewardsOpts = {
@@ -451,6 +456,10 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   const cometFactory = await CometFactoryFactory.deploy();
   await cometFactory.deployed();
 
+  const CometFactoryWithExtendedAssetList = (await ethers.getContractFactory('CometFactoryWithExtendedAssetList')) as CometFactoryWithExtendedAssetList__factory;
+  const cometFactoryWithExtendedAssetList = await CometFactoryWithExtendedAssetList.deploy();
+  await cometFactoryWithExtendedAssetList.deployed();
+
   // Deploy Configurator
   const ConfiguratorFactory = (await ethers.getContractFactory('Configurator')) as Configurator__factory;
   const configurator = await ConfiguratorFactory.deploy();
@@ -501,6 +510,13 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   );
   await cometProxy.deployed();
 
+  const cometProxyWithExtendedAssetList = await CometProxy.deploy(
+    cometWithExtendedAssetList.address,
+    proxyAdmin.address,
+    '0x'
+  );
+  await cometProxyWithExtendedAssetList.deployed();
+
   // Deploy Configurator proxy
   const initializeCalldata = (await configurator.populateTransaction.initialize(governor.address)).data;
   const ConfiguratorProxy = (await ethers.getContractFactory('ConfiguratorProxy')) as ConfiguratorProxy__factory;
@@ -517,6 +533,18 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   await configuratorAsProxy.setConfiguration(cometProxy.address, configuration);
   await configuratorAsProxy.setFactory(cometProxy.address, cometFactory.address);
 
+  // Deploy SimpleHealthFactorHolder first
+
+  // Deploy CometExtAssetList for CometWithExtendedAssetList with healthFactorHolder
+  const CometExtAssetListFactory = (await ethers.getContractFactory('CometExtAssetList')) as CometExtAssetList__factory;
+  const name32 = ethers.utils.formatBytes32String((opts.name || 'Compound Comet'));
+  const symbol32 = ethers.utils.formatBytes32String((opts.symbol || '📈BASE'));
+  const extensionDelegateAssetList = await CometExtAssetListFactory.deploy({ name32, symbol32 }, assetListFactory.address, configuratorAsProxy.address);
+  await extensionDelegateAssetList.deployed();
+  configuration.extensionDelegate = extensionDelegateAssetList.address;
+  await configuratorAsProxy.setConfiguration(cometProxyWithExtendedAssetList.address, configuration);
+  await configuratorAsProxy.setFactory(cometProxyWithExtendedAssetList.address, cometFactoryWithExtendedAssetList.address);
+
   return {
     opts,
     governor,
@@ -530,9 +558,11 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     cometWithExtendedAssetList,
     assetListFactory,
     cometProxy,
+    cometProxyWithExtendedAssetList,
     configurator,
     configuratorProxy,
     cometFactory,
+    cometFactoryWithExtendedAssetList,
     tokens,
     unsupportedToken,
     priceFeeds,

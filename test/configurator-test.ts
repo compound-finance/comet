@@ -589,7 +589,7 @@ describe('configurator', function () {
     });
 
     it('sets targetHealthFactor and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, cometWithPartialLiquidation : comet, cometProxyWithPartialLiquidation : cometProxy } = await makeConfigurator({
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList : comet, cometProxyWithExtendedAssetList : cometProxy } = await makeConfigurator({
         assets: {
           USDC: { decimals: 6, },
           COMP: {
@@ -601,7 +601,7 @@ describe('configurator', function () {
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-      expect((await configuratorAsProxy.targetHealthFactors(cometProxy.address))).to.be.equal(await cometAsProxy.targetHealthFactor());
+      expect((await configuratorAsProxy.targetHealthFactor(cometProxy.address))).to.be.equal(await cometAsProxy.targetHealthFactor());
 
       const oldHealthFactor = (await cometAsProxy.targetHealthFactor()).toBigInt();
       const newHealthFactor = factor(1.10);
@@ -609,14 +609,15 @@ describe('configurator', function () {
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
       expect(event(txn, 0)).to.be.deep.equal({
-        SetHealthFactor: {
+        SetTargetHealthFactor: {
           cometProxy: cometProxy.address,
           oldHealthFactor,
           newHealthFactor,
         }
       });
       expect(oldHealthFactor).to.be.not.equal(newHealthFactor);
-      expect((await configuratorAsProxy.targetHealthFactors(cometProxy.address))).to.be.equal(newHealthFactor);
+      expect((await configuratorAsProxy.targetHealthFactor(cometProxy.address))).to.be.equal(newHealthFactor);
+      await proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address);
       expect(await cometAsProxy.targetHealthFactor()).to.be.equal(newHealthFactor);
     });
 

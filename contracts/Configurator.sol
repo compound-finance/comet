@@ -247,8 +247,8 @@ contract Configurator is ConfiguratorStorage {
         if (msg.sender != governor) revert Unauthorized();
         if (newTargetHealthFactor < 1e18) revert InvalidTargetHealthFactor();
 
-        uint256 oldTargetHealthFactor = targetHealthFactors[cometProxy];
-        targetHealthFactors[cometProxy] = newTargetHealthFactor;
+        uint256 oldTargetHealthFactor = targetHealthFactor[cometProxy];
+        targetHealthFactor[cometProxy] = newTargetHealthFactor;
         emit SetTargetHealthFactor(cometProxy, oldTargetHealthFactor, newTargetHealthFactor);
     }
     
