@@ -395,4 +395,5 @@ task('deploy_and_migrate', 'Runs deploy and migration')
       if (enact && !noEnacted) {
         await writeEnacted(migration, dm, true);
       }
+
     });
