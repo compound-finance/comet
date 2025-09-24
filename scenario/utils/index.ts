@@ -33,7 +33,6 @@ import { isBridgeProposal } from './isBridgeProposal';
 import { Interface } from 'ethers/lib/utils';
 import axios from 'axios';
 export { mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp };
-import { readFileSync } from 'fs';
 import path from 'path';
 
 export const MAX_ASSETS = 24;
