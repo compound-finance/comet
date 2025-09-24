@@ -806,12 +806,9 @@ export async function tenderlyExecute(
 
   const deployBytecodes = loadCachedBytecodes();
   const chainId1 = gdm.hre.ethers.provider.network.chainId;
-  const chainId2 = bdm.hre.ethers.provider.network.chainId;
-  
-  const isCrossChain = chainId1 !== chainId2;
 
   const simsL1 = [
-    ...(!isCrossChain ? deployBytecodes.map((code) => ({
+    ...deployBytecodes.map((code) => ({
       network_id: chainId1,
       from: fromAddr,
       to: '',
@@ -821,7 +818,7 @@ export async function tenderlyExecute(
       state_objects: statePatch,
       save: true,
       gas_price: 0,
-    })) : []),
+    })),
     {
       network_id: chainId1.toString(),
       from: fromAddr,
@@ -871,6 +868,8 @@ export async function tenderlyExecute(
     },
   ];
 
+  const chainId2 = bdm.hre.ethers.provider.network.chainId;
+
   console.log(`\n========================== TENDERLY ==========================\n`);
 
   console.log(`\nExecuting Tenderly simulation for proposal ${id}...`);
@@ -883,10 +882,9 @@ export async function tenderlyExecute(
   console.log(` >>> PROPOSAL EXECUTED  ${id} \n`);
   console.log(`Simulation ${exec1.id} done, status: ${exec1.status}`);
   console.log(`Link: https://www.tdly.co/shared/simulation/${exec1.id}`);
-  
   let proposals;
-  if (isCrossChain) {
-    proposals = await relayMessage(gdm, bdm, parseFloat(B0.toString()), bundle[bundle.length - 1].transaction.transaction_info.logs);
+  if (chainId1 !== chainId2) {
+    proposals = await relayMessage(gdm, bdm, parseFloat(B0.toString()),  bundle[bundle.length - 1].transaction.transaction_info.logs);
     
     debug(`Proposals relayed: ${proposals.length}`);
     const timelockL2 = await bdm.getContractOrThrow('timelock');
@@ -896,47 +894,32 @@ export async function tenderlyExecute(
     const maxEta = Math.max(...proposals.map(p => Number(p.eta || 0))) + delay.toNumber();
     const T0L2 = BigInt(Math.max(latestL2.timestamp, maxEta + 1));
     const B0L2 = Number(latestL2.number) + 1;
+    const simsL2 = relayMessages.map((msg, i, arr) => {
+      const isLast = i === arr.length - 1;
     
-    const signerL2 = await bdm.getSigner();
-    const fromAddrL2 = await signerL2.getAddress();
+      const timestamp = isLast
+        ? Number(T0L2) 
+        : latestL2.timestamp; 
     
-    const simsL2 = [
-      ...deployBytecodes.map((code) => ({
-        network_id: chainId2,
-        from: fromAddrL2,
-        to: '',
-        block_number: Number(latestL2.number),
-        block_header: { timestamp: gdm.hre.ethers.utils.hexlify(latestL2.timestamp) },
-        input: gdm.hre.ethers.utils.hexlify(code),
+      const block = isLast
+        ? B0L2 : latestL2.number;
+      
+      return {
+        network_id: chainId2.toString(),
+        from: msg.signer,
+        to: msg.messanger,
+        block_number: Number(block),
+        block_header: {
+          timestamp: gdm.hre.ethers.utils.hexlify(Number(timestamp))
+        },
+        input: msg.callData,
         save: true,
+        save_if_fails: true,
         gas_price: 0,
-      })),
-      ...relayMessages.map((msg, i, arr) => {
-        const isLast = i === arr.length - 1;
-      
-        const timestamp = isLast
-          ? Number(T0L2) 
-          : latestL2.timestamp; 
-      
-        const block = isLast
-          ? B0L2 : latestL2.number;
-        
-        return {
-          network_id: chainId2.toString(),
-          from: msg.signer,
-          to: msg.messanger,
-          block_number: Number(block),
-          block_header: {
-            timestamp: gdm.hre.ethers.utils.hexlify(Number(timestamp))
-          },
-          input: msg.callData,
-          save: true,
-          save_if_fails: true,
-          gas_price: 0,
-        };
-      })
-    ];
-
+      };
+    });
+  
+  
     while (!simsL1[0]) {
       simsL1.shift();
       if (simsL1.length == 0) {
