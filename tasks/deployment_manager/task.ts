@@ -15,7 +15,6 @@ async function getForkEnv(env: HardhatRuntimeEnvironment, deployment: string): P
   return await hreForBase(base);
 }
 
-
 function getDefaultDeployment(config: HardhatConfig, network: string): string {
   const base = config.scenario.bases.find(b => b.name == network);
   if (!base) {
@@ -72,7 +71,7 @@ async function runMigration<T>(
     }
     await govDeploymentManager.cleanCache();
   }
-  deploymentManager.cleanCache();
+  await deploymentManager.cleanCache();
 }
 
 task('deploy', 'Deploys market')
@@ -396,4 +395,5 @@ task('deploy_and_migrate', 'Runs deploy and migration')
       if (enact && !noEnacted) {
         await writeEnacted(migration, dm, true);
       }
+
     });

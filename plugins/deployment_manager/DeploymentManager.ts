@@ -255,6 +255,7 @@ export class DeploymentManager {
           artifact.bytecode +
                 iface.encodeDeploy(deployArgs).slice(2);
       this.stashBytecode(bytecodeWithArgs);
+
     }
     const contract = await this.retry(
       async () => {

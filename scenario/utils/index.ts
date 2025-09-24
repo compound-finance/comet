@@ -12,7 +12,7 @@ import {
   utils,
 } from 'ethers';
 import { execSync } from 'child_process';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync } from 'fs';
 import { CometContext } from '../context/CometContext';
 import CometAsset from '../context/CometAsset';
 import { exp } from '../../test/helpers';
@@ -33,6 +33,7 @@ import { isBridgeProposal } from './isBridgeProposal';
 import { Interface } from 'ethers/lib/utils';
 import axios from 'axios';
 export { mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp };
+import { readFileSync } from 'fs';
 import path from 'path';
 
 export const MAX_ASSETS = 24;
