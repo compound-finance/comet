@@ -8,10 +8,6 @@ import { isTenderlyLog } from './index';
 
 const roninChainSelector = '6916147374840168594';
 
-function isTenderlyLog(log: any): log is { raw: { topics: string[], data: string } } {
-  return !!log?.raw?.topics && !!log?.raw?.data;
-}
-
 export default async function relayRoninMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
