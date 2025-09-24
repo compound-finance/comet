@@ -4,6 +4,7 @@ import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
 import { BigNumber, ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { OpenBridgedProposal } from '../context/Gov';
+import { applyL1ToL2Alias, isTenderlyLog } from './index';
 /*
 The Base relayer applies an offset to the message sender.
 
@@ -12,14 +13,6 @@ an L1 address to its offset, L2 equivalent.
 
 https://sepolia.basescan.org/address/0x4200000000000000000000000000000000000007#code
 */
-function applyL1ToL2Alias(address: string) {
-  const offset = BigInt('0x1111000000000000000000000000000000001111');
-  return `0x${(BigInt(address) + offset).toString(16)}`;
-}
-
-function isTenderlyLog(log: any): log is { raw: { topics: string[], data: string } } {
-  return !!log?.raw?.topics && !!log?.raw?.data;
-}
 
 export default async function relayBaseMessage(
   governanceDeploymentManager: DeploymentManager,
