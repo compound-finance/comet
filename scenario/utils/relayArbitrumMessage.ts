@@ -7,10 +7,6 @@ import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { OpenBridgedProposal } from '../context/Gov';
 import { isTenderlyLog } from './index';
 
-function isTenderlyLog(log: any): log is { raw: { topics: string[], data: string } } {
-  return !!log?.raw?.topics && !!log?.raw?.data;
-}
-
 export async function relayArbitrumMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
