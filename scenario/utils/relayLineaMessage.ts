@@ -158,6 +158,7 @@ export default async function relayLineaMessage(
       );
     }
 
+
     let relayMessageTxn: { events: any[] }; 
 
     if(
