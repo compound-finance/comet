@@ -4,12 +4,9 @@ import { constants, ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { OpenBridgedProposal } from '../context/Gov';
 import { impersonateAddress } from '../../plugins/scenario/utils';
+import { isTenderlyLog } from './index';
 
 const LINEA_SETTER_ROLE_ACCOUNT = '0xc1C6B09D1eB6fCA0fF3cA11027E5Bc4AeDb47F67';
-
-function isTenderlyLog(log: any): log is { raw: { topics: string[], data: string } } {
-  return !!log?.raw?.topics && !!log?.raw?.data;
-}
 
 export default async function relayLineaMessage(
   governanceDeploymentManager: DeploymentManager,
@@ -134,8 +131,7 @@ export default async function relayLineaMessage(
       bridgeDeploymentManager,
       LINEA_SETTER_ROLE_ACCOUNT
     );
-    
-    
+
     let callData;
     // First the message's hash has to be added by a specific account in the "contract's queue"
     if((await l2MessageService.lastAnchoredL1MessageNumber()).lte(messageNumber)){
@@ -282,7 +278,6 @@ export default async function relayLineaMessage(
   }
   return openBridgedProposals;
 }
-
 
 // Helper to fetch logs in chunks of 10,000 blocks
 async function fetchLogsInChunks(provider: any, filter: any, fromBlock: number, toBlock: number, address: string) {
