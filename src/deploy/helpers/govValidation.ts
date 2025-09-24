@@ -15,7 +15,7 @@ export interface GovConfig {
  * @returns GovConfig - The validated governance configuration
  * @throws Error if any environment variable is invalid or missing
  */
-export function validateGovEnvironmentVariables(): GovConfig {
+export function getValidGovConfig(): GovConfig {
   const governorSigners = process.env.GOV_SIGNERS?.split(',');
   if (!governorSigners) {
     throw new Error('GOV_SIGNERS should be set in the environment file');

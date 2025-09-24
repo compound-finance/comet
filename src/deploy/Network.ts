@@ -4,7 +4,7 @@ import { DeploySpec, ProtocolConfiguration, wait, COMP_WHALES } from './index';
 import { getConfiguration } from './NetworkConfiguration';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { createProposalManager } from '../governor/helpers/proposalManager';
-import { validateGovEnvironmentVariables } from './helpers/govValidation';
+import { getValidGovConfig } from './helpers/govValidation';
 
 export function sameAddress(a: string, b: string) {
   return BigInt(a) === BigInt(b);
@@ -390,20 +390,14 @@ async function createBDAGGov(
   adminSigner?: SignerWithAddress
 ): Promise<Deployed> {
   const trace = deploymentManager.tracer();
-  const govConfig = validateGovEnvironmentVariables();
+  const govConfig = getValidGovConfig();
   const admin = adminSigner ?? await deploymentManager.getSigner();
-  // If using batch deploy, the timelock delay and governance configuration will 
-  // be set after all markets are deployed
-  if (deploymentManager.config.batchdeploy) {
-    trace(`Using batch deploy, setting 
-      timelock delay: 0
-      governor signers: ${admin.address}
-      multisig threshold: 1
-    `);
-    govConfig.timelockDelay = 0;
-    govConfig.governorSigners = [admin.address];
-    govConfig.multisigThreshold = 1;
-  }
+
+  // Override the gov config while deploying the infrastructure
+  // After the deployment, the gov should be upgraded to the correct config (proper multisig, timelock delay, etc)
+  govConfig.timelockDelay = 0;
+  govConfig.governorSigners = [admin.address];
+  govConfig.multisigThreshold = 1;
 
   const { 
     governorSigners, 

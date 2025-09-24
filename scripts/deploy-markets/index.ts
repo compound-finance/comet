@@ -18,7 +18,7 @@ import {
   runSpiderForMarket as runSpiderForMarketCommand,
   proposeCombinedUpdate as proposeCombinedUpdateCommand
 } from '../helpers/commandUtil';
-import { validateGovEnvironmentVariables } from '../../src/deploy/helpers/govValidation';
+import { getValidGovConfig } from '../../src/deploy/helpers/govValidation';
 
 interface DeployOptions {
   network: string;
@@ -65,7 +65,7 @@ class MarketsDeployer {
       await this.runGovernanceToAcceptUpgrade(upgradeBatchProposalId, implementationAddresses, this.options.deployments);
 
       // Step 9: Propose combined governance update
-      const { governorSigners, multisigThreshold, timelockDelay } = validateGovEnvironmentVariables();
+      const { governorSigners, multisigThreshold, timelockDelay } = getValidGovConfig();
       await this.combinedGovernanceUpdate(governorSigners, multisigThreshold, timelockDelay);
 
       // Step 10: Run verification tests (optional)

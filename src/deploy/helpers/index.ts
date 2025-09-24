@@ -1,1 +1,1 @@
-export { validateGovEnvironmentVariables, GovConfig } from './govValidation';
+export { getValidGovConfig, GovConfig } from './govValidation';

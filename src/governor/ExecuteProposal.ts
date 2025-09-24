@@ -88,7 +88,6 @@ async function extractLogsFromTransaction(
       blockNumber: receipt.blockNumber,
       logsCount: receipt.logs.length,
       executionType: executionType || 'default',
-      logs: receipt.logs,
       parsedLogs: {} as any
     };
     
