@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import { HardhatUserConfig, task } from 'hardhat/config';
+import { HardhatUserConfig, subtask, task } from 'hardhat/config';
 import '@compound-finance/hardhat-import';
 import '@nomiclabs/hardhat-etherscan';
 import '@tenderly/hardhat-tenderly';
@@ -11,7 +11,7 @@ import 'hardhat-change-network';
 import 'hardhat-contract-sizer';
 import 'solidity-coverage';
 import 'hardhat-gas-reporter';
-
+import { TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS } from 'hardhat/builtin-tasks/task-names';
 // Hardhat tasks
 import './tasks/deployment_manager/task.ts';
 import './tasks/spider/task.ts';
@@ -48,6 +48,7 @@ import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
 import roninRelationConfigMap from './deployments/ronin/weth/relations';
 import roninWronRelationConfigMap from './deployments/ronin/wron/relations';
 import lineaUsdcRelationConfigMap from './deployments/linea/usdc/relations';
+import lineaUsdtRelationConfigMap from './deployments/linea/usdt/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -103,6 +104,19 @@ interface NetworkConfig {
   gas?: number | 'auto';
   gasPrice?: number | 'auto';
 }
+
+subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(async (_, __, runSuper) => {
+  const paths = await runSuper();
+  
+  return paths.filter((p: string) => {
+    return !(
+      p.includes('contracts/capo/contracts/test/') ||
+      p.includes('contracts/capo/test/') ||
+      p.includes('forge-std') ||
+      p.endsWith('.t.sol')
+    );
+  });
+});
 
 export const networkConfigs: NetworkConfig[] = [
   {
@@ -308,6 +322,16 @@ const config: HardhatUserConfig = {
           };
           return acc;
         }
+        if (chainId === 42161) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+              shanghai: 3,
+            }
+          };
+          return acc;
+        }
         acc[chainId] = {
           hardforkHistory: {
             berlin: 1,
@@ -471,7 +495,8 @@ const config: HardhatUserConfig = {
         wron: roninWronRelationConfigMap
       },
       'linea': {
-        usdc: lineaUsdcRelationConfigMap
+        usdc: lineaUsdcRelationConfigMap,
+        usdt: lineaUsdtRelationConfigMap
       },
     },
   },
@@ -641,6 +666,12 @@ const config: HardhatUserConfig = {
         name: 'linea-usdc',
         network: 'linea',
         deployment: 'usdc',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'linea-usdt',
+        network: 'linea',
+        deployment: 'usdt',
         auxiliaryBase: 'mainnet'
       },
       {
