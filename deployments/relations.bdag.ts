@@ -21,23 +21,8 @@ export default {
   'governor:implementation': {
     artifact: 'contracts/CustomGovernor.sol:CustomGovernor',
   },
-  // Override rewards relation to handle infrastructure deployment (no comet yet)
-  rewards: {
-    relations: {
-      rewardToken: {
-        field: async (rewards, context) => {
-          // If no comet exists yet (infrastructure deployment), return null
-          const comet = context.comet;
-          if (!comet || comet.length === 0) {
-            return null;
-          }
-          const rewardConfig = await rewards.rewardConfig(comet[0].address);
-          return !rewardConfig ? null : rewardConfig.token;
-        },
-        alias: async (token) => token.symbol(),
-      },
-    },
-  },
+  // Override rewards relation we do not need
+  rewards: {},
   // Fix cometAdmin relation with missing alias field
   cometAdmin: {
     relations: {

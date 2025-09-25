@@ -1,6 +1,7 @@
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import { FaucetToken } from '../../build/types';
 import { getPriceFeeds } from '../../src/deploy/NetworkConfiguration';
+import { TOKEN_ADDRESSES } from './constants';
 
 // Helper function to get existing tokens
 export async function getExistingToken(
@@ -21,13 +22,13 @@ export async function getExistingTokens(deploymentManager: DeploymentManager): P
   UNI: FaucetToken;
   USDC: FaucetToken;
 }> {
-  // Get existing test tokens at their deployed addresses
-  const DAI = await getExistingToken(deploymentManager, 'DAI', '0xeF4555a8ee300250DeFa1f929FEfa2A3a9af628a');
-  const WETH = await getExistingToken(deploymentManager, 'WETH', '0xf5aD60F3B4F86D1Ef076fB4e26b4A4FeDbE7a93b');
-  const WBTC = await getExistingToken(deploymentManager, 'WBTC', '0x7c9Dfdc92A707937C4CfD1C21B3BBA5220D4f3A2');
-  const LINK = await getExistingToken(deploymentManager, 'LINK', '0x4686A8C76a095584112AC3Fd0362Cb65f7C11b8B');
-  const UNI = await getExistingToken(deploymentManager, 'UNI', '0xc1031Cfd04d0c68505B0Fc3dFdfC41DF391Cf6A6');
-  const USDC = await getExistingToken(deploymentManager, 'USDC', '0x27E8e32f076e1B4cc45bdcA4dbA5D9D8505Bab43');
+  // Get existing test tokens at their deployed addresses using constants
+  const DAI = await getExistingToken(deploymentManager, 'DAI', TOKEN_ADDRESSES.DAI);
+  const WETH = await getExistingToken(deploymentManager, 'WETH', TOKEN_ADDRESSES.WETH);
+  const WBTC = await getExistingToken(deploymentManager, 'WBTC', TOKEN_ADDRESSES.WBTC);
+  const LINK = await getExistingToken(deploymentManager, 'LINK', TOKEN_ADDRESSES.LINK);
+  const UNI = await getExistingToken(deploymentManager, 'UNI', TOKEN_ADDRESSES.UNI);
+  const USDC = await getExistingToken(deploymentManager, 'USDC', TOKEN_ADDRESSES.USDC);
 
   return {
     DAI,

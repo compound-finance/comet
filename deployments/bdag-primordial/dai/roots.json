@@ -1,1 +1,15 @@
-{}
+{
+    "comet": "0xd4f7a5CE4A3554f06B312BA532b8ba63f13f82ba",
+    "configurator": "0xB0557d008A5E847CC319F4fC7cdc2421f9fd554B",
+    "rewards": "0x5Cc36d5aAddfC843D1ec9344141FEf3A6B0D5A21",
+    "cometFactory": "0xA32Bd292982d5D90692aA33Ea20B29B48485A7f8",
+    "fauceteer": "0x05bB9c8285d5F276a81c648A1B1Fa5E24fA3148f",
+    "governor:implementation": "0x40dC2476e86ac09a9fb51cFa2a0893f33C83D9B7",
+    "governor": "0xd52F0542616aa39181Aa508616602fB91532F8a5",
+    "COMP": "0x333069068bE54349b015e705D7385d6F007A129F",
+    "timelock": "0x8A624C602624816e47d2F420afbaE747a885F21C",
+    "cometAdmin": "0x6711D614b5410Ceb4C7FF5265e82DA168C3C8882",
+    "configurator:implementation": "0x9b83c56e135f2d6599Cea25fE7d5abA0912267AD",
+    "configuratorAdmin": "0x6711D614b5410Ceb4C7FF5265e82DA168C3C8882",
+    "comet:implementation": "0xbdA4A6bcCF74494423c615790584B9bE573260D5"
+}

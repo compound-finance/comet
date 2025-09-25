@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { ethers, network } from 'hardhat';
 import { Contract } from 'ethers';
+import { TOKEN_ADDRESSES } from '../deployments/bdag-primordial/constants';
 
 describe('Deployment Verification', function () {
   // This test verifies the deployment configuration for any network/market
@@ -10,42 +11,42 @@ describe('Deployment Verification', function () {
   let config: any;
 
   // Helper function to convert scientific notation to decimal string
-function convertScientificNotation(value: string | number): string {
-  const valueStr = value.toString();
+  function convertScientificNotation(value: string | number): string {
+    const valueStr = value.toString();
   
-  if (valueStr.includes('e')) {
+    if (valueStr.includes('e')) {
     // Handle scientific notation: split on 'e' and use the exponent
-    const [base, exponent] = valueStr.split('e');
-    const expNum = parseInt(exponent);
+      const [base, exponent] = valueStr.split('e');
+      const expNum = parseInt(exponent);
     
-    // Handle small decimal numbers (e.g., "0.000011574074074074073e15")
-    if (base.startsWith('0.')) {
+      // Handle small decimal numbers (e.g., "0.000011574074074074073e15")
+      if (base.startsWith('0.')) {
       // For small decimals, convert to the actual value
       // "0.000011574074074074073e15" means 0.000011574074074074073 * 10^15
       // This equals 11574074074074073
-      const decimalValue = parseFloat(valueStr);
-      return Math.floor(decimalValue).toString();
-    } else {
+        const decimalValue = parseFloat(valueStr);
+        return Math.floor(decimalValue).toString();
+      } else {
       // Handle regular large numbers (e.g., "7500e8")
-      const baseWithoutDecimal = base.replace('.', '');
-      const zerosToAdd = expNum - (base.split('.')[1]?.length || 0);
-      return baseWithoutDecimal + '0'.repeat(zerosToAdd);
+        const baseWithoutDecimal = base.replace('.', '');
+        const zerosToAdd = expNum - (base.split('.')[1]?.length || 0);
+        return baseWithoutDecimal + '0'.repeat(zerosToAdd);
+      }
+    } else {
+      return valueStr;
     }
-  } else {
-    return valueStr;
   }
-}
 
   // Helper function to convert decimal values to 18-decimal format (for Comet factors)
-function convertDecimalTo18Decimals(value: string | number): string {
-  const numValue = parseFloat(value.toString());
-  // Convert to 18 decimal places: 0.75 -> 0.75 * 10^18 = 750000000000000000
-  const result = (numValue * Math.pow(10, 18)).toString();
-  return result;
-}
+  function convertDecimalTo18Decimals(value: string | number): string {
+    const numValue = parseFloat(value.toString());
+    // Convert to 18 decimal places: 0.75 -> 0.75 * 10^18 = 750000000000000000
+    const result = (numValue * Math.pow(10, 18)).toString();
+    return result;
+  }
 
-// Constants from Comet contract
-const SECONDS_PER_YEAR = 31_536_000; // 365 days * 24 hours * 60 minutes * 60 seconds
+  // Constants from Comet contract
+  const SECONDS_PER_YEAR = 31_536_000; // 365 days * 24 hours * 60 minutes * 60 seconds
 
   before(async function () {
     // Get network from hardhat
@@ -327,14 +328,10 @@ const SECONDS_PER_YEAR = 31_536_000; // 365 days * 24 hours * 60 minutes * 60 se
   it('should have base token address matching configuration.json', async function () {
     const { comet } = deployedContracts;
     
-    // Load roots.json to get the actual addresses
-    const rootsPath = `../deployments/${network.name}/${market}/roots.json`;
-    const roots = require(rootsPath);
-    
     // Validate base token configuration
     if (config.baseToken) {
       const deployedBaseToken = await comet.baseToken();
-      const expectedBaseTokenAddress = roots[config.baseToken];
+      const expectedBaseTokenAddress =  TOKEN_ADDRESSES[config.baseToken];
       
       expect(expectedBaseTokenAddress).to.exist;
       expect(deployedBaseToken.toLowerCase()).to.equal(expectedBaseTokenAddress.toLowerCase());
@@ -576,10 +573,6 @@ const SECONDS_PER_YEAR = 31_536_000; // 365 days * 24 hours * 60 minutes * 60 se
   it('should have asset addresses matching configuration.json', async function () {
     const { comet } = deployedContracts;
     
-    // Load roots.json to get the actual addresses
-    const rootsPath = `../deployments/${network.name}/${market}/roots.json`;
-    const roots = require(rootsPath);
-    
     if (config.assets && typeof config.assets === 'object') {
       const assetKeys = Object.keys(config.assets);
       for (let i = 0; i < assetKeys.length; i++) {
@@ -590,7 +583,7 @@ const SECONDS_PER_YEAR = 31_536_000; // 365 days * 24 hours * 60 minutes * 60 se
         // Validate that configAsset is an object
         expect(configAsset).to.be.an('object');
         
-        const expectedAssetAddress = roots[assetKey];
+        const expectedAssetAddress = TOKEN_ADDRESSES[assetKey];
         expect(expectedAssetAddress).to.exist;
         expect(deployedAssetInfo.asset.toLowerCase()).to.equal(expectedAssetAddress.toLowerCase());
         console.log(`✅ Asset ${assetKey} address matches: ${deployedAssetInfo.asset}`);

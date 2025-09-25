@@ -10,8 +10,10 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const infrastructureSpider = await deploymentManager.spiderOther('bdag-primordial', '_infrastructure');
   
   // Add infrastructure contracts to the current deployment's contract map
+  const infrastructureContracts = {};
   for (const [alias, contract] of infrastructureSpider.contracts) {
     await deploymentManager.putAlias(alias, contract);
+    infrastructureContracts[alias] = contract;
   }
 
   // Get existing test tokens using helper function
@@ -24,6 +26,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const deployed = await deployComet(deploymentManager, deploySpec);
 
   return { 
-    ...deployed
+    ...deployed,
+    ...infrastructureContracts
   };
 }
