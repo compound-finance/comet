@@ -33,7 +33,7 @@ print_error() {
 show_help() {
     echo -e "${BLUE}💰 Comet Reward Funding Script Wrapper${NC}"
     echo ""
-    echo "Usage: ./scripts/comet-reward-funding/index.sh [options]"
+    echo "Usage: ./scripts/governor/propose/comet-reward-funding/index.sh [options]"
     echo ""
     echo "Options:"
     echo "  -n, --network <network>     Network to use (default: local)"
@@ -41,10 +41,10 @@ show_help() {
     echo ""
     echo "Examples:"
     echo "  # Fund CometRewards on local network (amount will be asked interactively)"
-    echo "  ./scripts/comet-reward-funding/index.sh -n local"
+    echo "  ./scripts/governor/propose/comet-reward-funding/index.sh -n local"
     echo ""
     echo "  # Fund CometRewards on polygon network (amount will be asked interactively)"
-    echo "  ./scripts/comet-reward-funding/index.sh -n polygon"
+    echo "  ./scripts/governor/propose/comet-reward-funding/index.sh -n polygon"
     echo ""
     echo "Amount examples (when prompted):"
     echo "  1000000000000000000000 = 1000 COMP tokens"
@@ -106,7 +106,7 @@ main() {
     # Run the funding script
     print_info "Executing funding script..."
     
-    yarn ts-node scripts/comet-reward-funding/index.ts \
+    yarn ts-node scripts/governor/propose/comet-reward-funding/index.ts \
         --network "$NETWORK"
     
     print_success "Funding script completed"

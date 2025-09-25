@@ -3,8 +3,8 @@
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import { runGovernanceFlow } from '../helpers/governanceFlow';
-import { log, confirm, updateCometImplAddress } from '../helpers/ioUtil';
+import { runGovernanceFlow } from '../../helpers/governanceFlow';
+import { log, confirm, updateCometImplAddress } from '../../helpers/ioUtil';
 import { 
   extractProposalId, 
   extractImplementationAddresses, 
@@ -17,8 +17,8 @@ import {
   proposeUpgrade as proposeUpgradeCommand,
   runSpiderForMarket as runSpiderForMarketCommand,
   proposeCombinedUpdate as proposeCombinedUpdateCommand
-} from '../helpers/commandUtil';
-import { getValidGovConfig } from '../../src/deploy/helpers/govValidation';
+} from '../../helpers/commandUtil';
+import { getValidGovConfig } from '../../../src/deploy/helpers/govValidation';
 
 interface DeployOptions {
   network: string;
@@ -467,7 +467,7 @@ function showHelp(): void {
   console.log(`
 🚀 Market Deployment Script
 
-Usage: yarn ts-node scripts/deploy-market.ts [options]
+Usage: yarn ts-node scripts/deployer/deploy-markets/index.ts [options]
 
 Options:
   --network <network>           Network to deploy to (default: local)
@@ -481,16 +481,16 @@ Options:
 
 Examples:
   # Deploy single DAI market on local network
-  yarn ts-node scripts/deploy-market.ts --network local --deployment dai
+  yarn ts-node scripts/deployer/deploy-markets/index.ts --network local --deployment dai
 
   # Deploy multiple markets on polygon network
-  yarn ts-node scripts/deploy-market.ts --network polygon --deployment dai,usdc,usdt
+  yarn ts-node scripts/deployer/deploy-markets/index.ts --network polygon --deployment dai,usdc,usdt
 
   # Deploy multiple markets with clean cache
-  yarn ts-node scripts/deploy-market.ts --network local --deployment dai,usdc --clean
+  yarn ts-node scripts/deployer/deploy-markets/index.ts --network local --deployment dai,usdc --clean
 
   # Deploy all major markets on mainnet
-  yarn ts-node scripts/deploy-market.ts --network mainnet --deployment dai,usdc,usdt,weth,wbtc
+  yarn ts-node scripts/deployer/deploy-markets/index.ts --network mainnet --deployment dai,usdc,usdt,weth,wbtc
 
 
 Available networks: local, hardhat, mainnet, polygon, arbitrum, optimism, base, etc.

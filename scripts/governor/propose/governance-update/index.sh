@@ -33,7 +33,7 @@ print_error() {
 show_help() {
     echo -e "${BLUE}🔧 Combined Governance Update Script Wrapper${NC}"
     echo ""
-    echo "Usage: ./scripts/combined-governance-update/index.sh [options]"
+    echo "Usage: ./scripts/governor/propose/governance-update/index.sh [options]"
     echo ""
     echo "Options:"
     echo "  -n, --network <network>     Network to use (default: local)"
@@ -42,10 +42,10 @@ show_help() {
     echo ""
     echo "Examples:"
     echo "  # Update governance configuration on local network (interactive)"
-    echo "  ./scripts/combined-governance-update/index.sh -n local -d dai"
+    echo "  ./scripts/governor/propose/governance-update/index.sh -n local -d dai"
     echo ""
     echo "  # Update governance configuration on polygon network (interactive)"
-    echo "  ./scripts/combined-governance-update/index.sh -n polygon -d usdc"
+    echo "  ./scripts/governor/propose/governance-update/index.sh -n polygon -d usdc"
     echo ""
     echo "Interactive prompts:"
     echo "  - Admin addresses: Enter comma-separated list of admin addresses"
@@ -121,7 +121,7 @@ main() {
     # Run the combined governance update script
     print_info "Executing combined governance update script..."
     
-    yarn ts-node scripts/combined-governance-update/index.ts \
+    yarn ts-node scripts/governor/propose/governance-update/index.ts \
         --network "$NETWORK" \
         --deployment "$DEPLOYMENT"
     

@@ -1,8 +1,8 @@
 #!/usr/bin/env ts-node
 
-import { runGovernanceFlow, GovernanceFlowOptions } from '../helpers/governanceFlow';
-import { log, question, confirm } from '../helpers/ioUtil';
-import { runCommand, extractProposalId } from '../helpers/commandUtil';
+import { runGovernanceFlow, GovernanceFlowOptions } from '../../../../helpers/governanceFlow';
+import { log, question, confirm } from '../../../../helpers/ioUtil';
+import { runCommand, extractProposalId } from '../../../../helpers/commandUtil';
 
 interface DelayChangeOptions {
   network: string;

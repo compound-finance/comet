@@ -1,8 +1,8 @@
 #!/usr/bin/env ts-node
 
-import { runGovernanceFlow, GovernanceFlowOptions } from '../helpers/governanceFlow';
-import { log, question, confirm } from '../helpers/ioUtil';
-import { runCommand, extractProposalId } from '../helpers/commandUtil';
+import { runGovernanceFlow, GovernanceFlowOptions } from '../../../helpers/governanceFlow';
+import { log, question, confirm } from '../../../helpers/ioUtil';
+import { runCommand, extractProposalId } from '../../../helpers/commandUtil';
 
 interface FundingOptions {
   network: string;
@@ -88,7 +88,7 @@ function parseArgs(): FundingOptions {
         console.log(`
 🚀 Comet Reward Funding Script
 
-Usage: yarn ts-node scripts/comet-reward-funding/index.ts [options]
+Usage: yarn ts-node scripts/governor/propose/comet-reward-funding/index.ts [options]
 
 Options:
   --network <network>    Network to use (default: local)
@@ -96,10 +96,10 @@ Options:
 
 Examples:
   # Fund CometRewards on local network (amount will be asked interactively)
-  yarn ts-node scripts/comet-reward-funding/index.ts --network local
+  yarn ts-node scripts/governor/propose/comet-reward-funding/index.ts --network local
 
   # Fund CometRewards on polygon network (amount will be asked interactively)
-  yarn ts-node scripts/comet-reward-funding/index.ts --network polygon
+  yarn ts-node scripts/governor/propose/comet-reward-funding/index.ts --network polygon
         `);
         process.exit(0);
     }

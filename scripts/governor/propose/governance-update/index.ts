@@ -1,18 +1,18 @@
 #!/usr/bin/env ts-node
 
-import { runGovernanceFlow, GovernanceFlowOptions } from '../helpers/governanceFlow';
-import { log, question, confirm } from '../helpers/ioUtil';
-import { runCommand, extractProposalId } from '../helpers/commandUtil';
+import { runGovernanceFlow, GovernanceFlowOptions } from '../../../helpers/governanceFlow';
+import { log, question, confirm } from '../../../helpers/ioUtil';
+import { proposeCombinedUpdate as proposeCombinedUpdateCommand, extractProposalId } from '../../../helpers/commandUtil';
 
-interface GovernanceConfigOptions {
+interface CombinedUpdateOptions {
   network: string;
   deployment: string;
 }
 
-class GovernanceConfigProposer {
-  private options: GovernanceConfigOptions;
+class CombinedGovernanceUpdater {
+  private options: CombinedUpdateOptions;
 
-  constructor(options: GovernanceConfigOptions) {
+  constructor(options: CombinedUpdateOptions) {
     this.options = options;
   }
 
@@ -24,32 +24,50 @@ class GovernanceConfigProposer {
     }
   }
 
-  private async proposeGovernanceConfig(admins: string[], threshold: number): Promise<string> {
-    const adminsParam = admins.join(',');
-    const command = `yarn hardhat governor:propose-governance-config --network ${this.options.network} --deployment ${this.options.deployment} --admins "${adminsParam}" --threshold ${threshold}`;
-    
-    const output = await runCommand(command, 'Proposing governance configuration change');
+  private async proposeCombinedUpdate(admins: string[], threshold: number, timelockDelay?: number): Promise<string> {
+    const output = await proposeCombinedUpdateCommand(
+      this.options.network, 
+      this.options.deployment, 
+      admins, 
+      threshold, 
+      timelockDelay
+    );
     
     return extractProposalId(output);
   }
 
   private async runGovernanceFlow(proposalId: string): Promise<void> {
-    log(`\n🎉 Governance configuration proposal created successfully!`, 'success');
+    log(`\n🎉 Combined governance update proposal created successfully!`, 'success');
     
     const options: GovernanceFlowOptions = {
       network: this.options.network,
       proposalId: proposalId,
-      executionType: 'governance-config'
+      executionType: 'combined-governance-update'
     };
     
-    const successMessage = `\n🎉 Governance configuration change completed successfully!\n🔧 New governance configuration is now active`;
+    const successMessage = `\n🎉 Combined governance update completed successfully!\n🔧 New governance configuration and timelock settings are now active`;
     
     await runGovernanceFlow(options, successMessage);
   }
 
+  private formatDelay(delaySeconds: number): string {
+    if (delaySeconds < 60) {
+      return `${delaySeconds} seconds`;
+    } else if (delaySeconds < 3600) {
+      const minutes = Math.floor(delaySeconds / 60);
+      return `${minutes} minutes (${delaySeconds} seconds)`;
+    } else if (delaySeconds < 86400) {
+      const hours = Math.floor(delaySeconds / 3600);
+      return `${hours} hours (${delaySeconds} seconds)`;
+    } else {
+      const days = Math.floor(delaySeconds / 86400);
+      return `${days} days (${delaySeconds} seconds)`;
+    }
+  }
+
   public async run(): Promise<void> {
     try {
-      log(`\n🚀 Starting Governance Configuration Change Process`, 'info');
+      log(`\n🚀 Starting Combined Governance Update Process`, 'info');
       log(`Network: ${this.options.network}`, 'info');
       log(`Deployment: ${this.options.deployment}`, 'info');
       
@@ -87,36 +105,53 @@ class GovernanceConfigProposer {
         return;
       }
       
+      // Ask for timelock delay (optional)
+      const timelockDelayInput = await question(`\nEnter new timelock delay in seconds (optional, press Enter to skip): `);
+      let timelockDelay: number | undefined;
+      
+      if (timelockDelayInput.trim()) {
+        timelockDelay = parseInt(timelockDelayInput);
+        
+        if (isNaN(timelockDelay) || timelockDelay <= 0) {
+          log(`\n❌ Timelock delay must be a positive number`, 'error');
+          return;
+        }
+      }
+      
       log(`\n📋 Configuration Summary:`, 'info');
       log(`   Admin addresses: ${admins.join(', ')}`, 'info');
       log(`   Threshold: ${threshold}`, 'info');
       log(`   Total admins: ${admins.length}`, 'info');
+      if (timelockDelay) {
+        const formattedDelay = this.formatDelay(timelockDelay);
+        log(`   Timelock delay: ${formattedDelay}`, 'info');
+      } else {
+        log(`   Timelock delay: No change`, 'info');
+      }
       
       // Confirm before proceeding
-      const shouldProceed = await confirm(`\nDo you want to proceed with this governance configuration change?`);
+      const shouldProceed = await confirm(`\nDo you want to proceed with this combined governance update?`);
       
       if (!shouldProceed) {
-        log(`\n⏸️  Governance configuration change cancelled.`, 'warning');
+        log(`\n⏸️  Combined governance update cancelled.`, 'warning');
         return;
       }
       
-      // Step 1: Propose governance configuration change
-      const proposalId = await this.proposeGovernanceConfig(admins, threshold);
+      // Step 1: Propose combined governance update
+      const proposalId = await this.proposeCombinedUpdate(admins, threshold, timelockDelay);
       
       // Step 2: Run governance flow
       await this.runGovernanceFlow(proposalId);
       
     } catch (error) {
-      log(`\n❌ Governance configuration change process failed: ${error}`, 'error');
+      log(`\n❌ Combined governance update process failed: ${error}`, 'error');
       throw error;
-    } finally {
-      // No cleanup needed since each function manages its own readline interface
     }
   }
 }
 
 // Parse command line arguments
-function parseArgs(): GovernanceConfigOptions {
+function parseArgs(): CombinedUpdateOptions {
   const args = process.argv.slice(2);
   let network = 'local';
   let deployment = 'dai';
@@ -132,9 +167,9 @@ function parseArgs(): GovernanceConfigOptions {
       case '--help':
       case '-h':
         console.log(`
-🔧 Governance Configuration Change Script
+🔧 Combined Governance Update Script
 
-Usage: yarn ts-node scripts/governance-config/index.ts [options]
+Usage: yarn ts-node scripts/governor/propose/governance-update/index.ts [options]
 
 Options:
   --network <network>      Network to use (default: local)
@@ -142,15 +177,16 @@ Options:
   --help, -h              Show this help message
 
 Examples:
-  # Change governance configuration on local network (interactive)
-  yarn ts-node scripts/governance-config/index.ts --network local --deployment dai
+  # Update governance configuration on local network (interactive)
+  yarn ts-node scripts/governor/propose/governance-update/index.ts --network local --deployment dai
 
-  # Change governance configuration on polygon network (interactive)
-  yarn ts-node scripts/governance-config/index.ts --network polygon --deployment usdc
+  # Update governance configuration on polygon network (interactive)
+  yarn ts-node scripts/governor/propose/governance-update/index.ts --network polygon --deployment usdc
 
 Interactive prompts:
   - Admin addresses: Enter comma-separated list of admin addresses
   - Threshold: Enter number of required approvals
+  - Timelock delay: Enter new delay in seconds (optional)
   - Confirmation: Confirm the configuration before proceeding
 
 Note: This script will guide you through the complete governance process:
@@ -169,8 +205,8 @@ Note: This script will guide you through the complete governance process:
 // Main execution
 async function main() {
   const options = parseArgs();
-  const proposer = new GovernanceConfigProposer(options);
-  await proposer.run();
+  const updater = new CombinedGovernanceUpdater(options);
+  await updater.run();
 }
 
 // Run if this file is executed directly
