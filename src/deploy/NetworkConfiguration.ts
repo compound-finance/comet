@@ -196,7 +196,7 @@ export async function getPriceFeeds(
   deploymentManager: DeploymentManager,
 ): Promise<{ [name: string]: string }> {
   const config = await getConfiguration(deploymentManager, {});
-  const baseAssetPriceFeed = config.baseToken;
+  const baseAssetPriceFeed = config.baseTokenPriceFeed;
   // Convert assets object to array of price feeds
   const priceFeeds: { [name: string]: string } = {};
   
