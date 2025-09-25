@@ -164,8 +164,15 @@ export function getConfigForScenario(ctx: CometContext) {
     config.liquidationBase = 1000;
     config.liquidationBase1 = 350;
     config.liquidationAsset = 100;
+    config.bulkerAsset = 500;
+    config.bulkerComet = 500;
+    config.bulkerBorrowBase = 100;
+    config.bulkerBorrowAsset = 50;
     config.rewardsBase = 100;
     config.rewardsAsset = 1000;
+    config.transferBase = 100;
+    config.transferAsset = 500;
+    config.transferAsset1 = 500;
   }
 
   if (ctx.world.base.network === 'fuji' && ctx.world.base.deployment === 'usdc') {
