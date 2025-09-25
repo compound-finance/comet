@@ -22,7 +22,7 @@ let newWstETHToUSDPriceFeed: string;
 let oldWstETHToUSDPriceFeed: string;
 
 
-export default migration('1735299664_upgrade_to_capo_price_feeds', {
+export default migration('1737146439_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
     const { timelock } = await deploymentManager.getContracts();
     const now = (await deploymentManager.hre.ethers.provider.getBlock('latest'))!.timestamp;
