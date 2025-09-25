@@ -1360,13 +1360,6 @@
   dependencies:
     "@noble/hashes" "1.7.2"
 
-"@noble/curves@~1.9.2":
-  version "1.9.4"
-  resolved "https://registry.yarnpkg.com/@noble/curves/-/curves-1.9.4.tgz#a748c6837ee7854a558cc3b951aedd87a5e7d6a5"
-  integrity sha512-2bKONnuM53lINoDrSmK8qP8W271ms7pygDhZt4SiLOoLwBtoHqeCFi6RG42V8zd3mLHuJFhU/Bmaqo4nX0/kBw==
-  dependencies:
-    "@noble/hashes" "1.8.0"
-
 "@noble/hashes@1.2.0", "@noble/hashes@~1.2.0":
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.2.0.tgz#a3150eeb09cc7ab207ebf6d7b9ad311a9bdbed12"
@@ -1387,15 +1380,10 @@
   resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.7.2.tgz#d53c65a21658fb02f3303e7ee3ba89d6754c64b4"
   integrity sha512-biZ0NUSxyjLLqo6KxEJ1b+C2NAx0wtDoFvCaXHGgUkeHzf3Xc1xKumFKREuT7f7DARNZ/slvYUwFG6B0f2b6hQ==
 
-"@noble/hashes@1.8.0", "@noble/hashes@^1.4.0":
+"@noble/hashes@^1.4.0":
   version "1.8.0"
   resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.8.0.tgz#cee43d801fcef9644b11b8194857695acd5f815a"
   integrity sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A==
-
-"@noble/hashes@2.0.0-beta.1":
-  version "2.0.0-beta.1"
-  resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-2.0.0-beta.1.tgz#641fd2f13e25ae2acdc7d0b082289a5adeda13cf"
-  integrity sha512-xnnogJ6ccNZ55lLgWdjhBqKUdFoznjpFr3oy23n5Qm7h+ZMtt8v4zWvHg9zRW6jcETweplD5F4iUqb0SSPC+Dw==
 
 "@noble/secp256k1@1.7.1":
   version "1.7.1"
@@ -1683,6 +1671,11 @@
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/@npmcli/redact/-/redact-2.0.1.tgz#95432fd566e63b35c04494621767a4312c316762"
   integrity sha512-YgsR5jCQZhVmTJvjduTOIHph0L73pK8xwMVaDY0PatySqVM9AZj93jpoXYSJqfHFxFkN9dmqTw6OiqExsS3LPw==
+
+"@openzeppelin/contracts@4.8.3":
+  version "4.8.3"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.8.3.tgz#cbef3146bfc570849405f59cba18235da95a252a"
+  integrity sha512-bQHV8R9Me8IaJoJ2vPG4rXcL7seB7YVuskr4f+f5RyOStSZetwzkWtoqDMl5erkBJy0lDRUnIR2WIkPiC0GJlg==
 
 "@openzeppelin/defender-sdk-base-client@^2.1.0", "@openzeppelin/defender-sdk-base-client@^2.6.0":
   version "2.6.0"
@@ -5482,7 +5475,7 @@ merge2@^1.2.3, merge2@^1.3.0, merge2@^1.4.1:
   resolved "https://registry.yarnpkg.com/merge2/-/merge2-1.4.1.tgz#4368892f885e907455a6fd7dc55c0c9d404990ae"
   integrity sha512-8q7VEgMJW4J8tcfVPy8g09NcQwZdbwFEqhe/WZkoIzjn/3TGDwtOCYtXGxA3O8tPzpczCCDgv+P2P5y00ZJOOg==
 
-micro-eth-signer@^0.14.0:
+micro-eth-signer@0.14.0, micro-eth-signer@^0.14.0, micro-eth-signer@^0.16.0:
   version "0.14.0"
   resolved "https://registry.yarnpkg.com/micro-eth-signer/-/micro-eth-signer-0.14.0.tgz#8aa1fe997d98d6bdf42f2071cef7eb01a66ecb22"
   integrity sha512-5PLLzHiVYPWClEvZIXXFu5yutzpadb73rnQCpUqIHu3No3coFuWQNfE5tkBQJ7djuLYl6aRLaS0MgWJYGoqiBw==
@@ -5491,21 +5484,12 @@ micro-eth-signer@^0.14.0:
     "@noble/hashes" "~1.7.1"
     micro-packed "~0.7.2"
 
-micro-eth-signer@^0.16.0:
-  version "0.16.0"
-  resolved "https://registry.yarnpkg.com/micro-eth-signer/-/micro-eth-signer-0.16.0.tgz#a35d0de41ae9164ec96150a0f1fc29e7635ff106"
-  integrity sha512-rsSJcMGfY+kt3ROlL3U6y5BcjkK2H0zDKUQV6soo1JvjrctKKe+X7rKB0YIuwhWjlhJIoVHLuRYF+GXyyuVXxQ==
-  dependencies:
-    "@noble/curves" "~1.9.2"
-    "@noble/hashes" "2.0.0-beta.1"
-    micro-packed "~0.7.3"
-
 micro-ftch@^0.3.1:
   version "0.3.1"
   resolved "https://registry.yarnpkg.com/micro-ftch/-/micro-ftch-0.3.1.tgz#6cb83388de4c1f279a034fb0cf96dfc050853c5f"
   integrity sha512-/0LLxhzP0tfiR5hcQebtudP56gUurs2CLkGarnCiB/OqEyUFQ6U3paQi/tgLv0hBJYt2rnr9MNpxz4fiiugstg==
 
-micro-packed@~0.7.2, micro-packed@~0.7.3:
+micro-packed@~0.7.2:
   version "0.7.3"
   resolved "https://registry.yarnpkg.com/micro-packed/-/micro-packed-0.7.3.tgz#59e96b139dffeda22705c7a041476f24cabb12b6"
   integrity sha512-2Milxs+WNC00TRlem41oRswvw31146GiSaoCT7s3Xi2gMUglW5QBeqlQaZeHr5tJx9nm3i57LNXPqxOOaWtTYg==
