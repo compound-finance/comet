@@ -465,8 +465,13 @@ async function deployBDAGNetworkComet(
   await proposeCometImpl(deploymentManager, deploySpec, configOverrides, withAssetList, adminSigner);
   
   const contracts = await deploymentManager.contracts();
-  const deployed = Object.fromEntries(contracts);
-  return {...deployed};
+  const { comet, configurator, rewards, cometFactory } = Object.fromEntries(contracts);
+  return { 
+    comet,
+    configurator,
+    rewards,
+    cometFactory
+  };
 }
 
 async function deployOrRetrieveCometProxy(

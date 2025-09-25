@@ -60,13 +60,13 @@ async function runMigration<T>(
 task('deploy', 'Deploys market')
   .addFlag('simulate', 'only simulates the blockchain effects')
   .addFlag('noDeploy', 'skip the actual deploy step')
-  .addFlag('noVerify', 'do not verify any contracts')
+  .addFlag('noverify', 'do not verify any contracts')
   .addFlag('noVerifyImpl', 'do not verify the impl contract')
   .addFlag('overwrite', 'overwrites cache')
   .addFlag('bdag', 'use BDAG specifications')
   .addFlag('batchdeploy', 'batch deploy mode')
   .addParam('deployment', 'The deployment to deploy')
-  .setAction(async ({ simulate, noDeploy, noVerify, noVerifyImpl, overwrite, bdag, deployment, batchdeploy }, env) => {
+  .setAction(async ({ simulate, noDeploy, noverify, noVerifyImpl, overwrite, bdag, deployment, batchdeploy }, env) => {
     const maybeForkEnv = simulate ? await getForkEnv(env, deployment) : env;
     const network = env.network.name;
     const tag = `${network}/${deployment}`;
@@ -95,9 +95,9 @@ task('deploy', 'Deploys market')
       }
     }
 
-    const verify = noVerify ? false : !simulate;
+    const verify = noverify ? false : !simulate;
     const desc = verify ? 'Verify' : 'Would verify';
-    if (noVerify && simulate) {
+    if (noverify && simulate) {
       // Don't even print if --no-verify is set with --simulate
     } else {
       await dm.verifyContracts(async (address, args) => {
@@ -378,11 +378,11 @@ task('deploy_and_migrate', 'Runs deploy and migration')
 task('deploy_infrastructure', 'Deploys infrastructure (tokens, price feeds, etc.)')
   .addFlag('simulate', 'only simulates the blockchain effects')
   .addFlag('noDeploy', 'skip the actual deploy step')
-  .addFlag('noVerify', 'do not verify any contracts')
+  .addFlag('noverify', 'do not verify any contracts')
   .addFlag('overwrite', 'overwrites cache')
   .addFlag('bdag', 'use BDAG specifications')
   .addFlag('batchdeploy', 'batch deploy mode')
-  .setAction(async ({ simulate, noDeploy, noVerify, overwrite, bdag, batchdeploy }, env) => {
+  .setAction(async ({ simulate, noDeploy, noverify, overwrite, bdag, batchdeploy }, env) => {
     const maybeForkEnv = simulate ? await getForkEnv(env, '_infrastructure') : env;
     const network = env.network.name;
     const tag = `${network}/${'_infrastructure'}`;
@@ -411,9 +411,9 @@ task('deploy_infrastructure', 'Deploys infrastructure (tokens, price feeds, etc.
       }
     }
 
-    const verify = noVerify ? false : !simulate;
+    const verify = noverify ? false : !simulate;
     const desc = verify ? 'Verify' : 'Would verify';
-    if (noVerify && simulate) {
+    if (noverify && simulate) {
       // Don't even print if --no-verify is set with --simulate
     } else {
       await dm.verifyContracts(async (address, args) => {
@@ -425,5 +425,66 @@ task('deploy_infrastructure', 'Deploys infrastructure (tokens, price feeds, etc.
         }
         return verify;
       });
+    }
+  });
+
+task('validate:config', 'Validates BDAG configuration against Comet constructor requirements')
+  .addParam('deployment', 'The deployment to validate')
+  .setAction(async ({ deployment }, env) => {
+    const network = env.network.name;
+    const tag = `${network}/${deployment}`;
+    
+    console.log(`[${tag}] Validating configuration against Comet constructor requirements...`);
+    
+    try {
+      const dm = new DeploymentManager(
+        network,
+        deployment,
+        env,
+        {
+          writeCacheToDisk: false,
+          verificationStrategy: 'lazy',
+        }
+      );
+
+      // Load configuration
+      const config = await dm.readConfig();
+      
+      // Load infrastructure contracts first (if they exist)
+      try {
+        const infrastructureSpider = await dm.spiderOther('bdag-primordial', '_infrastructure');
+        if (infrastructureSpider && infrastructureSpider.contracts) {
+          for (const [alias, contract] of infrastructureSpider.contracts) {
+            await dm.putAlias(alias, contract);
+          }
+          console.log(`[${tag}] Loaded ${infrastructureSpider.contracts.size} infrastructure contracts`);
+        }
+      } catch (error) {
+        console.log(`[${tag}] Warning: Could not load infrastructure contracts: ${error.message}`);
+        console.log(`[${tag}] This is expected if infrastructure hasn't been deployed yet.`);
+      }
+
+      const contracts = await dm.contracts();
+      
+      // Import validation functions
+      const { validateConfiguration } = await import('../../src/validate/ConfigurationValidator');
+      
+      // Run validation
+      const validationResult = await validateConfiguration(config, contracts, env);
+      
+      if (validationResult.isValid) {
+        console.log(`[${tag}] ✅ Configuration validation passed!`);
+        console.log(`[${tag}] All Comet constructor requirements are satisfied.`);
+      } else {
+        console.log(`[${tag}] ❌ Configuration validation failed!`);
+        console.log(`[${tag}] Issues found:`);
+        validationResult.errors.forEach((error, index) => {
+          console.log(`[${tag}]   ${index + 1}. ${error}`);
+        });
+        process.exit(1);
+      }
+    } catch (error) {
+      console.log(`[${tag}] ❌ Configuration validation failed with error: ${error}`);
+      process.exit(1);
     }
   });

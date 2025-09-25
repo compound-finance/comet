@@ -12,6 +12,7 @@ export interface ProtocolConfiguration {
   governor?: string;
   pauseGuardian?: string;
   baseToken?: string;
+  baseTokenSymbol?: string;
   baseTokenPriceFeed?: string;
   extensionDelegate?: string;
   supplyKink?: BigNumberish;

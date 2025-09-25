@@ -1,0 +1,25 @@
+# BDAG Primordial Deployment - Custom .gitignore
+# 
+# Since BDAG Primordial doesn't have an explorer API yet, we need to commit
+# the .contracts/ cache to preserve contract addresses and metadata for the team.
+# This overrides the global .gitignore that typically excludes cache files.
+
+# Allow all cache files and deployment artifacts for BDAG Primordial
+!.contracts/
+!.contracts/**
+!aliases.json
+!roots.json
+proposalStack.json
+
+# Still ignore common development files
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Allow all deployment-related files to be committed
+!deploy.ts
+!configuration.json
+!relations.ts
+!migrations/
+!migrations/**
