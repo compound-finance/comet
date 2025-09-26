@@ -147,6 +147,7 @@ export const WHALES = {
   ],
   base: [
     '0x6D3c5a4a7aC4B1428368310E4EC3bB1350d01455', // USDbC whale
+    '0x46e6b214b524310239732D51387075E0e70970bf', // ezETH whale
     '0x07CFA5Df24fB17486AF0CBf6C910F24253a674D3', // cbETH whale TODO: need to update this whale, not enough
     '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb', // cbETH whale
     '0x3bf93770f2d4a794c3d9EBEfBAeBAE2a8f09A5E5', // cbETH whale
@@ -160,6 +161,7 @@ export const WHALES = {
   ],
   optimism: [
     '0x2A82Ae142b2e62Cb7D10b55E323ACB1Cab663a26', // OP whale
+    '0x966A8bcE7dc11f4Ec5a8885a7d31F0f170e3E00d', // USDM whale
     '0x8af3827a41c26c7f32c81e93bb66e837e0210d5c', // USDC whale
     '0xc45A479877e1e9Dfe9FcD4056c699575a1045dAA', // wstETH whale
     '0x6e57181D6b4b7c138a6F956AD16DAF4f27FC5E04', // COMP whale
@@ -168,6 +170,7 @@ export const WHALES = {
   mantle: [
     '0x588846213A30fd36244e0ae0eBB2374516dA836C', // USDe whale
     '0x88a1493366D48225fc3cEFbdae9eBb23E323Ade3', // mETH whale
+    '0xEe6281d94Fed46A90379F2033B6BbdcDa4EF462E', // mETH whale
     '0x651C9D1F9da787688225f49d63ad1623ba89A8D5', // FBTC whale
     '0xC455fE28a76da80022d4C35A37eB08FF405Eb78f', // FBTC whale
     '0x524db930F0886CdE7B5FFFc920Aae85e98C2abfb', // FBTC whale
@@ -181,6 +184,7 @@ export const WHALES = {
     '0x4200000000000000000000000000000000000006', // WETH whale
     '0x7Ae0911198AD568E1FE4af3cf81e36A29983778f', // wstETH whale
     '0x4B2cf5C94A88934870B523983B22e6d2dd1b6577', // wstETH whale
+    '0x8f5ae9CddB9f68de460C77730b018Ae7E04a140A', // wstETH whale
   ],
   linea: [
     '0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f', // ETH whale
