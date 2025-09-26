@@ -6,6 +6,7 @@ import "./IERC20NonStandard.sol";
 import "./IPriceFeed.sol";
 import "./IAssetListFactory.sol";
 import "./IAssetListFactoryHolder.sol";
+import "./IHealthFactorHolder.sol";
 import "./IAssetList.sol";
 
 /**
@@ -217,6 +218,10 @@ contract CometWithExtendedAssetList is CometMainInterface {
         // trackingBorrowIndex = 0;
     }
 
+    function targetHealthFactor() external view returns (uint256) {
+        return IHealthFactorHolder(extensionDelegate).targetHealthFactor(address(this));
+    }
+
     /**
      * @notice Get the i-th asset info, according to the order they were passed in originally
      * @param i The index of the asset info to get
@@ -417,40 +422,34 @@ contract CometWithExtendedAssetList is CometMainInterface {
      */
     function isLiquidatable(address account) override public view returns (bool) {
         int104 principal = userBasic[account].principal;
-
-        if (principal >= 0) {
-            return false;
-        }
-
-        uint16 assetsIn = userBasic[account].assetsIn;
-        uint8 _reserved = userBasic[account]._reserved;
-        int liquidity = signedMulPrice(
+        if (principal >= 0) return false;
+        int256 debt = signedMulPrice(
             presentValue(principal),
             getPrice(baseTokenPriceFeed),
             uint64(baseScale)
         );
-
+        return (debt + int256(_getLiquidity(account, true)) < 0);
+    }
+    function _getLiquidity(address account, bool liquidation) internal view returns (uint256) {
+        uint16 assetsIn = userBasic[account].assetsIn;
+        uint8 _reserved = userBasic[account]._reserved;
+        uint256 liquidity = 0;
         for (uint8 i = 0; i < numAssets; ) {
             if (isInAsset(assetsIn, i, _reserved)) {
-                if (liquidity >= 0) {
-                    return false;
-                }
-
                 AssetInfo memory asset = getAssetInfo(i);
                 uint newAmount = mulPrice(
                     userCollateral[account][asset.asset].balance,
                     getPrice(asset.priceFeed),
                     asset.scale
                 );
-                liquidity += signed256(mulFactor(
+                liquidity += mulFactor(
                     newAmount,
-                    asset.liquidateCollateralFactor
-                ));
+                    liquidation ? asset.liquidateCollateralFactor : asset.borrowCollateralFactor
+                );
             }
             unchecked { i++; }
         }
-
-        return liquidity < 0;
+        return liquidity;
     }
 
     /**
@@ -1055,57 +1054,75 @@ contract CometWithExtendedAssetList is CometMainInterface {
      */
     function absorbInternal(address absorber, address account) internal {
         if (!isLiquidatable(account)) revert NotLiquidatable();
-
         UserBasic memory accountUser = userBasic[account];
         int104 oldPrincipal = accountUser.principal;
         int256 oldBalance = presentValue(oldPrincipal);
         uint16 assetsIn = accountUser.assetsIn;
         uint8 _reserved = accountUser._reserved;
-
         uint256 basePrice = getPrice(baseTokenPriceFeed);
+        /// debt value - scaled by price
+        int256 debt = signedMulPrice(
+            presentValue(oldPrincipal),
+            basePrice,
+            uint64(baseScale)
+        );
+
         uint256 deltaValue = 0;
+        uint256 targetHF = IHealthFactorHolder(extensionDelegate).targetHealthFactor(address(this));
+        uint256 currentHF = 0;
+        uint256 totalCollaterizedValue = _getLiquidity(account, false); // sum of colalteral value * price * BF
 
         for (uint8 i = 0; i < numAssets; ) {
             if (isInAsset(assetsIn, i, _reserved)) {
                 AssetInfo memory assetInfo = getAssetInfo(i);
                 address asset = assetInfo.asset;
-                uint128 seizeAmount = userCollateral[account][asset].balance;
-                userCollateral[account][asset].balance = 0;
-                totalsCollateral[asset].totalSupplyAsset -= seizeAmount;
-
-                uint256 value = mulPrice(seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale);
-                deltaValue += mulFactor(value, assetInfo.liquidationFactor);
-
-                emit AbsorbCollateral(absorber, account, asset, seizeAmount, value);
+                uint256 seizeAmount = userCollateral[account][asset].balance;
+                uint256 collateralValue = mulPrice(seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale);
+                uint256 collaterizationValue = mulFactor(collateralValue, assetInfo.borrowCollateralFactor);
+                uint256 seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor);
+                uint256 expectedHF = ((totalCollaterizedValue - collaterizationValue) * FACTOR_SCALE) / (uint256(-debt) - deltaValue - seizedValue);
+                if (expectedHF >= targetHF) { // we need to seize only part of collateral
+                    /// target HF = (collateral value - delta * CF) / (debt - delta * LF)
+                    /// =>
+                    /// delta = (collateral value - debt * THF) / (LF * THF - CF)
+                    seizedValue = (totalCollaterizedValue - mulFactor(uint256(-debt) - deltaValue, targetHF)) * FACTOR_SCALE / (mulFactor(assetInfo.liquidationFactor, targetHF) - assetInfo.borrowCollateralFactor);
+                    seizeAmount = divPrice(seizedValue, getPrice(assetInfo.priceFeed), assetInfo.scale);
+                    currentHF = targetHF;
+                } else {
+                    currentHF = expectedHF;
+                }
+                
+                deltaValue += seizedValue;
+                totalCollaterizedValue -= collaterizationValue;
+                emit AbsorbCollateral(absorber, account, asset, seizeAmount, seizedValue);
+                userCollateral[account][asset].balance -= uint128(seizeAmount);
+                totalsCollateral[asset].totalSupplyAsset -= uint128(seizeAmount);
+                
+                if (currentHF >= targetHF) break;
             }
-            unchecked { i++; }
+            unchecked {
+                ++i;
+            }
         }
-
         uint256 deltaBalance = divPrice(deltaValue, basePrice, uint64(baseScale));
         int256 newBalance = oldBalance + signed256(deltaBalance);
-        // New balance will not be negative, all excess debt absorbed by reserves
-        if (newBalance < 0) {
+        // New balance can be negative, but only if target health factor is reached
+        if (newBalance < 0 && currentHF < targetHF) {
             newBalance = 0;
         }
-
         int104 newPrincipal = principalValue(newBalance);
+        /// @dev rewards should be updated with previous principal
         updateBasePrincipal(account, accountUser, newPrincipal);
-
         // reset assetsIn
         userBasic[account].assetsIn = 0;
-        userBasic[account]._reserved = 0;
-
         (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(oldPrincipal, newPrincipal);
-
         // Reserves are decreased by increasing total supply and decreasing borrows
         //  the amount of debt repaid by reserves is `newBalance - oldBalance`
         totalSupplyBase += supplyAmount;
         totalBorrowBase -= repayAmount;
-
-        uint256 basePaidOut = unsigned256(newBalance - oldBalance);
-        uint256 valueOfBasePaidOut = mulPrice(basePaidOut, basePrice, uint64(baseScale));
+        uint256 basePaidOut = newBalance > 0 ? unsigned256(newBalance - oldBalance) : 0;
+        uint256 valueOfBasePaidOut = basePaidOut > 0 ? mulPrice(basePaidOut, basePrice, uint64(baseScale)) : 0;
         emit AbsorbDebt(absorber, account, basePaidOut, valueOfBasePaidOut);
-
         if (newPrincipal > 0) {
             emit Transfer(address(0), account, presentValueSupply(baseSupplyIndex, unsigned104(newPrincipal)));
         }
@@ -1159,7 +1176,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
         // = ((basePrice * baseAmount / baseScale) / assetPriceDiscounted) * assetScale
         return basePrice * baseAmount * assetInfo.scale / assetPriceDiscounted / baseScale;
     }
-
+    
     /**
      * @notice Withdraws base token reserves if called by the governor
      * @param to An address of the receiver of withdrawn reserves
