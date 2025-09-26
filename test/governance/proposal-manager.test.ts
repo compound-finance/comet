@@ -10,7 +10,7 @@ import * as path from 'path';
 describe('ProposalManager', () => {
   let deploymentManager: DeploymentManager;
   let proposalManager: ProposalManager;
-  const testNetwork = 'test';
+  const testNetwork = 'test-network';
   const testProposalStackPath = path.join(
     process.cwd(),
     'deployments',
