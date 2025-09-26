@@ -24,7 +24,7 @@ class GovernanceUpdater {
     }
   }
 
-  private async proposeGovernanceUpdate(admins: string[], threshold: number, timelockDelay?: number): Promise<string> {
+  private async proposeGovernanceUpdate(admins?: string[], threshold?: number, timelockDelay?: number): Promise<string> {
     const output = await proposeGovernanceUpdateCommand(
       this.options.network, 
       this.options.deployment, 
@@ -71,45 +71,65 @@ class GovernanceUpdater {
       log(`Network: ${this.options.network}`, 'info');
       log(`Deployment: ${this.options.deployment}`, 'info');
       
-      // Ask for admin addresses
-      const adminsInput = await question(`\nEnter admin addresses (comma-separated, e.g., 0x123...,0x456...,0x789...): `);
+      // Ask what to update
+      const updateGovernance = await confirm(`\nDo you want to update governance configuration (admins and threshold)?`);
+      const updateTimelock = await confirm(`\nDo you want to update timelock delay?`);
       
-      if (!adminsInput) {
-        log(`\n❌ Admin addresses are required`, 'error');
+      if (!updateGovernance && !updateTimelock) {
+        log(`\n❌ You must select at least one update option`, 'error');
         return;
       }
       
-      const admins = adminsInput.split(',').map(addr => addr.trim());
-      
-      // Validate admin addresses
-      this.validateAdminAddresses(admins);
-      
-      // Ask for threshold
-      const thresholdInput = await question(`\nEnter multisig threshold (number of required approvals): `);
-      
-      if (!thresholdInput) {
-        log(`\n❌ Threshold is required`, 'error');
-        return;
-      }
-      
-      const threshold = parseInt(thresholdInput);
-      
-      // Validate threshold
-      if (isNaN(threshold) || threshold <= 0) {
-        log(`\n❌ Threshold must be a positive number`, 'error');
-        return;
-      }
-      
-      if (threshold > admins.length) {
-        log(`\n❌ Threshold cannot be greater than the number of admins`, 'error');
-        return;
-      }
-      
-      // Ask for timelock delay (optional)
-      const timelockDelayInput = await question(`\nEnter new timelock delay in seconds (optional, press Enter to skip): `);
+      let admins: string[] | undefined;
+      let threshold: number | undefined;
       let timelockDelay: number | undefined;
       
-      if (timelockDelayInput.trim()) {
+      // Handle governance configuration update
+      if (updateGovernance) {
+        // Ask for admin addresses
+        const adminsInput = await question(`\nEnter admin addresses (comma-separated, e.g., 0x123...,0x456...,0x789...): `);
+        
+        if (!adminsInput) {
+          log(`\n❌ Admin addresses are required`, 'error');
+          return;
+        }
+        
+        admins = adminsInput.split(',').map(addr => addr.trim());
+        
+        // Validate admin addresses
+        this.validateAdminAddresses(admins);
+        
+        // Ask for threshold
+        const thresholdInput = await question(`\nEnter multisig threshold (number of required approvals): `);
+        
+        if (!thresholdInput) {
+          log(`\n❌ Threshold is required`, 'error');
+          return;
+        }
+        
+        threshold = parseInt(thresholdInput);
+        
+        // Validate threshold
+        if (isNaN(threshold) || threshold <= 0) {
+          log(`\n❌ Threshold must be a positive number`, 'error');
+          return;
+        }
+        
+        if (threshold > admins.length) {
+          log(`\n❌ Threshold cannot be greater than the number of admins`, 'error');
+          return;
+        }
+      }
+      
+      // Handle timelock delay update
+      if (updateTimelock) {
+        const timelockDelayInput = await question(`\nEnter new timelock delay in seconds: `);
+        
+        if (!timelockDelayInput) {
+          log(`\n❌ Timelock delay is required`, 'error');
+          return;
+        }
+        
         timelockDelay = parseInt(timelockDelayInput);
         
         if (isNaN(timelockDelay) || timelockDelay <= 0) {
@@ -119,14 +139,14 @@ class GovernanceUpdater {
       }
       
       log(`\n📋 Configuration Summary:`, 'info');
-      log(`   Admin addresses: ${admins.join(', ')}`, 'info');
-      log(`   Threshold: ${threshold}`, 'info');
-      log(`   Total admins: ${admins.length}`, 'info');
-      if (timelockDelay) {
+      if (updateGovernance && admins && threshold) {
+        log(`   Admin addresses: ${admins.join(', ')}`, 'info');
+        log(`   Threshold: ${threshold}`, 'info');
+        log(`   Total admins: ${admins.length}`, 'info');
+      }
+      if (updateTimelock && timelockDelay) {
         const formattedDelay = this.formatDelay(timelockDelay);
         log(`   Timelock delay: ${formattedDelay}`, 'info');
-      } else {
-        log(`   Timelock delay: No change`, 'info');
       }
       
       // Confirm before proceeding
@@ -184,9 +204,10 @@ Examples:
   yarn ts-node scripts/governor/propose/governance-update/index.ts --network polygon --deployment usdc
 
 Interactive prompts:
-  - Admin addresses: Enter comma-separated list of admin addresses
-  - Threshold: Enter number of required approvals
-  - Timelock delay: Enter new delay in seconds (optional)
+  - Choose what to update: governance config, timelock delay, or both
+  - Admin addresses: Enter comma-separated list of admin addresses (if updating governance)
+  - Threshold: Enter number of required approvals (if updating governance)
+  - Timelock delay: Enter new delay in seconds (if updating timelock)
   - Confirmation: Confirm the configuration before proceeding
 
 Note: This script will guide you through the complete governance process:

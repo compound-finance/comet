@@ -182,12 +182,16 @@ export async function runSpiderForMarket(network: string, deployment: string): P
 export async function proposeGovernanceUpdate(
   network: string, 
   deployment: string, 
-  admins: string[], 
-  threshold: number, 
+  admins?: string[], 
+  threshold?: number, 
   timelockDelay?: number
 ): Promise<string> {
-  const adminsParam = admins.join(',');
-  let command = `yarn hardhat governor:propose-governance-update --network ${network} --deployment ${deployment} --admins "${adminsParam}" --threshold ${threshold}`;
+  let command = `yarn hardhat governor:propose-governance-update --network ${network} --deployment ${deployment}`;
+  
+  if (admins && threshold) {
+    const adminsParam = admins.join(',');
+    command += ` --admins "${adminsParam}" --threshold ${threshold}`;
+  }
   
   if (timelockDelay) {
     command += ` --timelock-delay ${timelockDelay}`;

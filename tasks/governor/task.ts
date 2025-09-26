@@ -224,25 +224,45 @@ task('governor:propose-timelock-delay-change', 'Propose to change the timelock d
 
 
 // Task to propose governance update (improved version)
-task('governor:propose-governance-update', 'Propose governance configuration and timelock delay updates')
-  .addParam('admins', "Comma-separated list of new admin addresses (e.g., '0x123...,0x456...,0x789...')")
-  .addParam('threshold', 'New multisig threshold (number of required approvals)')
+task('governor:propose-governance-update', 'Propose governance configuration and/or timelock delay updates')
+  .addOptionalParam('admins', 'Comma-separated list of new admin addresses (optional)')
+  .addOptionalParam('threshold', 'New multisig threshold (optional)')
   .addParam('deployment', 'The deployment to use')
   .addOptionalParam('timelockDelay', 'New timelock delay in seconds (optional)')
   .setAction(async (taskArgs, hre) => {
     const adminsParam = taskArgs.admins;
-    const threshold = parseInt(taskArgs.threshold);
+    const threshold = taskArgs.threshold ? parseInt(taskArgs.threshold) : undefined;
     const deployment = taskArgs.deployment;
-    const timelockDelay = taskArgs.timelockDelay ? parseInt(taskArgs.timelockDelay) : null;
+    const timelockDelay = taskArgs.timelockDelay ? parseInt(taskArgs.timelockDelay) : undefined;
     
     await createDeploymentManager(hre, deployment);
     
-    // Parse admin addresses
-    const admins = adminsParam.split(',').map((addr: string) => addr.trim());
+    // Parse admin addresses if provided
+    let admins: string[] | undefined;
+    if (adminsParam) {
+      admins = adminsParam.split(',').map((addr: string) => addr.trim());
+    }
+    
+    // Validate that at least one update is provided
+    if (!admins && !threshold && !timelockDelay) {
+      throw new Error('❌ At least one update must be provided (admins/threshold or timelockDelay)');
+    }
+    
+    // Validate that if admins are provided, threshold is also provided
+    if (admins && !threshold) {
+      throw new Error('❌ Threshold must be provided when admins are specified');
+    }
+    
+    // Validate that if threshold is provided, admins are also provided
+    if (threshold && !admins) {
+      throw new Error('❌ Admins must be provided when threshold is specified');
+    }
     
     console.log(`Proposing governance update:`);
-    console.log(`  New admins: ${admins.join(', ')}`);
-    console.log(`  New threshold: ${threshold}`);
+    if (admins && threshold) {
+      console.log(`  New admins: ${admins.join(', ')}`);
+      console.log(`  New threshold: ${threshold}`);
+    }
     if (timelockDelay) {
       console.log(`  New timelock delay: ${timelockDelay} seconds`);
     }
