@@ -287,7 +287,7 @@ task('governor:execute-batch-proposal', 'Execute a batch proposal from the propo
     const dm = await createDeploymentManager(hre, deployment);
     
     // Create proposal manager
-    const proposalManager = createProposalManager(dm, hre.network.name);
+    const proposalManager = createProposalManager(hre.network.name);
     
     console.log(`Executing batch proposal from proposal stack...`);
     
@@ -302,7 +302,7 @@ task('governor:execute-batch-proposal', 'Execute a batch proposal from the propo
     
     try {
       // Execute the proposal
-      const result = await proposalManager.executeProposal();
+      const result = await proposalManager.executeProposal(dm);
       
       console.log(`✅ Batch proposal executed successfully!`);
       console.log(`📋 Proposal ID: ${result.proposalId}`);
@@ -322,13 +322,8 @@ task('governor:add-to-stack', 'Add actions to the proposal stack')
   .addOptionalParam('deployment', 'The deployment to use (defaults to infrastructure)')
   .addOptionalParam('stackFile', 'Path to a JSON file containing actions to add')
   .setAction(async (taskArgs, hre) => {
-    const deployment = taskArgs.deployment || '_infrastructure';
-    
-    // Create deployment manager
-    const dm = await createDeploymentManager(hre, deployment);
-    
     // Create proposal manager
-    const proposalManager = createProposalManager(dm, hre.network.name);
+    const proposalManager = createProposalManager(hre.network.name);
     
     console.log(`Managing proposal stack...`);
     
@@ -366,11 +361,8 @@ task('governor:add-to-stack', 'Add actions to the proposal stack')
 // Task to clear the proposal stack
 task('governor:clear-stack', 'Clear all actions from the proposal stack')
   .setAction(async (taskArgs, hre) => {
-    // Create deployment manager
-    const dm = await createDeploymentManager(hre);
-    
     // Create proposal manager
-    const proposalManager = createProposalManager(dm, hre.network.name);
+    const proposalManager = createProposalManager(hre.network.name);
     
     try {
       // Clear the proposal stack

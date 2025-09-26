@@ -646,7 +646,7 @@ async function proposeCometImpl(
     assetConfigs,
   };
 
-  const proposalManager = createProposalManager(deploymentManager, deploymentManager.network);
+  const proposalManager = createProposalManager(deploymentManager.network);
   if (!deploymentManager.config.batchdeploy) {
     await proposalManager.clearProposalStack();
   }
@@ -680,7 +680,7 @@ async function proposeCometImpl(
 
   if (!deploymentManager.config.batchdeploy) {
     trace('Starting proposal execution');
-    const result = await proposalManager.executeProposal(adminSigner);
+    const result = await proposalManager.executeProposal(deploymentManager, adminSigner);
     console.log(`📋 Proposal ID: ${result.proposalId}`);
     console.log(`🔗 Transaction Hash: ${result.transactionHash}`);
     console.log(`📝 Description: ${result.description}`);

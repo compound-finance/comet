@@ -22,7 +22,7 @@ export async function proposeCometUpgrade(
   const rewardTokenAddress = COMP.address;
   
   // Create proposal manager
-  const proposalManager = createProposalManager(deploymentManager, deploymentManager.network);
+  const proposalManager = createProposalManager(deploymentManager.network);
   if (!deploymentManager.config.batchdeploy) {
     await proposalManager.clearProposalStack();
   }
@@ -81,7 +81,7 @@ export async function proposeCometUpgrade(
   if (!deploymentManager.config.batchdeploy) {
     // Execute the proposal
     trace('Starting proposal execution');
-    const result = await proposalManager.executeProposal(adminSigner);
+    const result = await proposalManager.executeProposal(deploymentManager, adminSigner);
     console.log(`📋 Proposal ID: ${result.proposalId}`);
     console.log(`🔗 Transaction Hash: ${result.transactionHash}`);
     console.log(`📝 Description: ${result.description}`);
