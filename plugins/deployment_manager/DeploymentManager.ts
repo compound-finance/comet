@@ -198,7 +198,7 @@ export class DeploymentManager {
     artifact?: string
   ): Promise<C> {
     const maybeExisting = await this.contract<C>(alias);
-    if (!maybeExisting) {
+    if (!maybeExisting || artifact) {
       const trace = this.tracer();
       const contracts = await Promise.all(
         [].concat(addresses).map(async (address) => {
@@ -224,22 +224,17 @@ export class DeploymentManager {
     alias: Alias,
     network: string,
     deployment: string,
-    force?: boolean,
     otherAlias = alias
   ): Promise<C> {
-    const maybeExisting = await this.contract<C>(alias);
-    if (!maybeExisting || force) {
-      const trace = this.tracer();
-      const spider = await this.spiderOther(network, deployment);
-      const contract = spider.contracts.get(otherAlias) as C;
-      if (!contract) {
-        throw new Error(`Unable to find contract ${network}/${deployment}:${otherAlias}`);
-      }
-      await this.putAlias(alias, contract);
-      trace(`Loaded ${alias} from ${network}/${deployment}:${otherAlias} (${contract.address})'`);
-      return contract;
+    const trace = this.tracer();
+    const spider = await this.spiderOther(network, deployment);
+    const contract = spider.contracts.get(otherAlias) as C;
+    if (!contract) {
+      throw new Error(`Unable to find contract ${network}/${deployment}:${otherAlias}`);
     }
-    return maybeExisting;
+    await this.putAlias(alias, contract);
+    trace(`Loaded ${alias} from ${network}/${deployment}:${otherAlias} (${contract.address})'`);
+    return contract;
   }
 
   /* Deploys a contract from Hardhat artifacts */
