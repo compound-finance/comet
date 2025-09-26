@@ -592,7 +592,7 @@ async function proposeCometImpl(
   _withAssetList = false,
   adminSigner?: SignerWithAddress
 ): Promise<any> {
-
+  const trace = deploymentManager.tracer();
 
   const cometExt = await deploymentManager.getContractOrThrow('comet:implementation:implementation');
   const cometProxy = await deploymentManager.getContractOrThrow('comet');
@@ -676,15 +676,20 @@ async function proposeCometImpl(
   const description = 'Deploy and configure Comet implementation';
   await proposalManager.setDescription(description);
 
-  // Send transaction to governor to submit the proposal
-  const trace = deploymentManager.tracer();
+  const proposalData = await proposalManager.toProposalData();
 
   if (!deploymentManager.config.batchdeploy) {
     trace('Starting proposal execution');
-    await proposalManager.executeProposal(adminSigner);
+    const result = await proposalManager.executeProposal(adminSigner);
+    console.log(`📋 Proposal ID: ${result.proposalId}`);
+    console.log(`🔗 Transaction Hash: ${result.transactionHash}`);
+    console.log(`📝 Description: ${result.description}`);
+    console.log(`🎯 Actions: ${result.targets.length} targets`);
   } else {
     trace('Executing proposal is disabled in batch deploy mode');
   }
+
+  return proposalData;
 }
 
 

@@ -3,7 +3,16 @@ import { DeploymentManager } from '../../plugins/deployment_manager';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { ethers } from 'ethers';
 
-export default async function executeProposal(hre: HardhatRuntimeEnvironment, proposalId: number, executionType: string) {
+// Define execution types as a union type for better type safety
+export type ExecutionType = 
+  | 'comet-impl-in-configuration'
+  | 'comet-upgrade'
+  | 'governance-config'
+  | 'combined-governance-update'
+  | 'timelock-delay-change'
+  | 'comet-reward-funding';
+
+export default async function executeProposal(hre: HardhatRuntimeEnvironment, proposalId: number, executionType: ExecutionType) {
   if (proposalId === undefined || proposalId === null) {
     throw new Error('Proposal ID is required');
   }
@@ -11,7 +20,7 @@ export default async function executeProposal(hre: HardhatRuntimeEnvironment, pr
   const deploymentManager = (hre as any).deploymentManager;
   const trace = deploymentManager.tracer();
   
-  trace(`Executing proposal ${proposalId} with execution type: ${executionType || 'default'}...`);
+  trace(`Executing proposal ${proposalId} with execution type: ${executionType}...`);
   
   try {
     const result = await executeCometProposal(deploymentManager, proposalId);
@@ -65,7 +74,7 @@ async function executeCometProposal(
 async function extractLogsFromTransaction(
   deploymentManager: DeploymentManager,
   txHash: string,
-  executionType?: string
+  executionType?: ExecutionType
 ): Promise<any> {
   const provider = deploymentManager.hre.ethers.provider;
   const trace = deploymentManager.tracer();
@@ -100,9 +109,14 @@ async function extractLogsFromTransaction(
         }
         break;
       }
-      case 'comet-upgrade':
+      case 'comet-upgrade': {
         trace('Parsing logs for comet upgrade execution...');
+        const upgradedData = extractUpgradedEvent(receipt, trace);
+        if (upgradedData) {
+          extractedLogs.parsedLogs.upgraded = upgradedData;
+        }
         break;
+      }
 
       case 'comet-reward-funding': {
         trace('Parsing logs for comet reward funding execution...');
@@ -123,6 +137,20 @@ async function extractLogsFromTransaction(
       case 'timelock-delay-change': {
         trace('Parsing logs for timelock delay change execution...');
         const newDelayData = extractNewDelayEvent(receipt, trace);
+        if (newDelayData) {
+          extractedLogs.parsedLogs.newDelay = newDelayData;
+        }
+        break;
+      }
+      case 'combined-governance-update': {
+        trace('Parsing logs for combined governance update execution...');
+        // Extract both governance configuration and timelock delay change events
+        const governanceConfigData = extractGovernanceConfigEvent(receipt, trace);
+        const newDelayData = extractNewDelayEvent(receipt, trace);
+        
+        if (governanceConfigData) {
+          extractedLogs.parsedLogs.governanceConfig = governanceConfigData;
+        }
         if (newDelayData) {
           extractedLogs.parsedLogs.newDelay = newDelayData;
         }
@@ -352,5 +380,46 @@ function formatDelay(delaySeconds: string): string {
   } else {
     const days = Math.floor(seconds / 86400);
     return `${days} days (${seconds} seconds)`;
+  }
+}
+
+/**
+ * Extracts Upgraded event from transaction logs
+ * @param receipt Transaction receipt containing logs
+ * @param trace Tracer function for logging
+ * @returns Parsed Upgraded event data or null if not found
+ */
+function extractUpgradedEvent(receipt: any, trace: any): any {
+  trace('Parsing logs for Upgraded event...');
+  
+  // Create interface for proxy contract to parse Upgraded event
+  const proxyInterface = new ethers.utils.Interface([
+    'event Upgraded(address indexed implementation)'
+  ]);
+  
+  // Look for Upgraded events in the logs
+  const upgradedEvents = receipt.logs
+    .map((log: any) => {
+      try {
+        return proxyInterface.parseLog(log);
+      } catch (error) {
+        return null; // Not an Upgraded event
+      }
+    })
+    .filter((parsedLog: any) => parsedLog !== null && parsedLog.name === 'Upgraded');
+  
+  if (upgradedEvents.length > 0) {
+    const upgradedEvent = upgradedEvents[0];
+    const implementation = upgradedEvent.args.implementation;
+    
+    trace(`Found Upgraded event: implementation=${implementation}`);
+    
+    return {
+      implementation,
+      eventName: 'Upgraded'
+    };
+  } else {
+    trace('No Upgraded event found in transaction logs');
+    return null;
   }
 }

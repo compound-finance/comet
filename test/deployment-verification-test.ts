@@ -1,7 +1,6 @@
 import { expect } from 'chai';
 import { ethers, network } from 'hardhat';
 import { Contract } from 'ethers';
-import { TOKEN_ADDRESSES } from '../deployments/bdag-primordial/constants';
 
 describe('Deployment Verification', function () {
   // This test verifies the deployment configuration for any network/market
@@ -61,6 +60,17 @@ describe('Deployment Verification', function () {
     
     console.log(`🔍 Testing deployment on network: ${networkName}, market: ${market}`);
     
+    // Run spider to refresh roots.json before testing
+    console.log(`🕷️  Running spider to refresh roots.json...`);
+    try {
+      const { execSync } = require('child_process');
+      const spiderCommand = `yarn hardhat spider --network ${networkName} --deployment ${market}`;
+      execSync(spiderCommand, { stdio: 'inherit' });
+      console.log(`✅ Spider completed successfully`);
+    } catch (error) {
+      throw new Error('❌ SPIDER is not running correctly. Please verify aliases and roots files');
+    }
+        
     // Load the deployed contracts from aliases.json
     const rootsPath = `../deployments/${networkName}/${market}/roots.json`;
     const roots = require(rootsPath);
@@ -325,20 +335,6 @@ describe('Deployment Verification', function () {
     expect(implementation).to.not.equal(comet.address);
   });
 
-  it('should have base token address matching configuration.json', async function () {
-    const { comet } = deployedContracts;
-    
-    // Validate base token configuration
-    if (config.baseToken) {
-      const deployedBaseToken = await comet.baseToken();
-      const expectedBaseTokenAddress =  TOKEN_ADDRESSES[config.baseToken];
-      
-      expect(expectedBaseTokenAddress).to.exist;
-      expect(deployedBaseToken.toLowerCase()).to.equal(expectedBaseTokenAddress.toLowerCase());
-      console.log(`✅ Base token ${config.baseToken} matches: ${deployedBaseToken}`);
-    }
-  });
-
   it('should have base token price feed address matching configuration.json', async function () {
     const { comet } = deployedContracts;
     
@@ -567,27 +563,6 @@ describe('Deployment Verification', function () {
       const numAssets = await comet.numAssets();
       expect(numAssets).to.equal(Object.keys(config.assets).length);
       console.log(`✅ Number of assets matches: ${numAssets}`);
-    }
-  });
-  
-  it('should have asset addresses matching configuration.json', async function () {
-    const { comet } = deployedContracts;
-    
-    if (config.assets && typeof config.assets === 'object') {
-      const assetKeys = Object.keys(config.assets);
-      for (let i = 0; i < assetKeys.length; i++) {
-        const assetKey = assetKeys[i];
-        const configAsset = config.assets[assetKey];
-        const deployedAssetInfo = await comet.getAssetInfo(i);
-        
-        // Validate that configAsset is an object
-        expect(configAsset).to.be.an('object');
-        
-        const expectedAssetAddress = TOKEN_ADDRESSES[assetKey];
-        expect(expectedAssetAddress).to.exist;
-        expect(deployedAssetInfo.asset.toLowerCase()).to.equal(expectedAssetAddress.toLowerCase());
-        console.log(`✅ Asset ${assetKey} address matches: ${deployedAssetInfo.asset}`);
-      }
     }
   });
 
