@@ -4,7 +4,7 @@ import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import { runGovernanceFlow } from '../../helpers/governanceFlow';
-import { log, confirm, updateCometImplAddress } from '../../helpers/ioUtil';
+import { log, confirm } from '../../helpers/ioUtil';
 import { 
   extractProposalId, 
   extractImplementationAddresses, 
@@ -415,14 +415,6 @@ class MarketsDeployer {
       });
 
       log(`\n🎉 Governance flow response for ${deployments}: ${governanceFlowResponse}`, 'success');
-      
-      // Update aliases.json and roots.json with the new implementation address
-      for (let i = 0; i < deployments.length; i++) {
-        const deployment = deployments[i];
-        const newImplementationAddress = newImplementationAddresses[i];
-        updateCometImplAddress(this.options.network, deployment, newImplementationAddress);
-        await this.runSpiderForMarket(deployment);
-      }
     }
   }
 }

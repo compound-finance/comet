@@ -1,27 +1,28 @@
 import { runCommand } from './commandUtil';
 import { log, confirm } from './ioUtil';
+import { ExecutionType } from '../../src/governor/ExecuteProposal';
 
 export interface GovernanceFlowOptions {
   network: string;
   proposalId: string;
-  executionType?: string;
+  executionType?: ExecutionType;
 }
 
 export class GovernanceFlowHelper {
-  private async approveProposal(options: GovernanceFlowOptions): Promise<void> {
+  private async approveProposal(options: GovernanceFlowOptions): Promise<string> {
     const command = `yarn hardhat governor:approve --network ${options.network} --proposal-id ${options.proposalId}`;
     
-    await runCommand(command, 'Approving proposal');
+    return await runCommand(command, 'Approving proposal');
   }
 
-  private async queueProposal(options: GovernanceFlowOptions): Promise<void> {
+  private async queueProposal(options: GovernanceFlowOptions): Promise<string> {
     const command = `yarn hardhat governor:queue --network ${options.network} --proposal-id ${options.proposalId}`;
     
-    await runCommand(command, 'Queueing proposal');
+    return await runCommand(command, 'Queueing proposal');
   }
 
   private async executeProposal(options: GovernanceFlowOptions): Promise<string> {
-    const executionType = options.executionType || 'governance-config';
+    const executionType: ExecutionType = options.executionType || 'governance-config';
     const command = `yarn hardhat governor:execute --network ${options.network} --proposal-id ${options.proposalId} --execution-type ${executionType}`;
     
     return await runCommand(command, 'Executing proposal');

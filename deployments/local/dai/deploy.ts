@@ -7,15 +7,15 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
 
   // Load infrastructure contracts from the _infrastructure deployment
   const infrastructureSpider = await deploymentManager.spiderOther('local', '_infrastructure');
-  
+  const infrastructureContracts = {};
   // Add infrastructure contracts to the current deployment's contract map
   for (const [alias, contract] of infrastructureSpider.contracts) {
     await deploymentManager.putAlias(alias, contract);
+    infrastructureContracts[alias] = contract;
   }
-
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);
 
 
-  return { ...deployed };
+  return { ...deployed, ...infrastructureContracts };
 }

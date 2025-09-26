@@ -81,7 +81,11 @@ export async function proposeCometUpgrade(
   if (!deploymentManager.config.batchdeploy) {
     // Execute the proposal
     trace('Starting proposal execution');
-    await proposalManager.executeProposal(adminSigner);
+    const result = await proposalManager.executeProposal(adminSigner);
+    console.log(`📋 Proposal ID: ${result.proposalId}`);
+    console.log(`🔗 Transaction Hash: ${result.transactionHash}`);
+    console.log(`📝 Description: ${result.description}`);
+    console.log(`🎯 Actions: ${result.targets.length} targets`);
   } else {
     trace('Executing proposal is disabled');
   }
