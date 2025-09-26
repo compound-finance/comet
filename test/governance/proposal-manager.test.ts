@@ -1,8 +1,8 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { DeploymentManager } from '../../../plugins/deployment_manager';
-import { ProposalManager, createProposalManager } from '../../../src/governor/helpers/proposalManager';
-import { ProposalAction, ProposalStack } from '../../../src/governor/helpers';
+import { DeploymentManager } from '../../plugins/deployment_manager';
+import { ProposalManager, createProposalManager } from '../../src/governor/helpers/proposalManager';
+import { ProposalAction, ProposalStack } from '../../src/governor/helpers';
 
 import * as fs from 'fs';
 import * as path from 'path';
