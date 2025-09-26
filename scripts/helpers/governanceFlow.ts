@@ -22,7 +22,7 @@ export class GovernanceFlowHelper {
   }
 
   private async executeProposal(options: GovernanceFlowOptions): Promise<string> {
-    const executionType: ExecutionType = options.executionType || 'governance-config';
+    const executionType: ExecutionType = options.executionType || 'governance-update';
     const command = `yarn hardhat governor:execute --network ${options.network} --proposal-id ${options.proposalId} --execution-type ${executionType}`;
     
     return await runCommand(command, 'Executing proposal');
