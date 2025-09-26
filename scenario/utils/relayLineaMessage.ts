@@ -157,7 +157,7 @@ export default async function relayLineaMessage(
         rollingHash
       );
     }
-      
+
 
     let relayMessageTxn: { events: any[] }; 
 
