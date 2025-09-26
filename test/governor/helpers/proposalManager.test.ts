@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { DeploymentManager } from '../../../plugins/deployment_manager';
 import { ProposalManager, createProposalManager } from '../../../src/governor/helpers/proposalManager';
-import { ProposalAction, ProposalStack } from '../../../src/governor/types/proposalTypes';
+import { ProposalAction, ProposalStack } from '../../../src/governor/helpers';
 
 import * as fs from 'fs';
 import * as path from 'path';
@@ -11,19 +11,17 @@ describe('ProposalManager', () => {
   let deploymentManager: DeploymentManager;
   let proposalManager: ProposalManager;
   const testNetwork = 'test';
-  const testDeployment = 'dai';
   const testProposalStackPath = path.join(
     process.cwd(),
     'deployments',
     testNetwork,
-    testDeployment,
     'proposalStack.json'
   );
 
   beforeEach(async () => {
     // Create a mock deployment manager
     deploymentManager = new DeploymentManager(ethers as any, testNetwork, {} as any);
-    proposalManager = createProposalManager(deploymentManager, testNetwork);
+    proposalManager = createProposalManager(testNetwork);
     
     // Clean up any existing test files and ensure directory exists
     const testDir = path.dirname(testProposalStackPath);
@@ -392,7 +390,6 @@ describe('ProposalManager', () => {
         process.cwd(),
         'deployments',
         testNetwork,
-        testDeployment,
         'proposalStack.json'
       );
       expect(proposalManager.getProposalStackPath()).to.equal(expectedPath);
@@ -446,16 +443,9 @@ describe('ProposalManager', () => {
   });
 
   describe('BigInt Serialization', () => {
-    let mockDeploymentManager: any;
     let mockContract: any;
 
     beforeEach(() => {
-      // Create mock deployment manager
-      mockDeploymentManager = {
-        tracer: () => (msg: string) => console.log(msg),
-        contract: () => mockContract
-      };
-
       // Create mock contract
       mockContract = {
         address: '0x1234567890123456789012345678901234567890',
@@ -465,7 +455,7 @@ describe('ProposalManager', () => {
       };
     });
     it('should handle BigInt values in contract actions', async () => {
-      const proposalManager = new ProposalManager(mockDeploymentManager, 'test-network', 'test-deployment');
+      const proposalManager = new ProposalManager('test-network');
       
       // Clear any existing stack
       await proposalManager.clearProposalStack();
@@ -480,7 +470,7 @@ describe('ProposalManager', () => {
     });
 
     it('should handle BigInt values in target actions', async () => {
-      const proposalManager = new ProposalManager(mockDeploymentManager, 'test-network', 'test-deployment');
+      const proposalManager = new ProposalManager('test-network');
       
       // Clear any existing stack
       await proposalManager.clearProposalStack();

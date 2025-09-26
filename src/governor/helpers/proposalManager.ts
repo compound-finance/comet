@@ -9,18 +9,16 @@ import {
   ProposalStackAction, 
   ProposalAction,
   ProposalExecutionResult 
-} from '../types/proposalTypes';
+} from './types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 /**
  * Proposal Manager for handling proposal files and execution
  */
 export class ProposalManager {
-  private deploymentManager: DeploymentManager;
   private proposalStackPath: string;
 
-  constructor(deploymentManager: DeploymentManager, network: string) {
-    this.deploymentManager = deploymentManager;
+  constructor(network: string) {
     this.proposalStackPath = path.join(
       process.cwd(),
       'deployments',
@@ -62,8 +60,7 @@ export class ProposalManager {
     stack.actions.push(stackAction);
     await this.saveProposalStack(stack);
     
-    const trace = this.deploymentManager.tracer();
-    trace(`Added action to proposal stack: ${stackAction.target}`);
+    console.log(`Added action to proposal stack: ${stackAction.target}`);
   }
 
   /**
@@ -113,8 +110,7 @@ export class ProposalManager {
     };
     await this.saveProposalStack(emptyStack);
     
-    const trace = this.deploymentManager.tracer();
-    trace('Cleared proposal stack');
+    console.log('Cleared proposal stack');
   }
 
   /**
@@ -127,8 +123,7 @@ export class ProposalManager {
         return JSON.parse(content);
       }
     } catch (error) {
-      const trace = this.deploymentManager.tracer();
-      trace(`Warning: Could not load proposal stack: ${error}`);
+      console.log(`Warning: Could not load proposal stack: ${error}`);
     }
     
     return {
@@ -184,15 +179,16 @@ export class ProposalManager {
 
   /**
    * Execute the proposal by submitting it to the governor
+   * @param deploymentManager - The deployment manager instance
+   * @param adminSigner - Optional admin signer
    */
-  async executeProposal(adminSigner?: SignerWithAddress): Promise<ProposalExecutionResult> {
+  async executeProposal(deploymentManager: DeploymentManager, adminSigner?: SignerWithAddress): Promise<ProposalExecutionResult> {
     const proposalData = await this.toProposalData();
-    const governor = await this.deploymentManager.getContractOrThrow('governor');
-    const admin = adminSigner ?? await this.deploymentManager.getSigner();
+    const governor = await deploymentManager.getContractOrThrow('governor');
+    const admin = adminSigner ?? await deploymentManager.getSigner();
     
-    const trace = this.deploymentManager.tracer();
-    trace(`Executing proposal with ${proposalData.targets.length} actions`);
-    trace(`Proposal description: ${proposalData.description}`);
+    console.log(`Executing proposal with ${proposalData.targets.length} actions`);
+    console.log(`Proposal description: ${proposalData.description}`);
     
     const tx = await governor.connect(admin).propose(
       proposalData.targets,
@@ -202,7 +198,7 @@ export class ProposalManager {
     );
     
     const receipt = await tx.wait();
-    trace(`Proposal submitted! Transaction hash: ${receipt.transactionHash}`);
+    console.log(`Proposal submitted! Transaction hash: ${receipt.transactionHash}`);
     
     // Extract proposal ID from logs
     const proposalId = extractProposalIdFromLogs(governor, receipt);
@@ -254,11 +250,8 @@ export class ProposalManager {
 /**
  * Create a new ProposalManager instance
  */
-export function createProposalManager(
-  deploymentManager: DeploymentManager, 
-  network: string
-): ProposalManager {
-  return new ProposalManager(deploymentManager, network);
+export function createProposalManager(network: string): ProposalManager {
+  return new ProposalManager(network);
 }
 
 /**
