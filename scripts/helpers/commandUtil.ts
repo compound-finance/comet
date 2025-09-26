@@ -171,7 +171,7 @@ export async function runSpiderForMarket(network: string, deployment: string): P
 }
 
 /**
- * Propose a combined governance update
+ * Propose a governance update
  * @param network - The network to propose the update on
  * @param deployment - The deployment name
  * @param admins - Array of admin addresses
@@ -179,19 +179,23 @@ export async function runSpiderForMarket(network: string, deployment: string): P
  * @param timelockDelay - Optional timelock delay in seconds
  * @returns Promise<string> - The command output
  */
-export async function proposeCombinedUpdate(
+export async function proposeGovernanceUpdate(
   network: string, 
   deployment: string, 
-  admins: string[], 
-  threshold: number, 
+  admins?: string[], 
+  threshold?: number, 
   timelockDelay?: number
 ): Promise<string> {
-  const adminsParam = admins.join(',');
-  let command = `yarn hardhat governor:propose-combined-update --network ${network} --deployment ${deployment} --admins "${adminsParam}" --threshold ${threshold}`;
+  let command = `yarn hardhat governor:propose-governance-update --network ${network} --deployment ${deployment}`;
+  
+  if (admins && threshold) {
+    const adminsParam = admins.join(',');
+    command += ` --admins "${adminsParam}" --threshold ${threshold}`;
+  }
   
   if (timelockDelay) {
     command += ` --timelock-delay ${timelockDelay}`;
   }
   
-  return await runCommand(command, 'Proposing combined governance update');
+  return await runCommand(command, 'Proposing governance update');
 }
