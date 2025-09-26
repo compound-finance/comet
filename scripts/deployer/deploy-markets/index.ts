@@ -16,7 +16,7 @@ import {
   runDeploymentVerification as runDeploymentVerificationCommand,
   proposeUpgrade as proposeUpgradeCommand,
   runSpiderForMarket as runSpiderForMarketCommand,
-  proposeCombinedUpdate as proposeCombinedUpdateCommand
+  proposeGovernanceUpdate as proposeGovernanceUpdateCommand
 } from '../../helpers/commandUtil';
 import { getValidGovConfig } from '../../../src/deploy/helpers/govValidation';
 
@@ -64,9 +64,9 @@ class MarketsDeployer {
       // Step 8: Run governance flow to accept upgrades
       await this.runGovernanceToAcceptUpgrade(upgradeBatchProposalId, implementationAddresses, this.options.deployments);
 
-      // Step 9: Propose combined governance update
+      // Step 9: Propose governance update
       const { governorSigners, multisigThreshold, timelockDelay } = getValidGovConfig();
-      await this.combinedGovernanceUpdate(governorSigners, multisigThreshold, timelockDelay);
+      await this.governanceUpdate(governorSigners, multisigThreshold, timelockDelay);
 
       // Step 10: Run verification tests (optional)
       await this.runVerificationTests();
@@ -169,21 +169,21 @@ class MarketsDeployer {
   }
 
   /**
-   * Step 9: Propose combined governance update
-   * - Propose a combined governance update to set the new admins and threshold
+   * Step 9: Propose governance update
+   * - Propose a governance update to set the new admins and threshold
    * - Return the proposal ID for governance flow
    */
-  private async combinedGovernanceUpdate(admins: string[], threshold: number, timelockDelay?: number): Promise<string> {
-    const shouldProposeCombinedUpdate = await confirm(`\nDo you want to propose a combined governance update?`);
+  private async governanceUpdate(admins: string[], threshold: number, timelockDelay?: number): Promise<string> {
+    const shouldProposeGovernanceUpdate = await confirm(`\nDo you want to propose a governance update?`);
 
-    if (!shouldProposeCombinedUpdate) {
-      log(`\n⏸️  Combined governance update cancelled.`, 'warning');
+    if (!shouldProposeGovernanceUpdate) {
+      log(`\n⏸️  Governance update cancelled.`, 'warning');
       return;
     }
 
-    const output = await proposeCombinedUpdateCommand(
+    const output = await proposeGovernanceUpdateCommand(
       this.options.network, 
-      this.options.deployments[0], // Use first deployment for combined governance update
+      this.options.deployments[0], // Use first deployment for governance update
       admins, 
       threshold, 
       timelockDelay
@@ -194,10 +194,10 @@ class MarketsDeployer {
     const governanceFlowResponse = await runGovernanceFlow({
       network: this.options.network,
       proposalId,
-      executionType: 'combined-governance-update'
+      executionType: 'governance-update'
     });
 
-    log(`\n🎉 Governance flow response for combined governance update: ${governanceFlowResponse}`, 'success');
+    log(`\n🎉 Governance flow response for governance update: ${governanceFlowResponse}`, 'success');
 
     return governanceFlowResponse;
   }

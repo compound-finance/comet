@@ -2,7 +2,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { extractProposalIdFromLogs } from '../deploy/helpers';
 import { utils } from 'ethers';
 
-export default async function proposeCombinedGovernanceUpdateTask(
+export default async function proposeGovernanceUpdateTask(
   hre: HardhatRuntimeEnvironment,
   newAdmins: string[],
   newThreshold: number,
@@ -26,7 +26,7 @@ export default async function proposeCombinedGovernanceUpdateTask(
     throw new Error('Timelock contract not found in deployment');
   }
 
-  console.log('📋 Creating combined governance update proposal...');
+  console.log('📋 Creating governance update proposal...');
   console.log(`   New admins: ${newAdmins.length} addresses`);
   console.log(`   New threshold: ${newThreshold}`);
   if (newTimelockDelay) {
@@ -80,7 +80,7 @@ export default async function proposeCombinedGovernanceUpdateTask(
   }
 
   // Create description
-  let description = `Combined governance update: Set ${newAdmins.length} admins with threshold ${newThreshold}`;
+  let description = `Governance update: Set ${newAdmins.length} admins with threshold ${newThreshold}`;
   if (newTimelockDelay) {
     description += ` and update timelock delay to ${newTimelockDelay} seconds`;
   }
@@ -97,7 +97,7 @@ export default async function proposeCombinedGovernanceUpdateTask(
       throw new Error('Proposal ID not found in transaction receipt');
     }
     
-    console.log(`✅ Combined governance update proposal created successfully!`);
+    console.log(`✅ Governance update proposal created successfully!`);
     console.log(`   Proposal ID: ${proposalId}`);
     console.log(`   Transaction hash: ${tx.hash}`);
     console.log(`   Block number: ${receipt.blockNumber}`);
@@ -116,7 +116,7 @@ export default async function proposeCombinedGovernanceUpdateTask(
       actions: targets.length
     };
   } catch (error) {
-    console.error('❌ Failed to create combined governance update proposal:', error);
+    console.error('❌ Failed to create governance update proposal:', error);
     throw error;
   }
 }

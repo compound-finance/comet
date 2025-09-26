@@ -2,17 +2,17 @@
 
 import { runGovernanceFlow, GovernanceFlowOptions } from '../../../helpers/governanceFlow';
 import { log, question, confirm } from '../../../helpers/ioUtil';
-import { proposeCombinedUpdate as proposeCombinedUpdateCommand, extractProposalId } from '../../../helpers/commandUtil';
+import { proposeGovernanceUpdate as proposeGovernanceUpdateCommand, extractProposalId } from '../../../helpers/commandUtil';
 
-interface CombinedUpdateOptions {
+interface GovernanceUpdateOptions {
   network: string;
   deployment: string;
 }
 
-class CombinedGovernanceUpdater {
-  private options: CombinedUpdateOptions;
+class GovernanceUpdater {
+  private options: GovernanceUpdateOptions;
 
-  constructor(options: CombinedUpdateOptions) {
+  constructor(options: GovernanceUpdateOptions) {
     this.options = options;
   }
 
@@ -24,8 +24,8 @@ class CombinedGovernanceUpdater {
     }
   }
 
-  private async proposeCombinedUpdate(admins: string[], threshold: number, timelockDelay?: number): Promise<string> {
-    const output = await proposeCombinedUpdateCommand(
+  private async proposeGovernanceUpdate(admins: string[], threshold: number, timelockDelay?: number): Promise<string> {
+    const output = await proposeGovernanceUpdateCommand(
       this.options.network, 
       this.options.deployment, 
       admins, 
@@ -37,15 +37,15 @@ class CombinedGovernanceUpdater {
   }
 
   private async runGovernanceFlow(proposalId: string): Promise<void> {
-    log(`\n🎉 Combined governance update proposal created successfully!`, 'success');
+    log(`\n🎉 Governance update proposal created successfully!`, 'success');
     
     const options: GovernanceFlowOptions = {
       network: this.options.network,
       proposalId: proposalId,
-      executionType: 'combined-governance-update'
+      executionType: 'governance-update'
     };
     
-    const successMessage = `\n🎉 Combined governance update completed successfully!\n🔧 New governance configuration and timelock settings are now active`;
+    const successMessage = `\n🎉 Governance update completed successfully!\n🔧 New governance configuration and timelock settings are now active`;
     
     await runGovernanceFlow(options, successMessage);
   }
@@ -67,7 +67,7 @@ class CombinedGovernanceUpdater {
 
   public async run(): Promise<void> {
     try {
-      log(`\n🚀 Starting Combined Governance Update Process`, 'info');
+      log(`\n🚀 Starting Governance Update Process`, 'info');
       log(`Network: ${this.options.network}`, 'info');
       log(`Deployment: ${this.options.deployment}`, 'info');
       
@@ -130,28 +130,28 @@ class CombinedGovernanceUpdater {
       }
       
       // Confirm before proceeding
-      const shouldProceed = await confirm(`\nDo you want to proceed with this combined governance update?`);
+      const shouldProceed = await confirm(`\nDo you want to proceed with this governance update?`);
       
       if (!shouldProceed) {
-        log(`\n⏸️  Combined governance update cancelled.`, 'warning');
+        log(`\n⏸️  Governance update cancelled.`, 'warning');
         return;
       }
       
-      // Step 1: Propose combined governance update
-      const proposalId = await this.proposeCombinedUpdate(admins, threshold, timelockDelay);
+      // Step 1: Propose governance update
+      const proposalId = await this.proposeGovernanceUpdate(admins, threshold, timelockDelay);
       
       // Step 2: Run governance flow
       await this.runGovernanceFlow(proposalId);
       
     } catch (error) {
-      log(`\n❌ Combined governance update process failed: ${error}`, 'error');
+      log(`\n❌ Governance update process failed: ${error}`, 'error');
       throw error;
     }
   }
 }
 
 // Parse command line arguments
-function parseArgs(): CombinedUpdateOptions {
+function parseArgs(): GovernanceUpdateOptions {
   const args = process.argv.slice(2);
   let network = 'local';
   let deployment = 'dai';
@@ -167,7 +167,7 @@ function parseArgs(): CombinedUpdateOptions {
       case '--help':
       case '-h':
         console.log(`
-🔧 Combined Governance Update Script
+🔧 Governance Update Script
 
 Usage: yarn ts-node scripts/governor/propose/governance-update/index.ts [options]
 
@@ -205,7 +205,7 @@ Note: This script will guide you through the complete governance process:
 // Main execution
 async function main() {
   const options = parseArgs();
-  const updater = new CombinedGovernanceUpdater(options);
+  const updater = new GovernanceUpdater(options);
   await updater.run();
 }
 
