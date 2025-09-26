@@ -7,9 +7,7 @@ import { ethers } from 'ethers';
 export type ExecutionType = 
   | 'comet-impl-in-configuration'
   | 'comet-upgrade'
-  | 'governance-config'
-  | 'combined-governance-update'
-  | 'timelock-delay-change'
+  | 'governance-update'
   | 'comet-reward-funding';
 
 export default async function executeProposal(hre: HardhatRuntimeEnvironment, proposalId: number, executionType: ExecutionType) {
@@ -126,23 +124,7 @@ async function extractLogsFromTransaction(
         }
         break;
       }
-      case 'governance-config': {
-        trace('Parsing logs for governance configuration change execution...');
-        const governanceConfigData = extractGovernanceConfigEvent(receipt, trace);
-        if (governanceConfigData) {
-          extractedLogs.parsedLogs.governanceConfig = governanceConfigData;
-        }
-        break;
-      }
-      case 'timelock-delay-change': {
-        trace('Parsing logs for timelock delay change execution...');
-        const newDelayData = extractNewDelayEvent(receipt, trace);
-        if (newDelayData) {
-          extractedLogs.parsedLogs.newDelay = newDelayData;
-        }
-        break;
-      }
-      case 'combined-governance-update': {
+      case 'governance-update': {
         trace('Parsing logs for combined governance update execution...');
         // Extract both governance configuration and timelock delay change events
         const governanceConfigData = extractGovernanceConfigEvent(receipt, trace);
