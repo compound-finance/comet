@@ -1,6 +1,6 @@
 import { DeploymentManager } from '../../../plugins/deployment_manager';
 import { Proposal } from '../models';
-import { proposeCometUpgrade } from '../../deploy/NetworkExtension';
+import { getCometUpgradeProposal } from '../../deploy/NetworkExtension';
 
 /**
  * Action for creating Comet upgrade proposals
@@ -25,7 +25,7 @@ export class CometUpgradeAction {
     }
 
     // Use the NetworkExtension function to create the proposal
-    return await proposeCometUpgrade(this.deploymentManager, this.newImplementationAddress);
+    return await getCometUpgradeProposal(this.deploymentManager, this.newImplementationAddress);
   }
 
   /**

@@ -5,7 +5,7 @@ import { DeploymentManager } from '../../plugins/deployment_manager';
  * Creates a Comet upgrade proposal with optional storage initialization and reward configuration
  * This function only creates the proposal data
  */
-export async function proposeCometUpgrade(
+export async function getCometUpgradeProposal(
   deploymentManager: DeploymentManager,
   newImplementationAddress: string
 ): Promise<Proposal> {
