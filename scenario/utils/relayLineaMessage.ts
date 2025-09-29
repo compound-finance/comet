@@ -4,12 +4,9 @@ import { constants, ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { OpenBridgedProposal } from '../context/Gov';
 import { impersonateAddress } from '../../plugins/scenario/utils';
+import { isTenderlyLog } from './index';
 
 const LINEA_SETTER_ROLE_ACCOUNT = '0xc1C6B09D1eB6fCA0fF3cA11027E5Bc4AeDb47F67';
-
-function isTenderlyLog(log: any): log is { raw: { topics: string[], data: string } } {
-  return !!log?.raw?.topics && !!log?.raw?.data;
-}
 
 export default async function relayLineaMessage(
   governanceDeploymentManager: DeploymentManager,
@@ -57,37 +54,47 @@ export default async function relayLineaMessage(
     );
   
     // getLogs version:
-    const realMsgEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
-      fromBlock: (startingBlockNumber - 50000),
-      toBlock: 'latest',
-      address: lineaMessageService.address,
-      topics: filter.topics!
-    });
-  
-    const realHashEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
-      fromBlock: (startingBlockNumber - 50000),
-      toBlock: 'latest',
-      address: lineaMessageService.address,
-      topics: filterRollingHash.topics!
-    });
-  
+    const fromBlock = Math.max(0, startingBlockNumber - 50000);
+    const toBlock = await governanceDeploymentManager.hre.ethers.provider.getBlockNumber();
+
+    const realMsgEvents = await fetchLogsInChunks(
+      governanceDeploymentManager.hre.ethers.provider,
+      filter,
+      fromBlock,
+      toBlock,
+      lineaMessageService.address
+    );
+
+    const realHashEvents = await fetchLogsInChunks(
+      governanceDeploymentManager.hre.ethers.provider,
+      filterRollingHash,
+      fromBlock,
+      toBlock,
+      lineaMessageService.address
+    );
+
     messageSentEvents = [...realMsgEvents, ...tenderlyMsgEvents];
     rollingHashUpdatedEvents = [...realHashEvents, ...tenderlyHashEvents];
   } else {
-    messageSentEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
-      fromBlock: (startingBlockNumber - 50000),
-      toBlock: 'latest',
-      address: lineaMessageService.address,
-      topics: filter.topics!
-    });
-  
-    rollingHashUpdatedEvents = await governanceDeploymentManager.hre.ethers.provider.getLogs({
-      fromBlock: (startingBlockNumber - 50000),
-      toBlock: 'latest',
-      address: lineaMessageService.address,
-      topics: filterRollingHash.topics!
-    });
-  } 
+    const fromBlock = Math.max(0, startingBlockNumber - 50000);
+    const toBlock = await governanceDeploymentManager.hre.ethers.provider.getBlockNumber();
+
+    messageSentEvents = await fetchLogsInChunks(
+      governanceDeploymentManager.hre.ethers.provider,
+      filter,
+      fromBlock,
+      toBlock,
+      lineaMessageService.address
+    );
+
+    rollingHashUpdatedEvents = await fetchLogsInChunks(
+      governanceDeploymentManager.hre.ethers.provider,
+      filterRollingHash,
+      fromBlock,
+      toBlock,
+      lineaMessageService.address
+    );
+  }
 
   for (let i = 0; i < messageSentEvents.length; i++) {
     const messageSentEvent = messageSentEvents[i];
@@ -124,8 +131,7 @@ export default async function relayLineaMessage(
       bridgeDeploymentManager,
       LINEA_SETTER_ROLE_ACCOUNT
     );
-    
-    
+
     let callData;
     // First the message's hash has to be added by a specific account in the "contract's queue"
     if((await l2MessageService.lastAnchoredL1MessageNumber()).lte(messageNumber)){
@@ -271,4 +277,21 @@ export default async function relayLineaMessage(
     );
   }
   return openBridgedProposals;
+}
+
+// Helper to fetch logs in chunks of 10,000 blocks
+async function fetchLogsInChunks(provider: any, filter: any, fromBlock: number, toBlock: number, address: string) {
+  const chunkSize = 10000;
+  let logs: Log[] = [];
+  for (let start = fromBlock; start <= toBlock; start += chunkSize) {
+    const end = Math.min(start + chunkSize - 1, toBlock);
+    const chunkLogs = await provider.getLogs({
+      fromBlock: start,
+      toBlock: end,
+      address,
+      topics: filter.topics!
+    });
+    logs = logs.concat(chunkLogs);
+  }
+  return logs;
 }

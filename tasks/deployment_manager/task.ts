@@ -54,7 +54,6 @@ async function runMigration<T>(
   }
 
   if (enact) {
-
     const {
       governor,
       timelock
