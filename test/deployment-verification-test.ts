@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { ethers, network } from 'hardhat';
 import { Contract } from 'ethers';
+import { DEFAULT_REWARDS_FUNDING_AMOUNT } from '../src/constants';
 
 describe('Deployment Verification', function () {
   // This test verifies the deployment configuration for any network/market
@@ -294,7 +295,7 @@ describe('Deployment Verification', function () {
     }
   });
 
-  it('should have timelock holding total COMP supply', async function () {
+  it('should have timelock holding expected COMP supply after rewards funding', async function () {
     const { timelock, COMP } = deployedContracts;
     
     // Get total supply of COMP tokens
@@ -305,10 +306,14 @@ describe('Deployment Verification', function () {
     const timelockBalance = await COMP.balanceOf(timelock.address);
     expect(timelockBalance).to.be.gt(0);
     
-    // Verify timelock holds the total supply
-    expect(timelockBalance).to.equal(totalSupply);
+    // Calculate expected balance after rewards funding
+    const rewardsFundingAmount = process.env.DEFAULT_REWARDS_FUNDING_AMOUNT || DEFAULT_REWARDS_FUNDING_AMOUNT;
+    const expectedBalance = totalSupply.sub(rewardsFundingAmount);
     
-    console.log(`✅ Timelock holds ${ethers.utils.formatEther(timelockBalance)} COMP tokens (total supply)`);
+    // Verify timelock holds the expected amount (total supply minus rewards funding)
+    expect(timelockBalance).to.equal(expectedBalance);
+    
+    console.log(`✅ Timelock holds ${ethers.utils.formatEther(timelockBalance)} COMP tokens (expected: ${ethers.utils.formatEther(expectedBalance)} after funding ${ethers.utils.formatEther(rewardsFundingAmount)} COMP to rewards)`);
   });
 
   it('should have valid configuration structure', async function () {
@@ -337,10 +342,6 @@ describe('Deployment Verification', function () {
 
   it('should have base token price feed address matching configuration.json', async function () {
     const { comet } = deployedContracts;
-    
-    // Load roots.json to get the actual addresses
-    const rootsPath = `../deployments/${network.name}/${market}/roots.json`;
-    const roots = require(rootsPath);
     
     // Validate base token price feed configuration
     if (config.baseTokenPriceFeed) {

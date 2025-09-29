@@ -20,6 +20,7 @@ import {
   proposeGovernanceUpdate as proposeGovernanceUpdateCommand
 } from '../../helpers/commandUtil';
 import { getValidGovConfig } from '../../../src/deploy/helpers/govValidation';
+import { DEFAULT_REWARDS_FUNDING_AMOUNT } from '../../../src/constants';
 
 interface DeployOptions {
   network: string;
@@ -65,8 +66,8 @@ class MarketsDeployer {
       // Step 8: Run governance flow to accept upgrades
       await this.runGovernanceToAcceptUpgrade(upgradeBatchProposalId, implementationAddresses, this.options.deployments);
 
-      // Step 9: Fund rewards contracts for all markets
-      await this.fundRewardsForAllMarkets();
+      // Step 9: Fund rewards contracts
+      await this.fundRewardContract();
 
       // Step 10: Propose governance update
       const { governorSigners, multisigThreshold, timelockDelay } = getValidGovConfig();
@@ -177,18 +178,11 @@ class MarketsDeployer {
    * - Propose funding CometRewards contract with COMP tokens
    * - Run governance flow to execute the funding proposal
    */
-  private async fundRewardsForAllMarkets(): Promise<void> {
-    const shouldFundRewards = await confirm(`\nDo you want to fund the CometRewards contract for all markets?`);
-
-    if (!shouldFundRewards) {
-      log(`\n⏸️  Rewards funding cancelled.`, 'warning');
-      return;
-    }
-
-    // Prompt for funding amount
-    const amount = await this.promptForFundingAmount();
+  private async fundRewardContract(): Promise<void> {
+    // Use environment variable or prompt user for amount
+    const amount = process.env.DEFAULT_REWARDS_FUNDING_AMOUNT || await this.promptForFundingAmount();
     
-    log(`\n💰 Proposing to fund CometRewards with ${amount} COMP tokens for all markets...`, 'info');
+    log(`\n💰 Proposing to fund CometRewards with ${amount} COMP tokens...`, 'info');
     
     try {
       // Propose funding CometRewards
@@ -205,7 +199,7 @@ class MarketsDeployer {
       });
 
       log(`\n🎉 Governance flow response for rewards funding: ${governanceFlowResponse}`, 'success');
-      log(`\n✅ CometRewards funding completed successfully for all markets!`, 'success');
+      log(`\n✅ CometRewards funding completed successfully!`, 'success');
       
     } catch (error) {
       log(`\n❌ Failed to fund CometRewards: ${error}`, 'error');
@@ -223,8 +217,8 @@ class MarketsDeployer {
       output: process.stdout
     });
 
-    // Get default amount from environment variable or fallback to 1000 COMP
-    const defaultAmount = process.env.DEFAULT_REWARDS_FUNDING_AMOUNT || '1000000000000000000000';
+    // Get default amount from environment variable or fallback to constant
+    const defaultAmount = process.env.DEFAULT_REWARDS_FUNDING_AMOUNT || DEFAULT_REWARDS_FUNDING_AMOUNT;
     const defaultAmountFormatted = this.formatAmountForDisplay(defaultAmount);
 
     return new Promise((resolve) => {
