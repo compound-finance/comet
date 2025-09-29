@@ -1,6 +1,6 @@
 import { runCommand } from './commandUtil';
 import { log, confirm } from './ioUtil';
-import { ExecutionType } from '../../src/governor/ExecuteProposal';
+import { ExecutionType } from '../../src/governor/models/ExecutionResult';
 
 export interface GovernanceFlowOptions {
   network: string;

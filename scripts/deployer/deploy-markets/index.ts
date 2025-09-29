@@ -15,7 +15,6 @@ import {
   executeBatchProposal as executeBatchProposalCommand,
   runDeploymentVerification as runDeploymentVerificationCommand,
   proposeUpgrade as proposeUpgradeCommand,
-  runSpiderForMarket as runSpiderForMarketCommand,
   proposeGovernanceUpdate as proposeGovernanceUpdateCommand
 } from '../../helpers/commandUtil';
 import { getValidGovConfig } from '../../../src/deploy/helpers/govValidation';
@@ -369,33 +368,6 @@ class MarketsDeployer {
       }
     } catch (error) {
       log(`\n⚠️  Failed to propose upgrade for all markets: ${error}`, 'error');
-    }
-  }
-
-  /**
-   * Refresh roots for a specific market using spider
-   * @param deployment - The deployment name to refresh
-   */
-  private async runSpiderForMarket(deployment: string): Promise<void> {
-    try {
-      await runSpiderForMarketCommand(this.options.network, deployment);
-    } catch (error) {
-      log(`\n⚠️  Spider failed for ${deployment}, but this is expected behavior after upgrades.`, 'warning');
-      log(`📝 This happens because the implementation address doesn't match the expected one.`, 'info');
-      log(`\n🔧 To fix this:`, 'info');
-      log(`   1. Update the 'comet:implementation' entry in aliases.json`, 'info');
-      log(`   2. Update roots.json if needed`, 'info');
-      log(`\n📁 Files to update:`, 'info');
-      log(`   - deployments/${this.options.network}/${deployment}/aliases.json`, 'info');
-      log(`   - deployments/${this.options.network}/${deployment}/roots.json`, 'info');
-      
-      const filesUpdated = await confirm(`\nHave you updated the aliases.json and roots.json files for ${deployment}?`);
-      if (filesUpdated) {
-        log(`\n🔄 Retrying spider for ${deployment}...`, 'info');
-        await this.runSpiderForMarket(deployment); // Recursive call to retry
-      } else {
-        log(`\n⏸️  Spider refresh skipped for ${deployment}. You can run it manually later.`, 'warning');
-      }
     }
   }
 

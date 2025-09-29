@@ -5,6 +5,7 @@ import { HardhatRuntimeEnvironment, HardhatConfig } from 'hardhat/types';
 import { DeploymentManager, VerifyArgs } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import hreForBase from '../../plugins/scenario/utils/hreForBase';
+import { NetworkConfiguration } from '../../src/deploy/NetworkConfiguration';
 
 // TODO: Don't depend on scenario's hreForBase
 async function getForkEnv(env: HardhatRuntimeEnvironment, deployment: string): Promise<HardhatRuntimeEnvironment> {
@@ -448,7 +449,7 @@ task('validate:config', 'Validates BDAG configuration against Comet constructor 
       );
 
       // Load configuration
-      const config = await dm.readConfig();
+      const config = await dm.readConfig() as NetworkConfiguration;
       
       // Load infrastructure contracts first (if they exist)
       try {
