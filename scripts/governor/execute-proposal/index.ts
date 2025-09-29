@@ -1,7 +1,7 @@
 #!/usr/bin/env ts-node
 
 import { GovernanceFlowHelper } from '../../helpers/governanceFlow';
-import { ExecutionType } from '../../../src/governor/ExecuteProposal';
+import { ExecutionType } from '../../../src/governor/models/ExecutionResult';
 import { log } from '../../helpers/ioUtil';
 
 interface ExecuteProposalOptions {
@@ -61,7 +61,7 @@ function parseArguments(): ExecuteProposalOptions {
   const options: ExecuteProposalOptions = {
     network: '',
     proposalId: '',
-    executionType: 'governance-config' // Default value
+    executionType: 'governance-update' // Default value
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -78,8 +78,7 @@ function parseArguments(): ExecuteProposalOptions {
         const validTypes: ExecutionType[] = [
           'comet-impl-in-configuration',
           'comet-upgrade',
-          'governance-config',
-          'timelock-delay-change',
+          'governance-update',
           'comet-reward-funding'
         ];
         if (validTypes.includes(executionType)) {

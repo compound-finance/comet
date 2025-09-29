@@ -1,14 +1,14 @@
 import { task } from 'hardhat/config';
 import { DeploymentManager } from '../../plugins/deployment_manager';
-import approveProposal from '../../src/governor/ApproveProposal';
-import queueProposal from '../../src/governor/QueueProposal';
-import executeProposal from '../../src/governor/ExecuteProposal';
-import getProposalStatus from '../../src/governor/GetProposalStatus';
-import proposeCometUpgradeTask from '../../src/governor/ProposeCometUpgrade';
-import proposeFundCometRewardsTask from '../../src/governor/ProposeFundCometRewards';
-import proposeGovernanceConfigTask from '../../src/governor/ProposeGovernanceConfig';
-import proposeTimelockDelayChangeTask from '../../src/governor/ProposeTimelockDelayChange';
-import proposeGovernanceUpdateTask from '../../src/governor/ProposeGovernanceUpdate';
+import { 
+  approveProposalTask,
+  queueProposalTask,
+  executeProposalTask,
+  getProposalStatusTask,
+  proposeCometUpgradeTask,
+  proposeFundCometRewardsTask,
+  proposeGovernanceUpdateTask
+} from '../../src/governor/tasks';
 import { createProposalManager } from '../../src/governor/helpers/proposalManager';
 
 // Helper function to create deployment manager
@@ -40,10 +40,8 @@ task('governor:approve', 'Approve a proposal')
     // Create deployment manager
     await createDeploymentManager(hre);
     
-    console.log(`Approving proposal ${proposalId}...`);
-    
     try {
-      const result = await approveProposal(hre, proposalId);
+      const result = await approveProposalTask(hre, proposalId);
       return result;
     } catch (error) {
       console.error(`❌ Failed to approve proposal ${proposalId}:`, error);
@@ -60,10 +58,8 @@ task('governor:queue', 'Queue a proposal')
     // Create deployment manager
     await createDeploymentManager(hre);
     
-    console.log(`Queueing proposal ${proposalId}...`);
-    
     try {
-      const result = await queueProposal(hre, proposalId);
+      const result = await queueProposalTask(hre, proposalId);
       return result;
     } catch (error) {
       console.error(`❌ Failed to queue proposal ${proposalId}:`, error);
@@ -82,10 +78,8 @@ task('governor:execute', 'Execute a proposal')
     // Create deployment manager
     await createDeploymentManager(hre);
     
-    console.log(`Executing proposal ${proposalId} with execution type: ${executionType}...`);
-    
     try {
-      const result = await executeProposal(hre, proposalId, executionType);
+      const result = await executeProposalTask(hre, proposalId, executionType);
       return result;
     } catch (error) {
       console.error(`❌ Failed to execute proposal ${proposalId}:`, error);
@@ -102,10 +96,8 @@ task('governor:status', 'Check proposal status')
     // Create deployment manager
     await createDeploymentManager(hre);
     
-    console.log(`Checking status of proposal ${proposalId}...`);
-    
     try {
-      const result = await getProposalStatus(hre, proposalId);
+      const result = await getProposalStatusTask(hre, proposalId);
       return result;
     } catch (error) {
       console.error(`❌ Failed to check proposal ${proposalId}:`, error);
@@ -125,8 +117,6 @@ task('governor:propose-upgrade', 'Propose a Comet implementation upgrade')
     const batchdeploy = taskArgs.batchdeploy;
     await createDeploymentManager(hre, deployment, { batchdeploy });
     
-    console.log(`Proposing Comet upgrade to ${newImplementationAddress}...`);
-    
     try {
       const result = await proposeCometUpgradeTask(hre, newImplementationAddress);
       return result;
@@ -144,8 +134,6 @@ task('governor:propose-fund-comet-rewards', 'Propose to fund CometRewards contra
 
     await createDeploymentManager(hre);
     
-    console.log(`Proposing to fund CometRewards with ${amount} COMP tokens...`);
-    
     try {
       const result = await proposeFundCometRewardsTask(hre, amount);
       return result;
@@ -155,79 +143,13 @@ task('governor:propose-fund-comet-rewards', 'Propose to fund CometRewards contra
     }
   });
 
-// Task to propose governance configuration changes
-task('governor:propose-governance-config', 'Propose changes to governance configuration (admins and threshold)')
-  .addParam('admins', "Comma-separated list of new admin addresses (e.g., '0x123...,0x456...,0x789...')")
-  .addParam('threshold', 'New multisig threshold (number of required approvals)')
-  .addParam('deployment', 'The deployment to use')
-  .setAction(async (taskArgs, hre) => {
-    const adminsParam = taskArgs.admins;
-    const threshold = parseInt(taskArgs.threshold);
-    const deployment = taskArgs.deployment;
-    
-    await createDeploymentManager(hre, deployment);
-    
-    // Parse admin addresses
-    const admins = adminsParam.split(',').map((addr: string) => addr.trim());
-    
-    // Validate inputs
-    if (admins.length === 0) {
-      throw new Error('❌ At least one admin address is required');
-    }
-    
-    if (threshold <= 0) {
-      throw new Error('❌ Threshold must be greater than 0');
-    }
-    
-    if (threshold > admins.length) {
-      throw new Error('❌ Threshold cannot be greater than the number of admins');
-    }
-    
-    // Validate addresses
-    for (const admin of admins) {
-      if (!/^0x[a-fA-F0-9]{40}$/.test(admin)) {
-        throw new Error(`❌ Invalid admin address: ${admin}`);
-      }
-    }
-    
-    console.log(`Proposing governance configuration change:`);
-    console.log(`  New admins: ${admins.join(', ')}`);
-    console.log(`  New threshold: ${threshold}`);
-    
-    try {
-      const result = await proposeGovernanceConfigTask(hre, admins, threshold);
-      return result;
-    } catch (error) {
-      console.error(`❌ Failed to propose governance configuration change:`, error);
-      throw error;
-    }
-  }); 
-
-// Task to propose timelock delay change
-task('governor:propose-timelock-delay-change', 'Propose to change the timelock delay')
-  .addParam('delay', "The new delay value in seconds (e.g., '86400' for 1 day)")
-  .setAction(async (taskArgs, hre) => {
-    const delay = taskArgs.delay;
-
-    await createDeploymentManager(hre);
-    
-    console.log(`Proposing to change timelock delay to ${delay} seconds...`);
-    
-    try {
-      const result = await proposeTimelockDelayChangeTask(hre, delay);
-      return result;
-    } catch (error) {
-      console.error(`❌ Failed to propose timelock delay change:`, error);
-      throw error;
-    }
-  }); 
 
 
 // Task to propose governance update (improved version)
 task('governor:propose-governance-update', 'Propose governance configuration and/or timelock delay updates')
+  .addParam('deployment', 'The deployment to use')
   .addOptionalParam('admins', 'Comma-separated list of new admin addresses (optional)')
   .addOptionalParam('threshold', 'New multisig threshold (optional)')
-  .addParam('deployment', 'The deployment to use')
   .addOptionalParam('timelockDelay', 'New timelock delay in seconds (optional)')
   .setAction(async (taskArgs, hre) => {
     const adminsParam = taskArgs.admins;
@@ -256,15 +178,6 @@ task('governor:propose-governance-update', 'Propose governance configuration and
     // Validate that if threshold is provided, admins are also provided
     if (threshold && !admins) {
       throw new Error('❌ Admins must be provided when threshold is specified');
-    }
-    
-    console.log(`Proposing governance update:`);
-    if (admins && threshold) {
-      console.log(`  New admins: ${admins.join(', ')}`);
-      console.log(`  New threshold: ${threshold}`);
-    }
-    if (timelockDelay) {
-      console.log(`  New timelock delay: ${timelockDelay} seconds`);
     }
     
     try {

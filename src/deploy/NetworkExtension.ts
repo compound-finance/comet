@@ -1,16 +1,14 @@
+import { Proposal } from '../governor/models';
 import { DeploymentManager } from '../../plugins/deployment_manager';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { createProposalManager } from '../governor/helpers/proposalManager';
 
 /**
- * Proposes a combined Comet upgrade and reward configuration through governance
- * This function creates a single proposal with both actions
+ * Creates a Comet upgrade proposal with optional storage initialization and reward configuration
+ * This function only creates the proposal data
  */
 export async function proposeCometUpgrade(
   deploymentManager: DeploymentManager,
-  newImplementationAddress: string,
-  adminSigner?: SignerWithAddress
-): Promise<any> {
+  newImplementationAddress: string
+): Promise<Proposal> {
   const trace = deploymentManager.tracer();
   
   // Get required contracts
@@ -21,29 +19,24 @@ export async function proposeCometUpgrade(
 
   const rewardTokenAddress = COMP.address;
   
-  // Create proposal manager
-  const proposalManager = createProposalManager(deploymentManager.network);
-  if (!deploymentManager.config.batchdeploy) {
-    await proposalManager.clearProposalStack();
-  }
+  // Build proposal arrays
+  const targets = [];
+  const values = [];
+  const calldatas = [];
   
   // Action 1: upgrade the Comet proxy to the new implementation
-  await proposalManager.addAction({
-    contract: cometAdmin,
-    signature: 'upgrade',
-    args: [comet.address, newImplementationAddress]
-  });
+  targets.push(cometAdmin.address);
+  values.push(0);
+  calldatas.push(cometAdmin.interface.encodeFunctionData('upgrade', [comet.address, newImplementationAddress]));
   
   // Action 2: initialize storage in the Comet contract (only if not already initialized)
   const totalsBasic = await comet.totalsBasic();
   const isStorageInitialized = totalsBasic.lastAccrualTime !== 0n;
   
   if (!isStorageInitialized) {
-    await proposalManager.addAction({
-      contract: comet,
-      signature: 'initializeStorage',
-      args: []
-    });
+    targets.push(comet.address);
+    values.push(0);
+    calldatas.push(comet.interface.encodeFunctionData('initializeStorage', []));
   }
   
   // Action 3: set reward configuration for the Comet instance (only if not already set)
@@ -51,16 +44,14 @@ export async function proposeCometUpgrade(
   const isRewardSet = currentRewardConfig.token !== '0x0000000000000000000000000000000000000000';
   
   if (!isRewardSet) {
-    await proposalManager.addAction({
-      contract: rewards,
-      signature: 'setRewardConfig',
-      args: [comet.address, rewardTokenAddress]
-    });
+    targets.push(rewards.address);
+    values.push(0);
+    calldatas.push(rewards.interface.encodeFunctionData('setRewardConfig', [comet.address, rewardTokenAddress]));
   }
   
   const description = `Upgrade Comet implementation to ${newImplementationAddress}${!isStorageInitialized ? ', initialize storage' : ''}${!isRewardSet ? `, and set reward token to ${rewardTokenAddress}` : ''}`;
   
-  trace(`Creating combined upgrade and reward config proposal:`);
+  trace(`Creating Comet upgrade proposal:`);
   trace(`1. upgrade(${comet.address}, ${newImplementationAddress})`);
   if (!isStorageInitialized) {
     trace(`2. initializeStorage()`);
@@ -72,23 +63,11 @@ export async function proposeCometUpgrade(
   } else {
     trace(`3. Skipping setRewardConfig - already configured with token: ${currentRewardConfig.token}`);
   }
-  
-  // Set proposal description
-  await proposalManager.setDescription(description);
 
-  const proposalData = await proposalManager.toProposalData();
-  
-  if (!deploymentManager.config.batchdeploy) {
-    // Execute the proposal
-    trace('Starting proposal execution');
-    const result = await proposalManager.executeProposal(deploymentManager, adminSigner);
-    console.log(`📋 Proposal ID: ${result.proposalId}`);
-    console.log(`🔗 Transaction Hash: ${result.transactionHash}`);
-    console.log(`📝 Description: ${result.description}`);
-    console.log(`🎯 Actions: ${result.targets.length} targets`);
-  } else {
-    trace('Executing proposal is disabled');
-  }
-
-  return proposalData;
-} 
+  return {
+    targets,
+    values,
+    calldatas,
+    description
+  };
+}
