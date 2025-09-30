@@ -1,45 +1,44 @@
 {
-    "name": "Compound USDC",
-    "symbol": "cUSDCv3",
-    "baseToken": "USDC",
-    "baseTokenPriceFeed": "0xc6e7DF5E7b4f2A278906862b61205850344D4e7d",
-    "borrowMin": "1000e6",
-    "storeFrontPriceFactor": 0.5,
-    "targetReserves": "5000000e6",
-    "rates": {
-      "supplyKink": 0.8,
-      "supplySlopeLow": 0.0325,
-      "supplySlopeHigh": 0.4,
-      "supplyBase": 0,
-      "borrowKink": 0.8,
-      "borrowSlopeLow": 0.035,
-      "borrowSlopeHigh": 0.25,
-      "borrowBase": 0.015
+  "name": "Compound USDC",
+  "symbol": "cUSDCv3",
+  "baseToken": "USDC",
+  "baseTokenPriceFeed": "0x3Aa5ebB10DC797CAC828524e59A333d0A371443c",
+  "borrowMin": "1000e6",
+  "storeFrontPriceFactor": 0.5,
+  "targetReserves": "5000000e6",
+  "rates": {
+    "supplyKink": 0.8,
+    "supplySlopeLow": 0.0325,
+    "supplySlopeHigh": 0.4,
+    "supplyBase": 0,
+    "borrowKink": 0.8,
+    "borrowSlopeLow": 0.035,
+    "borrowSlopeHigh": 0.25,
+    "borrowBase": 0.015
+  },
+  "tracking": {
+    "indexScale": "1e15",
+    "baseSupplySpeed": "0.000011574074074074073e15",
+    "baseBorrowSpeed": "0.0011458333333333333e15",
+    "baseMinForRewards": "1000000e6"
+  },
+  "rewardToken": "COMP",
+  "assets": {
+    "WBTC": {
+      "priceFeed": "0x59b670e9fA9D0A427751Af201D676719a970857b",
+      "decimals": "8",
+      "borrowCF": 0.75,
+      "liquidateCF": 0.8,
+      "liquidationFactor": 0.85,
+      "supplyCap": "7500e8"
     },
-    "tracking": {
-      "indexScale": "1e15",
-      "baseSupplySpeed": "0.000011574074074074073e15",
-      "baseBorrowSpeed": "0.0011458333333333333e15",
-      "baseMinForRewards": "1000000e6"
-    },
-    "rewardToken": "COMP",
-    "assets": {
-        "WBTC": {
-          "priceFeed": "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1",
-          "decimals": "8",
-          "borrowCF": 0.75,
-          "liquidateCF": 0.8,
-          "liquidationFactor": 0.85,
-          "supplyCap": "7500e8"
-        },
-        "WETH": {
-          "priceFeed": "0x59b670e9fA9D0A427751Af201D676719a970857b",
-          "decimals": "18",
-          "borrowCF": 0.80,
-          "liquidateCF": 0.90,
-          "liquidationFactor": 0.95,
-          "supplyCap": "11000e18"
-        }
+    "WETH": {
+      "priceFeed": "0xc6e7DF5E7b4f2A278906862b61205850344D4e7d",
+      "decimals": "18",
+      "borrowCF": 0.8,
+      "liquidateCF": 0.9,
+      "liquidationFactor": 0.95,
+      "supplyCap": "11000e18"
     }
   }
-  
+}

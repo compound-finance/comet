@@ -409,7 +409,6 @@ async function createBDAGGov(
   } = govConfig;
 
   const timelockArgs = [admin.address, timelockDelay, gracePeriod, minimumDelay, maximumDelay];
-  const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
   const timelock = await deploymentManager.deploy('timelock', './CustomTimelock.sol', timelockArgs);
   
   const COMP = await deploymentManager.deploy('COMP', './Comp.sol', [timelock.address]);
@@ -447,7 +446,7 @@ async function createBDAGGov(
     }
   );
 
-  return { COMP, fauceteer, governor, timelock };
+  return { COMP, governor, timelock };
 }
 
 /* BDAG Network Comet */

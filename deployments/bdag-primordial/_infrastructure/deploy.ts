@@ -1,6 +1,5 @@
 import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
-import { cloneGov, exp, wait } from '../../../src/deploy';
-import { getExistingTokens } from '../helpers';
+import { cloneGov, wait } from '../../../src/deploy';
 
 
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: any): Promise<Deployed> {
@@ -10,7 +9,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   deploymentManager.setVerificationStrategy('none');
 
   // Deploy governance contracts
-  const { COMP, fauceteer, governor, timelock } = await cloneGov(deploymentManager);
+  const { COMP, governor, timelock } = await cloneGov(deploymentManager);
 
   // Deploy shared admin and governance contracts
   const trace = deploymentManager.tracer();
@@ -70,39 +69,13 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     }
   );
 
-  // Get existing test tokens using helper function
-  const { DAI, WETH, WBTC, LINK, UNI, USDC } = await getExistingTokens(deploymentManager);
-
   trace(`Attempting to mint tokens to fauceteer as ${admin.address}...`);
 
-  const tokenConfigs = [
-    { token: DAI, units: 1e8, name: 'DAI' },
-    { token: WETH, units: 1e6, name: 'WETH' },
-    { token: WBTC, units: 1e4, name: 'WBTC' },
-    { token: LINK, units: 1e7, name: 'LINK' },
-    { token: UNI, units: 1e7, name: 'UNI' },
-    { token: USDC, units: 1e6, name: 'USDC' },
-  ];
-
-  await Promise.all(
-    tokenConfigs.map(({ token, units, name }) => {
-      return deploymentManager.idempotent(
-        async () => (await token.balanceOf(fauceteer.address)).eq(0),
-        async () => {
-          trace(`Minting ${units} ${name} to fauceteer`);
-          const amount = exp(units, await token.decimals());
-          trace(await wait(token.connect(admin).allocateTo(fauceteer.address, amount)));
-          trace(`token.balanceOf(${fauceteer.address}): ${await token.balanceOf(fauceteer.address)}`);
-        }
-      );
-    })
-  );
 
   console.log('Infrastructure deployment complete!');
 
   return {
     // Governance
-    fauceteer,
     governor,
     timelock,
     COMP,
