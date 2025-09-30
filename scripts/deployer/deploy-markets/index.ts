@@ -3,6 +3,7 @@
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as readline from 'readline';
 import { runGovernanceFlow } from '../../helpers/governanceFlow';
 import { log, confirm } from '../../helpers/ioUtil';
 import { 
@@ -15,9 +16,11 @@ import {
   executeBatchProposal as executeBatchProposalCommand,
   runDeploymentVerification as runDeploymentVerificationCommand,
   proposeUpgrade as proposeUpgradeCommand,
+  proposeFundRewards as proposeFundRewardsCommand,
   proposeGovernanceUpdate as proposeGovernanceUpdateCommand
 } from '../../helpers/commandUtil';
 import { getValidGovConfig } from '../../../src/deploy/helpers/govValidation';
+import { DEFAULT_REWARDS_FUNDING_AMOUNT } from '../../../src/constants';
 
 interface DeployOptions {
   network: string;
@@ -63,14 +66,17 @@ class MarketsDeployer {
       // Step 8: Run governance flow to accept upgrades
       await this.runGovernanceToAcceptUpgrade(upgradeBatchProposalId, implementationAddresses, this.options.deployments);
 
-      // Step 9: Propose governance update
+      // Step 9: Fund rewards contracts
+      await this.fundRewardContract();
+
+      // Step 10: Propose governance update
       const { governorSigners, multisigThreshold, timelockDelay } = getValidGovConfig();
       await this.governanceUpdate(governorSigners, multisigThreshold, timelockDelay);
 
-      // Step 10: Run verification tests (optional)
+      // Step 11: Run verification tests (optional)
       await this.runVerificationTests();
       
-      // Step 11: Display deployment summary
+      // Step 12: Display deployment summary
       this.displayDeploymentSummary();
       
     } catch (error) {
@@ -168,7 +174,83 @@ class MarketsDeployer {
   }
 
   /**
-   * Step 9: Propose governance update
+   * Step 9: Fund rewards contracts for all markets
+   * - Propose funding CometRewards contract with COMP tokens
+   * - Run governance flow to execute the funding proposal
+   */
+  private async fundRewardContract(): Promise<void> {
+    // Use environment variable or prompt user for amount
+    const amount = process.env.DEFAULT_REWARDS_FUNDING_AMOUNT || await this.promptForFundingAmount();
+    
+    log(`\n💰 Proposing to fund CometRewards with ${amount} COMP tokens...`, 'info');
+    
+    try {
+      // Propose funding CometRewards
+      const output = await proposeFundRewardsCommand(this.options.network, amount);
+      const proposalId = extractProposalId(output);
+      
+      log(`\n📋 Rewards funding proposal created with ID: ${proposalId}`, 'success');
+
+      // Run governance flow to execute the funding
+      const governanceFlowResponse = await runGovernanceFlow({
+        network: this.options.network,
+        proposalId,
+        executionType: 'comet-reward-funding'
+      });
+
+      log(`\n🎉 Governance flow response for rewards funding: ${governanceFlowResponse}`, 'success');
+      log(`\n✅ CometRewards funding completed successfully!`, 'success');
+      
+    } catch (error) {
+      log(`\n❌ Failed to fund CometRewards: ${error}`, 'error');
+      throw error;
+    }
+  }
+
+  /**
+   * Prompt user for funding amount
+   * @returns Promise<string> - The funding amount in wei
+   */
+  private async promptForFundingAmount(): Promise<string> {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+
+    // Get default amount from environment variable or fallback to constant
+    const defaultAmount = process.env.DEFAULT_REWARDS_FUNDING_AMOUNT || DEFAULT_REWARDS_FUNDING_AMOUNT;
+    const defaultAmountFormatted = this.formatAmountForDisplay(defaultAmount);
+
+    return new Promise((resolve) => {
+      rl.question(`\n💰 Enter the amount of COMP tokens to fund CometRewards (in wei, e.g., "1000000000000000000000" for 1000 COMP) [default: ${defaultAmountFormatted}]: `, (answer: string) => {
+        rl.close();
+        if (!answer || answer.trim() === '') {
+          log(`\n⚠️  No amount provided, using default: ${defaultAmountFormatted}`, 'warning');
+          resolve(defaultAmount);
+        } else {
+          resolve(answer.trim());
+        }
+      });
+    });
+  }
+
+  /**
+   * Format amount for display purposes (convert wei to COMP tokens)
+   * @param amount - Amount in wei
+   * @returns Formatted string showing COMP tokens
+   */
+  private formatAmountForDisplay(amount: string): string {
+    try {
+      const amountInWei = BigInt(amount);
+      const amountInComp = Number(amountInWei) / Math.pow(10, 18);
+      return `${amount} (${amountInComp.toLocaleString()} COMP)`;
+    } catch (error) {
+      return `${amount} (wei)`;
+    }
+  }
+
+  /**
+   * Step 10: Propose governance update
    * - Propose a governance update to set the new admins and threshold
    * - Return the proposal ID for governance flow
    */
@@ -203,7 +285,7 @@ class MarketsDeployer {
 
 
   /**
-   * Step 10: Run verification tests (optional)
+   * Step 11: Run verification tests (optional)
    * - Prompt user to run verification tests
    * - Run tests for all deployed markets
    */
@@ -219,7 +301,7 @@ class MarketsDeployer {
   }
 
   /**
-   * Step 11: Display deployment summary
+   * Step 12: Display deployment summary
    * - Show success message and list of deployed markets
    */
   private displayDeploymentSummary(): void {

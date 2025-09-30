@@ -171,6 +171,17 @@ export async function runSpiderForMarket(network: string, deployment: string): P
 }
 
 /**
+ * Propose funding CometRewards contract
+ * @param network - The network to propose the funding on
+ * @param amount - The amount of COMP tokens to transfer (in wei)
+ * @returns Promise<string> - The command output
+ */
+export async function proposeFundRewards(network: string, amount: string): Promise<string> {
+  const command = `yarn hardhat governor:propose-fund-comet-rewards --network ${network} --amount ${amount}`;
+  return await runCommand(command, `Proposing CometRewards funding with ${amount} COMP tokens for all markets`);
+}
+
+/**
  * Propose a governance update
  * @param network - The network to propose the update on
  * @param deployment - The deployment name
