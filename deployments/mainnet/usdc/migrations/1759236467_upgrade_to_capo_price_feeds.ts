@@ -32,6 +32,7 @@ const COMP_ADDRESS = '0xc00e94Cb662C3520282E6f5717214004A7f26888';
 const COMP_USD_SVR_PRICE_FEED = '0x69B50fF403E995d9c4441a303438D9049dAC8cCD';
 
 const FEED_DECIMALS = 8;
+const blockToFetch = 23397862;
 
 let newWstETHPriceFeed: string;
 let oldWstETHPriceFeed: string;
@@ -53,10 +54,10 @@ let oldCOMPPriceFeed: string;
 export default migration('1759236467_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
     const { timelock } = await deploymentManager.getContracts();
-    const now = (await deploymentManager.hre.ethers.provider.getBlock('latest'))!.timestamp;
 
     const rsEthRateProvider = await deploymentManager.existing('rsETH:_priceFeed', RSETH_TO_ETH_PRICE_FEED, 'mainnet', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
-    const [, currentRatioRsEth] = await rsEthRateProvider.latestRoundData();
+    const [, currentRatioRsEth] = await rsEthRateProvider.latestRoundData({ blockTag: blockToFetch });
+    const blockToFetchTimestamp = (await deploymentManager.hre.ethers.provider.getBlock(blockToFetch))!.timestamp;
     const rsEthCapoPriceFeed = await deploymentManager.deploy(
       'rsETH:priceFeed',
       'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
@@ -69,7 +70,7 @@ export default migration('1759236467_upgrade_to_capo_price_feeds', {
         3600,
         {
           snapshotRatio: currentRatioRsEth,
-          snapshotTimestamp: now - 3600,
+          snapshotTimestamp: blockToFetchTimestamp,
           maxYearlyRatioGrowthPercent: exp(0.0554, 4)
         }
       ],
