@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { DeploymentManager } from '../../plugins/deployment_manager';
+import { DeploymentManager } from '../../../plugins/deployment_manager';
 
 interface AssetConfig {
   priceFeed: string;
