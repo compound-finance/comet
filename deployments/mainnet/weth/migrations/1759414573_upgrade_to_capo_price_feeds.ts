@@ -76,7 +76,7 @@ let oldWbtcPriceFeed: string;
 let oldCbBtcPriceFeed: string;
 let oldTBtcPriceFeed: string;
 
-export default migration('1735299664_upgrade_to_capo_price_feeds', {
+export default migration('1759414573_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
     const { timelock } = await deploymentManager.getContracts();
     const constantPriceFeed = await deploymentManager.fromDep('WETH:priceFeed', 'mainnet', 'weth');
