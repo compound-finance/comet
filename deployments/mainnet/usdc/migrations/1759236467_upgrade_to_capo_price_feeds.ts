@@ -133,7 +133,7 @@ export default migration('1759236467_upgrade_to_capo_price_feeds', {
         signature: 'updateAssetPriceFeed(address,address,address)',
         args: [comet.address, LINK_ADDRESS, LINK_USD_SVR_PRICE_FEED_ADDRESS],
       },
-      // 5. Update rSETH price feed
+      // 5. Update rsETH price feed
       {
         contract: configurator,
         signature: 'updateAssetPriceFeed(address,address,address)',
@@ -159,32 +159,39 @@ export default migration('1759236467_upgrade_to_capo_price_feeds', {
       },
     ];
 
-    const description = `# Update wstETH, WBTC, WETH, rsETH, LINK, weETH and COMP price feeds in cUSDCv3 on Mainnet with CAPO and SVR implementation.
+    const description = `# Update price feeds in cUSDCv3 on Mainnet with CAPO and Chainlink SVR implementation.
 
 ## Proposal summary
 
-This proposal updates existing price feeds for wstETH, WBTC, WETH, rsETH, LINK, weETH and COMP on the USDC market on Mainnet implementing CAPO and SVR.
-CAPO is a price oracle adapter designed to support assets that grow gradually relative to a base asset - such as liquid staking tokens that accumulate yield over time. It provides a mechanism to track this expected growth while protecting downstream protocol from sudden or manipulated price spikes.
-SVR utilizes Chainlink's SVR oracle solution that allows to recapture the non-toxic Maximal Extractable Value (MEV) derived from their use of Chainlink Price Feeds.
-Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1031), [forum discussion for CAPO](https://www.comp.xyz/t/woof-correlated-assets-price-oracle-capo/6245) and [forum discussion for SVR](https://www.comp.xyz/t/request-for-proposal-rfp-oracle-extractable-value-oev-solution-for-compound-protocol/6786).
+This proposal updates existing price feeds for wstETH, WBTC, WETH, LINK, rsETH, weETH and COMP on the USDC market on Mainnet.
+
+### SVR summary
+
+[RFP process](https://www.comp.xyz/t/oev-rfp-process-update-july-2025/6945) and community [vote](https://snapshot.box/#/s:comp-vote.eth/proposal/0x98a3873319cdb5a4c66b6f862752bdcfb40d443a5b9c2f9472188d7ed5f9f2e0) passed and decided to implement Chainlink's SVR solution for Mainnet markets, this proposal updates wstETH, WETH, WBTC, LINK, rsETH, weETH and COMP price feeds to support SVR implementations.
+
+### CAPO summary
+
+CAPO is a price oracle adapter designed to support assets that grow gradually relative to a base asset - such as liquid staking tokens that accumulate yield over time. It provides a mechanism to track this expected growth while protecting downstream protocol from sudden or manipulated price spikes. wstETH, rsETH and weETH price feeds are updated to their CAPO implementations.
+
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1031),  [forum discussion for CAPO](https://www.comp.xyz/t/woof-correlated-assets-price-oracle-capo/6245) and [forum discussion for SVR](https://www.comp.xyz/t/request-for-proposal-rfp-oracle-extractable-value-oev-solution-for-compound-protocol/6786).
 
 ## CAPO audit
 
-CAPO has been audited by [OpenZeppelin](https://www.comp.xyz/t/capo-price-feed-audit/6631).
+CAPO has been audited by [OpenZeppelin](https://www.comp.xyz/t/capo-price-feed-audit/6631), as well as the LST / LRT implementation [here](https://www.comp.xyz/t/capo-lst-lrt-audit/7118).
 
 ## SVR fee recipient
 
-Compound DAO fee recipient is 0xd9496F2A3fd2a97d8A4531D92742F3C8F53183cB.
+SVR generates revenue from liquidators and Compound DAO will receive that revenue as part of the protocol fee. The fee recipient for SVR is set to Compound DAO multisig: 0xd9496F2A3fd2a97d8A4531D92742F3C8F53183cB.
 
 ## Proposal actions
 
-The first action updates wstETH price feed to CAPO + SVR.
-The second action updates WBTC price feed to SVR.
-The third action updates WETH price feed to SVR.
-The fourth action updates LINK price feed to SVR.
-The fifth action updates rSETH price feed to CAPO + SVR.
-The sixth action updates weETH price feed to SVR.
-The seventh action updates COMP price feed to SVR.
+The first action updates wstETH price feed.
+The second action updates WBTC price feed.
+The third action updates WETH price feed.
+The fourth action updates LINK price feed.
+The fifth action updates rsETH price feed.
+The sixth action updates weETH price feed.
+The seventh action updates COMP price feed.
 The eighth action deploys and upgrades Comet to a new version.
 `;
 
@@ -209,7 +216,7 @@ The eighth action deploys and upgrades Comet to a new version.
   async verify(deploymentManager: DeploymentManager) {
     const { comet, configurator } = await deploymentManager.getContracts();
 
-    // wstETH
+    // 1. wstETH
     const wstETHIndexInComet = await configurator.getAssetIndex(comet.address, WSTETH_ADDRESS);
     const wstETHInCometInfo = await comet.getAssetInfoByAddress(WSTETH_ADDRESS);
     const wstETHInConfiguratorInfoWETHComet = (await configurator.getConfiguration(comet.address)).assetConfigs[wstETHIndexInComet];
@@ -218,7 +225,7 @@ The eighth action deploys and upgrades Comet to a new version.
     expect(wstETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newWstETHPriceFeed);
     expect(await comet.getPrice(newWstETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldWstETHPriceFeed), 18e8);
 
-    // WBTC
+    // 2. WBTC
     const wBTCIndexInComet = await configurator.getAssetIndex(comet.address, WBTC_ADDRESS);
     const wBTCInCometInfo = await comet.getAssetInfoByAddress(WBTC_ADDRESS);
     const wBTCInConfiguratorInfoWETHComet = (await configurator.getConfiguration(comet.address)).assetConfigs[wBTCIndexInComet]; 
@@ -227,7 +234,7 @@ The eighth action deploys and upgrades Comet to a new version.
     expect(wBTCInConfiguratorInfoWETHComet.priceFeed).to.eq(newWbtcPriceFeed);
     expect(await comet.getPrice(newWbtcPriceFeed)).to.be.closeTo(await comet.getPrice(oldWbtcPriceFeed), 5e10);
 
-    // WETH
+    // 3. WETH
     const WETHIndexInComet = await configurator.getAssetIndex(comet.address, WETH_ADDRESS);
     const WETHInCometInfo = await comet.getAssetInfoByAddress(WETH_ADDRESS);
     const WETHInConfiguratorInfoWETHComet = (await configurator.getConfiguration(comet.address)).assetConfigs[WETHIndexInComet];
@@ -236,7 +243,7 @@ The eighth action deploys and upgrades Comet to a new version.
     expect(WETHInConfiguratorInfoWETHComet.priceFeed).to.eq(ETH_USD_SVR_PRICE_FEED);
     expect(await comet.getPrice(ETH_USD_SVR_PRICE_FEED)).to.be.closeTo(await comet.getPrice(oldWETHPriceFeed), 18e8);
 
-    // LINK
+    // 4. LINK
     const linkIndexInComet = await configurator.getAssetIndex(comet.address, LINK_ADDRESS);
     const linkInCometInfo = await comet.getAssetInfoByAddress(LINK_ADDRESS);
     const linkInConfiguratorInfoWETHComet = (await configurator.getConfiguration(comet.address)).assetConfigs[linkIndexInComet]; 
@@ -245,7 +252,7 @@ The eighth action deploys and upgrades Comet to a new version.
     expect(linkInConfiguratorInfoWETHComet.priceFeed).to.eq(LINK_USD_SVR_PRICE_FEED_ADDRESS);
     expect(await comet.getPrice(LINK_USD_SVR_PRICE_FEED_ADDRESS)).to.be.closeTo(await comet.getPrice(oldLinkPriceFeed), 3e7);
 
-    // rSETH
+    // 5. rsETH
     const rsEthIndexInComet = await configurator.getAssetIndex(comet.address, RSETH_ADDRESS);
     const rsEthInCometInfo = await comet.getAssetInfoByAddress(RSETH_ADDRESS);
     const rsEthInConfiguratorInfoWETHComet = (await configurator.getConfiguration(comet.address)).assetConfigs[rsEthIndexInComet];
@@ -254,7 +261,7 @@ The eighth action deploys and upgrades Comet to a new version.
     expect(rsEthInConfiguratorInfoWETHComet.priceFeed).to.eq(newRsEthPriceFeed);
     expect(await comet.getPrice(newRsEthPriceFeed)).to.be.closeTo(await comet.getPrice(oldRsEthPriceFeed), 18e8);
 
-    // weETH
+    // 6. weETH
     const weETHIndexInComet = await configurator.getAssetIndex(comet.address, WEETH_ADDRESS);
     const weETHInCometInfo = await comet.getAssetInfoByAddress(WEETH_ADDRESS);
     const weETHInConfiguratorInfoWETHComet = (await configurator.getConfiguration(comet.address)).assetConfigs[weETHIndexInComet];
@@ -263,7 +270,7 @@ The eighth action deploys and upgrades Comet to a new version.
     expect(weETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newWeEthPriceFeed);
     expect(await comet.getPrice(newWeEthPriceFeed)).to.be.closeTo(await comet.getPrice(oldWeEthPriceFeed), 18e8);
 
-    // COMP
+    // 7. COMP
     const compIndexInComet = await configurator.getAssetIndex(comet.address, COMP_ADDRESS);
     const compInCometInfo = await comet.getAssetInfoByAddress(COMP_ADDRESS);
     const compInConfiguratorInfoWETHComet = (await configurator.getConfiguration(comet.address)).assetConfigs[compIndexInComet];
