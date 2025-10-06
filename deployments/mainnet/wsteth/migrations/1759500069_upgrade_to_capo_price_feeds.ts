@@ -141,11 +141,11 @@ export default migration('1759500069_upgrade_to_capo_price_feeds', {
       },
     ];
 
-    const description = `# Update price feeds in cWETHv3 on Mainnet with CAPO implementation.
+    const description = `# Update price feeds in cWstETHv3 on Mainnet with CAPO implementation.
 
 ## Proposal summary
 
-This proposal updates existing price feeds for rsETH and ezETH on the WETH market on Mainnet.
+This proposal updates existing price feeds for rsETH and ezETH on the wstETH market on Mainnet.
 
 ### CAPO summary
 
