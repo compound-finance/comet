@@ -17,6 +17,9 @@ jobs:
         with:
           version: nightly
 
+      - name: Install yarn
+        run: yarn
+
       - name: Install dependencies
         run: forge install && yarn install --non-interactive --frozen-lockfile
 
