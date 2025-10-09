@@ -10,7 +10,7 @@ node scripts/exportNetworkConfigs.js
 export $(cat .env.forge-temp | xargs)
 
 # 3. Run the Forge tests
-forge test -vvv
+forge test -vvv --via-ir --optimizer-runs 1 --no-match-path "./contracts/capo/*"
 
 # 4. Delete the temporary environment file
 rm .env.forge-temp

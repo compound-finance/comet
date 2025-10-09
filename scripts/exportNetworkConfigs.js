@@ -34,6 +34,7 @@ function getUrl(network) {
 }
 
 const envVar = {
+  SALT: process.env.SALT || 'comet',
   MAINNET_RPC_URL: getUrl('mainnet'),
   POLYGON_RPC_URL: getUrl('polygon'),
   ARBITRUM_RPC_URL: getUrl('arbitrum'),
