@@ -1,16 +1,8 @@
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
-import {
-  MarketAdminPermissionChecker,
-  MarketUpdateProposer,
-  MarketUpdateTimelock,
-  CometProxyAdmin,
-  Configurator,
-} from './../../../../build/types';
 import { expect } from 'chai';
-import { exp, proposal } from '../../../../src/deploy';
-
-interface Vars {}
+import { proposal } from '../../../../src/deploy';
+import { utils } from 'ethers';
 
 const marketAdminAddress = '0x7e14050080306cd36b47DE61ce604b3a1EC70c4e';
 
@@ -40,8 +32,6 @@ export default migration('1729593027_gov_marketupdates', {
     govDeploymentManager: DeploymentManager,
   ) => {
     const trace = deploymentManager.tracer();
-    const ethers = deploymentManager.hre.ethers;
-    const { utils } = ethers;
 
     const { bridgeReceiver } = await deploymentManager.getContracts();
 
@@ -146,15 +136,15 @@ After discussing with OpenZeppelin, DoDAO and OZ together believe that given the
       trace(await governor.propose(...(await proposal(actions, description))))
     );
 
-    const event = txn.events.find((event) => event.event === 'ProposalCreated');
+    const event = txn.events.find((event: { event: any }) => event.event === 'ProposalCreated');
 
     const [proposalId] = event.args;
 
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return false;
+  async enacted(): Promise<boolean> {
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {
@@ -164,29 +154,29 @@ After discussing with OpenZeppelin, DoDAO and OZ together believe that given the
 
     const { configurator } = await deploymentManager.getContracts();
 
-    const marketAdminPermissionChecker = (await ethers.getContractAt(
+    const marketAdminPermissionChecker = await ethers.getContractAt(
       'MarketAdminPermissionChecker',
       marketAdminPermissionCheckerAddress
-    )) as MarketAdminPermissionChecker;
+    );
 
-    const marketUpdateTimelock = (await ethers.getContractAt(
+    const marketUpdateTimelock = await ethers.getContractAt(
       'MarketUpdateTimelock',
       marketUpdateTimelockAddress
-    )) as MarketUpdateTimelock;
+    );
 
-    const marketUpdateProposer = (await ethers.getContractAt(
+    const marketUpdateProposer = await ethers.getContractAt(
       'MarketUpdateProposer',
       marketUpdateProposerAddress
-    )) as MarketUpdateProposer;
+    );
 
-    const cometProxyAdminNew = (await ethers.getContractAt(
+    const cometProxyAdminNew = await ethers.getContractAt(
       'CometProxyAdmin',
       newCometProxyAdminAddress
-    )) as CometProxyAdmin;
+    );
 
     expect(configurator.address).to.be.equal(configuratorProxyAddress);
-    expect(await (configurator as Configurator).governor()).to.be.equal(localTimelockAddress);
-    expect(await (configurator as Configurator).marketAdminPermissionChecker()).to.be.equal(marketAdminPermissionCheckerAddress);
+    expect(await configurator.governor()).to.be.equal(localTimelockAddress);
+    expect(await configurator.marketAdminPermissionChecker()).to.be.equal(marketAdminPermissionCheckerAddress);
 
     expect(await cometProxyAdminNew.marketAdminPermissionChecker()).to.be.equal(marketAdminPermissionChecker.address);
     expect(await cometProxyAdminNew.owner()).to.be.equal(localTimelockAddress);
