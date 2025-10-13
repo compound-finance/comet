@@ -26,7 +26,6 @@ library ChainAddresses {
         MANTLE
     }
 
-
     // Mainnet addresses
     address constant public MAINNET_GOVERNOR_TIMELOCK = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925; // See - https://etherscan.io/address/0x6d903f6003cca6255D85CcA4D3B5E5146dC33925
     address constant public MAINNET_CONFIGURATOR_PROXY = 0x316f9708bB98af7dA9c68C1C3b5e79039cD336E3; // See - https://etherscan.io/address/0x316f9708bB98af7dA9c68C1C3b5e79039cD336E3

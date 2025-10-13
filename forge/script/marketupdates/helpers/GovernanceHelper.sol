@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@forge-std/src/Vm.sol";
-import "@forge-std/src/console.sol";
-import "@comet-contracts/IGovernorBravo.sol";
-import "@comet-contracts/IComp.sol";
-import "@comet-contracts/marketupdates/MarketUpdateProposer.sol";
+import "../../../lib/forge-std/src/Vm.sol";
+import "../../../lib/forge-std/src/console.sol";
+import "../../../../contracts/IGovernorBravo.sol";
+import "../../../../contracts/IComp.sol";
+import "../../../../contracts/marketupdates/MarketUpdateProposer.sol";
 
 import "./MarketUpdateAddresses.sol";
-
 
 library GovernanceHelper {
     uint constant public BLOCKS_PER_DAY = 7168;
@@ -33,8 +32,8 @@ library GovernanceHelper {
         address configuratorNewAddress = addresses.configuratorImplementationAddress;
         address cometProxyAdminNewAddress = addresses.newCometProxyAdminAddress;
         address marketAdminPermissionCheckerAddress = addresses.marketAdminPermissionCheckerAddress;
-        address marketUpdateTimelockAddress = addresses.marketUpdateTimelockAddress;
-        address marketUpdateProposerAddress = addresses.marketAdminProposerAddress;
+        // address marketUpdateTimelockAddress = addresses.marketUpdateTimelockAddress;
+        // address marketUpdateProposerAddress = addresses.marketAdminProposerAddress;
 
         // Dynamically allocate arrays based on the number of markets
         uint256 numMarkets = addresses.markets.length;
@@ -91,7 +90,7 @@ library GovernanceHelper {
     }
 
     function createDeploymentProposal(Vm vm, MarketUpdateAddresses.MarketUpdateAddressesStruct memory addresses, address proposalCreator) public returns (uint256) {
-        IGovernorBravo governorBravo = IGovernorBravo(MarketUpdateAddresses.GOVERNOR_BRAVO_PROXY_ADDRESS);
+        IGovernorBravo _governorBravo = IGovernorBravo(MarketUpdateAddresses.GOVERNOR_BRAVO_PROXY_ADDRESS);
         ProposalRequest memory proposalRequest = createDeploymentProposalRequest(addresses);
         string memory description = "Proposal to trigger updates for market admin";
         vm.startBroadcast(proposalCreator);
@@ -105,7 +104,7 @@ library GovernanceHelper {
             }
         }
         proposalRequest.calldatas = calldatas;
-        uint256 proposalId = governorBravo.propose(proposalRequest.targets, proposalRequest.values, proposalRequest.calldatas, description);
+        uint256 proposalId = _governorBravo.propose(proposalRequest.targets, proposalRequest.values, proposalRequest.calldatas, description);
         vm.stopBroadcast();
         return proposalId;
     }

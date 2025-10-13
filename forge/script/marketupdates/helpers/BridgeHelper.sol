@@ -4,15 +4,15 @@ pragma solidity ^0.8.15;
 import "./MarketUpdateAddresses.sol";
 import "./ChainAddresses.sol";
 import "./GovernanceHelper.sol";
-import "@comet-contracts/bridges/BaseBridgeReceiver.sol";
-import "@comet-contracts/bridges/arbitrum/ArbitrumBridgeReceiver.sol";
-import "@comet-contracts/bridges/optimism/OptimismBridgeReceiver.sol";
-import "@comet-contracts/bridges/optimism/IOvmL2CrossDomainMessengerInterface.sol";
-import "@comet-contracts/bridges/polygon/PolygonBridgeReceiver.sol";
-import "@comet-contracts/bridges/scroll/ScrollBridgeReceiver.sol";
-import "@comet-contracts/bridges/scroll/IScrollMessenger.sol";
-import "@comet-contracts/bridges/arbitrum/AddressAliasHelper.sol";
-import "@comet-contracts/ITimelock.sol";
+import "../../../../contracts/bridges/BaseBridgeReceiver.sol";
+import "../../../../contracts/bridges/arbitrum/ArbitrumBridgeReceiver.sol";
+import "../../../../contracts/bridges/optimism/OptimismBridgeReceiver.sol";
+import "../../../../contracts/bridges/optimism/IOvmL2CrossDomainMessengerInterface.sol";
+import "../../../../contracts/bridges/polygon/PolygonBridgeReceiver.sol";
+import "../../../../contracts/bridges/scroll/ScrollBridgeReceiver.sol";
+import "../../../../contracts/bridges/scroll/IScrollMessenger.sol";
+import "../../../../contracts/bridges/arbitrum/AddressAliasHelper.sol";
+import "../../../../contracts/ITimelock.sol";
 
 library BridgeHelper {
 

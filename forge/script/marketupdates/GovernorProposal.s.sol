@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@forge-std/src/Script.sol";
-import "@forge-std/src/console.sol";
+import "../../lib/forge-std/src/Script.sol";
+import "../../lib/forge-std/src/console.sol";
 
-import "@comet-contracts/IGovernorBravo.sol";
-import "@comet-contracts/IComp.sol";
-import "@comet-contracts/marketupdates/CometProxyAdminOld.sol";
+import "../../../contracts/IGovernorBravo.sol";
+import "../../../contracts/IComp.sol";
+import "../../../contracts/CometProxyAdmin.sol";
 
 import "./helpers/GovernanceHelper.sol";
 import "./helpers/MarketUpdateAddresses.sol";
@@ -17,7 +17,7 @@ contract GovernorProposal is Script {
         string memory chainName = vm.envString("CHAIN_NAME"); // Access the env variable
 
         // Define the address of the Governor Bravo Proxy
-        address governorBravoProxyAddress = 0x309a862bbc1a00e45506cb8a802d1ff10004c8c0;
+        address governorBravoProxyAddress = 0x309a862bbC1A00e45506cB8A802D1ff10004c8C0;
 
         // Cast the proxy address to the GovernorBravoDelegate interface
         IGovernorBravo governorBravo = IGovernorBravo(governorBravoProxyAddress);
