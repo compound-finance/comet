@@ -211,7 +211,7 @@ CAPO has been audited by [OpenZeppelin](https://www.comp.xyz/t/capo-price-feed-a
 
 ## Proposal actions
 
-The first action updates the wstETH price feed to the CAPO implementation.
+The first action updates wstETH and ezETH price feeds to the CAPO implementation, This sends the encoded 'updateAssetPriceFeed' and 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Arbitrum.
 `;
     const txn = await deploymentManager.retry(async () =>
       trace(
