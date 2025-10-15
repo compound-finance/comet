@@ -5,59 +5,22 @@ import { calldata, proposal } from '../../../../src/deploy';
 import { utils } from 'ethers';
 import { applyL1ToL2Alias, estimateL2Transaction } from '../../../../scenario/utils/arbitrumUtils';
 import { Numeric } from '../../../../test/helpers';
-import { AggregatorV3Interface } from '../../../../build/types';
 
 export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
   return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
 }
-
-const ETH_USD_PRICE_FEED = '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612';
+const wstEthToUSDCapoPriceFeedAddress = '0x92014e7f331dFaB2848A5872AA8b2E7b6f3cE8B4';
 
 const WSTETH_ADDRESS = '0x5979D7b546E38E414F7E9822514be443A4800529';
-const WSTETH_STETH_PRICE_FEED_ADDRESS = '0xB1552C5e96B312d0Bf8b554186F846C40614a540';
 
-const FEED_DECIMALS = 8;
-
-let newWstETHPriceFeed: string;
 let oldWstETHPriceFeed: string;
 
 export default migration('1735299664_upgrade_to_capo_price_feeds', {
-  async prepare(deploymentManager: DeploymentManager) {
-    const { timelock } = await deploymentManager.getContracts();
-
-    const rateProviderWstEth = await deploymentManager.existing('wstETH:_rateProvider', WSTETH_STETH_PRICE_FEED_ADDRESS, 'arbitrum', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
-    const [, currentRatioWstEth] = await rateProviderWstEth.latestRoundData();
-    const now = (await deploymentManager.hre.ethers.provider.getBlock('latest'))!.timestamp;
-
-    const wstEthCapoPriceFeed = await deploymentManager.deploy(
-      'wstETH:priceFeed',
-      'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
-      [
-        timelock.address,
-        ETH_USD_PRICE_FEED,
-        WSTETH_STETH_PRICE_FEED_ADDRESS,
-        'wstETH / USD CAPO Price Feed',
-        FEED_DECIMALS,
-        3600,
-        {
-          snapshotRatio: currentRatioWstEth,
-          snapshotTimestamp: now - 3600,
-          maxYearlyRatioGrowthPercent: exp(0.0404, 4)
-        }
-      ],
-      true
-    );
-
-    return {
-      wstEthCapoPriceFeedAddress: wstEthCapoPriceFeed.address,
-    };
+  async prepare() {
+    return {};
   },
 
-  async enact(deploymentManager: DeploymentManager, govDeploymentManager, {
-    wstEthCapoPriceFeedAddress
-  }) {
- 
-    newWstETHPriceFeed = wstEthCapoPriceFeedAddress;
+  async enact(deploymentManager: DeploymentManager, govDeploymentManager) {
 
     const trace = deploymentManager.tracer();
 
@@ -81,7 +44,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       configurator.populateTransaction.updateAssetPriceFeed(
         comet.address,
         WSTETH_ADDRESS,
-        wstEthCapoPriceFeedAddress
+        wstEthToUSDCapoPriceFeedAddress
       )
     );
 
@@ -91,7 +54,6 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         comet.address
       )
     );
-
 
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
@@ -144,16 +106,33 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       },
     ];
 
-    const description = 'tmp';
+    const description = `# Update price feeds in cUSDTv3 on Arbitrum with CAPO implementation.
+
+## Proposal summary
+
+This proposal updates existing price feed for wstETH on the USDT market on Arbitrum.
+
+### CAPO summary
+
+CAPO is a price oracle adapter designed to support assets that grow gradually relative to a base asset - such as liquid staking tokens that accumulate yield over time. It provides a mechanism to track this expected growth while protecting downstream protocol from sudden or manipulated price spikes. wstETH price feed are updated to their CAPO implementations.
+
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1036) and [forum discussion for CAPO](https://www.comp.xyz/t/woof-correlated-assets-price-oracle-capo/6245).
+
+### CAPO audit
+
+CAPO has been audited by [OpenZeppelin](https://www.comp.xyz/t/capo-price-feed-audit/6631), as well as the LST / LRT implementation [here](https://www.comp.xyz/t/capo-lst-lrt-audit/7118).
+
+## Proposal actions
+
+The first action updates wstETH price feed to the CAPO implementation, This sends the encoded 'updateAssetPriceFeed' and 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Arbitrum.
+`;
     const txn = await deploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
       )
     );
 
-    const event = txn.events.find(
-      (event) => event.event === 'ProposalCreated'
-    );
+    const event = txn.events.find((event: { event: string }) => event.event === 'ProposalCreated');
     const [proposalId] = event.args;
     trace(`Created proposal ${proposalId}.`);
   },
@@ -164,24 +143,15 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
 
   async verify(deploymentManager: DeploymentManager) {
     const { comet, configurator } = await deploymentManager.getContracts();
-    
-    const wstETHIndexInComet = await configurator.getAssetIndex(
-      comet.address,
-      WSTETH_ADDRESS
-    );
-    
-    // 1. & 2. & 3. Check if the price feeds are set correctly.
-    const wstETHInCometInfo = await comet.getAssetInfoByAddress(
-      WSTETH_ADDRESS
-    );
-    
-    const wstETHInConfiguratorInfoWETHComet = (
-      await configurator.getConfiguration(comet.address)
-    ).assetConfigs[wstETHIndexInComet];
 
-    expect(wstETHInCometInfo.priceFeed).to.eq(newWstETHPriceFeed);
-    expect(wstETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newWstETHPriceFeed);
+    const wstETHIndexInComet = await configurator.getAssetIndex(comet.address, WSTETH_ADDRESS);
 
-    expect(await comet.getPrice(newWstETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldWstETHPriceFeed), 40e8);
+    const wstETHInCometInfo = await comet.getAssetInfoByAddress(WSTETH_ADDRESS);
+
+    const wstETHInConfiguratorInfoWETHComet = (await configurator.getConfiguration(comet.address)).assetConfigs[wstETHIndexInComet];
+
+    expect(wstETHInCometInfo.priceFeed).to.eq(wstEthToUSDCapoPriceFeedAddress);
+    expect(wstETHInConfiguratorInfoWETHComet.priceFeed).to.eq(wstEthToUSDCapoPriceFeedAddress);
+    expect(await comet.getPrice(wstEthToUSDCapoPriceFeedAddress)).to.be.closeTo(await comet.getPrice(oldWstETHPriceFeed), 15e8);
   },
 });

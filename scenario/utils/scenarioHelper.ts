@@ -92,7 +92,10 @@ export function getConfigForScenario(ctx: CometContext) {
   }
 
   if (ctx.world.base.network === 'arbitrum' && ctx.world.base.deployment === 'usdt') {
-    config.withdrawAsset = 3500;
+    config.withdrawAsset = 7000;
+    config.bulkerAsset = 10000;
+    config.bulkerAsset1 = 10000;
+    config.transferAsset1 = 10000;
   }
 
   if (ctx.world.base.network === 'arbitrum' && ctx.world.base.deployment === 'usdc.e') {
