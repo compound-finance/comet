@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This liquidaton bot is a starting point for the community members interested in arbitrage opportunities with Compound III. It uses Uniswap flash loans to purchase discounted collateral assets from underwater accounts.
+This liquidation bot is a starting point for the community members interested in arbitrage opportunities with Compound III. It uses Uniswap flash loans to purchase discounted collateral assets from underwater accounts.
 
 ## Liquidator logic
 

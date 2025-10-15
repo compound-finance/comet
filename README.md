@@ -29,7 +29,7 @@ MNEMONIC=<mnemonic>
 
 ## Git hooks
 
-The repo's Git hooks are defined the `.githooks/` directory.
+The repo's Git hooks are defined in the `.githooks/` directory.
 
 You can enable them by running:
 
@@ -66,7 +66,7 @@ An example deployment command looks like:
 
 **[CometExtInterface.sol](https://github.com/compound-finance/comet/blob/main/contracts/CometExtInterface.sol)** - Abstract contract that inherits `CometCore.sol` and contains all the functions and events for `CometExt.sol`.
 
-**[CometCore.sol](https://github.com/compound-finance/comet/blob/main/contracts/CometCore.sol)** - Abstract contract that inherits `CometStorage.sol`, `CometConfiguration.sol`, and `CometMath.sol`. This contracts contains functions and constants that are shared between `Comet.sol` and `CometExt.sol`.
+**[CometCore.sol](https://github.com/compound-finance/comet/blob/main/contracts/CometCore.sol)** - Abstract contract that inherits `CometStorage.sol`, `CometConfiguration.sol`, and `CometMath.sol`. This contract contains functions and constants that are shared between `Comet.sol` and `CometExt.sol`.
 
 **[CometStorage.sol](https://github.com/compound-finance/comet/blob/main/contracts/CometStorage.sol)** - Contract that defines the storage variables used for the Comet protocol.
 
@@ -218,7 +218,7 @@ The PR should include any necessary tests, which will remain in the repository.
 The migration script itself can be deleted in a separate commit, after the PR has been merged and recorded on the `main` branch, for good hygiene.
 It's important to remove migrations once they've been executed, to avoid exploding the cost of running scenarios beyond what's necessary for testing.
 
-For more information, seee [MIGRATIONS.md](./MIGRATIONS.md).
+For more information, see [MIGRATIONS.md](./MIGRATIONS.md).
 
 ### Deploying to testnets
 
@@ -235,7 +235,7 @@ These simulations are extremely useful for testing deployments before actually c
 1. Create the deployment script and configuration file, and test locally
 2. Open a PR containing the new deployment directory files
 3. Trigger the `deploy-market` workflow action through the GitHub UI
-4. Inspect the new `roots.json` which the workflow automatically commited to your PR
+4. Inspect the new `roots.json` which the workflow automatically committed to your PR
 5. Start using the new protocol deployment and/or create further migrations to modify it
 
 ##### Deploy Script Gotchas and Tips
