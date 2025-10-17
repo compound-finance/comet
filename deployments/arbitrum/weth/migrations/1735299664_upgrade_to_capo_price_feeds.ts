@@ -317,17 +317,17 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
       },
     ];
 
-    const description = `# Update price feeds in cUSDTv3 on Arbitrum with CAPO implementation.
+    const description = `# Update price feeds in cWETHv3 on Arbitrum with CAPO implementation.
 
 ## Proposal summary
 
-This proposal updates existing price feed for wstETH on the USDT market on Arbitrum.
+This proposal updates existing price feeds for wstETH, ezETH, rsETH, weETH, and rETH on the WETH market on Arbitrum.
 
 ### CAPO summary
 
-CAPO is a price oracle adapter designed to support assets that grow gradually relative to a base asset - such as liquid staking tokens that accumulate yield over time. It provides a mechanism to track this expected growth while protecting downstream protocol from sudden or manipulated price spikes. wstETH price feed are updated to their CAPO implementations.
+CAPO is a price oracle adapter designed to support assets that grow gradually relative to a base asset - such as liquid staking tokens that accumulate yield over time. It provides a mechanism to track this expected growth while protecting downstream protocol from sudden or manipulated price spikes. wstETH, ezETH, rsETH, weETH, and rETH price feeds are updated to their CAPO implementations.
 
-Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1036) and [forum discussion for CAPO](https://www.comp.xyz/t/woof-correlated-assets-price-oracle-capo/6245).
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1037) and [forum discussion for CAPO](https://www.comp.xyz/t/woof-correlated-assets-price-oracle-capo/6245).
 
 ### CAPO audit
 
@@ -335,7 +335,7 @@ CAPO has been audited by [OpenZeppelin](https://www.comp.xyz/t/capo-price-feed-a
 
 ## Proposal actions
 
-The first action updates wstETH price feed to the CAPO implementation, This sends the encoded 'updateAssetPriceFeed' and 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Arbitrum.
+The first action updates wstETH, ezETH, rsETH, weETH, and rETH price feeds to the CAPO implementation, This sends the encoded 'updateAssetPriceFeed' and 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Arbitrum.
 `;
     const txn = await deploymentManager.retry(async () =>
       trace(
