@@ -87,6 +87,7 @@ Detailed explanation of the changes can be found in the [Governance update forum
 ### Whitelisted addresses
 
 | Entity Name | Address |
+|-------------|---------|
 | Proposal Guardian | 0xbbf3f1421D886E9b2c5D716B5192aC998af2012c |
 | Compound Foundation | 0xb06df4dd01a5c5782f360ada9345c87e86adae3d |
 | WOOF! | 0xd2A79F263eC55DBC7B724eCc20FC7448D4795a0C |
