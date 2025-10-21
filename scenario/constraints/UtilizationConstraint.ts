@@ -116,6 +116,11 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
             const collateralPrice = (await comet.getPrice(priceFeed)).toBigInt();
             const collateralScale = scale.toBigInt();
 
+            if(borrowCollateralFactor.toBigInt() === 0n || collateralPrice === 0n){
+              console.log(`UtilizationConstraint: skipping $asset${i} due to zero collateral factor or price`);
+              continue; // can't use this asset as collateral
+            }
+
             const collateralWeiPerUnitBase = (collateralScale * basePrice) / collateralPrice;
             let collateralNeeded = (collateralWeiPerUnitBase * toBorrowBase) / baseScale;
             collateralNeeded = (collateralNeeded * factorScale) / borrowCollateralFactor.toBigInt(); // adjust for borrowCollateralFactor

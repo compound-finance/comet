@@ -81,7 +81,7 @@ function getBlockRollback(base: ForkSpec) {
     return 200;
   }
   else
-    return 280;
+    return 25;
 }
 
 export async function forkedHreForBase(base: ForkSpec): Promise<HardhatRuntimeEnvironment> {
