@@ -24,10 +24,10 @@ const WEETH_ADDRESS = '0x35751007a407ca6FEFfE80b3cB397736D2cf4dbe';
 const WEETH_RATE_PROVIDER = '0x20bAe7e1De9c596f5F7615aeaa1342Ba99294e12';
 
 const RETH_ADDRESS = '0xEC70Dcb4A1EFa46b8F2D97C310C9c4790ba5ffA8';
-const RETH_RATE_PROVIDER = '0xD6aB2298946840262FcC278fF31516D39fF611eF';
+const RETH_RATE_PROVIDER = '0xF3272CAfe65b190e76caAF483db13424a3e23dD2';
 
 const FEED_DECIMALS = 8;
-const blockToFetch = 389430000;
+const blockToFetch = 391800000;
 
 let newWstETHPriceFeed: string;
 let newEzETHPriceFeed: string;
@@ -398,6 +398,6 @@ The first action updates wstETH, ezETH, rsETH, weETH, and rETH price feeds to th
 
     expect(rETHInWETHCometInfo.priceFeed).to.eq(newRETHPriceFeed);
     expect(rETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newRETHPriceFeed);
-    expect(await comet.getPrice(newRETHPriceFeed)).to.equal(await comet.getPrice(oldRETHPriceFeed));
+    expect(await comet.getPrice(newRETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldRETHPriceFeed), 1e6);
   },
 });
