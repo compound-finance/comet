@@ -267,7 +267,26 @@ const config: HardhatUserConfig = {
       allowUnlimitedContractSize: true,
       //hardfork: 'london',
       chains: networkConfigs.reduce((acc, { chainId }) => {
-        if (chainId === 1) return acc;
+        if (chainId === 1) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+              shanghai: 3,
+              cancun: 4,
+            }
+          };
+          return acc;
+        }
+        if (chainId === 10) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+            }
+          };
+          return acc;
+        }
         if (chainId === 59144) {
           acc[chainId] = {
             hardforkHistory: {
