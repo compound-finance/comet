@@ -104,7 +104,8 @@ export async function forkedHreForBase(base: ForkSpec): Promise<HardhatRuntimeEn
   const baseNetwork = networks[base.network] as HttpNetworkUserConfig;
 
   const provider = new ethers.providers.JsonRpcProvider(baseNetwork.url);
-  console.log(`Forking from network: ${base.network} at block number: ${await provider.getBlockNumber() - (getBlockRollback(base) || 0)}`);
+  if(baseNetwork.url)
+    console.log(`Forking from network: ${base.network} at block number: ${await provider.getBlockNumber() - (getBlockRollback(base) || 0)}`);
 
   // noNetwork otherwise
   if (!base.blockNumber && baseNetwork.url && getBlockRollback(base) !== undefined)
