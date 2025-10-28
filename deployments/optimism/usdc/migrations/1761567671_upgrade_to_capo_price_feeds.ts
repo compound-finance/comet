@@ -346,9 +346,11 @@ CAPO has been audited by [OpenZeppelin](https://www.comp.xyz/t/capo-price-feed-a
 The first action updates wstETH, ezETH, wrsETH, and weETH price feeds to the CAPO implementation. This sends the encoded 'updateAssetPriceFeed' and 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Optimism.
 `;
 
+    const signer = await govDeploymentManager.getSigner();
+    console.log(`Creating proposal with signer: ${signer.address}`);
     const txn = await govDeploymentManager.retry(async () =>
       trace(
-        await governor.propose(...(await proposal(mainnetActions, description)))
+        await governor.connect(signer).propose(...(await proposal(mainnetActions, description)))
       )
     );
 
