@@ -135,9 +135,13 @@ The second action adds USDT asset as collateral with corresponding configuration
 
 The third action upgrades Comet to a new version.`;
 
+    const [targets, values, calldatas, ] = await proposal(mainnetActions, description);
+    console.log('targets:', targets);
+    console.log('values:', values);
+    console.log('calldatas:', calldatas);
     const txn = await deploymentManager.retry(async () =>
       trace(
-        await governor.propose(...(await proposal(mainnetActions, description)))
+        await governor.propose(targets, values, calldatas, description)
       )
     );
 
