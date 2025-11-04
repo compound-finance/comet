@@ -139,11 +139,9 @@ The third action upgrades Comet to a new version.`;
     console.log('targets:', targets);
     console.log('values:', values);
     console.log('calldatas:', calldatas);
-    const txn = await deploymentManager.retry(async () =>
-      trace(
-        await governor.propose(targets, values, calldatas, description)
-      )
-    );
+    const signer = await deploymentManager.getSigner();
+    console.log('signer address:', signer.address);
+    const txn = await (await governor.connect(signer).propose(targets, values, calldatas, description)).wait();
 
     const event = txn.events.find(
       (event: { event: string }) => event.event === 'ProposalCreated'
