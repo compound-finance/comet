@@ -19,7 +19,7 @@ let newPriceFeedUSDTAddress: string;
 let newPriceFeedWETHAddress: string;
 let newPriceFeedWEETHAddress: string;
 
-export default migration('1762179749_add_usdc_and_usdt_collateral', {
+export default migration('1762179749_add_usdc_usdt_weth_and_weeth_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
     const usdcPriceFeed = await deploymentManager.deploy(
       'USDC:priceFeed',
