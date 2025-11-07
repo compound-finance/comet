@@ -30,4 +30,7 @@ export default {
       }
     }
   },
+  ERC1967Proxy: {
+    artifact: 'contracts/ERC20.sol:ERC20',
+  },
 };

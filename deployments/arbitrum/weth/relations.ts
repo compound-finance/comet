@@ -8,6 +8,9 @@ export default {
   TransparentUpgradeableProxy: {
     artifact: 'contracts/ERC20.sol:ERC20'
   },
+  ERC1967Proxy: {
+    artifact: 'contracts/ERC20.sol:ERC20'
+  },
   OssifiableProxy: {
     artifact: 'contracts/ERC20.sol:ERC20'
   },
