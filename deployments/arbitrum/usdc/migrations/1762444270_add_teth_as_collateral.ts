@@ -241,9 +241,9 @@ export default migration('1762444270_add_teth_as_collateral', {
 
 ## Proposal summary
 
-WOOF proposes to add tETH into cUSDCv3, cUSDTv3 and cWETHv3 on Arbitrum network. This proposal takes the governance steps recommended and necessary to update a Compound III wstETH market on Arbitrum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based on the [recommendations from Gauntlet](https://www.comp.xyz/t/gauntlet-weth-weeth-usdc-and-usdt-risk-recommendations-for-mainnet-wsteth/7318/1).
+WOOF proposes to add tETH into cUSDCv3, cUSDTv3 and cWETHv3 on Arbitrum network. This proposal takes the governance steps recommended and necessary to update a Compound III wstETH market on Arbitrum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based on the [recommendations from Gauntlet](https://www.comp.xyz/t/listing-teth-arbitrum-as-collateral-for-compound-arbitrum/7299/2).
 
-Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1059) and [forum discussion](https://www.comp.xyz/t/gauntlet-weth-weeth-usdc-and-usdt-risk-recommendations-for-mainnet-wsteth/7318).
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1059) and [forum discussion](https://www.comp.xyz/t/listing-teth-arbitrum-as-collateral-for-compound-arbitrum/7299).
 
 
 ## Proposal Actions
