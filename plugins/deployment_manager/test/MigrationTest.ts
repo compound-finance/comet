@@ -25,8 +25,8 @@ describe('Migration', () => {
   });
 
   it('loads a simple migration', async () => {
-    let [m] = await loadMigrations([`${__dirname}/migration.ts`]);
     let dm = new DeploymentManager('test-network', 'test-market', hre);
+    let [m] = await loadMigrations([`${__dirname}/migration.ts`], dm, dm);
     expect(m.name).to.eql('test migration');
     expect(await m.actions.prepare(dm, dm)).to.eql(['step 1']);
     expect(await m.actions.enact(dm, dm, [])).to.eql(undefined);
