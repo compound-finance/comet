@@ -224,8 +224,8 @@ The first action updates wstETH and ezETH price feeds to the CAPO implementation
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(): Promise<boolean> {
-    return false;
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {
