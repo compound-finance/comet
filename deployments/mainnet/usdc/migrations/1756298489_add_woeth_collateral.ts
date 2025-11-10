@@ -4,20 +4,20 @@ import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { exp, proposal } from '../../../../src/deploy';
 
 const WOETH_ADDRESS = '0xDcEe70654261AF21C44c093C300eD3Bb97b78192';
+const ETH_USDC_OEV_PRICE_FEED_ADDRESS = '0xc0053f3FBcCD593758258334Dfce24C2A9A673aD';
 
 let newPriceFeedAddress: string;
 
 export default migration('1756298489_add_woeth_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
-    const wethPricefeed = await deploymentManager.fromDep('WETH:priceFeed', 'mainnet', 'usdc');
     const wOETHPriceFeed = await deploymentManager.deploy(
       'wOETH:priceFeed',
       'pricefeeds/PriceFeedWith4626Support.sol',
       [
-        WOETH_ADDRESS,            // wOETH / OETH price feed
-        wethPricefeed.address,    // ETH / USD price feed (we consider oETH / ETH as 1:1)
-        8,                        // decimals
-        'wOETH / USD price feed', // description
+        WOETH_ADDRESS,                   // wOETH / OETH price feed
+        ETH_USDC_OEV_PRICE_FEED_ADDRESS, // ETH / USD price feed (we consider oETH / ETH as 1:1)
+        8,                               // decimals
+        'wOETH / USD price feed',        // description
       ],
       true
     );
@@ -97,7 +97,7 @@ The second action deploys and upgrades Comet to a new version.`;
     );
 
     const event = txn.events.find(
-      (event) => event.event === 'ProposalCreated'
+      (event: { event: string }) => event.event === 'ProposalCreated'
     );
     const [proposalId] = event.args;
     trace(`Created proposal ${proposalId}.`);
