@@ -25,7 +25,7 @@ export async function loadMigration(path: string): Promise<Migration<any>> {
   return thing;
 }
 
-export async function loadMigrations(paths: string[]): Promise<Migration<any>[]> {
+export async function loadMigrations(paths: string[], dm?: DeploymentManager, gdm?: DeploymentManager): Promise<Migration<any>[]> {
   const migrations = [];
   for (const path of paths) {
     const enacted = (await loadMigration(path)).actions?.enacted;
@@ -33,7 +33,7 @@ export async function loadMigrations(paths: string[]): Promise<Migration<any>[]>
       migrations.push(await loadMigration(path));
       continue;
     }
-    if(!await enacted(undefined, undefined))
+    if(!await enacted(dm, gdm))
       migrations.push(await loadMigration(path));
   }
   return migrations;
