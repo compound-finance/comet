@@ -5,7 +5,7 @@ import { exp, proposal } from '../../../../src/deploy';
 
 const WOETH_ADDRESS = '0xDcEe70654261AF21C44c093C300eD3Bb97b78192';
 
-const WOETH_TO_USD_PRICE_FEED = '0x1738FCAe8D5A6aEf39985dF31Fe60e5Dc5e1a7b3';
+const WOETH_TO_USD_PRICE_FEED = '0x13933885C9A392Ce73f396707EC61f30a8b05e37';
 
 export default migration('1756298489_add_woeth_collateral', {
   async prepare() {
@@ -82,7 +82,7 @@ The second action deploys and upgrades Comet to a new version.`;
     );
 
     const event = txn.events.find(
-      (event) => event.event === 'ProposalCreated'
+      (event: { event: string }) => event.event === 'ProposalCreated'
     );
     const [proposalId] = event.args;
     trace(`Created proposal ${proposalId}.`);

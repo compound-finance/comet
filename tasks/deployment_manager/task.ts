@@ -32,7 +32,8 @@ async function runMigration<T>(
   overwrite: boolean,
   tenderly: boolean = false
 ) {
-  deploymentManager.cleanCache();
+  await deploymentManager.cleanCache();
+  console.log(`Reading artifact for migration: ${migration.name}`);
   let artifact: T = await deploymentManager.readArtifact(migration);
   if (prepare) {
     if (artifact && !overwrite) {
@@ -53,11 +54,13 @@ async function runMigration<T>(
   }
 
   if (enact) {
+    console.log('Running enactment step...');
     const {
       governor,
       timelock
     } = await govDeploymentManager.getContracts();
-    
+
+    console.log('Running enact...');
     await migration.actions.enact(
       deploymentManager,
       govDeploymentManager,
@@ -260,7 +263,7 @@ task('migrate', 'Runs migration')
 
       const migrationPath = `${__dirname}/../../deployments/${network}/${deployment}/migrations/${migrationName}.ts`;
       console.log(`Loading migration from ${migrationPath}`);
-      const [migration] = await loadMigrations([migrationPath]);
+      const [migration] = await loadMigrations([migrationPath], dm, governanceDm);
       if (!migration) {
         throw new Error(`Unknown migration for network ${network}/${deployment}: \`${migrationName}\`.`);
       }
@@ -381,7 +384,7 @@ task('deploy_and_migrate', 'Runs deploy and migration')
       }
 
       const migrationPath = `${__dirname}/../../deployments/${network}/${deployment}/migrations/${migrationName}.ts`;
-      const [migration] = await loadMigrations([migrationPath]);
+      const [migration] = await loadMigrations([migrationPath], dm, governanceDm);
       if (!migration) {
         throw new Error(`Unknown migration for network ${network}/${deployment}: \`${migrationName}\`.`);
       }
