@@ -1,3 +1,7 @@
 [submodule "forge/lib/forge-std"]
 	path = forge/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "contracts/capo"]
+	path = contracts/capo
+	url = git@github.com:woof-software/compound-capo.git
+	branch = lst-lrt-oracles
