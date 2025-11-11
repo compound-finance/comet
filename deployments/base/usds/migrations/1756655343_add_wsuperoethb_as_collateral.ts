@@ -102,7 +102,7 @@ The first proposal action adds wsuperOETHb to the USDS Comet on Base. This sends
     );
 
     const event = txn.events.find(
-      (event) => event.event === 'ProposalCreated'
+      (event: { event: string }) => event.event === 'ProposalCreated'
     );
     const [proposalId] = event.args;
     trace(`Created proposal ${proposalId}.`);
