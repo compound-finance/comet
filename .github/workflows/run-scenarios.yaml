@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        bases: [ development, mainnet, mainnet-weth, mainnet-wbtc, mainnet-usdt, mainnet-wsteth, mainnet-usds, sepolia-usdc, sepolia-weth, fuji, polygon, polygon-usdt, arbitrum-usdc.e, arbitrum-usdc, arbitrum-weth, arbitrum-usdt, base-usdbc, base-weth, base-usdc, base-aero, base-usds, optimism-usdc, optimism-usdt, optimism-weth, mantle-usde, linea-usdc, scroll-usdc, ronin-weth, ronin-wron, unichain-usdc, unichain-weth]
+        bases: [ development, mainnet, mainnet-weth, mainnet-wbtc, mainnet-usdt, mainnet-wsteth, mainnet-usds, sepolia-usdc, sepolia-weth, fuji, polygon, polygon-usdt, arbitrum-usdc.e, arbitrum-usdc, arbitrum-weth, arbitrum-usdt, base-usdbc, base-weth, base-usdc, base-aero, base-usds, optimism-usdc, optimism-usdt, optimism-weth, mantle-usde, linea-usdc, linea-weth, scroll-usdc, ronin-weth, ronin-wron, unichain-usdc, unichain-weth]
     name: Run scenarios
     env:
       ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
@@ -24,12 +24,14 @@ jobs:
       MANTLESCAN_KEY: ${{ secrets.MANTLESCAN_KEY }}
       SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
       UNICHAIN_QUICKNODE_KEY: ${{ secrets.UNICHAIN_QUICKNODE_KEY }}
+      LINEA_QUICKNODE_KEY: ${{ secrets.LINEA_QUICKNODE_KEY }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          submodules: recursive
 
       - uses: actions/setup-node@v4
         with:
