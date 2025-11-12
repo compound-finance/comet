@@ -15,18 +15,19 @@ const METH_TO_ETH_PRICE_FEED_ADDRESS = '0xBeaa52edFeB12da4F026b38eD6203938a9936E
 const ETH_TO_USD_PRICE_FEED_ADDRESS = '0x61A31634B4Bb4B9C2556611f563Ed86cE2D4643B';
 
 const FEED_DECIMALS = 8;
+const blockToFetchFrom = 86000000;
 
 let newMETHToUSDPriceFeed: string;
 let oldMETHToUSDPriceFeed: string;
 
-export default migration('1735299664_upgrade_to_capo_price_feeds', {
+export default migration('1762950553_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
     const { timelock } = await deploymentManager.getContracts();
 
     //1. mEth
     const rateProviderMEth = await deploymentManager.existing('mETH:_rateProvider', METH_TO_ETH_PRICE_FEED_ADDRESS, 'mantle', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
-    const [, currentRatioMEth] = await rateProviderMEth.latestRoundData();
-    const now = (await deploymentManager.hre.ethers.provider.getBlock('latest'))!.timestamp;
+    const timestamp = (await deploymentManager.hre.ethers.provider.getBlock(blockToFetchFrom))?.timestamp;
+    const [, currentRatioMEth] = await rateProviderMEth.latestRoundData({ blockTag: blockToFetchFrom });
 
     const mEthCapoPriceFeed = await deploymentManager.deploy(
       'mETH:priceFeed',
@@ -40,7 +41,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
         3600,
         {
           snapshotRatio: currentRatioMEth,
-          snapshotTimestamp: now - 3600,
+          snapshotTimestamp: timestamp,
           maxYearlyRatioGrowthPercent: exp(0.0391, 4)
         }
       ],
@@ -135,7 +136,7 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
     );
   
     const event = txn.events.find(
-      (event) => event.event === 'ProposalCreated'
+      (event: { event: string }) => event.event === 'ProposalCreated'
     );
     const [proposalId] = event.args;
     trace(`Created proposal ${proposalId}.`);
