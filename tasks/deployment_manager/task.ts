@@ -32,7 +32,8 @@ async function runMigration<T>(
   overwrite: boolean,
   tenderly: boolean = false
 ) {
-  deploymentManager.cleanCache();
+  await deploymentManager.cleanCache();
+  console.log(`Reading artifact for migration: ${migration.name}`);
   let artifact: T = await deploymentManager.readArtifact(migration);
   if (prepare) {
     if (artifact && !overwrite) {
@@ -53,11 +54,13 @@ async function runMigration<T>(
   }
 
   if (enact) {
+    console.log('Running enactment step...');
     const {
       governor,
       timelock
     } = await govDeploymentManager.getContracts();
-    
+
+    console.log('Running enact...');
     await migration.actions.enact(
       deploymentManager,
       govDeploymentManager,

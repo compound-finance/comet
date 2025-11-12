@@ -69,6 +69,7 @@ const {
   GOV_NETWORK_PROVIDER = '',
   GOV_NETWORK = '',
   UNICHAIN_QUICKNODE_KEY = '',
+  LINEA_QUICKNODE_KEY = '',
   REMOTE_ACCOUNTS = ''
 } = process.env;
 
@@ -93,7 +94,8 @@ export function requireEnv(varName, msg?: string): string {
   'SNOWTRACE_KEY',
   'INFURA_KEY',
   'ANKR_KEY',
-  'UNICHAIN_QUICKNODE_KEY'
+  'UNICHAIN_QUICKNODE_KEY',
+  'LINEA_QUICKNODE_KEY'
 ].map((v) => requireEnv(v));
 
 // Networks
@@ -160,7 +162,7 @@ export const networkConfigs: NetworkConfig[] = [
   {
     network: 'linea',
     chainId: 59144,
-    url: `https://rpc.ankr.com/linea/${ANKR_KEY}`,
+    url: `https://omniscient-hardworking-gas.linea-mainnet.quiknode.pro/${LINEA_QUICKNODE_KEY}/`,
   },
   {
     network: 'base',
@@ -186,11 +188,6 @@ export const networkConfigs: NetworkConfig[] = [
     network: 'scroll',
     chainId: 534352,
     url: 'https://rpc.scroll.io',
-  },
-  {
-    network: 'linea',
-    chainId: 59144,
-    url: `https://rpc.ankr.com/linea/${ANKR_KEY}`,
   },
 ];
 
@@ -267,12 +264,33 @@ const config: HardhatUserConfig = {
       allowUnlimitedContractSize: true,
       //hardfork: 'london',
       chains: networkConfigs.reduce((acc, { chainId }) => {
-        if (chainId === 1) return acc;
+        if (chainId === 1) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+              shanghai: 3,
+              cancun: 4,
+            }
+          };
+          return acc;
+        }
+        if (chainId === 10) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+            }
+          };
+          return acc;
+        }
         if (chainId === 59144) {
           acc[chainId] = {
             hardforkHistory: {
               berlin: 1,
               london: 2,
+              shanghai: 3,
+              cancun: 4,
             }
           };
           return acc;
