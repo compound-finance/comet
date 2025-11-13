@@ -66,7 +66,7 @@ function getBlockRollback(base: ForkSpec) {
   if (base.blockNumber)
     return base.blockNumber;
   else if(base.network === 'linea')
-    return 1700;
+    return 150;
   else if (base.network === 'ronin'){
     return 0;
   }
