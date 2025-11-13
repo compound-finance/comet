@@ -6,7 +6,7 @@ import { exp, proposal } from '../../../../src/deploy';
 const USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 const USDT_ADDRESS = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
 
-const ETH_TO_USD_PRICE_FEED = '0xc0053f3FBcCD593758258334Dfce24C2A9A673aD';
+const ETH_TO_USD_PRICE_FEED = '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419';
 const USDC_TO_USD_PRICE_FEED = '0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6';
 const USDT_TO_USD_PRICE_FEED = '0x3E7d1eAB13ad0104d2750B8863b489D65364e32D';
 
@@ -136,11 +136,8 @@ The second action adds USDT asset as collateral with corresponding configuration
 The third action upgrades Comet to a new version.`;
 
     const [targets, values, calldatas, ] = await proposal(mainnetActions, description);
-    console.log('targets:', targets);
-    console.log('values:', values);
-    console.log('calldatas:', calldatas);
     const signer = await deploymentManager.getSigner();
-    console.log('signer address:', signer.address);
+
     const txn = await (await governor.connect(signer).propose(targets, values, calldatas, description)).wait();
 
     const event = txn.events.find(
