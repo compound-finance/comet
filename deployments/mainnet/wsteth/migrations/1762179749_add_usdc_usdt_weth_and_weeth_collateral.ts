@@ -10,8 +10,8 @@ const WEETH_ADDRESS = '0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee';
 
 const WSTETH_TO_ETH_CAPO_PRICE_FEED = '0x5372Bcf3486D59C23F5fC85745B41F180EFFf881';
 const WEETH_TO_ETH_CAPO_PRICE_FEED = '0x3cB8348cd79C98e3D370527425d56EFF3b5728Fd';
-const USDC_TO_ETH_PRICE_FEED = '0x77cfa86dd2b09dcb18d50aD85C508EC917e0bE2b';
-const USDT_TO_ETH_PRICE_FEED = '0x98fA39d63cD7fa3cB265b8eDEFFf468Dd90509B1';
+const USDC_TO_ETH_PRICE_FEED = '0x986b5E1e1755e3C2440e960477f25201B0a8bbD4';
+const USDT_TO_ETH_PRICE_FEED = '0xEe9F2375b4bdF6387aa8265dD4FB8F16512A1d46';
 const CONSTANT_PRICE_FEED_ADDRESS = '0x72e9B6F907365d76C6192aD49C0C5ba356b7Fa48';
 
 let newPriceFeedUSDCAddress: string;
@@ -139,11 +139,6 @@ export default migration('1762179749_add_usdc_usdt_weth_and_weeth_collateral', {
     newPriceFeedWETHAddress = wethPriceFeedAddress;
     newPriceFeedWEETHAddress = weethPriceFeedAddress;
 
-    console.log('usdc price', (await usdcPriceFeed.latestRoundData())[1]);
-    console.log('usdt price', (await usdtPriceFeed.latestRoundData())[1]);
-    console.log('weth price', (await wethPriceFeed.latestRoundData())[1]);
-    console.log('weeth price', (await weethPriceFeed.latestRoundData())[1]);
-
     const {
       governor,
       comet,
@@ -246,11 +241,7 @@ The fourth action adds weETH asset as collateral with corresponding configuratio
 The fifth action upgrades Comet to a new version.`;
 
     const [targets, values, calldatas, ] = await proposal(mainnetActions, description);
-    console.log('targets:', targets);
-    console.log('values:', values);
-    console.log('calldatas:', calldatas);
     const signer = await deploymentManager.getSigner();
-    console.log('signer address:', signer.address);
     const txn = await (await governor.connect(signer).propose(targets, values, calldatas, description)).wait();
 
     const event = txn.events.find(
