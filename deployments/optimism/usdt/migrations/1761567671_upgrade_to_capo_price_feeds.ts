@@ -115,10 +115,12 @@ export default migration('1761567671_upgrade_to_capo_price_feeds', {
 
     const description = `DESCRIPTION`;
 
+    const signer = await govDeploymentManager.getSigner();
+
     const txn = await govDeploymentManager.retry(async () =>
       trace(
-        await governor.propose(...(await proposal(mainnetActions, description)))
-      )
+        await governor.connect(signer).propose(...(await proposal(mainnetActions, description)))
+      ), 1, 300_000
     );
 
     const event = txn.events.find(
