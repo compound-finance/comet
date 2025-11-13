@@ -1,14 +1,9 @@
 import { expect } from 'chai';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
-import { calldata, proposal } from '../../../../src/deploy';
+import { calldata, proposal, exp } from '../../../../src/deploy';
 import { utils } from 'ethers';
-import { Numeric } from '../../../../test/helpers';
 import { AggregatorV3Interface } from '../../../../build/types';
-
-export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
-  return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
-}
 
 const WSTETH_ADDRESS = '0xB5beDd42000b71FddE22D3eE8a79Bd49A568fC8F';
 const WSTETH_STETH_PRICE_FEED_ADDRESS = '0x3C8A95F2264bB3b52156c766b738357008d87cB7';
@@ -244,11 +239,11 @@ export default migration('1761833037_upgrade_to_capo_price_feeds', {
     const description = `DESCRIPTION`;
 
     const signer = await govDeploymentManager.getSigner();
-    console.log(`Creating proposal with signer: ${signer.address}`);
+
     const txn = await govDeploymentManager.retry(async () =>
       trace(
         await governor.connect(signer).propose(...(await proposal(mainnetActions, description)))
-      )
+      ), 0, 300_000
     );
 
     const event = txn.events.find(

@@ -1,14 +1,9 @@
 import { expect } from 'chai';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
-import { calldata, proposal } from '../../../../src/deploy';
+import { calldata, proposal, exp } from '../../../../src/deploy';
 import { utils, Contract } from 'ethers';
-import { Numeric } from '../../../../test/helpers';
 import { AggregatorV3Interface } from '../../../../build/types';
-
-export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
-  return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
-}
 
 const WETH_COMET = '0x60F2058379716A64a7A5d29219397e79bC552194';
 
@@ -320,7 +315,7 @@ The first action updates wstETH, ezETH, wrsETH, and weETH price feeds to the CAP
 `;
 
     const signer = await govDeploymentManager.getSigner();
-    console.log(`Creating proposal with signer: ${signer.address}`);
+
     const txn = await govDeploymentManager.retry(async () =>
       trace(
         await governor.connect(signer).propose(...(await proposal(mainnetActions, description)))
