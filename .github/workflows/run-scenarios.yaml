@@ -23,8 +23,8 @@ jobs:
       OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
       MANTLESCAN_KEY: ${{ secrets.MANTLESCAN_KEY }}
       SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
-      UNICHAIN_QUICKNODE_KEY: ${{ secrets.UNICHAIN_QUICKNODE_KEY }}
-      LINEA_QUICKNODE_KEY: ${{ secrets.LINEA_QUICKNODE_KEY }}
+      UNICHAIN_QUICKNODE_LINK: ${{ secrets.UNICHAIN_QUICKNODE_LINK }}
+      LINEA_QUICKNODE_LINK: ${{ secrets.LINEA_QUICKNODE_LINK }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
