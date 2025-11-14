@@ -2,8 +2,8 @@ import { expect } from 'chai';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, proposal, exp } from '../../../../src/deploy';
-import { utils, Contract } from 'ethers';
-import { AggregatorV3Interface } from '../../../../build/types';
+import { utils, Contract, constants } from 'ethers';
+import { AggregatorV3Interface, IRateProvider } from '../../../../build/types';
 
 const WETH_COMET = '0x60F2058379716A64a7A5d29219397e79bC552194';
 
@@ -19,8 +19,10 @@ const WEETH_ADDRESS = '0x1Bf74C010E6320bab11e2e5A532b5AC15e0b8aA6';
 const WEETH_TO_ETH_RATE_PROVIDER = '0x1FBc7d24654b10c71fd74d3730d9Df17836181EF';
 
 const WRSETH_ADDRESS = '0xD2671165570f41BBB3B0097893300b6EB6101E6C';
-const WRSETH_ETH_RATE_PROVIDER = '0xEEDF0B095B5dfe75F3881Cb26c19DA209A27463a';
+const WRSETH_ETH_RATE_PROVIDER = '0x81E5c1483c6869e95A4f5B00B41181561278179F';
+
 const FEED_DECIMALS = 8;
+const RATE_DECIMALS = 18;
 const blockToFetch = 25000000;
 
 let newWstETHToUSDPriceFeed: string;
@@ -42,7 +44,7 @@ export default migration('1761833037_upgrade_to_capo_price_feeds', {
     const blockToFetchTimestamp = (await deploymentManager.hre.ethers.provider.getBlock(blockToFetch))!.timestamp;
     const constantPriceFeed = await deploymentManager.fromDep('WETH:priceFeed', 'linea', 'weth');
 
-    const rateProviderWstEthToETH = await deploymentManager.existing('wstEth:_rateProvider', WSTETH_STETH_PRICE_FEED_ADDRESS, 'optimism', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
+    const rateProviderWstEthToETH = await deploymentManager.existing('wstEth:_rateProvider', WSTETH_STETH_PRICE_FEED_ADDRESS, 'linea', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioWstEthToETH] = await rateProviderWstEthToETH.latestRoundData({blockTag: blockToFetch});
     const wstEthToUSDCapoPriceFeed = await deploymentManager.deploy(
       'wstETH:priceFeed',
@@ -103,22 +105,25 @@ export default migration('1761833037_upgrade_to_capo_price_feeds', {
       true
     );
 
-    const wrsEthRateProvider = await deploymentManager.existing('wrsETH:_priceFeed', WRSETH_ETH_RATE_PROVIDER, 'linea', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
-    const [, currentRatioWrsEth] = await wrsEthRateProvider.latestRoundData({blockTag: blockToFetch});
+    const wrsEthRateProvider = await deploymentManager.existing('wrsETH:_priceFeed', WRSETH_ETH_RATE_PROVIDER, 'linea', 'contracts/capo/contracts/interfaces/IRateProvider.sol:IRateProvider') as IRateProvider;
+    const currentRatioWrsEth = await wrsEthRateProvider.getRate({blockTag: blockToFetch});
+
     const wrsEthCapoPriceFeed = await deploymentManager.deploy(
       'wrsETH:priceFeed',
-      'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
+      'capo/contracts/RateBasedCorrelatedAssetsPriceOracle.sol',
       [
         timelock.address,
         constantPriceFeed.address,
-        wrsEthRateProvider.address,
+        WRSETH_ETH_RATE_PROVIDER,
+        constants.AddressZero,
         'wrsETH / ETH CAPO Price Feed',
         FEED_DECIMALS,
         3600,
+        RATE_DECIMALS,
         {
           snapshotRatio: currentRatioWrsEth,
           snapshotTimestamp: blockToFetchTimestamp,
-          maxYearlyRatioGrowthPercent: exp(0.0554, 4)
+          maxYearlyRatioGrowthPercent: exp(0.0554, 4) // 5.54%
         }
       ],
       true
@@ -378,7 +383,7 @@ The first action updates wstETH, ezETH, wrsETH, and weETH price feeds to the CAP
 
     expect(wrsETHInCometInfoWETH.priceFeed).to.eq(newWrsETHToETHPriceFeed);
     expect(wrsETHInConfiguratorInfoWETHCometWETH.priceFeed).to.eq(newWrsETHToETHPriceFeed);
-    expect(await cometWETH.getPrice(newWrsETHToETHPriceFeed)).to.equal(await cometWETH.getPrice(oldWrsETHToETHPriceFeed));
+    expect(await cometWETH.getPrice(newWrsETHToETHPriceFeed)).to.be.closeTo(await cometWETH.getPrice(oldWrsETHToETHPriceFeed), 1e6);
 
     // weETH in cWETHv3
     const weETHIndexInCometWETH = await configurator.getAssetIndex(cometWETH.address, WEETH_ADDRESS);

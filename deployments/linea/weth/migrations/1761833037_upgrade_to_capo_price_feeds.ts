@@ -2,8 +2,8 @@ import { expect } from 'chai';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, proposal, exp } from '../../../../src/deploy';
-import { utils } from 'ethers';
-import { AggregatorV3Interface } from '../../../../build/types';
+import { utils, constants } from 'ethers';
+import { AggregatorV3Interface, IRateProvider } from '../../../../build/types';
 
 const WSTETH_ADDRESS = '0xB5beDd42000b71FddE22D3eE8a79Bd49A568fC8F';
 const WSTETH_STETH_PRICE_FEED_ADDRESS = '0x3C8A95F2264bB3b52156c766b738357008d87cB7';
@@ -15,9 +15,10 @@ const WEETH_ADDRESS = '0x1Bf74C010E6320bab11e2e5A532b5AC15e0b8aA6';
 const WEETH_TO_ETH_RATE_PROVIDER = '0x1FBc7d24654b10c71fd74d3730d9Df17836181EF';
 
 const WRSETH_ADDRESS = '0xD2671165570f41BBB3B0097893300b6EB6101E6C';
-const WRSETH_ETH_RATE_PROVIDER = '0xEEDF0B095B5dfe75F3881Cb26c19DA209A27463a';
+const WRSETH_ETH_RATE_PROVIDER = '0x81E5c1483c6869e95A4f5B00B41181561278179F';
 
 const FEED_DECIMALS = 8;
+const RATE_DECIMALS = 18;
 const blockToFetch = 25000000;
 
 let newWstETHToETHPriceFeed: string;
@@ -78,22 +79,25 @@ export default migration('1761833037_upgrade_to_capo_price_feeds', {
       true
     );
 
-    const wrsEthRateProvider = await deploymentManager.existing('wrsETH:_priceFeed', WRSETH_ETH_RATE_PROVIDER, 'linea', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
-    const [, currentRatioWrsEth] = await wrsEthRateProvider.latestRoundData({blockTag: blockToFetch});
+    const wrsEthRateProvider = await deploymentManager.existing('wrsETH:_priceFeed', WRSETH_ETH_RATE_PROVIDER, 'linea', 'contracts/capo/contracts/interfaces/IRateProvider.sol:IRateProvider') as IRateProvider;
+    const currentRatioWrsEth = await wrsEthRateProvider.getRate({blockTag: blockToFetch});
+
     const wrsEthCapoPriceFeed = await deploymentManager.deploy(
       'wrsETH:priceFeed',
-      'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
+      'capo/contracts/RateBasedCorrelatedAssetsPriceOracle.sol',
       [
         timelock.address,
         constantPriceFeed.address,
-        wrsEthRateProvider.address,
+        WRSETH_ETH_RATE_PROVIDER,
+        constants.AddressZero,
         'wrsETH / ETH CAPO Price Feed',
         FEED_DECIMALS,
         3600,
+        RATE_DECIMALS,
         {
           snapshotRatio: currentRatioWrsEth,
           snapshotTimestamp: blockToFetchTimestamp,
-          maxYearlyRatioGrowthPercent: exp(0.0554, 4)
+          maxYearlyRatioGrowthPercent: exp(0.0554, 4) // 5.54%
         }
       ],
       true
@@ -285,7 +289,7 @@ export default migration('1761833037_upgrade_to_capo_price_feeds', {
 
     expect(wrsETHInCometInfo.priceFeed).to.eq(newWrsETHToETHPriceFeed);
     expect(wrsETHInConfiguratorInfoComet.priceFeed).to.eq(newWrsETHToETHPriceFeed);
-    expect(await comet.getPrice(newWrsETHToETHPriceFeed)).to.equal(await comet.getPrice(oldWrsETHToETHPriceFeed));
+    expect(await comet.getPrice(newWrsETHToETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldWrsETHToETHPriceFeed), 1e6);
 
     // weETH
     const weETHIndexInComet = await configurator.getAssetIndex(comet.address, WEETH_ADDRESS);
