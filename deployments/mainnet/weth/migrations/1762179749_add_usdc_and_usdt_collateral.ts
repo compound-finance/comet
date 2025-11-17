@@ -6,9 +6,8 @@ import { exp, proposal } from '../../../../src/deploy';
 const USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 const USDT_ADDRESS = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
 
-const ETH_TO_USD_PRICE_FEED = '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419';
-const USDC_TO_USD_PRICE_FEED = '0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6';
-const USDT_TO_USD_PRICE_FEED = '0x3E7d1eAB13ad0104d2750B8863b489D65364e32D';
+const USDC_TO_ETH_PRICE_FEED = '0x986b5E1e1755e3C2440e960477f25201B0a8bbD4';
+const USDT_TO_ETH_PRICE_FEED = '0xEe9F2375b4bdF6387aa8265dD4FB8F16512A1d46';
 
 let newPriceFeedUSDCAddress: string;
 let newPriceFeedUSDTAddress: string;
@@ -17,23 +16,19 @@ export default migration('1762179749_add_usdc_and_usdt_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
     const usdcPriceFeed = await deploymentManager.deploy(
       'USDC:priceFeed',
-      'pricefeeds/ReverseMultiplicativePriceFeed.sol',
+      'pricefeeds/ScalingPriceFeed.sol',
       [
-        USDC_TO_USD_PRICE_FEED,   // USDC / USD price feed
-        ETH_TO_USD_PRICE_FEED,    // USD / ETH price feed
-        8,                        // decimals
-        'USDC / ETH price feed',  // description
+        USDC_TO_ETH_PRICE_FEED, // USDC / ETH price feed
+        8                       // decimals
       ]
     );
 
     const usdtPriceFeed = await deploymentManager.deploy(
       'USDT:priceFeed',
-      'pricefeeds/ReverseMultiplicativePriceFeed.sol',
+      'pricefeeds/ScalingPriceFeed.sol',
       [
-        USDT_TO_USD_PRICE_FEED,   // USDT / USD price feed
-        ETH_TO_USD_PRICE_FEED,    // USD / ETH price feed
-        8,                        // decimals
-        'USDT / ETH price feed',  // description
+        USDT_TO_ETH_PRICE_FEED, // USDT / ETH price feed
+        8,                      // decimals
       ]
     );
     return { usdcPriceFeedAddress: usdcPriceFeed.address, usdtPriceFeedAddress: usdtPriceFeed.address };
