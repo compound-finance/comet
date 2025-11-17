@@ -11,13 +11,21 @@ jobs:
       ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
       SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
-      ANKR_KEY: ${{ secrets.ANKR_KEY }}
+      MAINNET_QUICKNODE_LINK: ${{ secrets.MAINNET_QUICKNODE_LINK }}
+      SEPOLIA_QUICKNODE_LINK: ${{ secrets.SEPOLIA_QUICKNODE_LINK }}
+      RONIN_QUICKNODE_LINK: ${{ secrets.RONIN_QUICKNODE_LINK }}
+      POLYGON_QUICKNODE_LINK: ${{ secrets.POLYGON_QUICKNODE_LINK }}
+      OPTIMISM_QUICKNODE_LINK: ${{ secrets.OPTIMISM_QUICKNODE_LINK }}
+      MANTLE_QUICKNODE_LINK: ${{ secrets.MANTLE_QUICKNODE_LINK }}
+      BASE_QUICKNODE_LINK: ${{ secrets.BASE_QUICKNODE_LINK }}
+      ARBITRUM_QUICKNODE_LINK: ${{ secrets.ARBITRUM_QUICKNODE_LINK }}
       _TENDERLY_KEY_RONIN: ${{ secrets._TENDERLY_KEY_RONIN }}
       POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
       OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
       MANTLESCAN_KEY: ${{ secrets.MANTLESCAN_KEY }}
       SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
-      UNICHAIN_QUICKNODE_KEY: ${{ secrets.UNICHAIN_QUICKNODE_KEY }}
+      UNICHAIN_QUICKNODE_LINK: ${{ secrets.UNICHAIN_QUICKNODE_LINK }}
+      LINEA_QUICKNODE_LINK: ${{ secrets.LINEA_QUICKNODE_LINK }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

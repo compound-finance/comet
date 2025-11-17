@@ -18,6 +18,7 @@ export default async function relayLineaMessage(
   const lineaMessageService = await governanceDeploymentManager.getContractOrThrow(
     'lineaMessageService'
   );
+  const signer = await bridgeDeploymentManager.getSigner();
   const lineaL1USDCBridge = await governanceDeploymentManager.getContractOrThrow(
     'lineaL1USDCBridge'
   );
@@ -134,7 +135,7 @@ export default async function relayLineaMessage(
 
     let callData;
     // First the message's hash has to be added by a specific account in the "contract's queue"
-    if((await l2MessageService.lastAnchoredL1MessageNumber()).lte(messageNumber)){
+    if((await l2MessageService.lastAnchoredL1MessageNumber()).lt(messageNumber)){
       if(tenderlyLogs) {
         callData = l2MessageService.interface.encodeFunctionData('anchorL1L2MessageHashes', [
           [messageHash],
@@ -142,14 +143,12 @@ export default async function relayLineaMessage(
           messageNumber,
           rollingHash
         ]);
-
         bridgeDeploymentManager.stashRelayMessage(
           l2MessageService.address,
           callData,
           aliasSetterRoleAccount.address
         );
       }
-
       await l2MessageService.connect(aliasSetterRoleAccount).anchorL1L2MessageHashes(
         [messageHash],
         messageNumber,
@@ -157,9 +156,10 @@ export default async function relayLineaMessage(
         rollingHash
       );
     }
-      
 
-    let relayMessageTxn: { events: any[] }; 
+    if(await l2MessageService.inboxL1L2MessageStatus(_messageHash) == 2) continue;
+
+    let relayMessageTxn: { events: any[] };
 
     if(
       _from.toLowerCase() === timelock.address.toLowerCase()
@@ -186,7 +186,7 @@ export default async function relayLineaMessage(
    
 
       relayMessageTxn = await (
-        await l2MessageService.claimMessage(
+        await l2MessageService.connect(signer).claimMessage(
           _from,
           _to,
           _fee,

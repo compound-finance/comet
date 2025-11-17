@@ -15,7 +15,7 @@ async function testSupplyCollateral(context: CometContext, assetNum: number): Pr
   const { asset: assetAddress, scale: scaleBN, supplyCap } = await comet.getAssetInfo(assetNum);
   const collateralAsset = context.getAssetByAddress(assetAddress);
   const scale = scaleBN.toBigInt();
-  const toSupply = BigInt(getConfigForScenario(context).supplyCollateral) * scale;
+  const toSupply = BigInt(getConfigForScenario(context, assetNum).supplyCollateral) * scale;
 
   expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(toSupply);
 
@@ -26,7 +26,7 @@ async function testSupplyCollateral(context: CometContext, assetNum: number): Pr
     await expectRevertCustom(
       albert.supplyAsset({
         asset: collateralAsset.address,
-        amount: BigInt(getConfigForScenario(context).supplyCollateral) * scale,
+        amount: BigInt(getConfigForScenario(context, assetNum).supplyCollateral) * scale,
       }),
       'SupplyCapExceeded()'
     );
@@ -83,10 +83,10 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       // XXX Unfortunately, the filtering step happens before solutions are run, so this will filter out
       // hypothetical assets added during the migration/proposal constraint because those assets don't exist
       // yet
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, getConfigForScenario(ctx).supplyCollateral),
-      tokenBalances: async (ctx) =>  (
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, getConfigForScenario(ctx, i).supplyCollateral),
+      tokenBalances: async (ctx) => (
         {
-          albert: { [`$asset${i}`]: getConfigForScenario(ctx).supplyCollateral }
+          albert: { [`$asset${i}`]: getConfigForScenario(ctx, i).supplyCollateral }
         }
       ),
     },
@@ -100,10 +100,10 @@ for (let i = 0; i < MAX_ASSETS; i++) {
   scenario(
     `Comet#supplyFrom > collateral asset ${i}`,
     {
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, getConfigForScenario(ctx).supplyCollateral),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, getConfigForScenario(ctx, i).supplyCollateral),
       tokenBalances: async (ctx) =>  (
         {
-          albert: { [`$asset${i}`]: getConfigForScenario(ctx).supplyCollateral }
+          albert: { [`$asset${i}`]: getConfigForScenario(ctx, i).supplyCollateral }
         }
       ),
     },

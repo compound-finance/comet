@@ -33,7 +33,7 @@ export function getBlockscoutUrl(network: string): string {
 
 export async function getBlockscoutRPCUrl(network: string): Promise<string> {
   let host = {
-    'unichain': `multi-boldest-patina.unichain-mainnet.quiknode.pro/${process.env.UNICHAIN_QUICKNODE_KEY}/`
+    'unichain': `${process.env.UNICHAIN_QUICKNODE_LINK}`.replace('https://', '')
   }[network];
 
   if (!host) {
