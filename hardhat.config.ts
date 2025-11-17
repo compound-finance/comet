@@ -60,7 +60,16 @@ const {
   ETH_PK,
   ETHERSCAN_KEY,
   SNOWTRACE_KEY,
-  ANKR_KEY,
+  MAINNET_QUICKNODE_LINK,
+  SEPOLIA_QUICKNODE_LINK,
+  RONIN_QUICKNODE_LINK,
+  POLYGON_QUICKNODE_LINK,
+  OPTIMISM_QUICKNODE_LINK,
+  MANTLE_QUICKNODE_LINK,
+  BASE_QUICKNODE_LINK,
+  ARBITRUM_QUICKNODE_LINK,
+  UNICHAIN_QUICKNODE_LINK = '',
+  LINEA_QUICKNODE_LINK = '',
   _TENDERLY_KEY_RONIN,
   _TENDERLY_KEY_POLYGON,
   MNEMONIC = 'myth like woof scare over problem client lizard pioneer submit female collect',
@@ -68,8 +77,6 @@ const {
   NETWORK_PROVIDER = '',
   GOV_NETWORK_PROVIDER = '',
   GOV_NETWORK = '',
-  UNICHAIN_QUICKNODE_KEY = '',
-  LINEA_QUICKNODE_KEY = '',
   REMOTE_ACCOUNTS = ''
 } = process.env;
 
@@ -92,10 +99,9 @@ export function requireEnv(varName, msg?: string): string {
 [
   'ETHERSCAN_KEY',
   'SNOWTRACE_KEY',
-  'INFURA_KEY',
-  'ANKR_KEY',
-  'UNICHAIN_QUICKNODE_KEY',
-  'LINEA_QUICKNODE_KEY'
+  'MAINNET_QUICKNODE_LINK',
+  'UNICHAIN_QUICKNODE_LINK',
+  'LINEA_QUICKNODE_LINK'
 ].map((v) => requireEnv(v));
 
 // Networks
@@ -124,55 +130,55 @@ export const networkConfigs: NetworkConfig[] = [
   {
     network: 'mainnet',
     chainId: 1,
-    url: `https://rpc.ankr.com/eth/${ANKR_KEY}`
+    url: `${MAINNET_QUICKNODE_LINK}`,
   },
   {
     network: 'sepolia',
     chainId: 11155111,
-    url: `https://rpc.ankr.com/eth_sepolia/${ANKR_KEY}`,
+    url: `${SEPOLIA_QUICKNODE_LINK}`,
   },
   {
     network: 'ronin',
     chainId: 2020,
-    url: `https://ronin.gateway.tenderly.co/${_TENDERLY_KEY_RONIN}`,
+    url: `${RONIN_QUICKNODE_LINK}`,
   },
   {
     network: 'polygon',
     chainId: 137,
-    url: `https://polygon.gateway.tenderly.co/${_TENDERLY_KEY_POLYGON}`,
+    url: `${POLYGON_QUICKNODE_LINK}`,
   },
   {
     network: 'optimism',
     chainId: 10,
-    url: `https://rpc.ankr.com/optimism/${ANKR_KEY}`,
+    url: `${OPTIMISM_QUICKNODE_LINK}`,
   },
   {
     network: 'mantle',
     chainId: 5000,
     // link for scenarios
-    url: `https://rpc.ankr.com/mantle/${ANKR_KEY}`,
+    url: `${MANTLE_QUICKNODE_LINK}`,
     // link for deployment
     // url: `https://rpc.mantle.xyz`,
   },
   {
     network: 'unichain',
     chainId: 130,
-    url: `https://multi-boldest-patina.unichain-mainnet.quiknode.pro/${UNICHAIN_QUICKNODE_KEY}`,
+    url: `${UNICHAIN_QUICKNODE_LINK}`,
   },
   {
     network: 'linea',
     chainId: 59144,
-    url: `https://omniscient-hardworking-gas.linea-mainnet.quiknode.pro/${LINEA_QUICKNODE_KEY}/`,
+    url: `${LINEA_QUICKNODE_LINK}`,
   },
   {
     network: 'base',
     chainId: 8453,
-    url: `https://rpc.ankr.com/base/${ANKR_KEY}`,
+    url: `${BASE_QUICKNODE_LINK}`,
   },
   {
     network: 'arbitrum',
     chainId: 42161,
-    url: `https://rpc.ankr.com/arbitrum/${ANKR_KEY}`,
+    url: `${ARBITRUM_QUICKNODE_LINK}`,
   },
   {
     network: 'avalanche',
@@ -191,10 +197,6 @@ export const networkConfigs: NetworkConfig[] = [
   },
 ];
 
-function getDefaultProviderURL(network: string) {
-  return `https://rpc.ankr.com/${network}/${ANKR_KEY}`;
-}
-
 function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
   for (const netConfig of networkConfigs) {
     hardhatConfig.networks[netConfig.network] = {
@@ -202,8 +204,7 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
       url:
         (netConfig.network === GOV_NETWORK ? GOV_NETWORK_PROVIDER || undefined : undefined) ||
         NETWORK_PROVIDER ||
-        netConfig.url ||
-        getDefaultProviderURL(netConfig.network),
+        netConfig.url,
       gas: netConfig.gas || 'auto',
       gasPrice: netConfig.gasPrice || 'auto',
       accounts: REMOTE_ACCOUNTS ? 'remote' : (ETH_PK ? [...deriveAccounts(ETH_PK)] : { mnemonic: MNEMONIC }),
