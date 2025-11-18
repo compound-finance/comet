@@ -34,6 +34,7 @@ export class TokenBalanceConstraint<T extends CometContext, R extends Requiremen
         for (const assetName in actorsByAsset) {
           const asset = await getAssetFromName(assetName, context);
           for (const actorName in actorsByAsset[assetName]) {
+            console.log(`Sourcing ${actorsByAsset[assetName][actorName].val} of ${assetName} to ${actorName}`);
             const actor = await getActorAddressFromName(actorName, context);
             const amount: ComparativeAmount = actorsByAsset[assetName][actorName];
             const balance = await asset.balanceOf(actor);
