@@ -5,7 +5,6 @@ import { calldata, proposal, exp } from '../../../../src/deploy';
 import { utils, Contract } from 'ethers';
 import { AggregatorV3Interface } from '../../../../build/types';
 
-
 const USDT_COMET = '0x995E394b8B2437aC8Ce61Ee0bC610D617962B214';
 const WETH_COMET = '0xE36A30D249f7761327fd973001A32010b521b6Fd';
 const ETH_USD_PRICE_FEED = '0x13e3Ee699D1909E989722E753853AE30b17e08c5';
@@ -22,6 +21,9 @@ const WRSETH_ETH_RATE_PROVIDER = '0x73b8BE3b653c5896BC34fC87cEBC8AcF4Fb7A545';
 const WEETH_ADDRESS = '0x5A7fACB970D094B6C7FF1df0eA68D99E6e73CBFF';
 const WEETH_TO_ETH_RATE_PROVIDER = '0x72EC6bF88effEd88290C66DCF1bE2321d80502f5';
 
+const RETH_ADDRESS = '0x9Bcef72be871e61ED4fBbc7630889beE758eb81D';
+const RETH_ETH_PRICE_FEED_ADDRESS = '0x22F3727be377781d1579B7C9222382b21c9d1a8f';
+
 const FEED_DECIMALS = 8;
 const blockToFetch = 142800000;
 
@@ -33,11 +35,13 @@ let newWstETHToETHPriceFeed: string;
 let newEzETHToETHPriceFeed: string;
 let newWrsETHToETHPriceFeed: string;
 let newWeETHToETHPriceFeed: string;
+let newRETHToETHPriceFeed: string;
 
 let oldWstETHToETHPriceFeed: string;
 let oldEzETHToETHPriceFeed: string;
 let oldWrsETHToETHPriceFeed: string;
 let oldWeETHToETHPriceFeed: string;
+let oldRETHToETHPriceFeed: string;
 
 export default migration('1761567671_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
@@ -150,12 +154,34 @@ export default migration('1761567671_upgrade_to_capo_price_feeds', {
       true
     );
 
+    const rateProviderRETH = await deploymentManager.existing('rETH:_priceFeed', RETH_ETH_PRICE_FEED_ADDRESS, 'optimism', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
+    const [, currentRatioRETH] = await rateProviderRETH .latestRoundData({blockTag: blockToFetch});
+    const rEthCapoPriceFeed = await deploymentManager.deploy(
+      'rETH:priceFeed',
+      'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
+      [
+        timelock.address,
+        constantPriceFeed.address,
+        rateProviderRETH.address,
+        'rETH / ETH CAPO Price Feed',
+        FEED_DECIMALS,
+        3600,
+        {
+          snapshotRatio: currentRatioRETH,
+          snapshotTimestamp: blockToFetchTimestamp,
+          maxYearlyRatioGrowthPercent: exp(0.029, 4)
+        }
+      ],
+      true
+    );
+
     return {
       wstEthToUSDCapoPriceFeedAddress: wstEthToUSDCapoPriceFeed.address,
       wstEthToETHCapoPriceFeedAddress: wstEthToETHCapoPriceFeed.address,
       wrsEthCapoPriceFeedAddress: wrsEthCapoPriceFeed.address,
       weEthCapoPriceFeedAddress: weEthCapoPriceFeed.address,
-      ezEthCapoPriceFeedAddress: ezEthCapoPriceFeed.address
+      ezEthCapoPriceFeedAddress: ezEthCapoPriceFeed.address,
+      rEthCapoPriceFeedAddress: rEthCapoPriceFeed.address,
     };
   },
 
@@ -164,7 +190,8 @@ export default migration('1761567671_upgrade_to_capo_price_feeds', {
     wstEthToETHCapoPriceFeedAddress,
     wrsEthCapoPriceFeedAddress,
     weEthCapoPriceFeedAddress,
-    ezEthCapoPriceFeedAddress
+    ezEthCapoPriceFeedAddress,
+    rEthCapoPriceFeedAddress,
   }) {
     const trace = deploymentManager.tracer();
 
@@ -185,6 +212,7 @@ export default migration('1761567671_upgrade_to_capo_price_feeds', {
     newEzETHToETHPriceFeed = ezEthCapoPriceFeedAddress;
     newWrsETHToETHPriceFeed = wrsEthCapoPriceFeedAddress;
     newWeETHToETHPriceFeed = weEthCapoPriceFeedAddress;
+    newRETHToETHPriceFeed = rEthCapoPriceFeedAddress;
 
     const updateWstEthPriceFeedCalldataUSDC = await calldata(
       configurator.populateTransaction.updateAssetPriceFeed(
@@ -239,6 +267,14 @@ export default migration('1761567671_upgrade_to_capo_price_feeds', {
       )
     );
 
+    const updateRETHPriceFeedCalldataWETH = await calldata(
+      configurator.populateTransaction.updateAssetPriceFeed(
+        WETH_COMET,
+        RETH_ADDRESS,
+        rEthCapoPriceFeedAddress
+      )
+    );
+
     const deployAndUpgradeToCalldataWETH = utils.defaultAbiCoder.encode(
       ['address', 'address'],
       [configurator.address, WETH_COMET]
@@ -261,14 +297,16 @@ export default migration('1761567671_upgrade_to_capo_price_feeds', {
           configurator.address,
           configurator.address,
           configurator.address,
+          configurator.address,
           cometAdmin.address,
         ],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [
           'updateAssetPriceFeed(address,address,address)',
           'deployAndUpgradeTo(address,address)',
           'updateAssetPriceFeed(address,address,address)',
           'deployAndUpgradeTo(address,address)',
+          'updateAssetPriceFeed(address,address,address)',
           'updateAssetPriceFeed(address,address,address)',
           'updateAssetPriceFeed(address,address,address)',
           'updateAssetPriceFeed(address,address,address)',
@@ -284,6 +322,7 @@ export default migration('1761567671_upgrade_to_capo_price_feeds', {
           updateEzEthPriceFeedCalldataWETH,
           updateWrsEthPriceFeedCalldataWETH,
           updateWeEthPriceFeedCalldataWETH,
+          updateRETHPriceFeedCalldataWETH,
           deployAndUpgradeToCalldataWETH,
         ],
       ]
@@ -312,6 +351,7 @@ export default migration('1761567671_upgrade_to_capo_price_feeds', {
     [,, oldEzETHToETHPriceFeed ] = await cometWETH.getAssetInfoByAddress(EZETH_ADDRESS);
     [,, oldWrsETHToETHPriceFeed ] = await cometWETH.getAssetInfoByAddress(WRSETH_ADDRESS);
     [,, oldWeETHToETHPriceFeed ] = await cometWETH.getAssetInfoByAddress(WEETH_ADDRESS);
+    [,, oldRETHToETHPriceFeed ] = await cometWETH.getAssetInfoByAddress(RETH_ADDRESS);
 
     const mainnetActions = [
       {
@@ -325,13 +365,12 @@ export default migration('1761567671_upgrade_to_capo_price_feeds', {
 
 ## Proposal summary
 
-This proposal updates existing price feeds for wstETH on the USDC, USDT and WETH markets and ezETH, wrsETH, and weETH on the WETH market on Optimism.
+This proposal updates existing price feeds for wstETH on the USDC, USDT and WETH markets and ezETH, wrsETH, weETH, and rETH on the WETH market on Optimism.
 
 ### CAPO summary
 
-CAPO is a price oracle adapter designed to support assets that grow gradually relative to a base asset - such as liquid staking tokens that accumulate yield over time. It provides a mechanism to track this expected growth while protecting downstream protocol from sudden or manipulated price spikes. wstETH, ezETH, wrsETH, and weETH price feeds are updated to their CAPO implementations.
-
-Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1055) and [forum discussion for CAPO](https://www.comp.xyz/t/woof-correlated-assets-price-oracle-capo/6245).
+CAPO is a price oracle adapter designed to support assets that grow gradually relative to a base asset - such as liquid staking tokens that accumulate yield over time. It provides a mechanism to track this expected growth while protecting downstream protocol from sudden or manipulated price spikes. wstETH, ezETH, wrsETH, weETH, and rETH price feeds are updated to their CAPO implementations.
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1062) and [forum discussion for CAPO](https://www.comp.xyz/t/woof-correlated-assets-price-oracle-capo/6245).
 
 ### CAPO audit
 
@@ -339,7 +378,7 @@ CAPO has been audited by [OpenZeppelin](https://www.comp.xyz/t/capo-price-feed-a
 
 ## Proposal actions
 
-The first action updates wstETH, ezETH, wrsETH, and weETH price feeds to the CAPO implementation. This sends the encoded 'updateAssetPriceFeed' and 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Optimism.
+The first action updates wstETH, ezETH, wrsETH, weETH, and rETH price feeds to the CAPO implementation. This sends the encoded 'updateAssetPriceFeed' and 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Optimism.
 `;
 
     const signer = await govDeploymentManager.getSigner();
@@ -434,5 +473,14 @@ The first action updates wstETH, ezETH, wrsETH, and weETH price feeds to the CAP
     expect(weETHInCometInfoWETH.priceFeed).to.eq(newWeETHToETHPriceFeed);
     expect(weETHInConfiguratorInfoWETHCometWETH.priceFeed).to.eq(newWeETHToETHPriceFeed);
     expect(await cometWETH.getPrice(newWeETHToETHPriceFeed)).to.equal(await cometWETH.getPrice(oldWeETHToETHPriceFeed));
+
+    // rETH in cWETHv3
+    const rETHIndexInCometWETH = await configurator.getAssetIndex(cometWETH.address, RETH_ADDRESS);
+    const rETHInCometInfoWETH = await cometWETH.getAssetInfoByAddress(RETH_ADDRESS);
+    const rETHInConfiguratorInfoWETHCometWETH = (await configurator.getConfiguration(cometWETH.address)).assetConfigs[rETHIndexInCometWETH];
+
+    expect(rETHInCometInfoWETH.priceFeed).to.eq(newRETHToETHPriceFeed);
+    expect(rETHInConfiguratorInfoWETHCometWETH.priceFeed).to.eq(newRETHToETHPriceFeed);
+    expect(await cometWETH.getPrice(newRETHToETHPriceFeed)).to.equal(await cometWETH.getPrice(oldRETHToETHPriceFeed));
   },
 });

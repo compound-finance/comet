@@ -22,6 +22,9 @@ const WRSETH_ETH_RATE_PROVIDER = '0x73b8BE3b653c5896BC34fC87cEBC8AcF4Fb7A545';
 const WEETH_ADDRESS = '0x5A7fACB970D094B6C7FF1df0eA68D99E6e73CBFF';
 const WEETH_TO_ETH_RATE_PROVIDER = '0x72EC6bF88effEd88290C66DCF1bE2321d80502f5';
 
+const RETH_ADDRESS = '0x9Bcef72be871e61ED4fBbc7630889beE758eb81D';
+const RETH_ETH_PRICE_FEED_ADDRESS = '0x22F3727be377781d1579B7C9222382b21c9d1a8f';
+
 const FEED_DECIMALS = 8;
 const blockToFetch = 142800000;
 
@@ -29,11 +32,13 @@ let newWstETHToETHPriceFeed: string;
 let newEzETHToETHPriceFeed: string;
 let newWrsETHToETHPriceFeed: string;
 let newWeETHToETHPriceFeed: string;
+let newRETHToETHPriceFeed: string;
 
 let oldWstETHToETHPriceFeed: string;
 let oldEzETHToETHPriceFeed: string;
 let oldWrsETHToETHPriceFeed: string;
 let oldWeETHToETHPriceFeed: string;
+let oldRETHToETHPriceFeed: string;
 
 export default migration('1761567671_upgrade_to_capo_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
@@ -125,11 +130,33 @@ export default migration('1761567671_upgrade_to_capo_price_feeds', {
       true
     );
 
+    const rateProviderRETH = await deploymentManager.existing('rETH:_priceFeed', RETH_ETH_PRICE_FEED_ADDRESS, 'optimism', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
+    const [, currentRatioRETH] = await rateProviderRETH .latestRoundData({blockTag: blockToFetch});
+    const rEthCapoPriceFeed = await deploymentManager.deploy(
+      'rETH:priceFeed',
+      'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
+      [
+        timelock.address,
+        constantPriceFeed.address,
+        rateProviderRETH.address,
+        'rETH / ETH CAPO Price Feed',
+        FEED_DECIMALS,
+        3600,
+        {
+          snapshotRatio: currentRatioRETH,
+          snapshotTimestamp: blockToFetchTimestamp,
+          maxYearlyRatioGrowthPercent: exp(0.029, 4)
+        }
+      ],
+      true
+    );
+
     return {
       wstEthToETHCapoPriceFeedAddress: wstEthToETHCapoPriceFeed.address,
       wrsEthCapoPriceFeedAddress: wrsEthCapoPriceFeed.address,
       weEthCapoPriceFeedAddress: weEthCapoPriceFeed.address,
-      ezEthCapoPriceFeedAddress: ezEthCapoPriceFeed.address
+      ezEthCapoPriceFeedAddress: ezEthCapoPriceFeed.address,
+      rEthCapoPriceFeedAddress: rEthCapoPriceFeed.address,
     };
   },
 
@@ -137,7 +164,8 @@ export default migration('1761567671_upgrade_to_capo_price_feeds', {
     wstEthToETHCapoPriceFeedAddress,
     wrsEthCapoPriceFeedAddress,
     weEthCapoPriceFeedAddress,
-    ezEthCapoPriceFeedAddress
+    ezEthCapoPriceFeedAddress,
+    rEthCapoPriceFeedAddress,
   }) {
     const trace = deploymentManager.tracer();
 
@@ -157,6 +185,7 @@ export default migration('1761567671_upgrade_to_capo_price_feeds', {
     newEzETHToETHPriceFeed = ezEthCapoPriceFeedAddress;
     newWrsETHToETHPriceFeed = wrsEthCapoPriceFeedAddress;
     newWeETHToETHPriceFeed = weEthCapoPriceFeedAddress;
+    newRETHToETHPriceFeed = rEthCapoPriceFeedAddress;
 
     const updateWstEthPriceFeedCalldata = await calldata(
       configurator.populateTransaction.updateAssetPriceFeed(
@@ -190,6 +219,14 @@ export default migration('1761567671_upgrade_to_capo_price_feeds', {
       )
     );
 
+    const updateRETHPriceFeedCalldataWETH = await calldata(
+      configurator.populateTransaction.updateAssetPriceFeed(
+        comet.address,
+        RETH_ADDRESS,
+        rEthCapoPriceFeedAddress
+      )
+    );
+
     const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(
       ['address', 'address'],
       [configurator.address, comet.address]
@@ -203,10 +240,12 @@ export default migration('1761567671_upgrade_to_capo_price_feeds', {
           configurator.address,
           configurator.address,
           configurator.address,
+          configurator.address,
           cometAdmin.address,
         ],
-        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0],
         [
+          'updateAssetPriceFeed(address,address,address)',
           'updateAssetPriceFeed(address,address,address)',
           'updateAssetPriceFeed(address,address,address)',
           'updateAssetPriceFeed(address,address,address)',
@@ -218,6 +257,7 @@ export default migration('1761567671_upgrade_to_capo_price_feeds', {
           updateEzEthPriceFeedCalldata,
           updateWrsEthPriceFeedCalldata,
           updateWeEthPriceFeedCalldata,
+          updateRETHPriceFeedCalldataWETH,
           deployAndUpgradeToCalldata,
         ],
       ]
@@ -227,6 +267,7 @@ export default migration('1761567671_upgrade_to_capo_price_feeds', {
     [,, oldEzETHToETHPriceFeed ] = await comet.getAssetInfoByAddress(EZETH_ADDRESS);
     [,, oldWrsETHToETHPriceFeed ] = await comet.getAssetInfoByAddress(WRSETH_ADDRESS);
     [,, oldWeETHToETHPriceFeed ] = await comet.getAssetInfoByAddress(WEETH_ADDRESS);
+    [,, oldRETHToETHPriceFeed ] = await comet.getAssetInfoByAddress(RETH_ADDRESS);
 
     const mainnetActions = [
       {
@@ -295,5 +336,14 @@ export default migration('1761567671_upgrade_to_capo_price_feeds', {
     expect(weETHInCometInfo.priceFeed).to.eq(newWeETHToETHPriceFeed);
     expect(weETHInConfiguratorInfoComet.priceFeed).to.eq(newWeETHToETHPriceFeed);
     expect(await comet.getPrice(newWeETHToETHPriceFeed)).to.equal(await comet.getPrice(oldWeETHToETHPriceFeed));
+
+    // rETH in cWETHv3
+    const rETHIndexInCometWETH = await configurator.getAssetIndex(comet.address, RETH_ADDRESS);
+    const rETHInCometInfoWETH = await comet.getAssetInfoByAddress(RETH_ADDRESS);
+    const rETHInConfiguratorInfoWETHCometWETH = (await configurator.getConfiguration(comet.address)).assetConfigs[rETHIndexInCometWETH];
+
+    expect(rETHInCometInfoWETH.priceFeed).to.eq(newRETHToETHPriceFeed);
+    expect(rETHInConfiguratorInfoWETHCometWETH.priceFeed).to.eq(newRETHToETHPriceFeed);
+    expect(await comet.getPrice(newRETHToETHPriceFeed)).to.equal(await comet.getPrice(oldRETHToETHPriceFeed));
   },
 });
