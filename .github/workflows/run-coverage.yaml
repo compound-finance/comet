@@ -18,7 +18,8 @@ jobs:
       OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
       MANTLESCAN_KEY: ${{ secrets.MANTLESCAN_KEY }}
       SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
-      UNICHAIN_QUICKNODE_KEY: ${{ secrets.UNICHAIN_QUICKNODE_KEY }}
+      UNICHAIN_QUICKNODE_LINK: ${{ secrets.UNICHAIN_QUICKNODE_LINK }}
+      LINEA_QUICKNODE_LINK: ${{ secrets.LINEA_QUICKNODE_LINK }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

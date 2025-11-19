@@ -61,6 +61,7 @@ const {
   ETHERSCAN_KEY,
   SNOWTRACE_KEY,
   ANKR_KEY,
+  INFURA_KEY,
   _TENDERLY_KEY_RONIN,
   _TENDERLY_KEY_POLYGON,
   MNEMONIC = 'myth like woof scare over problem client lizard pioneer submit female collect',
@@ -68,7 +69,8 @@ const {
   NETWORK_PROVIDER = '',
   GOV_NETWORK_PROVIDER = '',
   GOV_NETWORK = '',
-  UNICHAIN_QUICKNODE_KEY = '',
+  UNICHAIN_QUICKNODE_LINK = '',
+  LINEA_QUICKNODE_LINK = '',
   REMOTE_ACCOUNTS = ''
 } = process.env;
 
@@ -93,7 +95,8 @@ export function requireEnv(varName, msg?: string): string {
   'SNOWTRACE_KEY',
   'INFURA_KEY',
   'ANKR_KEY',
-  'UNICHAIN_QUICKNODE_KEY'
+  'UNICHAIN_QUICKNODE_LINK',
+  'LINEA_QUICKNODE_LINK'
 ].map((v) => requireEnv(v));
 
 // Networks
@@ -122,7 +125,7 @@ export const networkConfigs: NetworkConfig[] = [
   {
     network: 'mainnet',
     chainId: 1,
-    url: `https://rpc.ankr.com/eth/${ANKR_KEY}`
+    url: `https://mainnet.infura.io/v3/${INFURA_KEY}`
   },
   {
     network: 'sepolia',
@@ -155,12 +158,12 @@ export const networkConfigs: NetworkConfig[] = [
   {
     network: 'unichain',
     chainId: 130,
-    url: `https://multi-boldest-patina.unichain-mainnet.quiknode.pro/${UNICHAIN_QUICKNODE_KEY}`,
+    url: `${UNICHAIN_QUICKNODE_LINK}`,
   },
   {
     network: 'linea',
     chainId: 59144,
-    url: `https://rpc.ankr.com/linea/${ANKR_KEY}`,
+    url: `${LINEA_QUICKNODE_LINK}`,
   },
   {
     network: 'base',
@@ -186,11 +189,6 @@ export const networkConfigs: NetworkConfig[] = [
     network: 'scroll',
     chainId: 534352,
     url: 'https://rpc.scroll.io',
-  },
-  {
-    network: 'linea',
-    chainId: 59144,
-    url: `https://rpc.ankr.com/linea/${ANKR_KEY}`,
   },
 ];
 
@@ -267,12 +265,33 @@ const config: HardhatUserConfig = {
       allowUnlimitedContractSize: true,
       //hardfork: 'london',
       chains: networkConfigs.reduce((acc, { chainId }) => {
-        if (chainId === 1) return acc;
+        if (chainId === 1) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+              shanghai: 3,
+              cancun: 4,
+            }
+          };
+          return acc;
+        }
+        if (chainId === 10) {
+          acc[chainId] = {
+            hardforkHistory: {
+              berlin: 1,
+              london: 2,
+            }
+          };
+          return acc;
+        }
         if (chainId === 59144) {
           acc[chainId] = {
             hardforkHistory: {
               berlin: 1,
               london: 2,
+              shanghai: 3,
+              cancun: 4,
             }
           };
           return acc;
