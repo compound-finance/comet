@@ -143,8 +143,8 @@ The first proposal action adds tBTC to the USDC Comet on Arbitrum. This sends th
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return true;
+  async enacted(): Promise<boolean> {
+    return false;
   },
 
   async verify(deploymentManager: DeploymentManager) {
