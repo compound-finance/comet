@@ -261,8 +261,8 @@ The first proposal action adds tETH to the USDC, USDT and WETH comets on Arbitru
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(): Promise<boolean> {
-    return false;
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
   }, 
 
   async verify(deploymentManager: DeploymentManager) {
