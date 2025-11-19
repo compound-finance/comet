@@ -24,7 +24,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   const WETH = await deploymentManager.clone('WETH', clone.weth, []);
 
   // Deploy all Comet-related contracts
-  const deployed = await deployComet(deploymentManager, deploySpec);
+  const deployed = await deployComet(deploymentManager, deploySpec, {}, true);
   const { rewards } = deployed;
 
   // Deploy Bulker

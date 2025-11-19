@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
-import "../Comet.sol";
+import "../CometWithExtendedAssetList.sol";
 
 /**
  * @title A modified version of Compound Comet
  * @notice This is solely used for testing upgrades
  * @author Compound
  */
-contract CometModified is Comet {
+contract CometModified is CometWithExtendedAssetList {
 
-    constructor(Configuration memory config) Comet(config) {}
+    constructor(Configuration memory config) CometWithExtendedAssetList(config) {}
 
     /**
      * @notice Initialize storage for a liquidator
