@@ -12,12 +12,12 @@ async function testWithdrawCollateral(context: CometContext, assetNum: number): 
   const scale = scaleBN.toBigInt();
 
   expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(0n);
-  expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(BigInt(getConfigForScenario(context).supplyCollateral) * scale);
+  expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(BigInt(getConfigForScenario(context, assetNum).withdrawCollateral) * scale);
 
   // Albert withdraws 100 units of collateral from Comet
-  const txn = await albert.withdrawAsset({ asset: collateralAsset.address, amount: BigInt(getConfigForScenario(context).supplyCollateral) * scale });
+  const txn = await albert.withdrawAsset({ asset: collateralAsset.address, amount: BigInt(getConfigForScenario(context, assetNum).withdrawCollateral) * scale });
 
-  expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(BigInt(getConfigForScenario(context).supplyCollateral) * scale);
+  expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(BigInt(getConfigForScenario(context, assetNum).withdrawCollateral) * scale);
   expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(0n);
 
   return txn; // return txn to measure gas
@@ -31,14 +31,14 @@ async function testWithdrawFromCollateral(context: CometContext, assetNum: numbe
   const scale = scaleBN.toBigInt();
 
   expect(await collateralAsset.balanceOf(betty.address)).to.be.equal(0n);
-  expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(BigInt(getConfigForScenario(context).supplyCollateral) * scale);
+  expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(BigInt(getConfigForScenario(context, assetNum).withdrawCollateral) * scale);
 
   await albert.allow(betty, true);
 
   // Betty withdraws 1000 units of collateral from Albert
-  const txn = await betty.withdrawAssetFrom({ src: albert.address, dst: betty.address, asset: collateralAsset.address, amount: BigInt(getConfigForScenario(context).supplyCollateral) * scale });
+  const txn = await betty.withdrawAssetFrom({ src: albert.address, dst: betty.address, asset: collateralAsset.address, amount: BigInt(getConfigForScenario(context, assetNum).withdrawCollateral) * scale });
 
-  expect(await collateralAsset.balanceOf(betty.address)).to.be.equal(BigInt(getConfigForScenario(context).supplyCollateral) * scale);
+  expect(await collateralAsset.balanceOf(betty.address)).to.be.equal(BigInt(getConfigForScenario(context, assetNum).withdrawCollateral) * scale);
   expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(0n);
 
   return txn; // return txn to measure gas

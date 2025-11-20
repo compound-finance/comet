@@ -11,7 +11,9 @@ async function getMigrations<T>(world: World): Promise<Migration<T>[]> {
   const network = world.deploymentManager.network;
   const deployment = world.deploymentManager.deployment;
   const pattern = new RegExp(`deployments/${network}/${deployment}/migrations/.*.ts`);
-  return await loadMigrations((await modifiedPaths(pattern)).map(p => '../../' + p));
+  const dm = world.deploymentManager;
+  const govDeploymentManager = world.auxiliaryDeploymentManager || world.deploymentManager;
+  return await loadMigrations((await modifiedPaths(pattern)).map(p => '../../' + p), dm, govDeploymentManager);
 }
 
 async function isEnacted<T>(actions: Actions<T>, dm: DeploymentManager, govDm: DeploymentManager): Promise<boolean> {

@@ -697,8 +697,9 @@ async function mockAllRedstoneOracles(dm: DeploymentManager) {
     return;
   }
   for (const feed of feeds) {
+    console.log(`Mocking Redstone oracle for feed: ${feed}`);
     try {
-      await dm.fromDep(`MockRedstoneOracle:${feed}`, dm.network, dm.deployment);
+      await dm.getContractOrThrow(`MockRedstoneOracle:${feed}`);
     } catch (_) {
       await mockRedstoneOracle(dm, feed);
     }
@@ -711,7 +712,7 @@ async function mockRedstoneOracle(dm: DeploymentManager, feed: string) {
     [
       'function latestRoundData() external view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)',
     ],
-    dm.hre.ethers.provider
+    await dm.getSigner()
   );
   const proxyAdminAddress = await getProxyAdmin(dm, feed);
   const proxyAdmin = new Contract(
@@ -720,7 +721,7 @@ async function mockRedstoneOracle(dm: DeploymentManager, feed: string) {
       'function upgrade(address proxy, address newImplementation) external',
       'function owner() external view returns (address)',
     ],
-    dm.hre.ethers.provider
+    await dm.getSigner()
   );
   const ownerAddress = await proxyAdmin.owner();
   const owner = await impersonateAddress(dm, ownerAddress);
@@ -732,10 +733,12 @@ async function mockRedstoneOracle(dm: DeploymentManager, feed: string) {
     ),
   ]);
   const price = (await feedContract.latestRoundData()).answer;
+  console.log(`Current price for ${feed} is ${price}`);
   const newImplementation = await dm.deploy(
     `MockRedstoneOracle:${feed}`,
     'test/MockRedstoneOracle.sol',
-    [feed, price]
+    [feed, price],
+    true
   );
   await proxyAdmin.connect(owner).upgrade(feed, newImplementation.address);
 }
@@ -1083,13 +1086,13 @@ export async function executeOpenProposal(
     );
 
     await setNextBaseFeeToZero(dm);
+    console.log(`Updating CCIP prices...`);
     await updateCCIPStats(dm);
 
     await governor.execute(id, { gasPrice: 0, gasLimit: 120000000 });
   }
 
   await redeployRenzoOracle(dm);
-  await mockAllRedstoneOracles(dm);
 
   // mine a block
   await dm.hre.ethers.provider.send('evm_mine', []);
@@ -1423,7 +1426,9 @@ export async function executeOpenProposalAndRelay(
   const startingBlockNumber =
     await governanceDeploymentManager.hre.ethers.provider.getBlockNumber();
   await executeOpenProposal(governanceDeploymentManager, openProposal);
+  console.log(`Executed proposal ${openProposal.id} on ${governanceDeploymentManager.network}, checking if relay to ${bridgeDeploymentManager.network} is needed...`);
   await mockAllRedstoneOracles(bridgeDeploymentManager);
+  console.log(`All Redstone oracles on ${bridgeDeploymentManager.network} are mocked`);
   if (
     await isBridgeProposal(
       governanceDeploymentManager,
