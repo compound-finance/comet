@@ -128,7 +128,25 @@ export default migration('1762950553_upgrade_to_capo_price_feeds', {
       },
     ];
   
-    const description = 'tmp';
+    const description = `# Update price feeds in cUSDEv3 on Mantle with CAPO implementation.
+
+## Proposal summary
+
+This proposal updates existing price feed for mETH on the USDe market on Mantle.
+
+### CAPO summary
+
+CAPO is a price oracle adapter designed to support assets that grow gradually relative to a base asset - such as liquid staking tokens that accumulate yield over time. It provides a mechanism to track this expected growth while protecting downstream protocol from sudden or manipulated price spikes. mETH price feed is updated to their CAPO implementations.
+
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1066) and [forum discussion for CAPO](https://www.comp.xyz/t/woof-correlated-assets-price-oracle-capo/6245).
+
+### CAPO audit
+
+CAPO has been audited by [OpenZeppelin](https://www.comp.xyz/t/capo-price-feed-audit/6631, as well as the LST / LRT implementation [here](https://www.comp.xyz/t/capo-lst-lrt-audit/7118).
+
+## Proposal actions
+
+The first action updates mETH price feed to the CAPO implementation. This sends the encoded 'updateAssetPriceFeed' and 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Mantle.`;
     const txn = await govDeploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
