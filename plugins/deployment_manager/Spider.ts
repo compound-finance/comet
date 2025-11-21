@@ -46,7 +46,8 @@ function maybeStore(alias: Alias, address: Address, into: Aliases): boolean {
       into.set(alias, address);
       return true;
     } else {
-      throw new Error(`Had ${alias} -> ${maybeExists}, not ${address}`);
+      console.warn(`Alias conflict for ${alias}: ${maybeExists} vs ${address}, keeping ${maybeExists}`);
+      return false;
     }
   } else {
     into.set(alias, address);
