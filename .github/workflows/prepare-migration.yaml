@@ -100,6 +100,8 @@ jobs:
           DEBUG: true
           ETH_PK: "${{ inputs.eth_pk }}"
           NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
+          GOV_NETWORK_PROVIDER: ${{ github.event.inputs.network != vars.GOV_NETWORK && github.event.inputs.eth_pk == '' && vars.GOV_NETWORK != '' && 'http://localhost:8685' || '' }}
+          GOV_NETWORK: ${{ github.event.inputs.network != vars.GOV_NETWORK && vars.GOV_NETWORK || '' }}
           REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
           GOV_NETWORK_PROVIDER: ${{ github.event.inputs.network != vars.GOV_NETWORK && github.event.inputs.eth_pk == '' && vars.GOV_NETWORK != '' && 'http://localhost:8685' || '' }}
           GOV_NETWORK: ${{ github.event.inputs.network != vars.GOV_NETWORK && vars.GOV_NETWORK || '' }}
