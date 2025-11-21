@@ -71,6 +71,7 @@ async function runMigration<T>(
     }
     await govDeploymentManager.cleanCache();
   }
+  await deploymentManager.cleanCache();
 }
 
 task('deploy', 'Deploys market')
