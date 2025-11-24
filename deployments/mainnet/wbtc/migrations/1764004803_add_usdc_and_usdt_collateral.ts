@@ -6,41 +6,15 @@ import { exp, proposal } from '../../../../src/deploy';
 const USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 const USDT_ADDRESS = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
 
-const USDC_TO_USD_PRICE_FEED = '0x84E045745ED829c5b778aBB17104FC2600020850';
-const USDT_TO_USD_PRICE_FEED = '0xe108E75d6bA28F14EA51F24F886c0B6BBeca575a';
-const BTC_TO_USD_PRICE_FEED = '0x8adE2c8d55F7ee2C9234ad868D44a60Eb9C07f8c';
-
-let newPriceFeedUSDCAddress: string;
-let newPriceFeedUSDTAddress: string;
+const USDC_TO_BTC_PRICE_FEED = '0x40fCEe8Cdda01522846D197df9d9C1199B1CB1D3';
+const USDT_TO_BTC_PRICE_FEED = '0x8a5C2E36E02fB1BA95C9a3e96E6E16BbBDae9AAA';
 
 export default migration('1764004803_add_usdc_and_usdt_collateral', {
-  async prepare(deploymentManager: DeploymentManager) {
-    const usdcPriceFeed = await deploymentManager.deploy(
-      'USDC:priceFeed',
-      'pricefeeds/ReverseMultiplicativePriceFeed.sol',
-      [
-        USDC_TO_USD_PRICE_FEED, // USDC / USD price feed
-        BTC_TO_USD_PRICE_FEED,  // BTC / USD price feed
-        8,                      // decimals
-        'USDC / BTC price feed' // description
-      ]
-    );
-
-    const usdtPriceFeed = await deploymentManager.deploy(
-      'USDT:priceFeed',
-      'pricefeeds/ReverseMultiplicativePriceFeed.sol',
-      [
-        USDT_TO_USD_PRICE_FEED, // USDT / USD price feed
-        BTC_TO_USD_PRICE_FEED,  // BTC / USD price feed
-        8,                      // decimals
-        'USDT / BTC price feed' // description
-      ]
-    );
-    return { usdcPriceFeedAddress: usdcPriceFeed.address, usdtPriceFeedAddress: usdtPriceFeed.address };
+  async prepare() {
+    return {};
   },
 
-  async enact(deploymentManager: DeploymentManager, _, { usdcPriceFeedAddress, usdtPriceFeedAddress }) {
-
+  async enact(deploymentManager: DeploymentManager) {
     const trace = deploymentManager.tracer();
 
     const USDC = await deploymentManager.existing(
@@ -51,7 +25,7 @@ export default migration('1764004803_add_usdc_and_usdt_collateral', {
     );
     const usdcPriceFeed = await deploymentManager.existing(
       'USDC:priceFeed',
-      usdcPriceFeedAddress,
+      USDC_TO_BTC_PRICE_FEED,
       'mainnet'
     );
 
@@ -63,12 +37,9 @@ export default migration('1764004803_add_usdc_and_usdt_collateral', {
     );
     const usdtPriceFeed = await deploymentManager.existing(
       'USDT:priceFeed',
-      usdtPriceFeedAddress,
+      USDT_TO_BTC_PRICE_FEED,
       'mainnet'
     );
-
-    newPriceFeedUSDCAddress = usdcPriceFeedAddress;
-    newPriceFeedUSDTAddress = usdtPriceFeedAddress;
 
     const {
       governor,
@@ -164,7 +135,7 @@ The third action upgrades Comet to a new version.`;
     );
     const usdcAssetConfig = {
       asset: USDC.address,
-      priceFeed: newPriceFeedUSDCAddress,
+      priceFeed: USDC_TO_BTC_PRICE_FEED,
       decimals: 6n,
       borrowCollateralFactor: exp(0.80, 18),
       liquidateCollateralFactor: exp(0.85, 18),
@@ -202,7 +173,7 @@ The third action upgrades Comet to a new version.`;
     );
     const usdtAssetConfig = {
       asset: USDT.address,
-      priceFeed: newPriceFeedUSDTAddress,
+      priceFeed: USDT_TO_BTC_PRICE_FEED,
       decimals: 6n,
       borrowCollateralFactor: exp(0.80, 18),
       liquidateCollateralFactor: exp(0.85, 18),
