@@ -35,13 +35,13 @@ const config = {
 export function getConfigForScenario(ctx: CometContext, i?: number) {
   if (ctx.world.base.network === 'mainnet' && ctx.world.base.deployment === 'wbtc') {
     config.bulkerBase = 200;
-    config.bulkerAsset = 400;
-    config.bulkerAsset1 = 400;
-    config.bulkerComet = 200;
-    config.bulkerBorrowBase = 100;
+    config.bulkerAsset = 100;
+    config.bulkerAsset1 = 100;
+    config.bulkerComet = 50;
+    config.bulkerBorrowBase = 20;
     config.withdrawBase = 100;
     config.withdrawAsset = 200;
-    config.bulkerBorrowAsset = 50;
+    config.bulkerBorrowAsset = 10;
     config.liquidationBase = 1000;
     config.liquidationBase1 = 500;
     config.liquidationAsset = 100;
