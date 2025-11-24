@@ -35,14 +35,14 @@ function getUrl(network) {
 
 const envVar = {
   SALT: process.env.SALT || 'comet',
-  MAINNET_RPC_URL: getUrl('mainnet'),
-  POLYGON_RPC_URL: getUrl('polygon'),
-  ARBITRUM_RPC_URL: getUrl('arbitrum'),
-  OPTIMISM_RPC_URL: getUrl('optimism'),
+  MAINNET_QUICKNODE_LINK: getUrl('mainnet'),
+  POLYGON_QUICKNODE_LINK: getUrl('polygon'),
+  ARBITRUM_QUICKNODE_LINK: getUrl('arbitrum'),
+  OPTIMISM_QUICKNODE_LINK: getUrl('optimism'),
   SCROLL_RPC_URL: getUrl('scroll'),
-  BASE_RPC_URL: getUrl('base'),
+  BASE_QUICKNODE_LINK: getUrl('base'),
   SEPOLIA_RPC_URL: getUrl('sepolia'),
-  MANTLE_RPC_URL: getUrl('mantle'),
+  MANTLE_QUICKNODE_LINK: getUrl('mantle'),
 };
 
 const envString = Object.entries(envVar)
