@@ -29,7 +29,8 @@ const config = {
   withdrawAsset1: 3000,
   withdrawCollateral: 100,
   transferCollateral: 100,
-  supplyCollateral: 100
+  supplyCollateral: 100,
+  supplyBase: 1000,
 };
 
 export function getConfigForScenario(ctx: CometContext, i?: number) {
