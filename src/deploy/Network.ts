@@ -27,7 +27,7 @@ export async function cloneGov(
 
   const COMP = await deploymentManager.deploy('COMP', 'test/Comp.sol', [admin.address]);
 
-  const governorImpl = await deploymentManager.clone('governor:implementation', clone.governorBravoImpl, []);
+  const governorImpl = await deploymentManager.clone('governor:implementation', clone.governorBravoImpl, [], 'mainnet', true);
   const governorProxy = await deploymentManager.clone('governor', clone.governorBravo, [
     timelock.address,
     COMP.address,
@@ -125,7 +125,7 @@ export async function deployNetworkComet(
   const cometAdmin = await deploymentManager.deploy(
     'cometAdmin',
     'CometProxyAdmin.sol',
-    [],
+    [admin.address],
     maybeForce()
   );
 
