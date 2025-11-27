@@ -34,6 +34,10 @@ jobs:
       UNICHAIN_QUICKNODE_LINK: ${{ secrets.UNICHAIN_QUICKNODE_LINK }}
       LINEA_QUICKNODE_LINK: ${{ secrets.LINEA_QUICKNODE_LINK }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        network: [mainnet, base, arbitrum, polygon, optimism, linea]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -46,20 +50,6 @@ jobs:
           cache: 'yarn'
           node-version: '18'
 
-      - name: Cache Deployments
-        uses: actions/cache@v4
-        with:
-          path: |
-            deployments/*/.contracts
-            deployments/**/aliases.json
-            !deployments/hardhat
-            !deployments/relations.ts
-            !deployments/**/roots.json
-            !deployments/**/relations.ts
-            !deployments/**/configuration.json
-            !deployments/**/migrations/*
-          key: deployments-v4
-
       - name: Install packages
         run: yarn install --non-interactive --frozen-lockfile && yarn build
 
@@ -67,7 +57,19 @@ jobs:
         run: npx hardhat compile
 
       - name: Spider Contracts
-        run: yarn hardhat spider --network mainnet --deployment usdc
+        run: yarn hardhat spider --network ${{ matrix.network }} --deployment usdc
+
+      - name: Upload prepared state
+        uses: actions/upload-artifact@v4
+        with:
+          name: prepared-data
+          path: |
+            deployments/**/aliases.json
+            deployments/*/.contracts
+            node_modules/
+            artifacts/
+            build/
+            cache/
 
   run-scenarios:
     needs: prepare
@@ -104,6 +106,12 @@ jobs:
       LINEA_QUICKNODE_LINK: ${{ secrets.LINEA_QUICKNODE_LINK }}
     runs-on: ubuntu-latest
     steps:
+      - name: Download prepared state
+        uses: actions/download-artifact@v4
+        with:
+          name: prepared-data
+          path: .
+
       - name: Cache Deployments
         uses: actions/cache@v4
         with:
