@@ -70,6 +70,7 @@ jobs:
         run: yarn hardhat spider --network mainnet --deployment usdc
 
   run-scenarios:
+    needs: prepare
     strategy:
       fail-fast: false
       matrix:
@@ -118,6 +119,8 @@ jobs:
           key: deployments-v4
 
       - name: Run scenarios
+        env:
+          DEBUG: true
         run: yarn scenario --bases ${{ matrix.bases }}
 
       - uses: actions/upload-artifact@v4 # upload scenario results
