@@ -34,10 +34,6 @@ jobs:
       UNICHAIN_QUICKNODE_LINK: ${{ secrets.UNICHAIN_QUICKNODE_LINK }}
       LINEA_QUICKNODE_LINK: ${{ secrets.LINEA_QUICKNODE_LINK }}
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        network: [mainnet, base, arbitrum, polygon, optimism, linea]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -56,8 +52,17 @@ jobs:
       - name: Compile
         run: npx hardhat compile
 
-      - name: Spider Contracts
-        run: yarn hardhat spider --network ${{ matrix.network }} --deployment usdc
+      - name: Spider Contracts on Mainnet
+        run: yarn hardhat spider --network mainnet --deployment usdc
+
+      - name: Spider Contracts on Base
+        run: yarn hardhat spider --network base --deployment usdc
+
+      - name: Spider Contracts on Arbitrum
+        run: yarn hardhat spider --network arbitrum --deployment usdc
+
+      - name: Spider Contracts on Linea
+        run: yarn hardhat spider --network linea --deployment usdc
 
       - name: Upload prepared state
         uses: actions/upload-artifact@v4
