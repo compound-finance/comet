@@ -74,7 +74,7 @@ jobs:
           name: prepared-data
           path: |
             deployments/**/aliases.json
-            deployments/*/.contracts
+            deployments/**/.contracts/*.json
             artifacts/
             build/
             cache/
