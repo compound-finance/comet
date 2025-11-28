@@ -59,10 +59,10 @@ jobs:
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
 
       - name: Install packages
-        run: yarn install --non-interactive --frozen-lockfile && yarn build
+        run: yarn install --non-interactive --frozen-lockfile
 
       - name: Compile
-        run: npx hardhat compile
+        run: yarn build
 
       - name: Spider Contracts on Mainnet
         run: yarn hardhat spider --network mainnet --deployment usdc
@@ -78,6 +78,7 @@ jobs:
             artifacts/
             build/
             cache/
+          include-hidden-files: true
 
   run-scenarios:
     needs: prepare
