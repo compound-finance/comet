@@ -613,6 +613,79 @@ describe('withdraw functionality', function () {
       });
     }
 
+    /**
+     * @notice End-to-end withdraw behavior when collateral is deactivated and reactivated
+     * @dev
+     *  This block exercises how **withdraw flows** (both base and collateral) behave around
+     *  a deactivated collateral asset, using the same deactivation mechanism added in
+     *  response to the wUSDM / deUSD incident.
+     *
+     *  High-level flow:
+     *  - From a prepared snapshot, where `dave` and `bob` have positions against
+     *    `collateralToken` (with index `deactivatedCollateralIndex`), the `pauseGuardian`
+     *    calls `deactivateCollateral(deactivatedCollateralIndex)` on
+     *    `CometWithExtendedAssetList`.
+     *      - We verify:
+     *          - The call does not revert.
+     *          - `isCollateralDeactivated(deactivatedCollateralIndex)` returns `true`.
+     *
+     *  - Behavior for **base withdraws** after deactivation:
+     *      - For a **borrower**:
+     *          - `dave` has a negative principal (borrowing against the deactivated
+     *            collateral).
+     *          - A base token `withdraw(baseToken, borrowAmount)` from `dave` is expected
+     *            to revert with `TokenIsDeactivated(collateralToken)`, reflecting the
+     *            fact that borrowers may not rely on deactivated collateral in
+     *            `isBorrowCollateralized` when increasing or maintaining debt.
+     *      - For a **lender**:
+     *          - `bob` has a non-negative principal and a positive base and collateral
+     *            balance.
+     *          - A base token withdraw is **allowed** and:
+     *              - Does not revert.
+     *              - Reduces `bob`’s base balance by approximately `borrowAmount`
+     *                (within a small rounding tolerance due to interest accrual).
+     *          - This demonstrates that holding deactivated collateral does not block
+     *            lenders from withdrawing their base deposits.
+     *
+     *  - Behavior for **collateral withdraws** after deactivation:
+     *      - `dave` is allowed to withdraw a portion of the deactivated collateral:
+     *          - A withdraw of `collateralTokenSupplyAmount / 2` succeeds.
+     *          - `userCollateral(dave, collateralToken).balance` decreases by that amount.
+     *          - `totalsCollateral(collateralToken).totalSupplyAsset` decreases by the
+     *            same amount.
+     *      - After this, the `governor` reactivates the collateral:
+     *          - `activateCollateral(deactivatedCollateralIndex)` does not revert.
+     *          - `CollateralActivated(deactivatedCollateralIndex)` is emitted.
+     *          - `isCollateralDeactivated(deactivatedCollateralIndex)` returns `false`.
+     *      - With the collateral now **activated** again:
+     *          - Another collateral withdraw (`collateralTokenSupplyAmount / 4`) succeeds.
+     *          - In total, `dave` has withdrawn `3/4` of the original collateral, and both
+     *            `userCollateral` and `totalsCollateral` reflect this net change.
+     *
+     *  - Behavior for **borrowing after reactivation**:
+     *      - After reactivation and partial collateral withdrawals, `dave` can again
+     *        borrow base via `withdraw(baseToken, borrowAmount)`.
+     *      - The test confirms:
+     *          - The call does not revert.
+     *          - `userBasic(dave).principal` becomes negative, indicating a borrow
+     *            position is open and using the now-activated collateral configuration.
+     *
+     *  - Finally, for **MAX_ASSETS coverage**:
+     *      - For each `assetIndex` in `[0, MAX_ASSETS - 1]` on the
+     *        `cometWithExtendedAssetListMaxAssets` instance:
+     *          - A user supplies the corresponding `ASSET{assetIndex}` as collateral.
+     *          - The `pauseGuardian` calls `deactivateCollateral(assetIndex)`.
+     *          - The user can still withdraw their entire collateral position for that
+     *            asset without revert.
+     *      - This shows that deactivation does **not** trap users’ collateral; they can
+     *        always exit (withdraw) deactivated collateral across the full index range.
+     *
+     *  Together, these tests demonstrate the intended safety semantics:
+     *  - Deactivated collateral blocks **borrow-like** usage (borrowers withdrawing base)
+     *    but does not prevent lenders or collateral holders from exiting.
+     *  - Reactivation cleanly restores borrowing and collateral flows.
+     *  - The behavior holds across all supported collateral indices.
+     */
     describe('deactivated collateral withdraw flow', function () {
       it('allows pause guardian to deactivate collateral', async function () {
         await snapshot.restore();

@@ -556,6 +556,65 @@ describe('transfer functionality', function () {
       });
     }
 
+    /**
+     * @notice End-to-end transfer behavior when collateral is deactivated and reactivated
+     * @dev
+     *  This block validates how both **collateral transfers** and **base token transfers**
+     *  behave when a collateral asset is deactivated by the `pauseGuardian` and later
+     *  reactivated by the `governor`, using the same deactivation mechanism introduced
+     *  after the wUSDM / deUSD incident.
+     *
+     *  High-level flow:
+     *  - From a prepared snapshot, where `dave` holds collateral and a borrow position
+     *    against `collateralToken` (with index `deactivatedCollateralIndex`), the
+     *    `pauseGuardian` calls `deactivateCollateral(deactivatedCollateralIndex)` on
+     *    `CometWithExtendedAssetList`.
+     *      - We assert that:
+     *          - The call succeeds (no revert).
+     *          - It emits:
+     *              - `CollateralAssetTransferPauseAction(deactivatedCollateralIndex, true)`
+     *              - `CollateralDeactivated(deactivatedCollateralIndex)`
+     *          - Core state is updated:
+     *              - `isCollateralDeactivated(deactivatedCollateralIndex)` is `true`.
+     *              - `isCollateralAssetTransferPaused(deactivatedCollateralIndex)` is `true`.
+     *
+     *  - With the collateral now deactivated:
+     *      - A `transferAsset` call for that collateral is expected to revert with
+     *        `CollateralAssetTransferPaused(deactivatedCollateralIndex)`, demonstrating
+     *        that no further collateral movement is allowed while deactivated.
+     *      - Additionally, a base token `transfer` from `dave` (who is a borrower and still
+     *        holds the deactivated collateral) is expected to revert with
+     *        `TokenIsDeactivated(collateralToken)`. This threads through the check in
+     *        `isBorrowCollateralized`, which now treats deactivated collateral as
+     *        disallowed for borrow collateralization, effectively freezing further base
+     *        transfers that would rely on that collateral while the account is borrowing.
+     *
+     *  - The `governor` then calls `activateCollateral(deactivatedCollateralIndex)`:
+     *      - We assert that:
+     *          - The call succeeds.
+     *          - It emits:
+     *              - `CollateralAssetTransferPauseAction(deactivatedCollateralIndex, false)`
+     *              - `CollateralActivated(deactivatedCollateralIndex)`
+     *          - Core state is updated:
+     *              - `isCollateralDeactivated(deactivatedCollateralIndex)` is `false`.
+     *              - `isCollateralAssetTransferPaused(deactivatedCollateralIndex)` is `false`.
+     *
+     *  - After reactivation:
+     *      - A `transferAsset` of the previously deactivated collateral from `dave` to
+     *        `alice` is allowed and:
+     *          - Decreases `dave`’s `userCollateral(...).balance` by the transfer amount.
+     *          - Increases `alice`’s collateral balance by the same amount.
+     *      - A base token `transfer` from `dave` to `alice` is now permitted again, and
+     *        subsequent checks (not shown in the snippet above) verify that principals and
+     *        overall accounting behave as expected.
+     *
+     *  In summary, these tests confirm that:
+     *  - Deactivating collateral prevents both **collateral token transfers** and
+     *    **borrower base transfers** that depend on that collateral.
+     *  - Reactivating collateral restores both transfer paths.
+     *  - The system’s safety behavior around deactivated collateral is enforced at the
+     *    transfer level, consistent with the broader collateral deactivation design.
+     */
     describe('deactivated collateral transfer flow', function () {
       let deactivateCollateralTx: ContractTransaction;
       let activateCollateralTx: ContractTransaction;

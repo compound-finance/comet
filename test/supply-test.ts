@@ -701,6 +701,62 @@ describe('supply functionality', function () {
       ).to.be.revertedWithCustomError(comet, 'ReentrantCallBlocked');
     });
 
+    /**
+     * @notice End-to-end supply behavior when collateral is deactivated and reactivated
+     * @dev
+     *  This block focuses specifically on how the **supply path** behaves when a collateral
+     *  asset is deactivated by the `pauseGuardian` and later reactivated by the `governor`.
+     *  It complements the dedicated collateral-deactivation tests by exercising the
+     *  user-facing `supplyTo` flow against deactivated collateral.
+     *
+     *  High-level flow:
+     *  - Start from a snapshot where a particular collateral (`deactivatedCollateralIndex`)
+     *    and users (`alice`, `bob`) are set up with balances and approvals.
+     *  - The `pauseGuardian` calls `deactivateCollateral(deactivatedCollateralIndex)` on
+     *    `CometWithExtendedAssetList`:
+     *      - We assert that the transaction succeeds and emits:
+     *          - `CollateralAssetSupplyPauseAction(deactivatedCollateralIndex, true)`
+     *          - `CollateralDeactivated(deactivatedCollateralIndex)`
+     *      - We confirm that core state is updated:
+     *          - `isCollateralDeactivated(deactivatedCollateralIndex)` is `true`.
+     *          - `isCollateralAssetSupplyPaused(deactivatedCollateralIndex)` is `true`.
+     *      - We then try to `supplyTo` that collateral and expect it to revert with the
+     *        `CollateralAssetSupplyPaused(deactivatedCollateralIndex)` custom error,
+     *        proving that the pause flag is enforced on the supply entry point.
+     *
+     *  - Next, the `governor` calls `activateCollateral(deactivatedCollateralIndex)`:
+     *      - We assert that the transaction succeeds and emits:
+     *          - `CollateralAssetSupplyPauseAction(deactivatedCollateralIndex, false)`
+     *          - `CollateralActivated(deactivatedCollateralIndex)`
+     *      - We confirm that core state is updated:
+     *          - `isCollateralDeactivated(deactivatedCollateralIndex)` is `false`.
+     *          - `isCollateralAssetSupplyPaused(deactivatedCollateralIndex)` is `false`.
+     *      - We perform a `supplyTo` call with the same collateral and assert that:
+     *          - The transaction does not revert.
+     *          - `totalsCollateral(collateralToken).totalSupplyAsset` increases by the
+     *            supplied amount.
+     *          - `alice`’s `userCollateral` balance for that token increases, while `bob`’s
+     *            balance remains unchanged (since Bob is just the source).
+     *
+     *  - Finally, to validate **MAX_ASSETS** coverage on the supply path:
+     *      - A separate `CometWithExtendedAssetListMaxAssets` instance is used with a full
+     *        `MAX_ASSETS` collateral configuration.
+     *      - For each `assetIndex` in `[0, MAX_ASSETS - 1]`:
+     *          - The `pauseGuardian` deactivates that asset via `deactivateCollateral(assetIndex)`.
+     *          - A corresponding token `ASSET{assetIndex}` is allocated and approved for
+     *            `bob`.
+     *          - A `supplyTo` call into that asset is expected to revert with
+     *            `CollateralAssetSupplyPaused(assetIndex)`.
+     *      - This demonstrates that the per-asset supply pause behavior:
+     *          - Scales across the entire configured collateral set, and
+     *          - Correctly aligns the asset index used in deactivation with the index
+     *            checked in the `CollateralAssetSupplyPaused` error.
+     *
+     *  In the broader context of the wUSDM / deUSD incident, these tests show that once
+     *  a collateral is deactivated for safety reasons, **no new supply** of that collateral
+     *  can enter the system until governance explicitly reactivates it, and that this holds
+     *  consistently for all supported collateral indices.
+     */
     describe('deactivated token supply flow', function () {
       let deactivateCollateralTx: ContractTransaction;
       let activateCollateralTx: ContractTransaction;
