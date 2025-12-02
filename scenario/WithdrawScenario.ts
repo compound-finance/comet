@@ -717,3 +717,181 @@ scenario.skip(
     // XXX fix for development base, where Faucet token doesn't give the same revert message
   }
 );
+
+for (let i = 0; i < MAX_ASSETS; i++) {
+  scenario(
+    `Comet#withdraw allows withdrawing deactivated collateral asset ${i}`,
+    {
+      filter: async (ctx: CometContext) => {
+        return await isValidAssetIndex(ctx, i) &&
+          await isTriviallySourceable(ctx, i, getConfigForScenario(ctx, i).withdrawCollateral) &&
+          await usesAssetList(ctx) &&
+          !(await isAssetDelisted(ctx, i)) &&
+          await supportsExtendedPause(ctx);
+      },
+      tokenBalances: async (ctx: CometContext) => (
+        {
+          albert: { [`$asset${i}`]: getConfigForScenario(ctx, i).withdrawCollateral }
+        }
+      ),
+    },
+    async ({ comet, actors, cometExt }, context, world) => {
+      const { albert, pauseGuardian } = actors;
+      const { asset, scale: scaleBN } = await comet.getAssetInfo(i);
+      const collateralAsset = context.getAssetByAddress(asset);
+      const scale = scaleBN.toBigInt();
+      const amount = BigInt(getConfigForScenario(context, i).withdrawCollateral) * scale;
+
+      // Approve the asset for supply
+      await collateralAsset.approve(albert, comet.address);
+
+      // Supply collateral first
+      await albert.supplyAsset({
+        asset: collateralAsset.address,
+        amount: amount,
+      });
+
+      // Verify collateral is supplied
+      expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(amount);
+
+      // Fund pause guardian account for gas fees
+      await fundAccount(world, pauseGuardian);
+
+      // Deactivate collateral asset
+      await cometExt.connect(pauseGuardian.signer).deactivateCollateral(i);
+
+      // Withdraw deactivated collateral (should succeed)
+      const txn = await albert.withdrawAsset({
+        asset: collateralAsset.address,
+        amount: amount,
+      });
+
+      // Verify withdrawal succeeded
+      expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(amount);
+      expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(0n);
+
+      return txn; // return txn to measure gas
+    }
+  );
+}
+
+for (let i = 0; i < MAX_ASSETS; i++) {
+  scenario(
+    `Comet#withdrawTo allows withdrawing deactivated collateral asset ${i}`,
+    {
+      filter: async (ctx: CometContext) => {
+        return await isValidAssetIndex(ctx, i) &&
+          await isTriviallySourceable(ctx, i, getConfigForScenario(ctx, i).withdrawCollateral) &&
+          await usesAssetList(ctx) &&
+          !(await isAssetDelisted(ctx, i)) &&
+          await supportsExtendedPause(ctx);
+      },
+      tokenBalances: async (ctx: CometContext) => (
+        {
+          albert: { [`$asset${i}`]: getConfigForScenario(ctx, i).withdrawCollateral }
+        }
+      ),
+    },
+    async ({ comet, actors, cometExt }, context, world) => {
+      const { albert, betty, pauseGuardian } = actors;
+      const { asset, scale: scaleBN } = await comet.getAssetInfo(i);
+      const collateralAsset = context.getAssetByAddress(asset);
+      const scale = scaleBN.toBigInt();
+      const amount = BigInt(getConfigForScenario(context, i).withdrawCollateral) * scale;
+
+      // Approve the asset for supply
+      await collateralAsset.approve(albert, comet.address);
+
+      // Supply collateral first
+      await albert.supplyAsset({
+        asset: collateralAsset.address,
+        amount: amount,
+      });
+
+      // Verify collateral is supplied
+      expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(amount);
+
+      // Fund pause guardian account for gas fees
+      await fundAccount(world, pauseGuardian);
+
+      // Deactivate collateral asset
+      await cometExt.connect(pauseGuardian.signer).deactivateCollateral(i);
+
+      // Withdraw deactivated collateral to betty (should succeed)
+      const txn = await (await comet.connect(albert.signer).withdrawTo(
+        betty.address,
+        collateralAsset.address,
+        amount
+      )).wait();
+
+      // Verify withdrawal succeeded
+      expect(await collateralAsset.balanceOf(betty.address)).to.be.equal(amount);
+      expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(0n);
+
+
+      return txn; // return txn to measure gas
+    }
+  );
+}
+
+for (let i = 0; i < MAX_ASSETS; i++) {
+  scenario(
+    `Comet#withdrawFrom allows withdrawing deactivated collateral asset ${i}`,
+    {
+      filter: async (ctx: CometContext) => {
+        return await isValidAssetIndex(ctx, i) &&
+          await isTriviallySourceable(ctx, i, getConfigForScenario(ctx, i).withdrawCollateral) &&
+          await usesAssetList(ctx) &&
+          !(await isAssetDelisted(ctx, i)) &&
+          await supportsExtendedPause(ctx);
+      },
+      tokenBalances: async (ctx: CometContext) => (
+        {
+          albert: { [`$asset${i}`]: getConfigForScenario(ctx, i).withdrawCollateral }
+        }
+      ),
+    },
+    async ({ comet, actors, cometExt }, context, world) => {
+      const { albert, betty, pauseGuardian } = actors;
+      const { asset, scale: scaleBN } = await comet.getAssetInfo(i);
+      const collateralAsset = context.getAssetByAddress(asset);
+      const scale = scaleBN.toBigInt();
+      const amount = BigInt(getConfigForScenario(context, i).withdrawCollateral) * scale;
+
+      // Approve the asset for supply
+      await collateralAsset.approve(albert, comet.address);
+
+      // Supply collateral first
+      await albert.supplyAsset({
+        asset: collateralAsset.address,
+        amount: amount,
+      });
+
+      // Verify collateral is supplied
+      expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(amount);
+
+      // Allow betty to act on behalf of albert
+      await albert.allow(betty, true);
+
+      // Fund pause guardian account for gas fees
+      await fundAccount(world, pauseGuardian);
+
+      // Deactivate collateral asset
+      await cometExt.connect(pauseGuardian.signer).deactivateCollateral(i);
+
+      // Withdraw deactivated collateral (should succeed)
+      const txn = await betty.withdrawAssetFrom({
+        src: albert.address,
+        dst: betty.address,
+        asset: collateralAsset.address,
+        amount: amount,
+      });
+
+      // Verify withdrawal succeeded
+      expect(await collateralAsset.balanceOf(betty.address)).to.be.equal(amount);
+      expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(0n);
+      
+      return txn; // return txn to measure gas
+    }
+  );
+}
