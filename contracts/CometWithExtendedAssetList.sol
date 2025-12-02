@@ -387,6 +387,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
             uint64(baseScale)
         );
 
+        address assetAddress;
         for (uint8 i = 0; i < numAssets; ) {
             if (isInAsset(assetsIn, i, _reserved)) {
                 if (liquidity >= 0) {
@@ -394,9 +395,23 @@ contract CometWithExtendedAssetList is CometMainInterface {
                 }
 
                 AssetInfo memory asset = getAssetInfo(i);
-                if (isCollateralDeactivated(asset.offset)) return false;
+                
+                assetAddress = asset.asset;
+
+                /**
+                 * Note: Disallows borrowers from relying on deactivated collateral in borrow checks.
+                 *      Reverts with `TokenIsDeactivated(asset)` when:
+                 *        - the account is a borrower (principal < 0), and
+                 *        - one of the collateral assets in `assetsIn` has been deactivated via `deactivateCollateral`.
+                 *      This causes borrow-like actions that call `isBorrowCollateralized` to revert, such as:
+                 *        - borrowing base via withdraw functions, and
+                 *        - sending base while borrowing via transfer functions,
+                 *      when the borrower still holds deactivated collateral.
+                 */
+                if (isCollateralDeactivated(asset.offset)) revert TokenIsDeactivated(assetAddress);
+
                 uint newAmount = mulPrice(
-                    userCollateral[account][asset.asset].balance,
+                    userCollateral[account][assetAddress].balance,
                     getPrice(asset.priceFeed),
                     asset.scale
                 );

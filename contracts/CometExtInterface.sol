@@ -110,8 +110,15 @@ abstract contract CometExtInterface is CometCore {
      * @param paused Whether to pause (`true`) or unpause (`false`) transfer actions for the specified collateral asset.
      */
     function pauseCollateralAssetTransfer(uint24 assetIndex, bool paused) virtual external;
-
+    /**
+     * @notice Deactivates a collateral asset.
+     * @param assetIndex The index of the collateral asset to deactivate.
+     */
     function deactivateCollateral(uint24 assetIndex) virtual external;
+    /**
+     * @notice Activates a collateral asset.
+     * @param assetIndex The index of the collateral asset to activate.
+     */
     function activateCollateral(uint24 assetIndex) virtual external;
 
     function collateralBalanceOf(address account, address asset) virtual external view returns (uint128);
