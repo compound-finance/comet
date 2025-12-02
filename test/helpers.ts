@@ -157,6 +157,19 @@ export type BulkerInfo = {
   bulker: BaseBulker;
 };
 
+export type UserCollateral = {
+  balance: BigNumber;
+  _reserved: BigNumber;
+};
+
+export type UserBasic = {
+  principal: BigNumber;
+  baseTrackingIndex: BigNumber;
+  baseTrackingAccrued: BigNumber;
+  assetsIn: number;
+  _reserved: number;
+};
+
 export function dfn<T>(x: T | undefined | null, dflt: T): T {
   return x == undefined ? dflt : x;
 }
