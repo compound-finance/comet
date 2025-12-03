@@ -116,6 +116,11 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
     config.withdrawAsset = 7000;
     config.transferAsset = 500000;
     config.transferBase = 100;
+    if(i == 8) { // tBTC
+      config.supplyCollateral = 2;
+      config.transferCollateral = 2;
+      config.withdrawCollateral = 2;
+    }
   }
 
   if (ctx.world.base.network === 'arbitrum' && ctx.world.base.deployment === 'usdt') {
