@@ -59,6 +59,11 @@ const {
   COINMARKETCAP_API_KEY,
   ETH_PK,
   ETHERSCAN_KEY,
+  ETHERSCAN_KEY_FOR_OPTIMISM,
+  ETHERSCAN_KEY_FOR_BASE,
+  ETHERSCAN_KEY_FOR_ARBITRUM,
+  ETHERSCAN_KEY_FOR_POLYGON,
+  ETHERSCAN_KEY_FOR_LINEA,
   SNOWTRACE_KEY,
   MAINNET_QUICKNODE_LINK,
   SEPOLIA_QUICKNODE_LINK,
@@ -374,21 +379,21 @@ const config: HardhatUserConfig = {
       avalanche: SNOWTRACE_KEY,
       avalancheFujiTestnet: SNOWTRACE_KEY,
       // Polygon
-      polygon: ETHERSCAN_KEY,
+      polygon: ETHERSCAN_KEY_FOR_POLYGON,
       // Arbitrum
-      arbitrumOne: ETHERSCAN_KEY,
-      arbitrumTestnet: ETHERSCAN_KEY,
-      arbitrum: ETHERSCAN_KEY,
+      arbitrumOne: ETHERSCAN_KEY_FOR_ARBITRUM,
+      arbitrumTestnet: ETHERSCAN_KEY_FOR_ARBITRUM,
+      arbitrum: ETHERSCAN_KEY_FOR_ARBITRUM,
       // Base
-      base: ETHERSCAN_KEY,
+      base: ETHERSCAN_KEY_FOR_BASE,
       // optimism: OPTIMISMSCAN_KEY,
-      optimisticEthereum: ETHERSCAN_KEY,
+      optimisticEthereum: ETHERSCAN_KEY_FOR_OPTIMISM,
       // Mantle
       mantle: ETHERSCAN_KEY,
       unichain: ETHERSCAN_KEY,
       // Scroll
       'scroll': ETHERSCAN_KEY,
-      linea: ETHERSCAN_KEY,
+      linea: ETHERSCAN_KEY_FOR_LINEA,
     },
     customChains: [
       {
