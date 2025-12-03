@@ -5,7 +5,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Alias, Address, BuildFile, TraceFn } from './Types';
 import { getAliases, storeAliases, putAlias } from './Aliases';
 import { Cache } from './Cache';
-import { ContractMap } from './ContractMap';
+import { ContractMap, getBuildFile } from './ContractMap';
 import { DeployOpts, deploy, deployBuild } from './Deploy';
 import { fetchAndCacheContract, readContract } from './Import';
 import { getRelationConfig } from './RelationConfig';
@@ -386,6 +386,49 @@ export class DeploymentManager {
   /* Verifies a contract with the given args and deployment manager hre/opts */
   async verifyContract(args: VerifyArgs): Promise<boolean> {
     return await verifyContract(args, this.hre, (await this.deployOpts()).raiseOnVerificationFailure);
+  }
+
+  /* Loads contracts from existing cache (aliases.json and .contracts/*.json files) */
+  async loadContractsFromExistingCache() {
+    const trace = this.tracer();
+    
+    // Load aliases from deployments/{network}/{deployment}/aliases.json
+    const aliases = await getAliases(this.cache);
+    
+    if (aliases.size === 0) {
+      trace('No aliases found in cache');
+      return;
+    }
+    
+    trace(`Loading ${aliases.size} contracts from existing cache`);
+    
+    // Initialize contractsCache if it's empty
+    if (this.contractsCache === null) {
+      this.contractsCache = new Map();
+    }
+    
+    // Load build files for each alias
+    for (const [alias, address] of aliases.entries()) {
+      try {
+        // Read build file from cache by address
+        // Build files are stored in deployments/{network}/.contracts/{address}.json
+        const buildFile = await getBuildFile(this.cache, this.network, address);
+        
+        if (buildFile) {
+          // Create ethers Contract from build file
+          const contract = getEthersContract(address, buildFile, this.hre);
+          
+          // Store in contractsCache
+          this.contractsCache.set(alias, contract);
+          
+          trace(`Loaded ${alias} @ ${address} from cache`);
+        }
+      } catch (e) {
+        console.warn(`Failed to load contract ${alias} @ ${address} from cache:`, e.message);
+      }
+    }
+    
+    trace(`Successfully loaded ${this.contractsCache.size} contracts from cache`);
   }
 
   /* Loads contract configuration by tracing from roots outwards, based on relationConfig */
