@@ -306,6 +306,8 @@ const config: HardhatUserConfig = {
             hardforkHistory: {
               berlin: 1,
               london: 2,
+              shanghai: 3,
+              cancun: 4,
             }
           };
           return acc;
