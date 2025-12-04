@@ -66,6 +66,8 @@ jobs:
 
       - name: Spider Contracts on Mainnet
         run: yarn hardhat spider --network mainnet --deployment usdc
+        env:
+          DEBUG: true
 
       # Upload only the prepared artifacts you need (no node_modules)
       - name: Upload prepared state
