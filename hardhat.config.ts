@@ -59,8 +59,22 @@ const {
   COINMARKETCAP_API_KEY,
   ETH_PK,
   ETHERSCAN_KEY,
+  ETHERSCAN_KEY_FOR_OPTIMISM,
+  ETHERSCAN_KEY_FOR_BASE,
+  ETHERSCAN_KEY_FOR_ARBITRUM,
+  ETHERSCAN_KEY_FOR_POLYGON,
+  ETHERSCAN_KEY_FOR_LINEA,
   SNOWTRACE_KEY,
-  ANKR_KEY,
+  MAINNET_QUICKNODE_LINK,
+  SEPOLIA_QUICKNODE_LINK,
+  RONIN_QUICKNODE_LINK,
+  POLYGON_QUICKNODE_LINK,
+  OPTIMISM_QUICKNODE_LINK,
+  MANTLE_QUICKNODE_LINK,
+  BASE_QUICKNODE_LINK,
+  ARBITRUM_QUICKNODE_LINK,
+  UNICHAIN_QUICKNODE_LINK = '',
+  LINEA_QUICKNODE_LINK = '',
   _TENDERLY_KEY_RONIN,
   _TENDERLY_KEY_POLYGON,
   MNEMONIC = 'myth like woof scare over problem client lizard pioneer submit female collect',
@@ -68,8 +82,6 @@ const {
   NETWORK_PROVIDER = '',
   GOV_NETWORK_PROVIDER = '',
   GOV_NETWORK = '',
-  UNICHAIN_QUICKNODE_KEY = '',
-  LINEA_QUICKNODE_KEY = '',
   REMOTE_ACCOUNTS = ''
 } = process.env;
 
@@ -92,10 +104,9 @@ export function requireEnv(varName, msg?: string): string {
 [
   'ETHERSCAN_KEY',
   'SNOWTRACE_KEY',
-  'INFURA_KEY',
-  'ANKR_KEY',
-  'UNICHAIN_QUICKNODE_KEY',
-  'LINEA_QUICKNODE_KEY'
+  'MAINNET_QUICKNODE_LINK',
+  'UNICHAIN_QUICKNODE_LINK',
+  'LINEA_QUICKNODE_LINK'
 ].map((v) => requireEnv(v));
 
 // Networks
@@ -124,55 +135,55 @@ export const networkConfigs: NetworkConfig[] = [
   {
     network: 'mainnet',
     chainId: 1,
-    url: `https://rpc.ankr.com/eth/${ANKR_KEY}`
+    url: `${MAINNET_QUICKNODE_LINK}`,
   },
   {
     network: 'sepolia',
     chainId: 11155111,
-    url: `https://rpc.ankr.com/eth_sepolia/${ANKR_KEY}`,
+    url: `${SEPOLIA_QUICKNODE_LINK}`,
   },
   {
     network: 'ronin',
     chainId: 2020,
-    url: `https://ronin.gateway.tenderly.co/${_TENDERLY_KEY_RONIN}`,
+    url: `${RONIN_QUICKNODE_LINK}`,
   },
   {
     network: 'polygon',
     chainId: 137,
-    url: `https://polygon.gateway.tenderly.co/${_TENDERLY_KEY_POLYGON}`,
+    url: `${POLYGON_QUICKNODE_LINK}`,
   },
   {
     network: 'optimism',
     chainId: 10,
-    url: `https://rpc.ankr.com/optimism/${ANKR_KEY}`,
+    url: `${OPTIMISM_QUICKNODE_LINK}`,
   },
   {
     network: 'mantle',
     chainId: 5000,
     // link for scenarios
-    url: `https://rpc.ankr.com/mantle/${ANKR_KEY}`,
+    url: `${MANTLE_QUICKNODE_LINK}`,
     // link for deployment
     // url: `https://rpc.mantle.xyz`,
   },
   {
     network: 'unichain',
     chainId: 130,
-    url: `https://multi-boldest-patina.unichain-mainnet.quiknode.pro/${UNICHAIN_QUICKNODE_KEY}`,
+    url: `${UNICHAIN_QUICKNODE_LINK}`,
   },
   {
     network: 'linea',
     chainId: 59144,
-    url: `https://omniscient-hardworking-gas.linea-mainnet.quiknode.pro/${LINEA_QUICKNODE_KEY}/`,
+    url: `${LINEA_QUICKNODE_LINK}`,
   },
   {
     network: 'base',
     chainId: 8453,
-    url: `https://rpc.ankr.com/base/${ANKR_KEY}`,
+    url: `${BASE_QUICKNODE_LINK}`,
   },
   {
     network: 'arbitrum',
     chainId: 42161,
-    url: `https://rpc.ankr.com/arbitrum/${ANKR_KEY}`,
+    url: `${ARBITRUM_QUICKNODE_LINK}`,
   },
   {
     network: 'avalanche',
@@ -191,10 +202,6 @@ export const networkConfigs: NetworkConfig[] = [
   },
 ];
 
-function getDefaultProviderURL(network: string) {
-  return `https://rpc.ankr.com/${network}/${ANKR_KEY}`;
-}
-
 function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
   for (const netConfig of networkConfigs) {
     hardhatConfig.networks[netConfig.network] = {
@@ -202,8 +209,7 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
       url:
         (netConfig.network === GOV_NETWORK ? GOV_NETWORK_PROVIDER || undefined : undefined) ||
         NETWORK_PROVIDER ||
-        netConfig.url ||
-        getDefaultProviderURL(netConfig.network),
+        netConfig.url,
       gas: netConfig.gas || 'auto',
       gasPrice: netConfig.gasPrice || 'auto',
       accounts: REMOTE_ACCOUNTS ? 'remote' : (ETH_PK ? [...deriveAccounts(ETH_PK)] : { mnemonic: MNEMONIC }),
@@ -340,16 +346,6 @@ const config: HardhatUserConfig = {
           };
           return acc;
         }
-        if (chainId === 42161) {
-          acc[chainId] = {
-            hardforkHistory: {
-              berlin: 1,
-              london: 2,
-              shanghai: 3,
-            }
-          };
-          return acc;
-        }
         acc[chainId] = {
           hardforkHistory: {
             berlin: 1,
@@ -373,21 +369,21 @@ const config: HardhatUserConfig = {
       avalanche: SNOWTRACE_KEY,
       avalancheFujiTestnet: SNOWTRACE_KEY,
       // Polygon
-      polygon: ETHERSCAN_KEY,
+      polygon: ETHERSCAN_KEY_FOR_POLYGON,
       // Arbitrum
-      arbitrumOne: ETHERSCAN_KEY,
-      arbitrumTestnet: ETHERSCAN_KEY,
-      arbitrum: ETHERSCAN_KEY,
+      arbitrumOne: ETHERSCAN_KEY_FOR_ARBITRUM,
+      arbitrumTestnet: ETHERSCAN_KEY_FOR_ARBITRUM,
+      arbitrum: ETHERSCAN_KEY_FOR_ARBITRUM,
       // Base
-      base: ETHERSCAN_KEY,
+      base: ETHERSCAN_KEY_FOR_BASE,
       // optimism: OPTIMISMSCAN_KEY,
-      optimisticEthereum: ETHERSCAN_KEY,
+      optimisticEthereum: ETHERSCAN_KEY_FOR_OPTIMISM,
       // Mantle
       mantle: ETHERSCAN_KEY,
       unichain: ETHERSCAN_KEY,
       // Scroll
       'scroll': ETHERSCAN_KEY,
-      linea: ETHERSCAN_KEY,
+      linea: ETHERSCAN_KEY_FOR_LINEA,
     },
     customChains: [
       {
