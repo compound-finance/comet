@@ -574,10 +574,6 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     await proxyAdmin.connect(governor).setMarketAdminPermissionChecker(marketAdminPermissionCheckerContract.address);
   }
 
-  configuration.extensionDelegate = extensionDelegateAssetList.address;
-  await configuratorAsProxy.setConfiguration(cometProxyWithExtendedAssetList.address, configuration);
-  await configuratorAsProxy.setFactory(cometProxyWithExtendedAssetList.address, cometFactoryWithExtendedAssetList.address);
-
   return {
     opts,
     governor,
