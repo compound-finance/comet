@@ -156,7 +156,7 @@ describe('configurator', function () {
 
   describe('configuration setters', function () {
     it('sets factory and deploys Comet using new factory', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, cometFactory, cometProxy } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometFactoryWithExtendedAssetList: cometFactory, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
       // Deploy modified CometFactory
       const CometModifiedFactoryFactory = (await ethers.getContractFactory('CometModifiedFactory')) as CometModifiedFactory__factory;
