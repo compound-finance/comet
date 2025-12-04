@@ -37,13 +37,17 @@ jobs:
           MANTLESCAN_KEY: ${{ secrets.MANTLESCAN_KEY }}
           SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
           UNICHAIN_QUICKNODE_KEY: ${{ secrets.UNICHAIN_QUICKNODE_KEY }}
-          MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
-          OPTIMISM_RPC_URL: ${{ secrets.OPTIMISM_RPC_URL }}
-          BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
+          MAINNET_QUICKNODE_LINK: ${{ secrets.MAINNET_QUICKNODE_LINK }}
+          OPTIMISM_QUICKNODE_LINK: ${{ secrets.OPTIMISM_QUICKNODE_LINK }}
+          BASE_QUICKNODE_LINK: ${{ secrets.BASE_QUICKNODE_LINK }}
           SCROLL_RPC_URL: ${{ secrets.SCROLL_RPC_URL }}
-          ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
-          POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
-          MANTLE_RPC_URL: ${{ secrets.MANTLE_RPC_URL }}
+          UNICHAIN_QUICKNODE_LINK: ${{ secrets.UNICHAIN_QUICKNODE_LINK }}
+          LINEA_QUICKNODE_LINK: ${{ secrets.LINEA_QUICKNODE_LINK }}
+          SEPOLIA_QUICKNODE_LINK: ${{ secrets.SEPOLIA_QUICKNODE_LINK }}
+          RONIN_QUICKNODE_LINK: ${{ secrets.RONIN_QUICKNODE_LINK }}
+          ARBITRUM_QUICKNODE_LINK: ${{ secrets.ARBITRUM_QUICKNODE_LINK }}
+          POLYGON_QUICKNODE_LINK: ${{ secrets.POLYGON_QUICKNODE_LINK }}
+          MANTLE_QUICKNODE_LINK: ${{ secrets.MANTLE_QUICKNODE_LINK }}
           SALT: ${{ secrets.SALT }}
 
       - name: Build Comet with older solc versions
