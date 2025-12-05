@@ -23,4 +23,12 @@ typechain/
 
 test-results.json
 scenario-results.json
+.idea/
+*.iml
 
+deployments/localhost/dai/roots.json
+forge/Makefile
+.envrc
+.env.forge-temp
+
+broadcast/
