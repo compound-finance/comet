@@ -197,6 +197,7 @@ export async function runScenarios(bases: ForkSpec[]) {
       const world = new World(base);
       await world.initialize(base);
       const dm = world.deploymentManager;
+      await dm.loadContractsFromExistingCache();
       const delta = await dm.runDeployScript({ allMissing: true });
       console.log(`[${base.name}] Deployed ${dm.counter} contracts, spent ${dm.spent} to initialize world 🗺`);
       console.log(`[${base.name}]\n${dm.diffDelta(delta)}`);
