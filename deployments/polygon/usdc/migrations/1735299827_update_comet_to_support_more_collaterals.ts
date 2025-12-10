@@ -164,7 +164,7 @@ export default migration('1735299827_update_comet_to_support_more_collaterals', 
 
 ## Proposal summary WOOF! proposes to update 2 Comets to a new version, which supports up to 24 collaterals. This proposal takes the governance steps recommended and necessary to update Compound III USDT and USDC markets on Polygon. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario).
 
-Detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/904) and [forum discussion](https://www.comp.xyz/t/increase-amount-of-collaterals-in-comet/5465).
+Detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1071) and [forum discussion](https://www.comp.xyz/t/increase-amount-of-collaterals-in-comet/5465).
 
 ## Proposal Actions
 The first action sets the factory to the newly deployed factory, extension delegate to the newly deployed contract and deploys and upgrades Comet to a new version for all 2 comets: cUSDTv3 and cUSDCv3.`;
