@@ -322,8 +322,7 @@ const config: HardhatUserConfig = {
         if (chainId === 137) {
           acc[chainId] = {
             hardforkHistory: {
-              berlin: 1,
-              london: 2,
+              cancun: 1,
             }
           };
           return acc;
