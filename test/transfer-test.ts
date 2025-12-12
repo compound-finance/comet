@@ -73,6 +73,8 @@ describe('transfer functionality', function () {
       .connect(bob)
       .supply(baseToken.address, baseTokenSupplyAmount);
 
+    await cometWithExtendedAssetListMaxAssets.connect(bob).allow(alice.address, true);
+
     snapshot = await takeSnapshot();
   });
 
@@ -517,6 +519,29 @@ describe('transfer functionality', function () {
         );
       });
     }
+
+    for(let i = 1; i <= MAX_ASSETS; i++) {
+      it(`allows to transfer collateral asset ${i} when asset becomes unpaused`, async () => {
+        // Get the asset at index i-1
+        const assetIndex = i - 1;
+        const assetToken = tokensWithMaxAssets[`ASSET${assetIndex}`];
+        const collateralBalanceBob = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(bob.address, assetToken.address);
+        const collateralBalanceAlice = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(alice.address, assetToken.address);
+
+        // Unpause specific collateral asset transfer at index assetIndex
+        await cometWithExtendedAssetListMaxAssets
+          .connect(pauseGuardian)
+          .pauseCollateralAssetTransfer(assetIndex, false);
+
+        // Transfer the asset
+        await cometWithExtendedAssetListMaxAssets.connect(bob).transferAsset(alice.address, assetToken.address, collateralTokenSupplyAmount);
+
+        const collateralBalanceBobAfter = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(bob.address, assetToken.address);
+        const collateralBalanceAliceAfter = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(alice.address, assetToken.address);
+        expect(collateralBalanceBobAfter).to.be.equal(collateralBalanceBob.sub(collateralTokenSupplyAmount));
+        expect(collateralBalanceAliceAfter).to.be.equal(collateralBalanceAlice.add(collateralTokenSupplyAmount));
+      });
+    }
   });
 
   describe('transferFrom', function () {
@@ -729,6 +754,29 @@ describe('transfer functionality', function () {
           cometWithExtendedAssetListMaxAssets,
           'CollateralAssetTransferPaused'
         );
+      });
+    }
+
+    for(let i = 1; i <= MAX_ASSETS; i++) {
+      it(`allows to transferFrom collateral asset ${i} when asset becomes unpaused`, async () => {
+        // Get the asset at index i-1
+        const assetIndex = i - 1;
+        const assetToken = tokensWithMaxAssets[`ASSET${assetIndex}`];
+        const collateralBalanceBob = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(bob.address, assetToken.address);
+        const collateralBalanceAlice = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(alice.address, assetToken.address);
+
+        // Unpause specific collateral asset transfer at index assetIndex
+        await cometWithExtendedAssetListMaxAssets
+          .connect(pauseGuardian)
+          .pauseCollateralAssetTransfer(assetIndex, false);
+
+        // Transfer the asset
+        await cometWithExtendedAssetListMaxAssets.connect(alice).transferAssetFrom(bob.address, alice.address, assetToken.address, collateralTokenSupplyAmount);
+
+        const collateralBalanceBobAfter = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(bob.address, assetToken.address);
+        const collateralBalanceAliceAfter = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(alice.address, assetToken.address);
+        expect(collateralBalanceBobAfter).to.be.equal(collateralBalanceBob.sub(collateralTokenSupplyAmount));
+        expect(collateralBalanceAliceAfter).to.be.equal(collateralBalanceAlice.add(collateralTokenSupplyAmount));
       });
     }
   });
