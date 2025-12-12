@@ -205,6 +205,8 @@ describe('isLiquidatable', function () {
     let supplyAmount: bigint;
     let borrowAmount: bigint;
 
+    let liquidateCF: bigint;
+
     before(async () => {
       const collaterals = Object.fromEntries(
         Array.from({ length: MAX_ASSETS }, (_, j) => [
@@ -253,6 +255,8 @@ describe('isLiquidatable', function () {
       await configurator.setFactory(cometProxyAddress, CometFactoryWithExtendedAssetList.address);
       await proxyAdmin.deployAndUpgradeTo(configuratorProxyAddress, cometProxyAddress);
 
+      liquidateCF = (await comet.getAssetInfoByAddress(collateralToken.address)).liquidateCollateralFactor.toBigInt();
+
       snapshot = await takeSnapshot();
 
       // Supply collateral and borrow base
@@ -292,6 +296,23 @@ describe('isLiquidatable', function () {
       expect(await comet.isLiquidatable(alice.address)).to.be.true;
 
       await snapshot.restore();
+    });
+
+    it('liquidateCF can be restored back', async function () {
+      await updateAssetLiquidateCollateralFactor(configurator, proxyAdmin, cometProxyAddress, collateralToken.address, (liquidateCF), governor);
+    });
+
+    it('liquidateCF is restored back after upgrade', async function () {
+      expect((await comet.getAssetInfoByAddress(collateralToken.address)).liquidateCollateralFactor).to.equal(liquidateCF);
+    });
+
+    it('position is not liquidatable when liquidateCF is restored back', async function () {
+      expect(await comet.isLiquidatable(alice.address)).to.be.false;
+    });
+
+    it('liquidity calculation includes collateral with positive liquidateCF after restore', async function () {
+      const liquidity = await getLiquidityWithLiquidateCF(comet, collateralToken, supplyAmount);
+      expect(liquidity).to.be.greaterThan(0);
     });
 
     it('isLiquidatable with mixed liquidate factors counts only positive CF assets', async () => {
