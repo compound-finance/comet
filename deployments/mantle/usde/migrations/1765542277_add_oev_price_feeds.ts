@@ -223,7 +223,9 @@ CAPO has been audited by [OpenZeppelin](https://www.comp.xyz/t/capo-price-feed-a
 The first action updates USDe, mETH, WETH and FBTC price feeds to the CAPO and SVR implementation. This sends the encoded 'setBaseTokenPriceFeed', 'updateAssetPriceFeed' and 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Mantle.`;
 
     const txn = await govDeploymentManager.retry(async () =>
-      trace(await governor.propose(...(await proposal(mainnetActions, description))))
+      trace(await governor.propose(...(await proposal(mainnetActions, description)))),
+    0,
+    300_000
     );
 
     const event = txn.events.find((event: { event: string }) => event.event === 'ProposalCreated');
