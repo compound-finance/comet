@@ -23,7 +23,7 @@ let oldPriceFeedWeth: string;
 let oldPriceFeedMeth: string;
 let oldPriceFeedFbtc: string;
 
-export default migration('1765542277_add_ezeth_as_collateral', {
+export default migration('1765542277_add_oev_price_feeds', {
   async prepare(deploymentManager: DeploymentManager) {
     const { timelock } = await deploymentManager.getContracts();
 
