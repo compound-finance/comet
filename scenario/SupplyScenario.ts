@@ -1180,8 +1180,6 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       });
 
       expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(BigInt(getConfigForScenario(context).supplyCollateral) * scale);
-
-      console.log('AAAAA');
     }
   );
 }
