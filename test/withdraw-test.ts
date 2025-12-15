@@ -613,6 +613,36 @@ describe('withdraw functionality', function () {
       });
     }
 
+    for(let i = 1; i <= MAX_ASSETS; i++) {
+      it(`allows to withdrawTo collateral asset ${i} when asset becomes unpaused`, async () => {
+        // Get the asset at index i-1
+        const assetIndex = i - 1;
+        const assetToken = tokensWithMaxAssets[`ASSET${assetIndex}`];
+        const collateralBalanceBob = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(bob.address, assetToken.address);
+        const collateralBalanceAlice = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(alice.address, assetToken.address);
+        const tokenBalanceBob = await assetToken.balanceOf(bob.address);
+        const tokenBalanceAlice = await assetToken.balanceOf(alice.address);
+
+        // Unpause specific collateral asset withdraw at index assetIndex
+        await cometWithExtendedAssetListMaxAssets
+          .connect(pauseGuardian)
+          .pauseCollateralAssetWithdraw(assetIndex, false);
+
+        // Withdraw the asset
+        await cometWithExtendedAssetListMaxAssets.connect(bob).withdrawTo(alice.address, assetToken.address, collateralTokenSupplyAmount);
+
+        const collateralBalanceBobAfter = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(bob.address, assetToken.address);
+        const collateralBalanceAliceAfter = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(alice.address, assetToken.address);
+        const tokenBalanceBobAfter = await assetToken.balanceOf(bob.address);
+        const tokenBalanceAliceAfter = await assetToken.balanceOf(alice.address);
+
+        expect(collateralBalanceBobAfter).to.be.equal(collateralBalanceBob.sub(collateralTokenSupplyAmount));
+        expect(collateralBalanceAliceAfter).to.be.equal(collateralBalanceAlice);
+        expect(tokenBalanceBobAfter).to.be.equal(tokenBalanceBob);
+        expect(tokenBalanceAliceAfter).to.be.equal(tokenBalanceAlice.add(collateralTokenSupplyAmount));
+      });
+    }
+
     /**
      * @notice End-to-end withdraw behavior when collateral is deactivated and reactivated
      * @dev
@@ -816,6 +846,7 @@ describe('withdraw functionality', function () {
         });
       }
     });
+    
   });
 
   describe('withdraw', function () {
@@ -1080,6 +1111,30 @@ describe('withdraw functionality', function () {
           cometWithExtendedAssetListMaxAssets,
           'CollateralAssetWithdrawPaused'
         );
+      });
+    }
+
+    for(let i = 1; i <= MAX_ASSETS; i++) {
+      it(`allows to withdraw collateral asset ${i} when asset becomes unpaused`, async () => {
+        // Get the asset at index i-1
+        const assetIndex = i - 1;
+        const assetToken = tokensWithMaxAssets[`ASSET${assetIndex}`];
+        const collateralBalance = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(bob.address, assetToken.address);
+        const tokenBalance = await assetToken.balanceOf(bob.address);
+
+        // Unpause specific collateral asset withdraw at index assetIndex
+        await cometWithExtendedAssetListMaxAssets
+          .connect(pauseGuardian)
+          .pauseCollateralAssetWithdraw(assetIndex, false);
+
+        // Withdraw the asset
+        await cometWithExtendedAssetListMaxAssets.connect(bob).withdraw(assetToken.address, collateralTokenSupplyAmount);
+
+        const collateralBalanceAfter = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(bob.address, assetToken.address);
+        const tokenBalanceAfter = await assetToken.balanceOf(bob.address);
+
+        expect(collateralBalanceAfter).to.be.equal(collateralBalance.sub(collateralTokenSupplyAmount));
+        expect(tokenBalanceAfter).to.be.equal(tokenBalance.add(collateralTokenSupplyAmount));
       });
     }
 
@@ -1380,6 +1435,36 @@ describe('withdraw functionality', function () {
           cometWithExtendedAssetListMaxAssets,
           'CollateralAssetWithdrawPaused'
         );
+      });
+    }
+
+    for(let i = 1; i <= MAX_ASSETS; i++) {
+      it(`allows to withdrawFrom collateral asset ${i} when asset becomes unpaused`, async () => {
+        // Get the asset at index i-1
+        const assetIndex = i - 1;
+        const assetToken = tokensWithMaxAssets[`ASSET${assetIndex}`];
+        const collateralBalanceBob = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(bob.address, assetToken.address);
+        const collateralBalanceAlice = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(alice.address, assetToken.address);
+        const tokenBalanceBob = await assetToken.balanceOf(bob.address);
+        const tokenBalanceAlice = await assetToken.balanceOf(alice.address);
+
+        // Unpause specific collateral asset withdraw at index assetIndex
+        await cometWithExtendedAssetListMaxAssets
+          .connect(pauseGuardian)
+          .pauseCollateralAssetWithdraw(assetIndex, false);
+
+        // Withdraw the asset
+        await cometWithExtendedAssetListMaxAssets.connect(alice).withdrawFrom(bob.address, alice.address, assetToken.address, collateralTokenSupplyAmount);
+
+        const collateralBalanceBobAfter = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(bob.address, assetToken.address);
+        const collateralBalanceAliceAfter = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(alice.address, assetToken.address);
+        const tokenBalanceBobAfter = await assetToken.balanceOf(bob.address);
+        const tokenBalanceAliceAfter = await assetToken.balanceOf(alice.address);
+
+        expect(collateralBalanceBobAfter).to.be.equal(collateralBalanceBob.sub(collateralTokenSupplyAmount));
+        expect(collateralBalanceAliceAfter).to.be.equal(collateralBalanceAlice);
+        expect(tokenBalanceBobAfter).to.be.equal(tokenBalanceBob);
+        expect(tokenBalanceAliceAfter).to.be.equal(tokenBalanceAlice.add(collateralTokenSupplyAmount));
       });
     }
 
