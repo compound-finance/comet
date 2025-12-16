@@ -876,7 +876,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 
 for (let i = 0; i < MAX_ASSETS; i++) {
   scenario(
-    `Comet#transferFrom reverts when collateral asset ${i} transfer is paused`,
+    `Comet#transferFrom reverts when collateral asset ${i} transfer is paused and allows to transfer when unpaused`,
     {
       filter: async (ctx: CometContext) => {
         return await isValidAssetIndex(ctx, i) &&
