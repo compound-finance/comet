@@ -1182,7 +1182,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 }
 
 for(let i = 0; i < MAX_ASSETS; i++) {
-  scenario(`Comet#supply reverts when collateral asset with index ${i} is deactivated`, {
+  scenario(`Comet#supply reverts when collateral asset with index ${i} is deactivated and allows to supply when activated`, {
     filter: async (ctx: CometContext) => {
       return await isValidAssetIndex(ctx, i) &&
     await isTriviallySourceable(ctx, i, getConfigForScenario(ctx).supplyCollateral) &&
@@ -1217,12 +1217,22 @@ for(let i = 0; i < MAX_ASSETS; i++) {
       }),
       `CollateralAssetSupplyPaused(${i})`
     );
+
+    // Activate collateral asset
+    await cometExt.connect(pauseGuardian.signer).activateCollateral(i);
+
+    await albert.safeSupplyAsset({
+      asset: collateralAsset.address,
+      amount: BigInt(getConfigForScenario(context).supplyCollateral) * scale,
+    });
+
+    expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(BigInt(getConfigForScenario(context).supplyCollateral) * scale);
   });
 }
 
 for (let i = 0; i < MAX_ASSETS; i++) {
   scenario(
-    `Comet#supplyTo reverts when collateral asset with index ${i} is deactivated`,
+    `Comet#supplyTo reverts when collateral asset with index ${i} is deactivated and allows to supply when activated`,
     {
       filter: async (ctx: CometContext) => {
         return await isValidAssetIndex(ctx, i) &&
@@ -1259,6 +1269,17 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         ),
         `CollateralAssetSupplyPaused(${i})`
       );
+
+      // Activate collateral asset
+      await cometExt.connect(pauseGuardian.signer).activateCollateral(i);
+
+      await albert.safeSupplyAssetTo({
+        dst: betty.address,
+        asset: collateralAsset.address,
+        amount: BigInt(getConfigForScenario(context, i).supplyCollateral) * scale,
+      });
+
+      expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(BigInt(getConfigForScenario(context, i).supplyCollateral) * scale);
     }
   );
 }
@@ -1305,6 +1326,18 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         }),
         `CollateralAssetSupplyPaused(${i})`
       );
+
+      // Activate collateral asset
+      await cometExt.connect(pauseGuardian.signer).activateCollateral(i);
+
+      await betty.safeSupplyAssetFrom({
+        src: albert.address,
+        dst: betty.address,
+        asset: collateralAsset.address,
+        amount: BigInt(getConfigForScenario(context, i).supplyCollateral) * scale,
+      });
+
+      expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(BigInt(getConfigForScenario(context, i).supplyCollateral) * scale);
     }
   );
 }

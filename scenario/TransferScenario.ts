@@ -971,7 +971,7 @@ scenario(
 
 for (let i = 0; i < MAX_ASSETS; i++) {
   scenario(
-    `Comet#transferFrom reverts when collateral asset ${i} is deactivated`,
+    `Comet#transferFrom reverts when collateral asset ${i} is deactivated and allows to transfer when activated`,
     {
       filter: async (ctx: CometContext) => {
         return await isValidAssetIndex(ctx, i) &&
@@ -1012,13 +1012,35 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         }),
         `CollateralAssetTransferPaused(${i})`
       );
+
+      // Activate collateral asset
+      await cometExt.connect(pauseGuardian.signer).activateCollateral(i);
+
+      // Save balances 
+      const albertBalanceBefore = await comet.collateralBalanceOf(albert.address, collateralAsset.address);
+      const charlesBalanceBefore = await comet.collateralBalanceOf(charles.address, collateralAsset.address);
+
+      await betty.transferAssetFrom({
+        src: albert.address,
+        dst: charles.address,
+        asset: collateralAsset.address,
+        amount: BigInt(getConfigForScenario(context, i).transferCollateral) * scale,
+      });
+
+      // Get balances after transfer
+      const albertBalanceAfter = await comet.collateralBalanceOf(albert.address, collateralAsset.address);
+      const charlesBalanceAfter = await comet.collateralBalanceOf(charles.address, collateralAsset.address);
+
+      // Assert balances after transfer
+      expect(albertBalanceAfter).to.be.equal(albertBalanceBefore.toBigInt() - BigInt(getConfigForScenario(context, i).transferCollateral) * scale);
+      expect(charlesBalanceAfter).to.be.equal(charlesBalanceBefore.toBigInt() + BigInt(getConfigForScenario(context, i).transferCollateral) * scale);
     }
   );
 }
 
 for (let i = 0; i < MAX_ASSETS; i++) {
   scenario(
-    `Comet#transfer reverts when collateral asset ${i} is deactivated`,
+    `Comet#transfer reverts when collateral asset ${i} is deactivated and allows to transfer when activated`,
     {
       filter: async (ctx: CometContext) => {
         return await isValidAssetIndex(ctx, i) &&
@@ -1055,6 +1077,27 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         }),
         `CollateralAssetTransferPaused(${i})`
       );
+
+      // Activate collateral asset
+      await cometExt.connect(pauseGuardian.signer).activateCollateral(i);
+
+      // Save balances 
+      const albertBalanceBefore = await comet.collateralBalanceOf(albert.address, collateralAsset.address);
+      const bettyBalanceBefore = await comet.collateralBalanceOf(betty.address, collateralAsset.address);
+
+      await albert.transferAsset({
+        dst: betty.address,
+        asset: collateralAsset.address,
+        amount: BigInt(getConfigForScenario(context).transferCollateral) * scale,
+      });
+
+      // Get balances after transfer
+      const albertBalanceAfter = await comet.collateralBalanceOf(albert.address, collateralAsset.address);
+      const bettyBalanceAfter = await comet.collateralBalanceOf(betty.address, collateralAsset.address);
+
+      // Assert balances after transfer
+      expect(albertBalanceAfter).to.be.equal(albertBalanceBefore.toBigInt() - BigInt(getConfigForScenario(context).transferCollateral) * scale);
+      expect(bettyBalanceAfter).to.be.equal(bettyBalanceBefore.toBigInt() + BigInt(getConfigForScenario(context).transferCollateral) * scale);
     }
   );
 }
