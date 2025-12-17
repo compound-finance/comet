@@ -376,6 +376,7 @@ contract CometExt is CometExtInterface {
      */
     function deactivateCollateral(uint24 assetIndex) override external isValidAssetIndex(assetIndex) {
         if (msg.sender != CometMainInterface(address(this)).pauseGuardian()) revert OnlyPauseGuardian();
+        if ((deactivatedCollaterals & (uint24(1) << assetIndex) != 0) == true) revert CollateralAlreadyDeactivated(assetIndex);
 
         // Mark collateral as deactivated
         deactivatedCollaterals |= (uint24(1) << assetIndex);
@@ -395,6 +396,7 @@ contract CometExt is CometExtInterface {
      */
     function activateCollateral(uint24 assetIndex) override external isValidAssetIndex(assetIndex) {
         if (msg.sender != CometMainInterface(address(this)).governor()) revert OnlyGovernor();
+        if ((deactivatedCollaterals & (uint24(1) << assetIndex) != 0) == false) revert CollateralAlreadyActivated(assetIndex);
 
         // Mark collateral as activated
         deactivatedCollaterals &= ~(uint24(1) << assetIndex);

@@ -45,6 +45,16 @@ abstract contract CometExtInterface is CometCore {
      * @dev Error thrown when the caller is not the governor
      */
     error OnlyGovernor();
+    /**
+     * @dev Error thrown when the collateral asset is already deactivated
+     * @param assetIndex The index of the collateral asset
+     */
+    error CollateralAlreadyDeactivated(uint24 assetIndex);
+    /**
+     * @dev Error thrown when the collateral asset is already activated
+     * @param assetIndex The index of the collateral asset
+     */
+    error CollateralAlreadyActivated(uint24 assetIndex);
 
     function allow(address manager, bool isAllowed) virtual external;
     function allowBySig(address owner, address manager, bool isAllowed, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s) virtual external;
