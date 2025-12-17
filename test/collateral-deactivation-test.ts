@@ -119,7 +119,7 @@ describe('collateral deactivation functionality', function () {
       assets: { USDC: {}, ...collaterals },
     });
     comet = protocol.cometWithExtendedAssetList;
-    cometExt= comet.attach(comet.address) as CometExt;
+    cometExt = comet.attach(comet.address) as CometExt;
     governor = protocol.governor;
     pauseGuardian = protocol.pauseGuardian;
   });
@@ -127,6 +127,7 @@ describe('collateral deactivation functionality', function () {
   describe('collateral deactivation', function () {
     describe('happy path', function () {
       let deactivateCollateralTx: ContractTransaction;
+
       it('allows to deactivate by pause guardian', async function () {
         deactivateCollateralTx = await cometExt.connect(pauseGuardian).deactivateCollateral(ASSET_INDEX);
         await expect(deactivateCollateralTx).to.not.be.reverted;
@@ -166,12 +167,20 @@ describe('collateral deactivation functionality', function () {
       it('asset index is invalid', async function () {
         await expect(cometExt.connect(pauseGuardian).deactivateCollateral(MAX_ASSETS)).to.be.revertedWithCustomError(cometExt, 'InvalidAssetIndex');
       });
+
+      it('collateral is already deactivated', async function () {
+        await expect(
+          cometExt.connect(pauseGuardian).deactivateCollateral(ASSET_INDEX)
+        ).to.be.revertedWithCustomError(cometExt, 'CollateralAlreadyDeactivated')
+          .withArgs(ASSET_INDEX);
+      });
     });
   });
 
   describe('collateral activation', function () {
     describe('happy path', function () {
       let activateCollateralTx: ContractTransaction;
+
       it('allows to activate by governor', async function () {
         activateCollateralTx = await cometExt.connect(governor).activateCollateral(ASSET_INDEX);
         await expect(activateCollateralTx).to.not.be.reverted;
@@ -211,34 +220,50 @@ describe('collateral deactivation functionality', function () {
       it('asset index is invalid', async function () {
         await expect(cometExt.connect(governor).activateCollateral(MAX_ASSETS)).to.be.revertedWithCustomError(cometExt, 'InvalidAssetIndex');
       });
+
+      it('collateral is already activated', async function () {
+        await expect(cometExt.connect(governor).activateCollateral(ASSET_INDEX))
+          .to.be.revertedWithCustomError(cometExt, 'CollateralAlreadyActivated')
+          .withArgs(ASSET_INDEX);
+      });
     });
   });
 
   describe(`${MAX_ASSETS} assets support`, function () {
     describe('deactivation', function () {
       for (let i = 1; i <= MAX_ASSETS; i++) {
+        let assetIndex = i - 1;
+
         it(`allows to deactivate for asset ${i}`, async function () {
-          const assetIndex = i - 1;
-              
-          // Deactivate
           await cometExt.connect(pauseGuardian).deactivateCollateral(assetIndex);
               
           // Verify that the collateral at index i is deactivated
           expect(await comet.isCollateralDeactivated(assetIndex)).to.be.true;
+        });
+
+        it('reverts on double deactivation', async function () {
+          await expect(cometExt.connect(pauseGuardian).deactivateCollateral(assetIndex))
+            .to.be.revertedWithCustomError(cometExt, 'CollateralAlreadyDeactivated')
+            .withArgs(assetIndex);
         });
       }
     });
 
     describe('activation', function () {
       for (let i = 1; i <= MAX_ASSETS; i++) {
-        it(`allows to activate for asset ${i}`, async function () {
-          const assetIndex = i - 1;
-                
-          // Activate
+        let assetIndex = i - 1;
+        
+        it(`allows to activate for asset ${i}`, async function () {                
           await cometExt.connect(governor).activateCollateral(assetIndex);
                 
           // Verify that the collateral at index i is activated
           expect(await comet.isCollateralDeactivated(assetIndex)).to.be.false;
+        });
+
+        it('reverts on double activation', async function () {
+          await expect(cometExt.connect(governor).activateCollateral(assetIndex))
+            .to.be.revertedWithCustomError(cometExt, 'CollateralAlreadyActivated')
+            .withArgs(assetIndex);
         });
       }
     });
