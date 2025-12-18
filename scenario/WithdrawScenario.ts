@@ -886,7 +886,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 //////////////////////////////////////////////////////////////*/
 
 scenario(
-  'Comet#withdraw allows withdrawing deactivated collateral asset',
+  'Comet#withdraw is allowed to withdraw deactivated and then activated collateral asset',
   {
     filter: async (ctx: CometContext) => {
       return await usesAssetList(ctx) && await supportsExtendedPause(ctx);
@@ -908,7 +908,7 @@ scenario(
       const scale = scaleBN.toBigInt();
       const amount = BigInt(getConfigForScenario(context, i).withdrawCollateral) * scale;
 
-      log(`Withdraw allows withdrawing deactivated collateral asset ${i}`);
+      log(`Withdraw is allowed withdrawing deactivated collateral asset ${i}`);
 
       // Source collateral asset
       await context.sourceTokens(amount * 2n, collateralAsset.address, albert.address);
@@ -947,7 +947,7 @@ scenario(
       // Activate collateral asset
       await cometExt.connect(pauseGuardian.signer).activateCollateral(i);
 
-      log(`Withdraw allows withdrawing activated collateral asset ${i}`);
+      log(`Withdraw is allowed withdrawing activated collateral asset ${i}`);
 
       // Supply collateral again
       await albert.safeSupplyAsset({
@@ -972,7 +972,7 @@ scenario(
 );
 
 scenario(
-  'Comet#withdrawTo allows withdrawing deactivated collateral asset',
+  'Comet#withdrawTo is allowed to withdraw deactivated and then activated collateral asset',
   {
     filter: async (ctx: CometContext) => {
       return await usesAssetList(ctx) && await supportsExtendedPause(ctx);
@@ -994,7 +994,7 @@ scenario(
       const scale = scaleBN.toBigInt();
       const amount = BigInt(getConfigForScenario(context, i).withdrawCollateral) * scale;
 
-      log(`WithdrawTo allows withdrawing deactivated collateral asset ${i}`);
+      log(`WithdrawTo is allowed withdrawing deactivated collateral asset ${i}`);
 
       // Source collateral asset
       await context.sourceTokens(amount * 2n, collateralAsset.address, albert.address);
@@ -1035,7 +1035,7 @@ scenario(
       // Activate collateral asset
       await cometExt.connect(pauseGuardian.signer).activateCollateral(i);
 
-      log(`WithdrawTo allows withdrawing activated collateral asset ${i}`);
+      log(`WithdrawTo is allowed withdrawing activated collateral asset ${i}`);
 
       // Supply collateral again
       await albert.safeSupplyAsset({
@@ -1062,7 +1062,7 @@ scenario(
 );
 
 scenario(
-  'Comet#withdrawFrom allows withdrawing deactivated collateral asset',
+  'Comet#withdrawFrom is allowed to withdraw deactivated and then activated collateral asset',
   {
     filter: async (ctx: CometContext) => {
       return await usesAssetList(ctx) && await supportsExtendedPause(ctx);
@@ -1087,7 +1087,7 @@ scenario(
       const scale = scaleBN.toBigInt();
       const amount = BigInt(getConfigForScenario(context, i).withdrawCollateral) * scale;
 
-      log(`WithdrawFrom allows withdrawing deactivated collateral asset ${i}`);
+      log(`WithdrawFrom is allowed withdrawing deactivated collateral asset ${i}`);
 
       // Source collateral asset
       await context.sourceTokens(amount * 2n, collateralAsset.address, albert.address);
@@ -1129,7 +1129,7 @@ scenario(
       // Activate collateral asset
       await cometExt.connect(pauseGuardian.signer).activateCollateral(i);
 
-      log(`WithdrawFrom allows withdrawing activated collateral asset ${i}`);
+      log(`WithdrawFrom is allowed withdrawing activated collateral asset ${i}`);
 
       // Supply collateral again
       await albert.safeSupplyAsset({

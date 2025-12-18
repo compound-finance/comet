@@ -987,6 +987,9 @@ scenario(
     // Fund pause guardian account for gas fees
     await fundAccount(world, pauseGuardian);
 
+    // Allow betty to act on behalf of albert
+    await albert.allow(betty, true);
+
     for (let i = 0; i < MAX_ASSETS; i++) {
       if (!await isValidAssetIndex(context, i)) continue;
       if (!await isTriviallySourceable(context, i, getConfigForScenario(context).transferCollateral)) continue;
@@ -1014,9 +1017,6 @@ scenario(
       // Deactivate collateral asset
       await cometExt.connect(pauseGuardian.signer).deactivateCollateral(i);
 
-      // Allow betty to act on behalf of albert
-      await albert.allow(betty, true);
-
       await expectRevertCustom(
         betty.transferAssetFrom({
           src: albert.address,
@@ -1030,7 +1030,7 @@ scenario(
       // Activate collateral asset
       await cometExt.connect(pauseGuardian.signer).activateCollateral(i);
 
-      log(`TransferFrom allows when collateral asset ${i} is activated`);
+      log(`TransferFrom is allowed when collateral asset ${i} is activated`);
 
       // Save balances 
       const albertBalanceBefore = await comet.collateralBalanceOf(albert.address, collateralAsset.address);
@@ -1106,7 +1106,7 @@ scenario(
       // Activate collateral asset
       await cometExt.connect(pauseGuardian.signer).activateCollateral(i);
 
-      log(`Transfer allows when collateral asset ${i} is activated`);
+      log(`Transfer is allowed when collateral asset ${i} is activated`);
 
       // Save balances 
       const albertBalanceBefore = await comet.collateralBalanceOf(albert.address, collateralAsset.address);
