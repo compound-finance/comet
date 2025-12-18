@@ -78,18 +78,6 @@ export class ProposalConstraint<T extends CometContext> implements StaticConstra
           );
         }
 
-        // temporary hack to skip proposal 510
-        if (proposal.id.eq(510)) {
-          console.log('Skipping proposal 510');
-          continue;
-        }
-
-        // Temporary hack to skip proposals 510, 511, and 512
-        if (proposal.id.eq(512) || proposal.id.eq(510) || proposal.id.eq(511)) {
-          console.log('Skipping proposal 510, 511, and 512');
-          continue;
-        }
-
         try {
           // Execute the proposal
           debug(`${label} Processing pending proposal ${proposal.id}`);
