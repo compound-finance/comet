@@ -179,9 +179,12 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
   }
 
   if (ctx.world.base.network === 'polygon' && ctx.world.base.deployment === 'usdt') {
-    config.withdrawAsset = 10000;
+    config.withdrawAsset = 20000;
+    config.withdrawBase = 100;
     config.transferAsset = 500000;
     config.transferBase = 100;
+    config.rewardsAsset = 20000;
+    config.rewardsBase = 1000;
   }
 
   if (ctx.world.base.network === 'scroll' && ctx.world.base.deployment === 'usdc') {
