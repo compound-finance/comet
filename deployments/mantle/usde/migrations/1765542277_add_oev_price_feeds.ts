@@ -57,7 +57,7 @@ export default migration('1765542277_add_oev_price_feeds', {
       'pricefeeds/ScalingPriceFeedWithCustomDescription.sol',
       [
         USDE_TO_USD_PRICE_FEED_ADDRESS,   // USDe / USD price feed
-        8,                                // decimals
+        FEED_DECIMALS,                    // decimals
         'USDe / USD price feed'           // description
       ],
       true
@@ -69,7 +69,7 @@ export default migration('1765542277_add_oev_price_feeds', {
       'pricefeeds/ScalingPriceFeedWithCustomDescription.sol',
       [
         ETH_TO_USD_PRICE_FEED_ADDRESS,   // ETH / USD price feed
-        8,                               // decimals
+        FEED_DECIMALS,                   // decimals
         'WETH / USD price feed'          // description
       ],
       true
@@ -81,7 +81,7 @@ export default migration('1765542277_add_oev_price_feeds', {
       'pricefeeds/ScalingPriceFeedWithCustomDescription.sol',
       [
         FBTC_TO_USD_PRICE_FEED_ADDRESS,   // FBTC / USD price feed
-        8,                                // decimals
+        FEED_DECIMALS,                    // decimals
         'FBTC / USD price feed'           // description
       ],
       true
