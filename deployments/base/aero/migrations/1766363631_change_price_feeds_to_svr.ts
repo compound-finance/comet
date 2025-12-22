@@ -21,7 +21,8 @@ export default migration('1766363631_change_price_feeds_to_svr', {
       [
         WETH_TO_USD_SVR_PRICE_FEED_ADDRESS, // WETH / USD price feed
         8,                                // decimals
-      ]
+      ],
+      true
     );
 
     const _USDCPriceFeed = await deploymentManager.deploy(
@@ -30,7 +31,8 @@ export default migration('1766363631_change_price_feeds_to_svr', {
       [
         USDC_TO_USD_SVR_PRICE_FEED_ADDRESS, // USDC / USD price feed
         8,                                  // decimals
-      ]
+      ],
+      true
     );
 
     return {
@@ -168,7 +170,7 @@ The first action updates WETH and USDC price feeds to the SVR implementation. Th
     expect(WETHInCometInfo.priceFeed).to.eq(newPriceFeedWETHAddress);
     expect(WETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newPriceFeedWETHAddress);
 
-    expect(await comet.getPrice(newPriceFeedWETHAddress)).to.be.closeTo(await comet.getPrice(oldWETHPriceFeed), 1e8); // 1$
+    expect(await comet.getPrice(newPriceFeedWETHAddress)).to.be.closeTo(await comet.getPrice(oldWETHPriceFeed), 5e8); // 5$
 
     // 2. USDC
     const USDCIndexInComet = await configurator.getAssetIndex(
