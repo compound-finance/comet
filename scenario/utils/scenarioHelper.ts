@@ -22,6 +22,7 @@ const config = {
   transferBase: 1000,
   transferAsset: 5000,
   transferAsset1: 5000,
+  transferAsset2: 50,
   interestSeconds: 110,
   withdrawBase: 1000,
   withdrawAsset: 3000,
@@ -29,7 +30,8 @@ const config = {
   withdrawAsset1: 3000,
   withdrawCollateral: 100,
   transferCollateral: 100,
-  supplyCollateral: 100
+  supplyCollateral: 100,
+  supplyBase: 1000,
 };
 
 export function getConfigForScenario(ctx: CometContext, i?: number) {
@@ -153,15 +155,16 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
   }
 
   if (ctx.world.base.network === 'ronin' && ctx.world.base.deployment === 'weth') {
+    config.supplyBase = 100;
     config.transferBase = 10;
-    config.transferAsset = 200000;
-    config.transferAsset1 = 200000;
+    config.transferAsset = 400000;
+    config.transferAsset1 = 400000;
     config.rewardsAsset = 1000000;
     config.rewardsBase = 200;
     config.withdrawBase = 10;
     config.withdrawBase1 = 10;
-    config.withdrawAsset = 100000;
-    config.withdrawAsset1 = 10000;
+    config.withdrawAsset = 400000;
+    config.withdrawAsset1 = 30000;
     config.liquidationBase = 150;
     config.liquidationBase1 = 50;
     config.liquidationAsset = 5;

@@ -210,7 +210,7 @@ library GovernanceHelper {
     }
 
     function voteOnProposal(Vm vm, uint256 proposalId, address proposalCreator) public {
-        address[12] memory voters = getTopDelegates();
+        address[11] memory voters = getTopDelegates();
         console.log("Voting on proposal with ID: ", proposalId);
         console.log("Proposal Creator: ", proposalCreator);
 
@@ -225,10 +225,11 @@ library GovernanceHelper {
         }
     }
 
-    function getTopDelegates() public pure returns (address[12] memory) {
+    function getTopDelegates() public pure returns (address[11] memory) {
         return [
             0x070341aA5Ed571f0FB2c4a5641409B1A46b4961b,
             0x0579A616689f7ed748dC07692A3F150D44b0CA09,
+            0x66cD62c6F8A4BB0Cd8720488BCBd1A6221B765F9,
             0x2210dc066aacB03C9676C4F1b36084Af14cCd02E,
             0x88F659b4B6D5614B991c6404b34f821e10390eC0,
             0xb06DF4dD01a5c5782f360aDA9345C87E86ADAe3D,
@@ -236,9 +237,7 @@ library GovernanceHelper {
             0x2817Cb83c96a091E833A9A93E02D5464034e24f1,
             0x21b3B193B71680E2fAfe40768C03a0Fd305EFa75,
             0xE364E90d0A5289bF462A5c9f6e1CcAE680215413,
-            0x3FB19771947072629C8EEE7995a2eF23B72d4C8A,
-            0x8169522c2C57883E8EF80C498aAB7820dA539806,
-            0x36cc7B13029B5DEe4034745FB4F24034f3F2ffc6
+            0x3FB19771947072629C8EEE7995a2eF23B72d4C8A
         ];
     }
 }
