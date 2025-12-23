@@ -4,8 +4,8 @@ import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, proposal } from '../../../../src/deploy';
 import { utils } from 'ethers';
 
-const WETH_TO_USD_SVR_PRICE_FEED_ADDRESS = '0x92014e7f331dFaB2848A5872AA8b2E7b6f3cE8B4';
-const USDC_TO_USD_SVR_PRICE_FEED_ADDRESS = '0x3fb418B74Ec30bC3e940221F58A04e16afC6378B';
+const WETH_TO_USD_SVR_PRICE_FEED_ADDRESS = '0xe6eb5B9b85cFF2C84Df3De6e7855bC9E76f034d5';
+const USDC_TO_USD_SVR_PRICE_FEED_ADDRESS = '0x3e6D1ccA8Eee6d02f1f578B613374EB53E6823B4';
 
 let oldWETHPriceFeed: string;
 let oldUSDCPriceFeed: string;
