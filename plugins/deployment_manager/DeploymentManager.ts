@@ -282,7 +282,7 @@ export class DeploymentManager {
     }
   }
 
-  stashRelayMessage(messanger: string, callData: string, signer: string) {
+  stashRelayMessage(messenger: string, callData: string, signer: string) {
     try {
       const cacheDir = path.resolve(__dirname, '../..', 'cache');
       mkdirSync(cacheDir, { recursive: true });
@@ -301,7 +301,7 @@ export class DeploymentManager {
         }
       }
 
-      const newEntry = { messanger, callData, signer };
+      const newEntry = { messenger, callData, signer };
       if (!data.some(entry => JSON.stringify(entry) === JSON.stringify(newEntry))) {
         data.push(newEntry);
         writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
