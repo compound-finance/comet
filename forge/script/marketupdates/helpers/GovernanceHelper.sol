@@ -210,7 +210,7 @@ library GovernanceHelper {
     }
 
     function voteOnProposal(Vm vm, uint256 proposalId, address proposalCreator) public {
-        address[12] memory voters = getTopDelegates();
+        address[11] memory voters = getTopDelegates();
         console.log("Voting on proposal with ID: ", proposalId);
         console.log("Proposal Creator: ", proposalCreator);
 
@@ -225,12 +225,11 @@ library GovernanceHelper {
         }
     }
 
-    function getTopDelegates() public pure returns (address[12] memory) {
+    function getTopDelegates() public pure returns (address[11] memory) {
         return [
             0x070341aA5Ed571f0FB2c4a5641409B1A46b4961b,
             0x0579A616689f7ed748dC07692A3F150D44b0CA09,
-            0x9AA835Bc7b8cE13B9B0C9764A52FbF71AC62cCF1,
-            0x7E959eAB54932f5cFd10239160a7fd6474171318,
+            0x66cD62c6F8A4BB0Cd8720488BCBd1A6221B765F9,
             0x2210dc066aacB03C9676C4F1b36084Af14cCd02E,
             0x88F659b4B6D5614B991c6404b34f821e10390eC0,
             0xb06DF4dD01a5c5782f360aDA9345C87E86ADAe3D,
