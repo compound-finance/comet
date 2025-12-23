@@ -76,6 +76,10 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
     config.interestSeconds = 110;
   }
 
+  if (ctx.world.base.network === 'base' && ctx.world.base.deployment === 'usdbc') {
+    config.bulkerBase = 200000;
+  }
+
   if (ctx.world.base.network === 'base' && ctx.world.base.deployment === 'usdc') {
     if(i == 4) {
       config.supplyCollateral = 2;
