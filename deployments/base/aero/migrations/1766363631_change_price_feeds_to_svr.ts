@@ -17,20 +17,22 @@ export default migration('1766363631_change_price_feeds_to_svr', {
   async prepare(deploymentManager: DeploymentManager) {
     const _WETHPriceFeed = await deploymentManager.deploy(
       'WETH:priceFeed',
-      'pricefeeds/ScalingPriceFeed.sol',
+      'pricefeeds/ScalingPriceFeedWithCustomDescription.sol',
       [
         WETH_TO_USD_SVR_PRICE_FEED_ADDRESS, // WETH / USD price feed
-        8,                                // decimals
+        8,                                  // decimals
+        'ETH / USD SVR Price Feed'          // custom description
       ],
       true
     );
 
     const _USDCPriceFeed = await deploymentManager.deploy(
       'USDC:priceFeed',
-      'pricefeeds/ScalingPriceFeed.sol',
+      'pricefeeds/ScalingPriceFeedWithCustomDescription.sol',
       [
         USDC_TO_USD_SVR_PRICE_FEED_ADDRESS, // USDC / USD price feed
         8,                                  // decimals
+        'USDC / USD SVR Price Feed'         // custom description
       ],
       true
     );
