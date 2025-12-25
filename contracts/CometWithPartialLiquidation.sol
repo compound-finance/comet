@@ -1127,7 +1127,7 @@ contract CometWithPartialLiquidation is CometMainInterface {
                 );
                 liquidationData.collaterizationValue2 = mulFactor(
                     mulPrice(liquidationData.seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale), 
-                    assetInfo.liquidateCollateralFactor
+                    assetInfo.liquidationFactor
                 );
                 console.log("collaterizationValue2", liquidationData.collaterizationValue2);
                 console.log("collaterizationValue", liquidationData.collaterizationValue);
