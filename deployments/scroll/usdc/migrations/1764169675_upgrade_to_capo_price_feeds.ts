@@ -11,7 +11,7 @@ export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
   return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
 }
 
-const ETH_USD_PRICE_FEED = '0x6bF14CB0A831078629D993FDeBcB182b21A8774C';
+const ETH_USD_PRICE_FEED_ADDRESS = '0x6bF14CB0A831078629D993FDeBcB182b21A8774C';
 const WSTETH_ADDRESS = '0xf610A9dfB7C89644979b4A0f27063E9e7d7Cda32';
 const FEED_DECIMALS = 8;
 
@@ -33,7 +33,7 @@ export default migration('1764169675_upgrade_to_capo_price_feeds', {
       'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
       [
         timelock.address,
-        ETH_USD_PRICE_FEED,
+        ETH_USD_PRICE_FEED_ADDRESS,
         WSTETH_STETH_PRICE_FEED_ADDRESS,
         'wstETH / USD CAPO Price Feed',
         FEED_DECIMALS,
