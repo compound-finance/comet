@@ -1,15 +1,10 @@
 import { expect } from 'chai';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
-import { calldata, proposal } from '../../../../src/deploy';
+import { calldata, proposal, exp } from '../../../../src/deploy';
 import { ethers } from 'hardhat';
 import { utils } from 'ethers';
-import { Numeric } from '../../../../test/helpers';
 import { AggregatorV3Interface } from '../../../../build/types';
-
-export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
-  return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
-}
 
 const ETH_USD_PRICE_FEED_ADDRESS = '0x6bF14CB0A831078629D993FDeBcB182b21A8774C';
 const WSTETH_ADDRESS = '0xf610A9dfB7C89644979b4A0f27063E9e7d7Cda32';
