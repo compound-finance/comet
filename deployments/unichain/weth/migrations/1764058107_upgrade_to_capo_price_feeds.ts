@@ -1,23 +1,18 @@
 import { expect } from 'chai';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
-import { calldata, proposal } from '../../../../src/deploy';
-import { Numeric } from '../../../../test/helpers';
+import { calldata, proposal, exp } from '../../../../src/deploy';
 import { AggregatorV3Interface } from '../../../../build/types';
 import { utils } from 'ethers';
-
-export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
-  return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
-}
 
 const WSTETH_ADDRESS = '0xc02fe7317d4eb8753a02c35fe019786854a92001';
 const WSTETH_STETH_PRICE_FEED_ADDRESS = '0xC3346631E0A9720582fB9CAbdBEA22BC2F57741b';
 
 const EZETH_ADDRESS = '0x2416092f143378750bb29b79ed961ab195cceea5';
-const EZETH_ETH_RATE_PROVIDER = '0xa0f2EF6ceC437a4e5F6127d6C51E1B0d3A746911';
+const EZETH_ETH_RATE_PROVIDER_ADDRESS = '0xa0f2EF6ceC437a4e5F6127d6C51E1B0d3A746911';
 
 const WEETH_ADDRESS = '0x7dcc39b4d1c53cb31e1abc0e358b43987fef80f7';
-const WEETH_TO_ETH_RATE_PROVIDER = '0xBf3bA2b090188B40eF83145Be0e9F30C6ca63689';
+const WEETH_TO_ETH_RATE_PROVIDER_ADDRESS = '0xBf3bA2b090188B40eF83145Be0e9F30C6ca63689';
 
 const RSETH_ADDRESS = '0xc3eACf0612346366Db554C991D7858716db09f58';
 const RSETH_ETH_PRICE_FEED_ADDRESS = '0x85C4F855Bc0609D2584405819EdAEa3aDAbfE97D';
@@ -62,7 +57,7 @@ export default migration('1764058107_upgrade_to_capo_price_feeds', {
       true
     );
 
-    const rateProviderEzEth = await deploymentManager.existing('ezEth:_priceFeed', EZETH_ETH_RATE_PROVIDER, 'unichain', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
+    const rateProviderEzEth = await deploymentManager.existing('ezEth:_priceFeed', EZETH_ETH_RATE_PROVIDER_ADDRESS, 'unichain', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioEzEth] = await rateProviderEzEth.latestRoundData();
     const ezEthCapoPriceFeed = await deploymentManager.deploy(
       'ezETH:priceFeed',
@@ -83,7 +78,7 @@ export default migration('1764058107_upgrade_to_capo_price_feeds', {
       true
     );
 
-    const weethRateProvider = await deploymentManager.existing('weETH:_priceFeed', WEETH_TO_ETH_RATE_PROVIDER, 'unichain', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
+    const weethRateProvider = await deploymentManager.existing('weETH:_priceFeed', WEETH_TO_ETH_RATE_PROVIDER_ADDRESS, 'unichain', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
     const [, currentRatioWeeth] = await weethRateProvider.latestRoundData();
     const weethCapoPriceFeed = await deploymentManager.deploy(
       'weETH:priceFeed',
