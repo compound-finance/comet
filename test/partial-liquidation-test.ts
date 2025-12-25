@@ -27,9 +27,9 @@ async function borrowCapacityForAsset(comet: CometInterface, actor: SignerWithAd
 
 }
 
-describe('CometWithPartialLiquidation', function() {
+describe.only('CometWithPartialLiquidation', function() {
 
-  it.only('should demonstrate partial liquidation with one collateral', async function () {
+  it('should demonstrate partial liquidation with one collateral', async function () {
     const protocol = await makeProtocol({
       assets: {
         USDC: {
@@ -126,7 +126,7 @@ describe('CometWithPartialLiquidation', function() {
     console.log('borrowBalanceOf', await cometWithPartialLiquidation.borrowBalanceOf(userToLiquidate.address));
   });
 
-  it.only('should demonstrate partial liquidation with two collateral', async function () {
+  it('should demonstrate partial liquidation with two collateral', async function () {
     const protocol = await makeProtocol({
       assets: {
         USDC: {
@@ -1191,5 +1191,206 @@ describe('CometWithPartialLiquidation', function() {
     expect(finalDebt.toBigInt()).to.equal(0n);
     expect(finalCOMP.balance.toBigInt()).to.equal(0n);
     expect(finalIsLiquidatable).to.be.false;
+  });
+
+  it.only('should correctly calculate newBalance and newPrincipal in absorbInternal', async function () {
+    const protocol = await makeProtocol({
+      assets: {
+        USDC: {
+          initial: exp(10_000_000, 6),
+          decimals: 6,
+          initialPrice: 1,
+        },
+        COMP: {
+          initial: exp(1_000_000, 18),
+          decimals: 18,
+          initialPrice: 1,                  // $1 per COMP
+          borrowCF: exp(0.8, 18),           // 80%
+          liquidateCF: exp(0.85, 18),       // 85%
+          liquidationFactor: exp(0.9, 18),  // 90% (10% penalty)
+          supplyCap: exp(1e6, 18),
+        }
+      },
+      baseTrackingBorrowSpeed: 0, // Disable to avoid interest complications
+    });
+
+    const {
+      cometWithPartialLiquidation,
+      tokens,
+      priceFeeds,
+      governor,
+      users: [supplier, borrower, liquidator]
+    } = protocol;
+    const { USDC, COMP } = tokens;
+    const { COMP: priceFeedCOMP } = priceFeeds;
+
+    // Fund supplier
+    await USDC.connect(governor).transfer(supplier.address, exp(1_000_000, 6));
+    await USDC.connect(supplier).approve(cometWithPartialLiquidation.address, exp(1_000_000, 6));
+    await cometWithPartialLiquidation.connect(supplier).supply(USDC.address, exp(1_000_000, 6));
+
+    // Borrower: Supply 100 COMP ($100 value) and borrow 80 USDC
+    const compAmount = exp(100, 18);
+    await COMP.connect(governor).transfer(borrower.address, compAmount);
+    await COMP.connect(borrower).approve(cometWithPartialLiquidation.address, compAmount);
+    await cometWithPartialLiquidation.connect(borrower).supply(COMP.address, compAmount);
+
+    const borrowAmount = exp(80, 6); // Borrow 80 USDC (max capacity with 80% CF)
+    await cometWithPartialLiquidation.connect(borrower).withdraw(USDC.address, borrowAmount);
+
+    // Drop COMP price to $0.93 to make position liquidatable
+    const currentData = await priceFeedCOMP.latestRoundData();
+    await priceFeedCOMP.connect(governor).setRoundData(
+      currentData._roundId,
+      exp(0.93, 8),
+      currentData._startedAt,
+      currentData._updatedAt,
+      currentData._answeredInRound
+    );
+
+    await cometWithPartialLiquidation.accrueAccount(borrower.address);
+    expect(await cometWithPartialLiquidation.isLiquidatable(borrower.address)).to.be.true;
+
+    // Capture pre-liquidation state
+    const userBasicBefore = await cometWithPartialLiquidation.userBasic(borrower.address);
+    const oldPrincipal = userBasicBefore.principal;
+
+    // oldBalance = presentValue(oldPrincipal)
+    // Since no time has passed and baseTrackingBorrowSpeed = 0, indices should be initial values
+    const totalsBasic = await cometWithPartialLiquidation.totalsBasic();
+    const baseBorrowIndex = totalsBasic.baseBorrowIndex.toBigInt();
+    const baseSupplyIndex = totalsBasic.baseSupplyIndex.toBigInt();
+    const baseScale = BigInt(await cometWithPartialLiquidation.baseScale());
+    const factorScale = BigInt(await cometWithPartialLiquidation.factorScale());
+    const BASE_INDEX_SCALE = 1000000000000000n; // 1e15
+
+    // Calculate oldBalance: presentValue(oldPrincipal)
+    // For negative principal (debt): -presentValueBorrow(baseBorrowIndex, abs(oldPrincipal))
+    const oldPrincipalAbs = -BigInt(oldPrincipal);
+    const oldBalanceCalculated = -(oldPrincipalAbs * baseBorrowIndex / BASE_INDEX_SCALE);
+    console.log('oldPrincipal:', oldPrincipal.toString());
+    console.log('oldBalance (calculated):', oldBalanceCalculated.toString());
+
+    // Perform liquidation and capture events
+    const absorbTx = await cometWithPartialLiquidation.connect(liquidator).absorb(liquidator.address, [borrower.address]);
+    const receipt = await absorbTx.wait();
+
+    // Extract AbsorbCollateral events to get seized collateral details
+    const absorbCollateralEvents = receipt.logs
+      .map(log => {
+        try {
+          return cometWithPartialLiquidation.interface.parseLog(log);
+        } catch {
+          return null;
+        }
+      })
+      .filter(parsed => parsed && parsed.name === 'AbsorbCollateral');
+
+    expect(absorbCollateralEvents.length).to.be.gt(0, 'Should have AbsorbCollateral events');
+
+    // Calculate deltaValue from seized collateral
+    // deltaValue = sum of (seizedValue from each collateral)
+    // seizedValue = collateralValue * liquidationFactor
+    let deltaValueManual = 0n;
+    const compPrice = BigInt(exp(0.93, 8)); // $0.93 in 8 decimals
+    const compScale = BigInt(exp(1, 18));   // COMP has 18 decimals
+    const liquidationFactor = BigInt(exp(0.9, 18)); // 90%
+
+    for (const event of absorbCollateralEvents) {
+      if (!event || !event.args) {
+        console.log('Warning: Event or args is null, skipping');
+        continue;
+      }
+
+      // event.args is: [absorber, borrower, asset, seizeAmount, value]
+      const asset = event.args[2]; // asset address
+      const seizeAmount = BigInt(event.args[3]); // seizeAmount
+
+      if (asset === COMP.address) {
+        // collateralValue = mulPrice(seizeAmount, price, scale)
+        // mulPrice(n, price, fromScale) = n * price / fromScale
+        const collateralValue = seizeAmount * compPrice / compScale;
+
+        // seizedValue = mulFactor(collateralValue, liquidationFactor)
+        // mulFactor(n, factor) = n * factor / FACTOR_SCALE
+        const seizedValue = collateralValue * liquidationFactor / factorScale;
+
+        deltaValueManual += seizedValue;
+        console.log('Seized COMP amount:', seizeAmount.toString());
+        console.log('Collateral value (price scale):', collateralValue.toString());
+        console.log('Seized value (price scale):', seizedValue.toString());
+      }
+    }
+
+    console.log('deltaValue (manual):', deltaValueManual.toString());
+
+    // Calculate expected new balance
+    // newBalance = oldBalance + signed256(divPrice(deltaValue, basePrice, baseScale))
+    // divPrice(n, price, toScale) = n * toScale / price
+
+    const basePrice = BigInt(exp(1, 8)); // USDC price = $1.00 in 8 decimals
+    const deltaBalanceManual = deltaValueManual * baseScale / basePrice;
+    console.log('deltaBalance (manual):', deltaBalanceManual.toString());
+
+    const newBalanceExpected = oldBalanceCalculated + deltaBalanceManual;
+    console.log('newBalance (expected):', newBalanceExpected.toString());
+
+    // Calculated expected new principal
+    // newPrincipal = principalValue(newBalance)
+    let newPrincipalExpected: bigint;
+
+    if (newBalanceExpected >= 0n) {
+      // Positive balance means supply
+      // principalValueSupply(baseSupplyIndex, presentValue) = (presentValue * BASE_INDEX_SCALE) / baseSupplyIndex
+      newPrincipalExpected = (newBalanceExpected * BASE_INDEX_SCALE) / baseSupplyIndex;
+      console.log('newBalance is positive, user becomes supplier');
+    } else {
+      // Negative balance means debt
+      // principalValueBorrow(baseBorrowIndex, presentValue) = (presentValue * BASE_INDEX_SCALE + baseBorrowIndex - 1) / baseBorrowIndex
+      const absPresentValue = -newBalanceExpected;
+      newPrincipalExpected = -((absPresentValue * BASE_INDEX_SCALE + baseBorrowIndex - 1n) / baseBorrowIndex);
+      console.log('newBalance is negative, user still has debt');
+    }
+
+    console.log('newPrincipal (expected):', newPrincipalExpected.toString());
+
+    // Get actual values from contract
+    const userBasicAfter = await cometWithPartialLiquidation.userBasic(borrower.address);
+    const newPrincipalActual = userBasicAfter.principal.toBigInt();
+
+    // Calculate actual newBalance from newPrincipal
+    let newBalanceActual: bigint;
+    if (newPrincipalActual >= 0n) {
+      newBalanceActual = newPrincipalActual * baseSupplyIndex / BASE_INDEX_SCALE;
+    } else {
+      const absPrincipal = -newPrincipalActual;
+      newBalanceActual = -(absPrincipal * baseBorrowIndex / BASE_INDEX_SCALE);
+    }
+
+    console.log('newPrincipal (actual):', newPrincipalActual.toString());
+    console.log('newBalance (actual):', newBalanceActual.toString());
+
+    // Validate calculations
+    // The contract's calculations should match test calculations
+
+    // Allow small rounding difference (due to integer division)
+    const balanceDiff = newBalanceActual > newBalanceExpected
+      ? newBalanceActual - newBalanceExpected
+      : newBalanceExpected - newBalanceActual;
+
+    const principalDiff = newPrincipalActual > newPrincipalExpected
+      ? newPrincipalActual - newPrincipalExpected
+      : newPrincipalExpected - newPrincipalActual;
+
+    console.log('Balance difference:', balanceDiff.toString());
+    console.log('Principal difference:', principalDiff.toString());
+
+    // Assertions: values should match exactly or within 1 unit due to rounding
+    expect(balanceDiff).to.be.lte(1n);
+    expect(principalDiff).to.be.lte(1n);
+
+    // Additional validation: user should not be liquidatable after partial liquidation
+    const isLiquidatableAfter = await cometWithPartialLiquidation.isLiquidatable(borrower.address);
+    expect(isLiquidatableAfter).to.be.false;
   });
 });
