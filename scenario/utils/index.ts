@@ -911,7 +911,7 @@ export async function tenderlyExecute(
       return {
         network_id: chainId2.toString(),
         from: msg.signer,
-        to: msg.messanger,
+        to: msg.messenger,
         block_number: Number(block),
         block_header: {
           timestamp: gdm.hre.ethers.utils.hexlify(Number(timestamp))
