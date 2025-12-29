@@ -5,7 +5,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Alias, Address, BuildFile, TraceFn } from './Types';
 import { getAliases, storeAliases, putAlias } from './Aliases';
 import { Cache } from './Cache';
-import { ContractMap } from './ContractMap';
+import { ContractMap, getBuildFile } from './ContractMap';
 import { DeployOpts, deploy, deployBuild } from './Deploy';
 import { fetchAndCacheContract, readContract } from './Import';
 import { getRelationConfig } from './RelationConfig';
@@ -17,6 +17,8 @@ import { ExtendedNonceManager } from './NonceManager';
 import { asyncCallWithTimeout, debug, getEthersContract, mergeIntoProxyContract, txCost } from './Utils';
 import { deleteVerifyArgs, getVerifyArgs } from './VerifyArgs';
 import { verifyContract, VerifyArgs, VerificationStrategy } from './Verify';
+import path from 'path';
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 
 interface DeploymentDelta {
   old: { start: Date, count: number, spider: Spider };
@@ -29,6 +31,7 @@ interface DeploymentManagerConfig {
   importRetryDelay?: number;
   writeCacheToDisk?: boolean;
   verificationStrategy?: VerificationStrategy;
+  saveBytecode?: boolean;
 }
 
 export type Deployed = { [alias: Alias]: Contract };
@@ -61,7 +64,6 @@ export class DeploymentManager {
     this.config = config;
     this.counter = 0;
     this.spent = 0;
-
     this.cache = new Cache(
       this.network,
       this.deployment,
@@ -178,7 +180,7 @@ export class DeploymentManager {
     contractFile: string,
     deployArgs: DeployArgs,
     force?: boolean,
-    retries?: number
+    retries?: number,
   ): Promise<C> {
     const maybeExisting: C = await this.contract(alias);
     if (!maybeExisting || force) {
@@ -196,13 +198,13 @@ export class DeploymentManager {
     artifact?: string
   ): Promise<C> {
     const maybeExisting = await this.contract<C>(alias);
-    if (!maybeExisting) {
+    if (!maybeExisting || artifact) {
       const trace = this.tracer();
       const contracts = await Promise.all(
         [].concat(addresses).map(async (address) => {
           let buildFile;
           if (artifact !== undefined) {
-            buildFile = await readContract(this.cache, this.hre, artifact, network, address, !this.cache);
+            buildFile = await readContract(this.cache, this.hre, artifact, network, address, !this.cache || (artifact.length > 0));
           } else {
             buildFile = await this.import(address, network);
           }
@@ -222,32 +224,121 @@ export class DeploymentManager {
     alias: Alias,
     network: string,
     deployment: string,
-    force?: boolean,
     otherAlias = alias
   ): Promise<C> {
-    const maybeExisting = await this.contract<C>(alias);
-    if (!maybeExisting || force) {
-      const trace = this.tracer();
-      const spider = await this.spiderOther(network, deployment);
-      const contract = spider.contracts.get(otherAlias) as C;
-      if (!contract) {
-        throw new Error(`Unable to find contract ${network}/${deployment}:${otherAlias}`);
-      }
-      await this.putAlias(alias, contract);
-      trace(`Loaded ${alias} from ${network}/${deployment}:${otherAlias} (${contract.address})'`);
-      return contract;
+    const trace = this.tracer();
+    const spider = await this.spiderOther(network, deployment);
+    const contract = spider.contracts.get(otherAlias) as C;
+    if (!contract) {
+      throw new Error(`Unable to find contract ${network}/${deployment}:${otherAlias}`);
     }
-    return maybeExisting;
+    await this.putAlias(alias, contract);
+    trace(`Loaded ${alias} from ${network}/${deployment}:${otherAlias} (${contract.address})'`);
+    return contract;
   }
 
   /* Deploys a contract from Hardhat artifacts */
   async _deploy<C extends Contract>(contractFile: string, deployArgs: any[], retries?: number): Promise<C> {
+    if(this.config.saveBytecode) {
+      const contractFileName = contractFile.split('/').reverse()[0].split('.')[0];
+      const artifact = this.hre.artifacts.readArtifactSync(contractFileName);
+      const iface = new this.hre.ethers.utils.Interface(
+        artifact.abi
+      );
+
+      const bytecodeWithArgs =
+          artifact.bytecode +
+                iface.encodeDeploy(deployArgs).slice(2);
+
+      this.stashBytecode(bytecodeWithArgs);
+    }
     const contract = await this.retry(
-      async () => deploy(contractFile, deployArgs, this.hre, await this.deployOpts()),
+      async () => {
+        const signer = await this.getSigner();
+
+        // check tx in pending state
+        const pendingTx = await signer.provider.getTransactionCount(signer.address, 'pending');
+        console.log(`Pending transactions for ${contractFile} deployment: ${pendingTx}`);
+
+        return deploy(contractFile, deployArgs, this.hre, await this.deployOpts());
+      },
       retries
     );
     this.counter++;
     return contract;
+  }
+
+
+  async cleanCache() {
+    const files = [
+      path.resolve(__dirname, '../../cache/relay.json'),
+      path.resolve(__dirname, '../../cache/currentProposal.json'),
+      path.resolve(__dirname, '../../cache/bytecodes.json'),
+    ];
+    for (const file of files) {
+      if (existsSync(file)) { 
+        unlinkSync(file);
+      }
+    }
+  }
+
+  stashRelayMessage(messanger: string, callData: string, signer: string) {
+    try {
+      const cacheDir = path.resolve(__dirname, '../..', 'cache');
+      mkdirSync(cacheDir, { recursive: true });
+      const file = path.join(cacheDir, 'relay.json');
+      let data: any[] = [];
+      
+      if (existsSync(file)) {
+        try {
+          const raw = readFileSync(file, 'utf8').trim();
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            data = Array.isArray(parsed) ? parsed : [parsed];
+          }
+        } catch (err) {
+          console.warn('Invalid cache, recreating:', err);
+        }
+      }
+
+      const newEntry = { messanger, callData, signer };
+      if (!data.some(entry => JSON.stringify(entry) === JSON.stringify(newEntry))) {
+        data.push(newEntry);
+        writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
+      } else {
+        console.log('Entry already exists in cache, not rewriting.');
+      }
+    } catch (e) {
+      console.warn('Failed to cache proposal:', e);
+    }
+  }
+
+  stashBytecode(bytecodeWithArgs: string) {
+    try {
+      const cacheDir = path.resolve(__dirname, '../..', 'cache');
+      mkdirSync(cacheDir, { recursive: true });
+
+      const file = path.join(cacheDir, 'bytecodes.json');
+
+      let data: string[] = [];
+      if (existsSync(file)) {
+        try {
+          const raw = readFileSync(file, 'utf8').trim();
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            data = Array.isArray(parsed) ? parsed : [parsed];
+          }
+        } catch (err) {
+          console.warn('Invalid cache, recreating:', err);
+        }
+      }
+
+      data.push(bytecodeWithArgs);
+      writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
+      console.log(`Proposal cached ${file}`);
+    } catch (e) {
+      console.warn('Failed to cache proposal:', e);
+    }
   }
 
   /* Deploys a contract from a build file, e.g. an one imported contract */
@@ -295,6 +386,49 @@ export class DeploymentManager {
   /* Verifies a contract with the given args and deployment manager hre/opts */
   async verifyContract(args: VerifyArgs): Promise<boolean> {
     return await verifyContract(args, this.hre, (await this.deployOpts()).raiseOnVerificationFailure);
+  }
+
+  /* Loads contracts from existing cache (aliases.json and .contracts/*.json files) */
+  async loadContractsFromExistingCache() {
+    const trace = this.tracer();
+    
+    // Load aliases from deployments/{network}/{deployment}/aliases.json
+    const aliases = await getAliases(this.cache);
+    
+    if (aliases.size === 0) {
+      trace('No aliases found in cache');
+      return;
+    }
+    
+    trace(`Loading ${aliases.size} contracts from existing cache`);
+    
+    // Initialize contractsCache if it's empty
+    if (this.contractsCache === null) {
+      this.contractsCache = new Map();
+    }
+    
+    // Load build files for each alias
+    for (const [alias, address] of aliases.entries()) {
+      try {
+        // Read build file from cache by address
+        // Build files are stored in deployments/{network}/.contracts/{address}.json
+        const buildFile = await getBuildFile(this.cache, this.network, address);
+        
+        if (buildFile) {
+          // Create ethers Contract from build file
+          const contract = getEthersContract(address, buildFile, this.hre);
+          
+          // Store in contractsCache
+          this.contractsCache.set(alias, contract);
+          
+          trace(`Loaded ${alias} @ ${address} from cache`);
+        }
+      } catch (e) {
+        console.warn(`Failed to load contract ${alias} @ ${address} from cache:`, e.message);
+      }
+    }
+    
+    trace(`Successfully loaded ${this.contractsCache.size} contracts from cache`);
   }
 
   /* Loads contract configuration by tracing from roots outwards, based on relationConfig */

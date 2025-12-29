@@ -7,6 +7,7 @@ export async function isBridgeProposal(
   openProposal: OpenProposal
 ) {
   const bridgeNetwork = bridgeDeploymentManager.network;
+  console.log(`Checking if proposal ${openProposal.id} is a bridge proposal on ${bridgeNetwork}`);
   switch (bridgeNetwork) {
     case 'arbitrum': {
       const inbox = await governanceDeploymentManager.getContractOrThrow('arbitrumInbox');
@@ -39,6 +40,25 @@ export async function isBridgeProposal(
       );
       const targets = openProposal.targets;
       const bridgeContracts = [baseL1CrossDomainMessenger.address, baseL1StandardBridge.address, baseL1USDSBridge.address];
+
+      return targets.some(t => bridgeContracts.includes(t));
+    }
+    case 'linea': {
+      const lineaMessageService = await governanceDeploymentManager.getContractOrThrow(
+        'lineaMessageService'
+      );
+      const lineaL1USDCBridge = await governanceDeploymentManager.getContractOrThrow(
+        'lineaL1USDCBridge'
+      );
+      const lineaL1TokenBridge = await governanceDeploymentManager.getContractOrThrow(
+        'lineaL1TokenBridge'
+      );
+      const bridgeContracts = [
+        lineaMessageService.address,
+        lineaL1USDCBridge.address,
+        lineaL1TokenBridge.address
+      ];
+      const targets = openProposal.targets;
       return targets.some(t => bridgeContracts.includes(t));
     }
     // case 'linea': {

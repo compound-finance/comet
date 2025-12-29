@@ -12,6 +12,7 @@ interface SourceTokenParameters {
   asset: string;
   address: string;
   blacklist: string[];
+  blockNumber?: number;
 }
 
 export async function fetchQuery(
@@ -55,6 +56,7 @@ export async function sourceTokens({
   asset,
   address,
   blacklist,
+  blockNumber,
 }: SourceTokenParameters) {
   let amount = BigNumber.from(amount_);
   if (amount.isZero()) {
@@ -62,7 +64,7 @@ export async function sourceTokens({
   } else if (amount.isNegative()) {
     await removeTokens(dm, amount.abs(), asset, address);
   } else {
-    await addTokens(dm, amount, asset, address, [address].concat(blacklist));
+    await addTokens(dm, amount, asset, address, [address].concat(blacklist), blockNumber);
   }
 }
 
@@ -109,6 +111,9 @@ async function addTokens(
   MAX_SEARCH_BLOCKS = 40000,
   BLOCK_SPAN = 2048
 ) {
+  if (asset.toLowerCase() === '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48') { // USDC
+    BLOCK_SPAN = 128;
+  }
 
   if(dm.network === 'ronin') {
     MAX_SEARCH_BLOCKS = 500;

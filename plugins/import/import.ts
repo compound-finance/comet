@@ -256,8 +256,13 @@ async function getEtherscanApiData(network: string, address: string, apiKey: str
 
   let s = <EtherscanSource>(<unknown>result.result[0]);
 
+  // check if this is a contract and not a wallet
+  if (!s.SourceCode || !s.ABI || !s.ContractName) {
+    throw new Error(`No source code found for address ${address} on network ${network}.`);
+  }
+
   if (s.ABI === 'Contract source code not verified') {
-    throw new Error('Contract source code not verified');
+    throw new Error(`Contract source code not verified for address ${address} on network ${network}.`);
   }
 
   return {
@@ -271,15 +276,15 @@ async function getEtherscanApiData(network: string, address: string, apiKey: str
   };
 }
 
-async function scrapeContractCreationCodeFromEtherscanApi(network: string, address: string) {
+async function scrapeContractCreationCodeFromEtherscanApi(network: string, address: string, i?: number) {
   const params = {
     module: 'proxy',
     action: 'eth_getCode',
     address,
-    apikey: getEtherscanApiKey(network)
+    apikey: getEtherscanApiKey(network, i)
   };
-  const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
-  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({ ...params, ...{ apikey: '[API_KEY]' } })}`;
+  const url = `${getEtherscanApiUrl(network)}&${paramString(params)}`;
+  const debugUrl = `${getEtherscanApiUrl(network)}&${paramString({ ...params, ...{ apikey: '[API_KEY]' } })}`;
 
   debug(`Attempting to pull Contract Creation code from API at ${debugUrl}`);
   const result = await get(url, {});
@@ -316,7 +321,7 @@ function paramString(params: { [k: string]: string | number }) {
   return Object.entries(params).map(([k, v]) => `${k}=${v}`).join('&');
 }
 
-async function pullFirstTransactionForContractFromEtherscan(network: string, address: string) {
+async function pullFirstTransactionForContractFromEtherscan(network: string, address: string, i?: number) {
   const params = {
     module: 'account',
     action: 'txlist',
@@ -326,10 +331,10 @@ async function pullFirstTransactionForContractFromEtherscan(network: string, add
     page: 1,
     offset: 10,
     sort: 'asc',
-    apikey: getEtherscanApiKey(network)
+    apikey: getEtherscanApiKey(network, i)
   };
-  const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
-  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({ ...params, ...{ apikey: '[API_KEY]' } })}`;
+  const url = `${getEtherscanApiUrl(network)}&${paramString(params)}`;
+  const debugUrl = `${getEtherscanApiUrl(network)}&${paramString({ ...params, ...{ apikey: '[API_KEY]' } })}`;
 
   debug(`Attempting to pull Contract Creation code from first tx at ${debugUrl}`);
   const result = await get(url, {});
@@ -352,11 +357,11 @@ async function getRoninContractDeploymentData(tx: string) {
   return res.result.input;
 }
 
-async function getContractCreationCode(network: string, address: string) {
+async function getContractCreationCode(network: string, address: string, i: number = 0) {
   const strategies = [
-    scrapeContractCreationCodeFromEtherscan,
-    scrapeContractCreationCodeFromEtherscanApi,
-    pullFirstTransactionForContractFromEtherscan,
+    (net: string, addr: string) => scrapeContractCreationCodeFromEtherscan(net, addr),
+    (net: string, addr: string) => scrapeContractCreationCodeFromEtherscanApi(net, addr, i),
+    (net: string, addr: string) => pullFirstTransactionForContractFromEtherscan(net, addr, i),
   ];
   let errors = [];
   if (network === 'ronin') {
@@ -421,103 +426,133 @@ function parseSources({ source, contract, optimized, optimizationRuns }: Ethersc
 
 export async function loadRoninContract(network: string, address: string) {
   const networkName = network;
-  const apiKey = getEtherscanApiKey('mainnet');
-  const roninData = await getRoninApiData(networkName, address, apiKey);
-  const { language, settings, sources } = parseSources(roninData);
-  let contractCreationCode = await getContractCreationCode(networkName, address);
-  let {
-    abi,
-    contract,
-    compiler,
-    constructorArgs
-  } = roninData;
-  let bytecodeWithTxArgs = await getRoninContractDeploymentData(constructorArgs);
+  const maxRetries = 12; // Maximum number of API key rotations
+  let lastError: Error | null = null;
 
-  constructorArgs = bytecodeWithTxArgs.slice(contractCreationCode.length);
-  const encodedABI = JSON.stringify(abi);
-  const contractPath = Object.keys(sources)[0];
-  const contractFQN = `${contractPath}:${contract}`;
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const apiKey = getEtherscanApiKey('mainnet', i);
+      const roninData = await getRoninApiData(networkName, address, apiKey);
+      const { language, settings, sources } = parseSources(roninData);
+      let contractCreationCode = await getContractCreationCode(networkName, address, i);
+      let {
+        abi,
+        contract,
+        compiler,
+        constructorArgs
+      } = roninData;
+      let bytecodeWithTxArgs = await getRoninContractDeploymentData(constructorArgs);
 
-  const contractBuild = {
-    contract,
-    contracts: {
-      [contractFQN]: {
-        network,
-        address,
-        name: contract,
-        abi: encodedABI,
-        bin: contractCreationCode.slice(0, 1),
-        constructorArgs,
-        metadata: JSON.stringify({
-          compiler: {
-            version: compiler,
-          },
-          language,
-          output: {
+      constructorArgs = bytecodeWithTxArgs.slice(contractCreationCode.length);
+      const encodedABI = JSON.stringify(abi);
+      const contractPath = Object.keys(sources)[0];
+      const contractFQN = `${contractPath}:${contract}`;
+
+      const contractBuild = {
+        contract,
+        contracts: {
+          [contractFQN]: {
+            network,
+            address,
+            name: contract,
             abi: encodedABI,
+            bin: contractCreationCode.slice(0, 1),
+            constructorArgs,
+            metadata: JSON.stringify({
+              compiler: {
+                version: compiler,
+              },
+              language,
+              output: {
+                abi: encodedABI,
+              },
+              devdoc: {},
+              sources,
+              settings,
+              version: 1,
+            }),
           },
-          devdoc: {},
-          sources,
-          settings,
-          version: 1,
-        }),
-      },
-    },
-    version: compiler,
-  };
+        },
+        version: compiler,
+      };
 
-  return contractBuild;
+      return contractBuild;
+    } catch (error) {
+      lastError = error;
+      debug(`Attempt ${i + 1} failed for loadRoninContract: ${error.message}`);
+      if (i < maxRetries - 1) {
+        debug(`Retrying with next API key...`);
+      }
+    }
+  }
+
+  throw new Error(`Failed to load Ronin contract after ${maxRetries} attempts: ${lastError?.message}`);
 }
 
 
 
 export async function loadEtherscanContract(network: string, address: string) {
-  const apiKey = getEtherscanApiKey(network);
   const networkName = network;
-  const etherscanData = await getEtherscanApiData(networkName, address, apiKey);
-  const {
-    abi,
-    contract,
-    compiler,
-    constructorArgs
-  } = etherscanData;
-  const { language, settings, sources } = parseSources(etherscanData);
-  const contractPath = Object.keys(sources)[0];
-  const contractFQN = `${contractPath}:${contract}`;
+  const maxRetries = 12; // Maximum number of API key rotations
+  let lastError: Error | null = null;
 
-  let contractCreationCode = await getContractCreationCode(networkName, address);
-  if (constructorArgs.length > 0 && contractCreationCode.endsWith(constructorArgs)) {
-    contractCreationCode = contractCreationCode.slice(0, -constructorArgs.length);
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const apiKey = getEtherscanApiKey(network, i);
+      const etherscanData = await getEtherscanApiData(networkName, address, apiKey);
+      const {
+        abi,
+        contract,
+        compiler,
+        constructorArgs
+      } = etherscanData;
+      const { language, settings, sources } = parseSources(etherscanData);
+      const contractPath = Object.keys(sources)[0];
+      const contractFQN = `${contractPath}:${contract}`;
+
+      let contractCreationCode = await getContractCreationCode(networkName, address, i);
+      if (contractCreationCode.endsWith(constructorArgs) && constructorArgs.length > 0) {
+        contractCreationCode = contractCreationCode.slice(0, -constructorArgs.length);
+      }
+
+      const encodedABI = JSON.stringify(abi);
+      const contractBuild = {
+        contract,
+        contracts: {
+          [contractFQN]: {
+            network,
+            address,
+            name: contract,
+            abi: encodedABI,
+            bin: contractCreationCode,
+            constructorArgs,
+            metadata: JSON.stringify({
+              compiler: {
+                version: compiler,
+              },
+              language,
+              output: {
+                abi: encodedABI,
+              },
+              devdoc: {},
+              sources,
+              settings,
+              version: 1,
+            }),
+          },
+        },
+        version: compiler,
+      };
+
+      return contractBuild;
+    } catch (error) {
+      lastError = error;
+      debug(`Attempt ${i + 1} failed for loadEtherscanContract: ${error.message}`);
+      if (i < maxRetries - 1) {
+        debug(`Retrying with next API key...`);
+      }
+    }
   }
 
-  const encodedABI = JSON.stringify(abi);
-  const contractBuild = {
-    contract,
-    contracts: {
-      [contractFQN]: {
-        network,
-        address,
-        name: contract,
-        abi: encodedABI,
-        bin: contractCreationCode,
-        constructorArgs,
-        metadata: JSON.stringify({
-          compiler: {
-            version: compiler,
-          },
-          language,
-          output: {
-            abi: encodedABI,
-          },
-          devdoc: {},
-          sources,
-          settings,
-          version: 1,
-        }),
-      },
-    },
-    version: compiler,
-  };
-
-  return contractBuild;
+  throw new Error(`Failed to load Etherscan contract after ${maxRetries} attempts: ${lastError?.message}`);
 }
