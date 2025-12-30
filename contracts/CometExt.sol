@@ -247,7 +247,7 @@ contract CometExt is CometExtInterface {
      * @return The current status of the pause offset
      */
     function currentPauseOffsetStatus(uint24 offset) internal view returns (bool) {
-        return toBool(uint8(extendedPauseFlags & (uint24(1) << offset)));
+        return (extendedPauseFlags & (uint24(1) << offset)) != 0;
     }
 
     /**
