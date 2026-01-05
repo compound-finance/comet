@@ -340,7 +340,7 @@ The first action updates wstETH, ezETH, rsETH, weETH, and rETH price feeds to th
     const txn = await deploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
-      )
+      ), 0, 300_000
     );
 
     const event = txn.events.find((event: { event: string }) => event.event === 'ProposalCreated');
