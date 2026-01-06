@@ -79,12 +79,11 @@ export type TestnetProposal = [
 // Ideally these wouldn't be hardcoded, but other solutions are much more complex, and slower
 export const COMP_WHALES = {
   mainnet: [
-    '0x9aa835bc7b8ce13b9b0c9764a52fbf71ac62ccf1',
-    '0x683a4f9915d6216f73d6df50151725036bd26c02',
+    '0x66cD62c6F8A4BB0Cd8720488BCBd1A6221B765F9',
+    '0xb06df4dd01a5c5782f360ada9345c87e86adae3d',
+    '0x3FB19771947072629C8EEE7995a2eF23B72d4C8A',
     '0x8169522c2C57883E8EF80C498aAB7820dA539806',
-    '0x8d07D225a769b7Af3A923481E1FdF49180e6A265',
-    '0x7d1a02C0ebcF06E1A36231A54951E061673ab27f',
-    '0x54A37d93E57c5DA659F508069Cf65A381b61E189',
+    '0x36cc7B13029B5DEe4034745FB4F24034f3F2ffc6',
   ],
 
   testnet: ['0xbbfe34e868343e6f4f5e8b5308de980d7bd88c46']
@@ -151,6 +150,9 @@ export const WHALES = {
     '0xbA1333333333a1BA1108E8412f11850A5C319bA9', // tETH whale
   ],
   base: [
+    '0x98c7A2338336d2d354663246F64676009c7bDa97', // USDbC whale
+    '0x0E635F8EeED4F7279d56692D552F034ECE136019', // USDbC whale
+    '0x58Ee32056D946a37f5b49582dE3dEE1dAc0Bb974', // USDbC whale
     '0x6D3c5a4a7aC4B1428368310E4EC3bB1350d01455', // USDbC whale
     '0x46e6b214b524310239732D51387075E0e70970bf', // ezETH whale
     '0x07CFA5Df24fB17486AF0CBf6C910F24253a674D3', // cbETH whale TODO: need to update this whale, not enough

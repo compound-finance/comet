@@ -406,12 +406,20 @@ scenario(
 scenario(
   'Comet#supplyFrom > repay borrow',
   {
-    tokenBalances: {
-      albert: { $base: 1010 }
-    },
-    cometBalances: {
-      betty: { $base: '<= -1000' } // in units of asset, not wei
-    },
+    tokenBalances: async (ctx) => (
+      {
+        albert: {
+          $base: getConfigForScenario(ctx).supplyBase + (0.01 * getConfigForScenario(ctx).supplyBase)
+        }
+      }
+    ),
+    cometBalances: async (ctx) => (
+      {
+        betty: {
+          $base: `<= -${getConfigForScenario(ctx).supplyBase}`
+        }
+      }
+    ),
   },
   async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
