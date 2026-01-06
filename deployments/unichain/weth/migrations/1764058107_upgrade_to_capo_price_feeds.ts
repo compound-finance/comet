@@ -268,7 +268,7 @@ The first action updates wstETH, weETH, ezETH, and rsETH price feeds to the CAPO
     const txn = await govDeploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
-      )
+      ), 0, 300_000
     );
 
     const event = txn.events.find(
