@@ -79,12 +79,11 @@ export type TestnetProposal = [
 // Ideally these wouldn't be hardcoded, but other solutions are much more complex, and slower
 export const COMP_WHALES = {
   mainnet: [
-    '0x9aa835bc7b8ce13b9b0c9764a52fbf71ac62ccf1',
-    '0x683a4f9915d6216f73d6df50151725036bd26c02',
+    '0x66cD62c6F8A4BB0Cd8720488BCBd1A6221B765F9',
+    '0xb06df4dd01a5c5782f360ada9345c87e86adae3d',
+    '0x3FB19771947072629C8EEE7995a2eF23B72d4C8A',
     '0x8169522c2C57883E8EF80C498aAB7820dA539806',
-    '0x8d07D225a769b7Af3A923481E1FdF49180e6A265',
-    '0x7d1a02C0ebcF06E1A36231A54951E061673ab27f',
-    '0x54A37d93E57c5DA659F508069Cf65A381b61E189',
+    '0x36cc7B13029B5DEe4034745FB4F24034f3F2ffc6',
   ],
 
   testnet: ['0xbbfe34e868343e6f4f5e8b5308de980d7bd88c46']
@@ -185,11 +184,12 @@ export const WHALES = {
     '0x233493E9DC68e548AC27E4933A600A3A4682c0c3', // FBTC whale
     '0xCd83CbBFCE149d141A5171C3D6a0F0fCCeE225Ab', // COMP whale
   ],
-  'unichain': [
+  unichain: [
     '0x4200000000000000000000000000000000000006', // WETH whale
     '0x7Ae0911198AD568E1FE4af3cf81e36A29983778f', // wstETH whale
     '0x4B2cf5C94A88934870B523983B22e6d2dd1b6577', // wstETH whale
     '0x8f5ae9CddB9f68de460C77730b018Ae7E04a140A', // wstETH whale
+    '0x6645983f870dEc453667BE719D8F9700a339B2a4', // ezETH whale
   ],
   linea: [
     '0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f', // ETH whale
