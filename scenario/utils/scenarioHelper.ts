@@ -78,6 +78,7 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
 
   if (ctx.world.base.network === 'base' && ctx.world.base.deployment === 'usdbc') {
     config.bulkerBase = 200000;
+    config.rewardsAsset = 1000;
   }
 
   if (ctx.world.base.network === 'base' && ctx.world.base.deployment === 'usdc') {
