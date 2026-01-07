@@ -92,6 +92,7 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
 
   if (ctx.world.base.network === 'base' && ctx.world.base.deployment === 'weth') {
     config.liquidationBase = 1000;
+    config.rewardsAsset = 1000;
   }
 
   if (ctx.world.base.network === 'optimism' && ctx.world.base.deployment === 'usdc') {
