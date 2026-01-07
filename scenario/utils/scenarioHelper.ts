@@ -82,6 +82,7 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
       config.transferCollateral = 2;
       config.withdrawCollateral = 2;
     }
+    config.rewardsAsset = 1000;
   }
 
 
