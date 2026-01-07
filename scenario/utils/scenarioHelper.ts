@@ -74,6 +74,7 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
 
   if (ctx.world.base.network === 'base' && ctx.world.base.deployment === 'aero') {
     config.interestSeconds = 110;
+    config.rewardsAsset = 1000;
   }
 
   if (ctx.world.base.network === 'base' && ctx.world.base.deployment === 'usdc') {
