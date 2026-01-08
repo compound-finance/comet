@@ -187,12 +187,12 @@ export default migration('1767882783_change_price_feeds_to_api3', {
 
 ## Proposal summary
 
-This proposal updates existing price feeds for USDC and WRON assets on the WETH market on Ronin.
+This proposal updates existing price feeds for USDC, AXS and WRON assets on the WETH market on Ronin.
 Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1081).
 
 ## Proposal actions
 
-The first action updates USDC and WRON price feeds to the API3 oracle base. This sends the encoded 'updateAssetPriceFeed' and 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Ronin.
+The first action updates USDC, AXS and WRON price feeds to the API3 oracle base. This sends the encoded 'updateAssetPriceFeed' and 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Ronin.
 `;
     const txn = await govDeploymentManager.retry(async () =>
       trace(
