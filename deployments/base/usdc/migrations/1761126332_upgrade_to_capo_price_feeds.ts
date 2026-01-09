@@ -94,7 +94,7 @@ The first action updates wstETH price feed to the CAPO implementation. This send
     const txn = await deploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
-      )
+      ), 0, 300_000
     );
     const event = txn.events.find(
       (event: { event: string }) => event.event === 'ProposalCreated'
