@@ -99,7 +99,7 @@ export default async function relayRoninMessage(
       const callData = l2Router.interface.encodeFunctionData('routeMessage', [
         any2EVMMessage,
         25_000,
-        2_000_000,
+        10_000_000,
         internalMsg.receiver,
       ]);
       bridgeDeploymentManager.stashRelayMessage(
@@ -136,7 +136,7 @@ export default async function relayRoninMessage(
     const routeTx = await l2Router.connect(offRampSigner).routeMessage(
       any2EVMMessage,
       25_000,
-      2_000_000,
+      10_000_000,
       internalMsg.receiver,
     );
 
