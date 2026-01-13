@@ -488,172 +488,212 @@ async function redeployRenzoOracle(dm: DeploymentManager) {
   }
 }
 
-const tokens = new Map<string, string>([
-  ['WETH', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'],
-  ['LINK', '0x514910771AF9Ca656af840dff83E8264EcF986CA'],
+const tokens = [
+  ['mainnet', 'WETH', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'],
+  ['mainnet', 'LINK', '0x514910771AF9Ca656af840dff83E8264EcF986CA'],
+  ['ronin', 'WETH', '0xc99a6a985ed2cac1ef41640596c5a5f9f4e19ef5'],
+  ['ronin', 'WRON', '0xe514d9deb7966c8be0ca922de8a064264ea6bcd4'],
+  ['ronin', 'LINK', '0x3902228d6a3d2dc44731fd9d45fee6a61c722d0b'],
+];
+
+const dest = new Map<string, string>([
+  ['ronin', '6916147374840168594'],
+  ['mainnet', '5009297550715157269'],
 ]);
 
-const dest = new Map<string, string>([['ronin', '6916147374840168594']]);
+export async function updateCCIPStats(
+  dm: DeploymentManager,
+  tenderlyLogs?: any[]
+) {
+  const config = [
+    {
+      network: 'mainnet',
+      commitStore: '0x2aa101bf99caef7fc1355d4c493a1fe187a007ce',
+      priceRegistry: '0x8c9b2Efb7c64C394119270bfecE7f54763b958Ad'
+    },
+    {
+      network: 'ronin',
+      commitStore: '0x28c66d9693b2634b2f3b170f6d9584eec2f72ff0',
+      priceRegistry: '0xefCEa3CFA330adcDdeCe99219C57fd45cd166ac1'
+    }
+  ];
+  const { commitStore, priceRegistry } = config.find(c => c.network === dm.network) || {};
+  if (!commitStore || !priceRegistry) {
+    console.log(`No CCIP config for network ${dm.network}, skipping CCIP stats update.`);
+    return;
+  }
+  const abi = [
+    {
+      inputs: [
+        {
+          components: [
+            {
+              components: [
+                {
+                  internalType: 'address',
+                  name: 'sourceToken',
+                  type: 'address',
+                },
+                {
+                  internalType: 'uint224',
+                  name: 'usdPerToken',
+                  type: 'uint224',
+                },
+              ],
+              internalType: 'struct TokenPriceUpdate[]',
+              name: 'tokenPriceUpdates',
+              type: 'tuple[]',
+            },
+            {
+              components: [
+                {
+                  internalType: 'uint64',
+                  name: 'destChainSelector',
+                  type: 'uint64',
+                },
+                {
+                  internalType: 'uint224',
+                  name: 'usdPerUnitGas',
+                  type: 'uint224',
+                },
+              ],
+              internalType: 'struct GasPriceUpdate[]',
+              name: 'gasPriceUpdates',
+              type: 'tuple[]',
+            },
+          ],
+          internalType: 'struct PriceUpdates',
+          name: 'priceUpdates',
+          type: 'tuple',
+        },
+      ],
+      name: 'updatePrices',
+      outputs: [],
+      stateMutability: 'nonpayable',
+      type: 'function',
+    },
+    {
+      inputs: [
+        {
+          internalType: 'uint64',
+          name: 'destChainSelector',
+          type: 'uint64',
+        },
+      ],
+      name: 'getDestinationChainGasPrice',
+      outputs: [
+        {
+          components: [
+            {
+              internalType: 'uint224',
+              name: 'value',
+              type: 'uint224',
+            },
+            {
+              internalType: 'uint32',
+              name: 'timestamp',
+              type: 'uint32',
+            },
+          ],
+          internalType: 'struct TimestampedPackedUint224',
+          name: '',
+          type: 'tuple',
+        },
+      ],
+      stateMutability: 'view',
+      type: 'function',
+    },
+    {
+      inputs: [
+        {
+          internalType: 'address',
+          name: 'token',
+          type: 'address',
+        },
+      ],
+      name: 'getTokenPrice',
+      outputs: [
+        {
+          components: [
+            {
+              internalType: 'uint224',
+              name: 'value',
+              type: 'uint224',
+            },
+            {
+              internalType: 'uint32',
+              name: 'timestamp',
+              type: 'uint32',
+            },
+          ],
+          internalType: 'struct TimestampedPackedUint224',
+          name: '',
+          type: 'tuple',
+        },
+      ],
+      stateMutability: 'view',
+      type: 'function',
+    },
+  ];
 
-async function updateCCIPStats(dm: DeploymentManager) {
-  if (dm.network === 'mainnet') {
-    const commitStore = '0x2aa101bf99caef7fc1355d4c493a1fe187a007ce';
+  await dm.hre.network.provider.request({
+    method: 'hardhat_impersonateAccount',
+    params: [commitStore],
+  });
 
-    const priceRegistry = '0x8c9b2Efb7c64C394119270bfecE7f54763b958Ad';
-    const abi = [
-      {
-        inputs: [
-          {
-            components: [
-              {
-                components: [
-                  {
-                    internalType: 'address',
-                    name: 'sourceToken',
-                    type: 'address',
-                  },
-                  {
-                    internalType: 'uint224',
-                    name: 'usdPerToken',
-                    type: 'uint224',
-                  },
-                ],
-                internalType: 'struct TokenPriceUpdate[]',
-                name: 'tokenPriceUpdates',
-                type: 'tuple[]',
-              },
-              {
-                components: [
-                  {
-                    internalType: 'uint64',
-                    name: 'destChainSelector',
-                    type: 'uint64',
-                  },
-                  {
-                    internalType: 'uint224',
-                    name: 'usdPerUnitGas',
-                    type: 'uint224',
-                  },
-                ],
-                internalType: 'struct GasPriceUpdate[]',
-                name: 'gasPriceUpdates',
-                type: 'tuple[]',
-              },
-            ],
-            internalType: 'struct PriceUpdates',
-            name: 'priceUpdates',
-            type: 'tuple',
-          },
-        ],
-        name: 'updatePrices',
-        outputs: [],
-        stateMutability: 'nonpayable',
-        type: 'function',
-      },
-      {
-        inputs: [
-          {
-            internalType: 'uint64',
-            name: 'destChainSelector',
-            type: 'uint64',
-          },
-        ],
-        name: 'getDestinationChainGasPrice',
-        outputs: [
-          {
-            components: [
-              {
-                internalType: 'uint224',
-                name: 'value',
-                type: 'uint224',
-              },
-              {
-                internalType: 'uint32',
-                name: 'timestamp',
-                type: 'uint32',
-              },
-            ],
-            internalType: 'struct TimestampedPackedUint224',
-            name: '',
-            type: 'tuple',
-          },
-        ],
-        stateMutability: 'view',
-        type: 'function',
-      },
-      {
-        inputs: [
-          {
-            internalType: 'address',
-            name: 'token',
-            type: 'address',
-          },
-        ],
-        name: 'getTokenPrice',
-        outputs: [
-          {
-            components: [
-              {
-                internalType: 'uint224',
-                name: 'value',
-                type: 'uint224',
-              },
-              {
-                internalType: 'uint32',
-                name: 'timestamp',
-                type: 'uint32',
-              },
-            ],
-            internalType: 'struct TimestampedPackedUint224',
-            name: '',
-            type: 'tuple',
-          },
-        ],
-        stateMutability: 'view',
-        type: 'function',
-      },
-    ];
+  await dm.hre.network.provider.request({
+    method: 'hardhat_setBalance',
+    params: [commitStore, '0x56bc75e2d63100000'],
+  });
+  const commitStoreSigner = await dm.hre.ethers.getSigner(commitStore);
 
-    await dm.hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [commitStore],
-    });
+  const registryContract = new Contract(
+    priceRegistry,
+    abi,
+    dm.hre.ethers.provider
+  );
 
-    await dm.hre.network.provider.request({
-      method: 'hardhat_setBalance',
-      params: [commitStore, '0x56bc75e2d63100000'],
-    });
-    const commitStoreSigner = await dm.hre.ethers.getSigner(commitStore);
+  const tokenPrices = [];
+  const gasPrices = [];
+  for (const [network,, address] of tokens) {
+    if(network !== dm.network) continue;
+    const price = await registryContract.getTokenPrice(address);
+    tokenPrices.push([address, price.value]);
+  }
 
-    const registryContract = new Contract(
+  for (const [, chainSelector] of dest) {
+    try {
+      const price = await registryContract.getDestinationChainGasPrice(chainSelector);
+      gasPrices.push([chainSelector, price.value]);
+    } catch (e) {
+      continue;
+    }
+  }
+
+  if(tenderlyLogs) {
+    dm.stashRelayMessage(
       priceRegistry,
-      abi,
-      dm.hre.ethers.provider
-    );
-
-    const tokenPrices = [];
-    const gasPrices = [];
-    for (const [, address] of tokens) {
-      const price = await registryContract.getTokenPrice(address);
-      tokenPrices.push([address, price.value]);
-    }
-    for (const [, address] of dest) {
-      const price = await registryContract.getDestinationChainGasPrice(address);
-      gasPrices.push([address, price.value]);
-    }
-
-    const tx0 = await commitStoreSigner.sendTransaction({
-      to: priceRegistry,
-      data: registryContract.interface.encodeFunctionData('updatePrices', [
+      registryContract.interface.encodeFunctionData('updatePrices', [
         {
           tokenPriceUpdates: tokenPrices,
           gasPriceUpdates: gasPrices,
         },
       ]),
-    });
-
-    await tx0.wait();
+      commitStore
+    );
   }
+
+  const tx0 = await commitStoreSigner.sendTransaction({
+    to: priceRegistry,
+    data: registryContract.interface.encodeFunctionData('updatePrices', [
+      {
+        tokenPriceUpdates: tokenPrices,
+        gasPriceUpdates: gasPrices,
+      },
+    ]),
+  });
+
+  await tx0.wait();
 }
 
 const REDSTONE_FEEDS = {
@@ -888,7 +928,7 @@ export async function tenderlyExecute(
   let proposals;
   if (chainId1 !== chainId2) {
     proposals = await relayMessage(gdm, bdm, parseFloat(B0.toString()),  bundle[bundle.length - 1].transaction.transaction_info.logs);
-    
+
     debug(`Proposals relayed: ${proposals.length}`);
     const timelockL2 = await bdm.getContractOrThrow('timelock');
     const delay = await timelockL2.delay();
@@ -899,21 +939,21 @@ export async function tenderlyExecute(
     const B0L2 = Number(latestL2.number) + 1;
     const simsL2 = relayMessages.map((msg, i, arr) => {
       const isLast = i === arr.length - 1;
-    
+
       const timestamp = isLast
         ? Number(T0L2) 
         : latestL2.timestamp; 
-    
+
       const block = isLast
         ? B0L2 : latestL2.number;
-      
+
       return {
         network_id: chainId2.toString(),
         from: msg.signer,
         to: msg.messenger,
         block_number: Number(block),
         block_header: {
-          timestamp: gdm.hre.ethers.utils.hexlify(Number(timestamp))
+          timestamp: bdm.hre.ethers.utils.hexlify(Number(timestamp))
         },
         input: msg.callData,
         save: true,
@@ -921,14 +961,6 @@ export async function tenderlyExecute(
         gas_price: 0,
       };
     });
-  
-  
-    while (!simsL1[0]) {
-      simsL1.shift();
-      if (simsL1.length == 0) {
-        break;
-      }
-    }
 
     if (simsL2.length > 0) {
       const bundle2 = await simulateBundle(bdm, simsL2, Number(B0L2));
@@ -948,25 +980,65 @@ async function simulateBundle(
   simulations: any[],
   blockNumber: number = 0
 ): Promise<any> {
-  const { username, project, accessKey } = (dm.hre.config as any).tenderly;
-  const body = {
-    simulations,
-    block_number: blockNumber,
-    simulation_type: 'full',
-    save: true,
-  };
+  const rollingStateChanges = {};
+  const results = [];
 
-  const result = await axios.post(
-    `https://api.tenderly.co/api/v1/account/${username}/project/${project}/simulate-bundle`,
-    body,
-    {
-      headers: {
-        'X-Access-Key': accessKey,
-        'Content-Type': 'application/json',
-      },
+  for (const sim of simulations) {
+    const { username, project, accessKey } = (dm.hre.config as any).tenderly;
+
+    // Merge rolling state changes with simulation's own state_objects
+    const stateObjects = sim.state_objects 
+      ? { ...rollingStateChanges, ...sim.state_objects }
+      : rollingStateChanges;
+
+    const body = {
+      simulations: [{
+        ...sim,
+        state_objects: stateObjects,
+        block_number: sim.block_number || blockNumber,
+        simulation_type: 'full',
+        save: true,
+        save_if_fails: true,
+      }]
+    };
+
+    const result = await axios.post(
+      `https://api.tenderly.co/api/v1/account/${username}/project/${project}/simulate-bundle`,
+      body,
+      {
+        headers: {
+          'X-Access-Key': accessKey,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    // Extract and accumulate state changes from state_diff
+    const simResult = result.data.simulation_results[0];
+    if (simResult?.transaction?.transaction_info?.call_trace?.state_diff) {
+      const stateDiff = simResult.transaction.transaction_info.call_trace.state_diff;
+
+      // state_diff is an array of objects with { address, raw: [...] }
+      for (const stateDiffEntry of stateDiff) {
+        const address = stateDiffEntry.address;
+
+        if (!rollingStateChanges[address]) {
+          rollingStateChanges[address] = { storage: {} };
+        }
+
+        if (stateDiffEntry.raw && Array.isArray(stateDiffEntry.raw)) {
+          for (const change of stateDiffEntry.raw) {
+            // Each change has: { address, key, original, dirty }
+            rollingStateChanges[address].storage[change.key] = change.dirty;
+          }
+        }
+      }
     }
-  );
-  return result.data.simulation_results;
+
+    results.push(simResult);
+  }
+  
+  return results;
 }
 
 async function shareSimulation(dm: DeploymentManager, simulationId: string) {
