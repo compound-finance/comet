@@ -102,7 +102,7 @@ export default migration('1767882783_depreciate_comet', {
       priceFeed: newPriceFeedUSDCAddress,
       decimals: await USDC.decimals(),
       borrowCollateralFactor: exp(0.60, 18),
-      liquidateCollateralFactor: exp(0.93, 18),
+      liquidateCollateralFactor: exp(0.90, 18),
       liquidationFactor: exp(0.85, 18),
       supplyCap: 0,
     };
@@ -112,7 +112,7 @@ export default migration('1767882783_depreciate_comet', {
       priceFeed: newPriceFeedWRONAddress,
       decimals: await WRON.decimals(),
       borrowCollateralFactor: exp(0.50, 18),
-      liquidateCollateralFactor: exp(0.93, 18),
+      liquidateCollateralFactor: exp(0.80, 18),
       liquidationFactor: exp(0.8, 18),
       supplyCap: 0,
     };  
@@ -122,7 +122,7 @@ export default migration('1767882783_depreciate_comet', {
       priceFeed: newPriceFeedAXSAddress,
       decimals: await AXS.decimals(),
       borrowCollateralFactor: exp(0.50, 18),
-      liquidateCollateralFactor: exp(0.93, 18),
+      liquidateCollateralFactor: exp(0.75, 18),
       liquidationFactor: exp(0.75, 18),
       supplyCap: 0,
     };
@@ -353,7 +353,7 @@ The proposal sends the following encoded calls to the governance receiver on Ron
       priceFeed: newPriceFeedUSDCAddress,
       decimals: 6,
       borrowCollateralFactor: exp(0.60, 18),
-      liquidateCollateralFactor: exp(0.93, 18),
+      liquidateCollateralFactor: exp(0.90, 18),
       liquidationFactor: exp(0.85, 18),
       supplyCap: 0,
     };
@@ -363,7 +363,7 @@ The proposal sends the following encoded calls to the governance receiver on Ron
       priceFeed: newPriceFeedWRONAddress,
       decimals: 18,
       borrowCollateralFactor: exp(0.50, 18),
-      liquidateCollateralFactor: exp(0.93, 18),
+      liquidateCollateralFactor: exp(0.80, 18),
       liquidationFactor: exp(0.8, 18),
       supplyCap: 0,
     };  
@@ -373,7 +373,7 @@ The proposal sends the following encoded calls to the governance receiver on Ron
       priceFeed: newPriceFeedAXSAddress,
       decimals: 18,
       borrowCollateralFactor: exp(0.50, 18),
-      liquidateCollateralFactor: exp(0.93, 18),
+      liquidateCollateralFactor: exp(0.75, 18),
       liquidationFactor: exp(0.75, 18),
       supplyCap: 0,
     };
