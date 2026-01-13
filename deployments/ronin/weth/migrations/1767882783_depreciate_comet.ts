@@ -298,12 +298,29 @@ export default migration('1767882783_depreciate_comet', {
 
 ## Proposal summary
 
-This proposal updates price feeds to API3 and updates parameters for WETH market on Ronin to prevent new suppliers from entering the market, reduces capital efficiency, making the market less appealing without causing users to become liquidatable and rases liquidation penalty to further disincentivizes usage by increasing the cost of liquidation, while reducing risk to the comet.
+This proposal updates price feeds to API3, since Chainlink soon will no longer support Ronin and updates interest rate curve parameters for WETH market on Ronin.
+
+It is done to prevent new suppliers from entering the market, reduces capital efficiency, making the market less appealing without causing users to become liquidatable and raises liquidation penalty to further disincentivizes usage by increasing the cost of liquidation, while reducing risk to the comet.
+
 Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1083) and [forum discussion](https://www.comp.xyz/t/gauntlet-depreciating-ronin-weth-and-wron-comets/7308).
 
 ## Proposal actions
 
-The first action updates interest rate curve parameters and updates USDC, AXS and WRON price feeds to the API3 oracle base, sets supply caps to 0, reduces collateral factors and increases liquidation penalty. This sends the encoded 'updateAsset', 'setBorrowPerYearInterestRateBase', 'setBorrowPerYearInterestRateSlopeLow', 'setBorrowKink', 'setBorrowPerYearInterestRateSlopeHigh', 'setSupplyPerYearInterestRateBase', 'setSupplyPerYearInterestRateSlopeLow', 'setSupplyKink', 'setSupplyPerYearInterestRateSlopeHigh' and 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Ronin.
+The proposal sends the following encoded calls to the governance receiver on Ronin:
+- Update USDC, AXS, and WRON price feeds to API3 oracle
+- Set supply caps to 0 for all collateral assets
+- Reduce collateral factors
+- Increase liquidation penalties
+- Update interest rate curve parameters:
+  - \`setBorrowPerYearInterestRateBase\`
+  - \`setBorrowPerYearInterestRateSlopeLow\`
+  - \`setBorrowKink\`
+  - \`setBorrowPerYearInterestRateSlopeHigh\`
+  - \`setSupplyPerYearInterestRateBase\`
+  - \`setSupplyPerYearInterestRateSlopeLow\`
+  - \`setSupplyKink\`
+  - \`setSupplyPerYearInterestRateSlopeHigh\`
+- Deploy and upgrade to new configuration via \`deployAndUpgradeTo\`.
 `;
     const txn = await govDeploymentManager.retry(async () =>
       trace(
