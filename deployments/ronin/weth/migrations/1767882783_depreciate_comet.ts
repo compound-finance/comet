@@ -299,7 +299,7 @@ export default migration('1767882783_depreciate_comet', {
 ## Proposal summary
 
 This proposal updates price feeds to API3 and updates parameters for WETH market on Ronin to prevent new suppliers from entering the market, reduces capital efficiency, making the market less appealing without causing users to become liquidatable and rases liquidation penalty to further disincentivizes usage by increasing the cost of liquidation, while reducing risk to the comet.
-Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1083).
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1083) and [forum discussion](https://www.comp.xyz/t/gauntlet-depreciating-ronin-weth-and-wron-comets/7308).
 
 ## Proposal actions
 
