@@ -65,7 +65,7 @@ export default migration('1768394959_add_xaut_collateral', {
 WOOF! proposes to add XAUt into cUSDTv3 on Ethereum network. This proposal takes the governance steps recommended and necessary to update a Compound III USDT market on Ethereum.
 Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/gauntlet-xaut-risk-recommendations-for-mainnet-usdt/7539/1).
 
-Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1084) and [forum discussion](https://www.comp.xyz/t/gauntlet-xaut-risk-recommendations-for-mainnet-usdt/7539).
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1085) and [forum discussion](https://www.comp.xyz/t/gauntlet-xaut-risk-recommendations-for-mainnet-usdt/7539).
 
 
 ## Proposal Actions
