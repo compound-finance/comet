@@ -63,8 +63,22 @@ describe('CometWithPartialLiquidation', function() {
     console.log('baseToken', await cometWithPartialLiquidation.baseToken());
     console.log('assetInfo(0)', await cometWithPartialLiquidation.getAssetInfo(0));
     /// Change price of the assets to 1$ each.
-    let currentCOMPData = await priceFeedCOMP.latestRoundData();
-    const currentUSDCData = await priceFeedUSDC.latestRoundData();
+    let latestRoundDataCOMP = await priceFeedCOMP.latestRoundData();
+    let currentCOMPData = {
+      _roundId: latestRoundDataCOMP[0],
+      _answer: latestRoundDataCOMP[1],
+      _startedAt: latestRoundDataCOMP[2],
+      _updatedAt: latestRoundDataCOMP[3],
+      _answeredInRound: latestRoundDataCOMP[4],
+    };
+    const latestRoundDataUSDC = await priceFeedUSDC.latestRoundData();
+    const currentUSDCData = {
+      _roundId: latestRoundDataUSDC[0],
+      _answer: latestRoundDataUSDC[1],
+      _startedAt: latestRoundDataUSDC[2],
+      _updatedAt: latestRoundDataUSDC[3],
+      _answeredInRound: latestRoundDataUSDC[4],
+    };
     await priceFeedCOMP.connect(governor).setRoundData(
       currentCOMPData._roundId,
       exp(1, 8),
@@ -100,7 +114,14 @@ describe('CometWithPartialLiquidation', function() {
       userToLiquidate.address)).to.equal(borrowAmount); 
 
     /// Change the price of the collateral assets to 0.9$ collateral.
-    currentCOMPData = await priceFeedCOMP.latestRoundData();
+    latestRoundDataCOMP = await priceFeedCOMP.latestRoundData();
+    currentCOMPData = {
+      _roundId: latestRoundDataCOMP[0],
+      _answer: latestRoundDataCOMP[1],
+      _startedAt: latestRoundDataCOMP[2],
+      _updatedAt: latestRoundDataCOMP[3],
+      _answeredInRound: latestRoundDataCOMP[4],
+    };
     await priceFeedCOMP.connect(governor).setRoundData(
       currentCOMPData._roundId,
       exp(0.94, 8),
@@ -171,9 +192,30 @@ describe('CometWithPartialLiquidation', function() {
     console.log('assetInfo(0)', await cometWithPartialLiquidation.getAssetInfo(0));
     console.log('assetInfo(1)', await cometWithPartialLiquidation.getAssetInfo(1));
     /// Change price of the assets to 1$ each.
-    let currentCOMPData = await priceFeedCOMP.latestRoundData();
-    let currentUSDTData = await priceFeedUSDT.latestRoundData();
-    const currentUSDCData = await priceFeedUSDC.latestRoundData();
+    let latestRoundDataCOMP = await priceFeedCOMP.latestRoundData();
+    let currentCOMPData = {
+      _roundId: latestRoundDataCOMP[0],
+      _answer: latestRoundDataCOMP[1],
+      _startedAt: latestRoundDataCOMP[2],
+      _updatedAt: latestRoundDataCOMP[3],
+      _answeredInRound: latestRoundDataCOMP[4],
+    };
+    let latestRoundDataUSDT = await priceFeedUSDT.latestRoundData();
+    let currentUSDTData = {
+      _roundId: latestRoundDataUSDT[0],
+      _answer: latestRoundDataUSDT[1],
+      _startedAt: latestRoundDataUSDT[2],
+      _updatedAt: latestRoundDataUSDT[3],
+      _answeredInRound: latestRoundDataUSDT[4],
+    };
+    const latestRoundDataUSDC = await priceFeedUSDC.latestRoundData();
+    const currentUSDCData = {
+      _roundId: latestRoundDataUSDC[0],
+      _answer: latestRoundDataUSDC[1],
+      _startedAt: latestRoundDataUSDC[2],
+      _updatedAt: latestRoundDataUSDC[3],
+      _answeredInRound: latestRoundDataUSDC[4],
+    };
     await priceFeedCOMP.connect(governor).setRoundData(
       currentCOMPData._roundId,
       exp(1, 8),
@@ -224,7 +266,14 @@ describe('CometWithPartialLiquidation', function() {
       userToLiquidate.address)).to.equal(totalBorrowAmount); 
     
     /// Change the price of the collateral assets to 0.9$ collateral.
-    currentCOMPData = await priceFeedCOMP.latestRoundData();
+    latestRoundDataCOMP = await priceFeedCOMP.latestRoundData();
+    currentCOMPData = {
+      _roundId: latestRoundDataCOMP[0],
+      _answer: latestRoundDataCOMP[1],
+      _startedAt: latestRoundDataCOMP[2],
+      _updatedAt: latestRoundDataCOMP[3],
+      _answeredInRound: latestRoundDataCOMP[4],
+    };
     await priceFeedCOMP.connect(governor).setRoundData(
       currentCOMPData._roundId,
       exp(0.62, 8),
@@ -309,7 +358,14 @@ describe('CometWithPartialLiquidation', function() {
 
     let iterations = 0;
     while(!(await cometWithPartialLiquidation.isLiquidatable(userToLiquidate.address)) && iterations < 50) {
-      const currentCOMPData = await priceFeedCOMP.latestRoundData();
+      const latestRoundDataCOMP = await priceFeedCOMP.latestRoundData();
+      const currentCOMPData = {
+        _roundId: latestRoundDataCOMP[0],
+        _answer: latestRoundDataCOMP[1],
+        _startedAt: latestRoundDataCOMP[2],
+        _updatedAt: latestRoundDataCOMP[3],
+        _answeredInRound: latestRoundDataCOMP[4],
+      };
       await priceFeedCOMP.connect(governor).setRoundData(
         currentCOMPData._roundId,
         currentCOMPData._answer.mul(95).div(100), // Decrease price by 5%
@@ -317,7 +373,14 @@ describe('CometWithPartialLiquidation', function() {
         currentCOMPData._updatedAt,
         currentCOMPData._answeredInRound
       );
-      const currentUSDTData = await priceFeedUSDT.latestRoundData();
+      const latestRoundDataUSDT = await priceFeedUSDT.latestRoundData();
+      const currentUSDTData = {
+        _roundId: latestRoundDataUSDT[0],
+        _answer: latestRoundDataUSDT[1],
+        _startedAt: latestRoundDataUSDT[2],
+        _updatedAt: latestRoundDataUSDT[3],
+        _answeredInRound: latestRoundDataUSDT[4],
+      };
       await priceFeedUSDT.connect(governor).setRoundData(
         currentUSDTData._roundId,
         currentUSDTData._answer.mul(98).div(100), // Decrease price by 2%
@@ -534,7 +597,14 @@ describe('CometWithPartialLiquidation', function() {
     // Create liquidation conditions by dropping COMP price
     let iterations = 0;
     while(!(await cometWithPartialLiquidation.isLiquidatable(user1.address)) && iterations < 50) {
-      const currentCOMPData = await priceFeedCOMP.latestRoundData();
+      const latestRoundDataCOMP = await priceFeedCOMP.latestRoundData();
+      const currentCOMPData = {
+        _roundId: latestRoundDataCOMP[0],
+        _answer: latestRoundDataCOMP[1],
+        _startedAt: latestRoundDataCOMP[2],
+        _updatedAt: latestRoundDataCOMP[3],
+        _answeredInRound: latestRoundDataCOMP[4],
+      };
       await priceFeedCOMP.connect(governor).setRoundData(
         currentCOMPData._roundId,
         currentCOMPData._answer.mul(95).div(100), // Decrease price by 5%
@@ -610,7 +680,14 @@ describe('CometWithPartialLiquidation', function() {
     // Create liquidation conditions by dropping COMP price
     let iterations = 0;
     while(!(await cometWithPartialLiquidation.isLiquidatable(user1.address)) && iterations < 50) {
-      const currentCOMPData = await priceFeedCOMP.latestRoundData();
+      const latestRoundDataCOMP = await priceFeedCOMP.latestRoundData();
+      const currentCOMPData = {
+        _roundId: latestRoundDataCOMP[0],
+        _answer: latestRoundDataCOMP[1],
+        _startedAt: latestRoundDataCOMP[2],
+        _updatedAt: latestRoundDataCOMP[3],
+        _answeredInRound: latestRoundDataCOMP[4],
+      };
       await priceFeedCOMP.connect(governor).setRoundData(
         currentCOMPData._roundId,
         currentCOMPData._answer.mul(90).div(100), // Decrease price by 10%
@@ -699,7 +776,14 @@ describe('CometWithPartialLiquidation', function() {
     // Create liquidation conditions by dropping prices
     let iterations = 0;
     while(!(await cometWithPartialLiquidation.isLiquidatable(user1.address)) && iterations < 50) {
-      const currentCOMPData = await priceFeedCOMP.latestRoundData();
+      const latestRoundDataCOMP = await priceFeedCOMP.latestRoundData();
+      const currentCOMPData = {
+        _roundId: latestRoundDataCOMP[0],
+        _answer: latestRoundDataCOMP[1],
+        _startedAt: latestRoundDataCOMP[2],
+        _updatedAt: latestRoundDataCOMP[3],
+        _answeredInRound: latestRoundDataCOMP[4],
+      };
       await priceFeedCOMP.connect(governor).setRoundData(
         currentCOMPData._roundId,
         currentCOMPData._answer.mul(90).div(100), // Decrease COMP price by 10%
@@ -708,7 +792,14 @@ describe('CometWithPartialLiquidation', function() {
         currentCOMPData._answeredInRound
       );
 
-      const currentWETHData = await priceFeedWETH.latestRoundData();
+      const latestRoundDataWETH = await priceFeedWETH.latestRoundData();
+      const currentWETHData = {
+        _roundId: latestRoundDataWETH[0],
+        _answer: latestRoundDataWETH[1],
+        _startedAt: latestRoundDataWETH[2],
+        _updatedAt: latestRoundDataWETH[3],
+        _answeredInRound: latestRoundDataWETH[4],
+      };
       await priceFeedWETH.connect(governor).setRoundData(
         currentWETHData._roundId,
         currentWETHData._answer.mul(90).div(100), // Decrease WETH price by 10%
@@ -817,7 +908,14 @@ describe('CometWithPartialLiquidation', function() {
     // Create liquidation conditions by dropping prices of first two collaterals heavily
     let iterations = 0;
     while(!(await cometWithPartialLiquidation.isLiquidatable(user1.address)) && iterations < 50) {
-      const currentCOMPData = await priceFeedCOMP.latestRoundData();
+      const latestRoundDataCOMP = await priceFeedCOMP.latestRoundData();
+      const currentCOMPData = {
+        _roundId: latestRoundDataCOMP[0],
+        _answer: latestRoundDataCOMP[1],
+        _startedAt: latestRoundDataCOMP[2],
+        _updatedAt: latestRoundDataCOMP[3],
+        _answeredInRound: latestRoundDataCOMP[4],
+      };
       await priceFeedCOMP.connect(governor).setRoundData(
         currentCOMPData._roundId,
         currentCOMPData._answer.mul(70).div(100), // Decrease COMP price by 30%
@@ -826,7 +924,14 @@ describe('CometWithPartialLiquidation', function() {
         currentCOMPData._answeredInRound
       );
 
-      const currentWETHData = await priceFeedWETH.latestRoundData();
+      const latestRoundDataWETH = await priceFeedWETH.latestRoundData();
+      const currentWETHData = {
+        _roundId: latestRoundDataWETH[0],
+        _answer: latestRoundDataWETH[1],
+        _startedAt: latestRoundDataWETH[2],
+        _updatedAt: latestRoundDataWETH[3],
+        _answeredInRound: latestRoundDataWETH[4],
+      };
       await priceFeedWETH.connect(governor).setRoundData(
         currentWETHData._roundId,
         currentWETHData._answer.mul(70).div(100), // Decrease WETH price by 30%
@@ -836,7 +941,14 @@ describe('CometWithPartialLiquidation', function() {
       );
 
       // Keep WBTC price stable or slightly decrease
-      const currentWBTCData = await priceFeedWBTC.latestRoundData();
+      const latestRoundDataWBTC = await priceFeedWBTC.latestRoundData();
+      const currentWBTCData = {
+        _roundId: latestRoundDataWBTC[0],
+        _answer: latestRoundDataWBTC[1],
+        _startedAt: latestRoundDataWBTC[2],
+        _updatedAt: latestRoundDataWBTC[3],
+        _answeredInRound: latestRoundDataWBTC[4],
+      };
       await priceFeedWBTC.connect(governor).setRoundData(
         currentWBTCData._roundId,
         currentWBTCData._answer.mul(95).div(100), // Decrease WBTC price by 5%
@@ -948,7 +1060,14 @@ describe('CometWithPartialLiquidation', function() {
     // Create liquidation conditions by dropping all prices heavily
     let iterations = 0;
     while(!(await cometWithPartialLiquidation.isLiquidatable(user1.address)) && iterations < 50) {
-      const currentCOMPData = await priceFeedCOMP.latestRoundData();
+      const latestRoundDataCOMP = await priceFeedCOMP.latestRoundData();
+      const currentCOMPData = {
+        _roundId: latestRoundDataCOMP[0],
+        _answer: latestRoundDataCOMP[1],
+        _startedAt: latestRoundDataCOMP[2],
+        _updatedAt: latestRoundDataCOMP[3],
+        _answeredInRound: latestRoundDataCOMP[4],
+      };
       await priceFeedCOMP.connect(governor).setRoundData(
         currentCOMPData._roundId,
         currentCOMPData._answer.mul(60).div(100), // Decrease COMP price by 40%
@@ -957,7 +1076,14 @@ describe('CometWithPartialLiquidation', function() {
         currentCOMPData._answeredInRound
       );
 
-      const currentWETHData = await priceFeedWETH.latestRoundData();
+      const latestRoundDataWETH = await priceFeedWETH.latestRoundData();
+      const currentWETHData = {
+        _roundId: latestRoundDataWETH[0],
+        _answer: latestRoundDataWETH[1],
+        _startedAt: latestRoundDataWETH[2],
+        _updatedAt: latestRoundDataWETH[3],
+        _answeredInRound: latestRoundDataWETH[4],
+      };
       await priceFeedWETH.connect(governor).setRoundData(
         currentWETHData._roundId,
         currentWETHData._answer.mul(60).div(100), // Decrease WETH price by 40%
@@ -966,7 +1092,14 @@ describe('CometWithPartialLiquidation', function() {
         currentWETHData._answeredInRound
       );
 
-      const currentWBTCData = await priceFeedWBTC.latestRoundData();
+      const latestRoundDataWBTC = await priceFeedWBTC.latestRoundData();
+      const currentWBTCData = {
+        _roundId: latestRoundDataWBTC[0],
+        _answer: latestRoundDataWBTC[1],
+        _startedAt: latestRoundDataWBTC[2],
+        _updatedAt: latestRoundDataWBTC[3],
+        _answeredInRound: latestRoundDataWBTC[4],
+      };
       await priceFeedWBTC.connect(governor).setRoundData(
         currentWBTCData._roundId,
         currentWBTCData._answer.mul(60).div(100), // Decrease WBTC price by 40%
@@ -1069,7 +1202,14 @@ describe('CometWithPartialLiquidation', function() {
     // Create liquidation conditions by dropping prices
     let iterations = 0;
     while(!(await cometWithPartialLiquidation.isLiquidatable(user1.address)) && iterations < 50) {
-      const currentCOMPData = await priceFeedCOMP.latestRoundData();
+      const latestRoundDataCOMP = await priceFeedCOMP.latestRoundData();
+      const currentCOMPData = {
+        _roundId: latestRoundDataCOMP[0],
+        _answer: latestRoundDataCOMP[1],
+        _startedAt: latestRoundDataCOMP[2],
+        _updatedAt: latestRoundDataCOMP[3],
+        _answeredInRound: latestRoundDataCOMP[4],
+      };
       await priceFeedCOMP.connect(governor).setRoundData(
         currentCOMPData._roundId,
         currentCOMPData._answer.mul(80).div(100), // Decrease COMP price by 20%
@@ -1078,7 +1218,14 @@ describe('CometWithPartialLiquidation', function() {
         currentCOMPData._answeredInRound
       );
 
-      const currentWETHData = await priceFeedWETH.latestRoundData();
+      const latestRoundDataWETH = await priceFeedWETH.latestRoundData();
+      const currentWETHData = {
+        _roundId: latestRoundDataWETH[0],
+        _answer: latestRoundDataWETH[1],
+        _startedAt: latestRoundDataWETH[2],
+        _updatedAt: latestRoundDataWETH[3],
+        _answeredInRound: latestRoundDataWETH[4],
+      };
       await priceFeedWETH.connect(governor).setRoundData(
         currentWETHData._roundId,
         currentWETHData._answer.mul(80).div(100), // Decrease WETH price by 20%
@@ -1158,7 +1305,14 @@ describe('CometWithPartialLiquidation', function() {
     // Create liquidation conditions by dropping COMP price significantly
     let iterations = 0;
     while(!(await cometWithPartialLiquidation.isLiquidatable(user1.address)) && iterations < 50) {
-      const currentCOMPData = await priceFeedCOMP.latestRoundData();
+      const latestRoundDataCOMP = await priceFeedCOMP.latestRoundData();
+      const currentCOMPData = {
+        _roundId: latestRoundDataCOMP[0],
+        _answer: latestRoundDataCOMP[1],
+        _startedAt: latestRoundDataCOMP[2],
+        _updatedAt: latestRoundDataCOMP[3],
+        _answeredInRound: latestRoundDataCOMP[4],
+      };
       await priceFeedCOMP.connect(governor).setRoundData(
         currentCOMPData._roundId,
         currentCOMPData._answer.mul(50).div(100), // Decrease COMP price by 50%
@@ -1236,7 +1390,14 @@ describe('CometWithPartialLiquidation', function() {
     await cometWithPartialLiquidation.connect(borrower).withdraw(USDC.address, borrowAmount);
 
     // Drop COMP price to $0.93 to make position liquidatable
-    const currentData = await priceFeedCOMP.latestRoundData();
+    const latestRoundData = await priceFeedCOMP.latestRoundData();
+    const currentData = {
+      _roundId: latestRoundData[0],
+      _answer: latestRoundData[1],
+      _startedAt: latestRoundData[2],
+      _updatedAt: latestRoundData[3],
+      _answeredInRound: latestRoundData[4],
+    };
     await priceFeedCOMP.connect(governor).setRoundData(
       currentData._roundId,
       exp(0.93, 8),

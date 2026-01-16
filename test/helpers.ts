@@ -10,7 +10,6 @@ import {
   CometExt__factory,
   CometExtAssetList,
   CometExtAssetList__factory,
-  // CometExtPartialLiquidation,
   CometExtPartialLiquidation__factory,
   CometHarness__factory,
   CometHarnessInterface as Comet,
@@ -42,7 +41,6 @@ import {
   AssetListFactory__factory,
   CometHarnessExtendedAssetList__factory,
   CometHarnessInterfaceExtendedAssetList as CometWithExtendedAssetList,
-  // CometWithPartialLiquidation,
   CometFactoryWithPartialLiquidation__factory,
   CometHarnessPartialLiquidation__factory,
   CometHarnessInterfacePartialLiquidation,
@@ -298,9 +296,6 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   const AssetListFactory = (await ethers.getContractFactory('AssetListFactory')) as AssetListFactory__factory;
   const assetListFactory = await AssetListFactory.deploy();
   await assetListFactory.deployed();
-
-  // Deploy CometHarnessPartialLiquidation
-  // For CometHarnessPartialLiquidation, we need a simple health factor holder as extensionDelegate
 
   let extensionDelegate = opts.extensionDelegate;
   if (extensionDelegate === undefined) {
