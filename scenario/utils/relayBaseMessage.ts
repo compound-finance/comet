@@ -14,10 +14,6 @@ an L1 address to its offset, L2 equivalent.
 https://sepolia.basescan.org/address/0x4200000000000000000000000000000000000007#code
 */
 
-function isTenderlyLog(log: any): log is { raw: { topics: string[], data: string } } {
-  return !!log?.raw?.topics && !!log?.raw?.data;
-}
-
 export default async function relayBaseMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,

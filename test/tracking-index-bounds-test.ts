@@ -1,7 +1,7 @@
 import { expect, exp, fastForward, makeProtocol, setTotalsBasic, toYears } from './helpers';
 import { BigNumber } from 'ethers';
 
-describe.only('total tracking index bounds', function () {
+describe('total tracking index bounds', function () {
   describe('base scale of 6', function () {
     it('upper bound hit on tracking supply index', async () => {
       const baseMinForRewards = exp(10_000, 6); // 10k USDC

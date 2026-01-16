@@ -13,10 +13,6 @@ applyL1ToL2Alias mimics the AddressAliasHelper.applyL1ToL2Alias fn that converts
 an L1 address to its offset, L2 equivalent.
 */
 
-function isTenderlyLog(log: any): log is { raw: { topics: string[], data: string } } {
-  return !!log?.raw?.topics && !!log?.raw?.data;
-}
-
 export default async function relayScrollMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
