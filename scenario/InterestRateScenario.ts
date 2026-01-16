@@ -1,8 +1,9 @@
-import { scenario } from './context/CometContext';
+import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { annualize, defactor, exp } from '../test/helpers';
+import { annualize, defactor, exp, factorScale } from '../test/helpers';
 import { BigNumber } from 'ethers';
 import { FuzzType } from './constraints/Fuzzing';
+import { expectRevertCustom, supportUtilizationLimit } from './utils';
 
 function calculateInterestRate(
   utilization: BigNumber,
@@ -10,8 +11,14 @@ function calculateInterestRate(
   interestRateBase: BigNumber,
   interestRateSlopeLow: BigNumber,
   interestRateSlopeHigh: BigNumber,
-  factorScale = BigNumber.from(exp(1, 18))
+  isBorrowRate: boolean,
+  totalBorrowBase?: BigNumber
 ): BigNumber {
+  const factorScale = BigNumber.from(exp(1, 18));
+  if (isBorrowRate && totalBorrowBase !== undefined) {
+    if(totalBorrowBase.isZero()) return BigNumber.from(0);
+  }
+  
   if (utilization.lte(kink)) {
     const interestRateWithoutBase = interestRateSlopeLow.mul(utilization).div(factorScale);
     return interestRateBase.add(interestRateWithoutBase);
@@ -62,16 +69,20 @@ scenario(
         supplyKink,
         supplyPerSecondInterestRateBase,
         supplyPerSecondInterestRateSlopeLow,
-        supplyPerSecondInterestRateSlopeHigh
+        supplyPerSecondInterestRateSlopeHigh,
+        false
       )
     );
+    totalBorrowBase = (await comet.totalsBasic()).totalBorrowBase;
     expect(await comet.getBorrowRate(actualUtilization)).to.equal(
       calculateInterestRate(
         actualUtilization,
         borrowKink,
         borrowPerSecondInterestRateBase,
         borrowPerSecondInterestRateSlopeLow,
-        borrowPerSecondInterestRateSlopeHigh
+        borrowPerSecondInterestRateSlopeHigh,
+        true,
+        totalBorrowBase
       )
     );
   }
@@ -154,16 +165,20 @@ scenario(
         supplyKink,
         supplyPerSecondInterestRateBase,
         supplyPerSecondInterestRateSlopeLow,
-        supplyPerSecondInterestRateSlopeHigh
+        supplyPerSecondInterestRateSlopeHigh,
+        false
       )
     );
+    totalBorrowBase = (await comet.totalsBasic()).totalBorrowBase;
     expect(await comet.getBorrowRate(actualUtilization)).to.equal(
       calculateInterestRate(
         actualUtilization,
         borrowKink,
         borrowPerSecondInterestRateBase,
         borrowPerSecondInterestRateSlopeLow,
-        borrowPerSecondInterestRateSlopeHigh
+        borrowPerSecondInterestRateSlopeHigh,
+        true,
+        totalBorrowBase
       )
     );
   }
@@ -192,5 +207,81 @@ scenario.skip(
       // ( 1% + 2% * 50% )
       expect(annualize(await comet.getBorrowRate(utilization))).to.be.approximately(0.02, 0.001);
     }
+  }
+);
+
+scenario(
+  'Comet#interestRate reverts for pushing utilization above 200%',
+  {
+    filter: async (ctx: CometContext) => await supportUtilizationLimit(ctx),
+  },
+  async ({ comet }, context: CometContext) => {
+    const { albert, betty } = context.actors;
+    const { asset, scale, borrowCollateralFactor, priceFeed } = await comet.getAssetInfo(0);
+    const collateralAsset = context.getAssetByAddress(asset);
+    const baseTokenAddress = await comet.baseToken();
+    const baseToken = context.getAssetByAddress(baseTokenAddress);
+    
+    // Get constants
+    const baseScale = (await comet.baseScale()).toBigInt();
+    const collateralScale = scale.toBigInt();
+    const basePrice = (await comet.getPrice(await comet.baseTokenPriceFeed())).toBigInt();
+    const collateralPrice = (await comet.getPrice(priceFeed)).toBigInt();
+    
+    // Step 1: Set up a known supply state
+    // Supply a fixed amount of base tokens to establish a baseline
+    const baseSupplyAmount = 10n * baseScale; // 10 base tokens
+    await context.sourceTokens(baseSupplyAmount, baseToken.address, betty.address);
+    await baseToken.approve(betty, comet.address);
+    await betty.supplyAsset({ asset: baseToken.address, amount: baseSupplyAmount });
+    
+    // Get current state after supply
+    let currentTotalSupply = (await comet.totalSupply()).toBigInt();
+    
+    // Step 2: Calculate borrow amount to exceed 200% utilization
+    // We want to borrow enough so that: (currentTotalBorrow + borrowAmount) / currentTotalSupply > 2
+    // Simplest approach: borrow 3x the current supply (which gives 300% utilization if no existing borrow)
+    // This ensures we definitely exceed 200% even with existing borrows
+    let targetBorrowAmount = 3n * currentTotalSupply;
+    
+    // Ensure we have enough base tokens available to borrow
+    // We need: supply + reserves >= borrowAmount
+    // If not, we need to supply more. If we supply more, utilization goes down,
+    // so we need to borrow even more. Let's supply enough to cover the borrow.
+    const currentReserves = (await comet.getReserves()).toBigInt();
+    const availableToBorrow = currentTotalSupply + (currentReserves > 0n ? currentReserves : 0n);
+    
+    if (targetBorrowAmount > availableToBorrow) {
+      // Supply enough to cover the borrow
+      // We need: newSupply >= targetBorrowAmount
+      // So: additionalSupply = targetBorrowAmount - currentTotalSupply (assuming no reserves)
+      const additionalSupply = targetBorrowAmount - currentTotalSupply + baseScale;
+      await context.sourceTokens(additionalSupply, baseToken.address, betty.address);
+      await baseToken.approve(betty, comet.address);
+      await betty.supplyAsset({ asset: baseToken.address, amount: additionalSupply });
+      
+      // Recalculate: now we have more supply, so we need to borrow even more to exceed 200%
+      currentTotalSupply = (await comet.totalSupply()).toBigInt();
+      targetBorrowAmount = 3n * currentTotalSupply;
+    }
+    
+    // Step 4: Calculate collateral needed for the borrow
+    // We need enough collateral to support the borrow based on borrowCollateralFactor
+    const collateralWeiPerUnitBase = (collateralScale * basePrice) / collateralPrice;
+    let collateralNeeded = (collateralWeiPerUnitBase * targetBorrowAmount) / baseScale;
+    collateralNeeded = (collateralNeeded * factorScale) / borrowCollateralFactor.toBigInt(); // adjust for borrowCollateralFactor
+    collateralNeeded = (collateralNeeded * 11n) / 10n; // add 10% fudge factor for safety
+    
+    // Step 5: Source collateral tokens for albert and have him supply
+    await context.sourceTokens(collateralNeeded, collateralAsset.address, albert.address);
+    await collateralAsset.approve(albert, comet.address);
+    await albert.safeSupplyAsset({ asset: collateralAsset.address, amount: collateralNeeded });
+
+    // Step 6: Try to borrow base asset, which should revert with ExceedsSupportedUtilization
+    // The borrow should push utilization above 200%
+    await expectRevertCustom(
+      albert.withdrawAsset({ asset: baseTokenAddress, amount: targetBorrowAmount }),
+      'ExceedsSupportedUtilization()'
+    );
   }
 );

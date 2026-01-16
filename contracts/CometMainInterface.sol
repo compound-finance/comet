@@ -34,6 +34,9 @@ abstract contract CometMainInterface is CometCore {
     error TransferOutFailed();
     error Unauthorized();
 
+    /// @dev Error emitted when the utilization exceeds the supported utilization
+    error ExceedsSupportedUtilization();
+
     event Supply(address indexed from, address indexed dst, uint amount);
     event Transfer(address indexed from, address indexed to, uint amount);
     event Withdraw(address indexed src, address indexed to, uint amount);

@@ -108,6 +108,13 @@ contract CometWithExtendedAssetList is CometMainInterface {
 
     uint8 internal constant MAX_ASSETS_FOR_ASSET_LIST = 24;
 
+    /// @dev The protocol only supports 200% utilization on which borrows are allowed
+    /// It keeps healthy state of the market, with no over-utilization leading to illiquidity,
+    /// and keeps protocol reserves from exhaustion
+    uint256 public constant MAX_SUPPORTED_UTILIZATION = 2e18;
+
+    receive() external payable {}
+
     /**
      * @notice Construct a new protocol instance
      * @param config The mapping of initial/constant parameters
@@ -313,6 +320,9 @@ contract CometWithExtendedAssetList is CometMainInterface {
      * @return The per second borrow rate at `utilization`
      */
     function getBorrowRate(uint utilization) override public view returns (uint64) {
+         /// No borrow - no borrow interest
+        if (totalBorrowBase == 0) return 0;
+
         if (utilization <= borrowKink) {
             // interestRateBase + interestRateSlopeLow * utilization
             return safe64(borrowPerSecondInterestRateBase + mulFactor(borrowPerSecondInterestRateSlopeLow, utilization));
@@ -991,6 +1001,9 @@ contract CometWithExtendedAssetList is CometMainInterface {
         if (srcBalance < 0) {
             if (uint256(-srcBalance) < baseBorrowMin) revert BorrowTooSmall();
             if (!isBorrowCollateralized(src)) revert NotCollateralized();
+            /// @dev safeguard against the over-utilization leading to illiquidity and reserves exhaustion
+            /// At this point totals are updated and it is a borrow case, so we can check resulting utilization
+            if (getUtilization() > MAX_SUPPORTED_UTILIZATION) revert ExceedsSupportedUtilization();
         }
 
         doTransferOut(baseToken, to, amount);
