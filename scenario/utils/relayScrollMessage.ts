@@ -4,6 +4,7 @@ import { Log } from '@ethersproject/abstract-provider';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import { OpenBridgedProposal } from '../context/Gov';
 import { BigNumber, ethers } from 'ethers';
+import { applyL1ToL2Alias, isTenderlyLog } from './index';
 
 /*
 The Scroll relayer applies an offset to the message sender.
@@ -11,10 +12,6 @@ The Scroll relayer applies an offset to the message sender.
 applyL1ToL2Alias mimics the AddressAliasHelper.applyL1ToL2Alias fn that converts
 an L1 address to its offset, L2 equivalent.
 */
-function applyL1ToL2Alias(address: string) {
-  const offset = BigInt('0x1111000000000000000000000000000000001111');
-  return `0x${(BigInt(address) + offset).toString(16)}`;
-}
 
 function isTenderlyLog(log: any): log is { raw: { topics: string[], data: string } } {
   return !!log?.raw?.topics && !!log?.raw?.data;

@@ -7,6 +7,7 @@ export async function isBridgeProposal(
   openProposal: OpenProposal
 ) {
   const bridgeNetwork = bridgeDeploymentManager.network;
+  console.log(`Checking if proposal ${openProposal.id} is a bridge proposal on ${bridgeNetwork}`);
   switch (bridgeNetwork) {
     case 'arbitrum': {
       const inbox = await governanceDeploymentManager.getContractOrThrow('arbitrumInbox');

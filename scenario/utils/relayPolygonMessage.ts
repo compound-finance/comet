@@ -5,10 +5,7 @@ import { setNextBaseFeeToZero } from './hreUtils';
 import { Contract, ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { OpenBridgedProposal } from '../context/Gov';
-
-function isTenderlyLog(log: any): log is { raw: { topics: string[], data: string } } {
-  return !!log?.raw?.topics && !!log?.raw?.data;
-}
+import { isTenderlyLog } from './index';
 
 type BridgeERC20Data = {
   syncData: string;

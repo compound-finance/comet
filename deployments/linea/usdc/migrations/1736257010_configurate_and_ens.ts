@@ -4,6 +4,7 @@ import { DeploymentManager } from '../../../../plugins/deployment_manager/Deploy
 import { diffState, getCometConfig } from '../../../../plugins/deployment_manager/DiffState';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, exp, getConfigurationStruct, proposal } from '../../../../src/deploy';
+import { utils } from 'ethers';
 
 const ENSName = 'compound-community-licenses.eth';
 const ENSResolverAddress = '0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41';
@@ -23,12 +24,9 @@ export default migration('1736257010_configurate_and_ens', {
 
   enact: async (deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager) => {
     const trace = deploymentManager.tracer();
-    const ethers = deploymentManager.hre.ethers;
-    const { utils } = ethers;
 
     const {
       bridgeReceiver,
-      timelock: l2Timelock,
       comet,
       cometAdmin,
       configurator,
@@ -74,7 +72,7 @@ export default migration('1736257010_configurate_and_ens', {
     );
 
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);
-    const subdomainHash = ethers.utils.namehash(ENSSubdomain);
+    const subdomainHash = utils.namehash(ENSSubdomain);
     const officialMarketsJSON = await ENSResolver.text(subdomainHash, ENSTextRecordKey);
     const officialMarkets = JSON.parse(officialMarketsJSON);
     const updatedMarkets = {
@@ -129,19 +127,38 @@ export default migration('1736257010_configurate_and_ens', {
       {
         target: ENSResolverAddress,
         signature: 'setText(bytes32,string,string)',
-        calldata: ethers.utils.defaultAbiCoder.encode(
+        calldata: utils.defaultAbiCoder.encode(
           ['bytes32', 'string', 'string'],
           [subdomainHash, ENSTextRecordKey, JSON.stringify(updatedMarkets)]
         )
       }
     ];
 
-    const description = '# Initialize cUSDTv3 on Linea network\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Linea network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Linea; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-linea/4460/19).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/953), [deploy market GitHub action run](https://github.com/woof-software/comet/actions/runs/13041520838/job/36384262627) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-linea/4460).\n\n\n## ENS TXT record update\n\n[USDS on Base proposal](https://www.tally.xyz/gov/compound/proposal/395?govId=eip155:1:0x309a862bbC1A00e45506cB8A802D1ff10004c8C0) is active on the moment of pushing this proposal. The proposal reached the quorum and we expect that the proposal will be executed without fail. In case we need to cancel proposal 395, we need to cancel this proposal too\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration, deploys a new Comet implementation, and sets the reward config on Linea. This sends the encoded `setConfiguration`, `deployAndUpgradeTo`, `setRewardConfig` calls across the bridge to the governance receiver on Linea.\n\nThe second action approves USDC tokens to the bridge.\n\nThe third action sends USDC tokens to the Linea chain via a special native USDC bridge.\n\nThe fourth action approves  COMP tokens to the bridge.\n\nThe fifth action sends COMP tokens to the Linea chain via bridge.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Linea cUSDCv3 market.';
+    const description = `# Initialize cWETHv3 on Linea network
+
+## Proposal summary
+
+WOOF! proposes the deployment of Compound III to the Linea network. This proposal takes the governance steps recommended and necessary to initialize a Compound III WETH market on Linea; upon execution, cWETHv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-linea/4460/20).
+
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/982), [deploy market GitHub action run](https://github.com/woof-software/comet/actions/runs/15211470652) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-linea/4460).
+
+
+## wrsETH Price Feed
+
+[wrsETH/ETH exchange rate](https://lineascan.build/address/0xEEDF0B095B5dfe75F3881Cb26c19DA209A27463a#readContract) price oracle has a wrong label. The information is confirmed with ChainLink and Kelp teams internally.
+
+
+## Proposal Actions
+
+The first proposal action sends ether to the Linea Timelock so it can be wrapped and used to seed the reserves, sets the Comet configuration and deploys a new Comet implementation on Linea. This sends the encoded 'setFactory', 'setConfiguration', 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Linea.
+
+The second action updates the ENS TXT record 'v3-official-markets' on 'v3-additional-grants.compound-community-licenses.eth', updating the official markets JSON to include the new Linea cWETHv3 market.`;
+
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(mainnetActions, description))))
     );
 
-    const event = txn.events.find(event => event.event === 'ProposalCreated');
+    const event = txn.events.find((event: { event: string }) => event.event === 'ProposalCreated');
     const [proposalId] = event.args;
 
     trace(`Created proposal ${proposalId}.`);
@@ -152,7 +169,6 @@ export default migration('1736257010_configurate_and_ens', {
   },
 
   async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, preMigrationBlockNumber: number) {
-    const ethers = deploymentManager.hre.ethers;
     await deploymentManager.spider(); // Pull in Linea COMP now that reward config has been set
 
     const {
@@ -188,13 +204,13 @@ export default migration('1736257010_configurate_and_ens', {
     const lineaCOMP = new Contract(
       lineaCOMPAddress,
       ['function balanceOf(address account) external view returns (uint256)'],
-      deploymentManager.hre.ethers.provider
+      await deploymentManager.getSigner()
     );
     expect(await lineaCOMP.balanceOf(rewards.address)).to.be.equal(COMPAmountToBridge);
 
     // 6.
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);
-    const subdomainHash = ethers.utils.namehash(ENSSubdomain);
+    const subdomainHash = utils.namehash(ENSSubdomain);
     const officialMarketsJSON = await ENSResolver.text(subdomainHash, ENSTextRecordKey);
     const officialMarkets = JSON.parse(officialMarketsJSON);
 

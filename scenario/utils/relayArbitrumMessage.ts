@@ -5,10 +5,7 @@ import { utils, BigNumber } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { OpenBridgedProposal } from '../context/Gov';
-
-function isTenderlyLog(log: any): log is { raw: { topics: string[], data: string } } {
-  return !!log?.raw?.topics && !!log?.raw?.data;
-}
+import { isTenderlyLog } from './index';
 
 export async function relayArbitrumMessage(
   governanceDeploymentManager: DeploymentManager,

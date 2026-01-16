@@ -3,9 +3,9 @@ pragma solidity 0.8.15;
 
 interface TimelockInterface {
     function queuedTransactions(bytes32 hash) external view returns (bool);
-    function queueTransaction(address target, uint value, string calldata signature, bytes calldata data) external returns (bytes32);
+    function queueTransaction(address target, uint value, string calldata signature, bytes calldata data, uint eta) external returns (bytes32);
     function cancelTransaction(address target, uint value, string calldata signature, bytes calldata data) external;
-    function executeTransaction(address target, uint value, string calldata signature, bytes calldata data) external payable returns (bytes memory);
+    function executeTransaction(address target, uint value, string calldata signature, bytes calldata data, uint eta) external payable returns (bytes memory);
     function executeTransactions(address[] calldata targets, uint[] calldata values, string[] calldata signatures, bytes[] calldata data) external payable;
 }
 
@@ -155,7 +155,7 @@ contract GovernorSimple {
 
     function queueOrRevertInternal(address target, uint value, string memory signature, bytes memory data) internal {
         require(!timelock.queuedTransactions(keccak256(abi.encode(target, value, signature, data))), "GovernorSimple::queueOrRevertInternal: identical proposal action already queued at eta");
-        timelock.queueTransaction(target, value, signature, data);
+        timelock.queueTransaction(target, value, signature, data, 0);
     }
 
     /**
@@ -170,7 +170,7 @@ contract GovernorSimple {
         proposal.queued = false;
         proposal.executed = true;
         for (uint i = 0; i < proposal.targets.length; i++) {
-            timelock.executeTransaction{ value:proposal.values[i] }(proposal.targets[i], proposal.values[i], proposal.signatures[i], proposal.calldatas[i]);
+            timelock.executeTransaction{ value:proposal.values[i] }(proposal.targets[i], proposal.values[i], proposal.signatures[i], proposal.calldatas[i], 0);
         }
         emit ProposalExecuted(proposalId);
     }

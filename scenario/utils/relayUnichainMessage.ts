@@ -4,11 +4,7 @@ import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
 import { BigNumber, ethers, utils } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { OpenBridgedProposal } from '../context/Gov';
-
-function applyL1ToL2Alias(address: string) {
-  const offset = BigInt('0x1111000000000000000000000000000000001111');
-  return `0x${(BigInt(address) + offset).toString(16)}`;
-}
+import { applyL1ToL2Alias, isTenderlyLog } from './index';
 
 function isTenderlyLog(log: any): log is { raw: { topics: string[], data: string } } {
   return !!log?.raw?.topics && !!log?.raw?.data;

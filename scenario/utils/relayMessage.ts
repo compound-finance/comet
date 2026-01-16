@@ -16,6 +16,7 @@ export default async function relayMessage(
   tenderlyLogs?: any[]
 ) {
   const bridgeNetwork = bridgeDeploymentManager.network;
+  console.log(`Relaying messages from ${bridgeNetwork} -> ${governanceDeploymentManager.network}`);
   let proposal;
   switch (bridgeNetwork) {
     case 'base':
