@@ -27,7 +27,7 @@ async function borrowCapacityForAsset(comet: CometInterface, actor: SignerWithAd
 
 }
 
-describe.only('CometWithPartialLiquidation', function() {
+describe('CometWithPartialLiquidation', function() {
 
   it('should demonstrate partial liquidation with one collateral', async function () {
     const protocol = await makeProtocol({
@@ -56,12 +56,12 @@ describe.only('CometWithPartialLiquidation', function() {
       governor, 
       users: [user1, userToLiquidate] 
     } = protocol;
-    const { USDC, COMP, USDT } = tokens;
+    const { USDC, COMP } = tokens;
     const { COMP: priceFeedCOMP, USDC: priceFeedUSDC, } = priceFeeds;
-    console.log("USDC", USDC.address);
-    console.log("COMP", COMP.address);
-    console.log("baseToken", await cometWithPartialLiquidation.baseToken());
-    console.log("assetInfo(0)", await cometWithPartialLiquidation.getAssetInfo(0));
+    console.log('USDC', USDC.address);
+    console.log('COMP', COMP.address);
+    console.log('baseToken', await cometWithPartialLiquidation.baseToken());
+    console.log('assetInfo(0)', await cometWithPartialLiquidation.getAssetInfo(0));
     /// Change price of the assets to 1$ each.
     let currentCOMPData = await priceFeedCOMP.latestRoundData();
     const currentUSDCData = await priceFeedUSDC.latestRoundData();
@@ -164,12 +164,12 @@ describe.only('CometWithPartialLiquidation', function() {
     } = protocol;
     const { USDC, COMP, USDT } = tokens;
     const { COMP: priceFeedCOMP, USDC: priceFeedUSDC, USDT: priceFeedUSDT} = priceFeeds;
-    console.log("USDC", USDC.address);
-    console.log("COMP", COMP.address);
-    console.log("USDT", USDT.address);
-    console.log("baseToken", await cometWithPartialLiquidation.baseToken());
-    console.log("assetInfo(0)", await cometWithPartialLiquidation.getAssetInfo(0));
-    console.log("assetInfo(1)", await cometWithPartialLiquidation.getAssetInfo(1));
+    console.log('USDC', USDC.address);
+    console.log('COMP', COMP.address);
+    console.log('USDT', USDT.address);
+    console.log('baseToken', await cometWithPartialLiquidation.baseToken());
+    console.log('assetInfo(0)', await cometWithPartialLiquidation.getAssetInfo(0));
+    console.log('assetInfo(1)', await cometWithPartialLiquidation.getAssetInfo(1));
     /// Change price of the assets to 1$ each.
     let currentCOMPData = await priceFeedCOMP.latestRoundData();
     let currentUSDTData = await priceFeedUSDT.latestRoundData();
@@ -284,7 +284,7 @@ describe.only('CometWithPartialLiquidation', function() {
     });
     const { cometWithPartialLiquidation, tokens, priceFeeds, governor, users: [user1, userToLiquidate] } = protocol;
     const { USDC, COMP, USDT } = tokens;
-    const { USDC: priceFeedUSDC, COMP: priceFeedCOMP, USDT: priceFeedUSDT } = priceFeeds;
+    const { COMP: priceFeedCOMP, USDT: priceFeedUSDT } = priceFeeds;
 
     await USDC.connect(governor).transfer(user1.address, exp(8000, 6));
     await USDC.connect(user1).approve(cometWithPartialLiquidation.address, exp(8000, 6));
@@ -329,7 +329,7 @@ describe.only('CometWithPartialLiquidation', function() {
       // advance time by 1 week
       await ethers.provider.send('evm_increaseTime', [1 * 24 * 60 * 60]);
       await ethers.provider.send('evm_mine', []);
-      console.log("iterations", iterations);
+      console.log('iterations', iterations);
       iterations++;
     }
     expect(await cometWithPartialLiquidation.isLiquidatable(userToLiquidate.address)).to.be.true;
@@ -362,9 +362,8 @@ describe.only('CometWithPartialLiquidation', function() {
       baseTrackingBorrowSpeed: exp(1 / 86400, 15, 18),
     });
 
-    const { cometWithPartialLiquidation, tokens, priceFeeds, governor, users: [user1, liquidator] } = protocol;
+    const { cometWithPartialLiquidation, tokens, governor, users: [user1, liquidator] } = protocol;
     const { USDC, COMP } = tokens;
-    const { COMP: priceFeedCOMP } = priceFeeds;
 
     // Setup liquidator with USDC
     await USDC.connect(governor).transfer(liquidator.address, exp(10000, 6));
@@ -410,9 +409,8 @@ describe.only('CometWithPartialLiquidation', function() {
       baseTrackingBorrowSpeed: exp(1 / 86400, 15, 18),
     });
 
-    const { cometWithPartialLiquidation, tokens, priceFeeds, governor, users: [user1, liquidator] } = protocol;
+    const { cometWithPartialLiquidation, tokens, governor, users: [user1, liquidator] } = protocol;
     const { USDC, COMP } = tokens;
-    const { COMP: priceFeedCOMP } = priceFeeds;
 
     // Setup liquidator with USDC
     await USDC.connect(governor).transfer(liquidator.address, exp(10000, 6));
@@ -463,9 +461,8 @@ describe.only('CometWithPartialLiquidation', function() {
       baseTrackingBorrowSpeed: exp(1 / 86400, 15, 18),
     });
 
-    const { cometWithPartialLiquidation, tokens, priceFeeds, governor, users: [user1, liquidator] } = protocol;
+    const { cometWithPartialLiquidation, tokens, governor, users: [user1, liquidator] } = protocol;
     const { USDC, COMP } = tokens;
-    const { COMP: priceFeedCOMP } = priceFeeds;
 
     // Setup liquidator with USDC
     await USDC.connect(governor).transfer(liquidator.address, exp(10000, 6));
@@ -1175,8 +1172,8 @@ describe.only('CometWithPartialLiquidation', function() {
       iterations++;
     }
 
-    const initialCOMP = await cometWithPartialLiquidation.userCollateral(user1.address, COMP.address);
-    const initialDebt = await cometWithPartialLiquidation.borrowBalanceOf(user1.address);
+    // const initialCOMP = await cometWithPartialLiquidation.userCollateral(user1.address, COMP.address);
+    // const initialDebt = await cometWithPartialLiquidation.borrowBalanceOf(user1.address);
     const isLiquidatable = await cometWithPartialLiquidation.isLiquidatable(user1.address);
     
     expect(isLiquidatable).to.be.true;
@@ -1193,7 +1190,7 @@ describe.only('CometWithPartialLiquidation', function() {
     expect(finalIsLiquidatable).to.be.false;
   });
 
-  it.only('should correctly calculate newBalance and newPrincipal in absorbInternal', async function () {
+  it('should correctly calculate newBalance and newPrincipal in absorbInternal', async function () {
     const protocol = await makeProtocol({
       assets: {
         USDC: {
@@ -1260,13 +1257,13 @@ describe.only('CometWithPartialLiquidation', function() {
     const totalsBasic = await cometWithPartialLiquidation.totalsBasic();
     const baseBorrowIndex = totalsBasic.baseBorrowIndex.toBigInt();
     const baseSupplyIndex = totalsBasic.baseSupplyIndex.toBigInt();
-    const baseScale = BigInt(await cometWithPartialLiquidation.baseScale());
-    const factorScale = BigInt(await cometWithPartialLiquidation.factorScale());
+    const baseScale = (await cometWithPartialLiquidation.baseScale()).toBigInt();
+    const factorScale = (await cometWithPartialLiquidation.factorScale()).toBigInt();
     const BASE_INDEX_SCALE = 1000000000000000n; // 1e15
 
     // Calculate oldBalance: presentValue(oldPrincipal)
     // For negative principal (debt): -presentValueBorrow(baseBorrowIndex, abs(oldPrincipal))
-    const oldPrincipalAbs = -BigInt(oldPrincipal);
+    const oldPrincipalAbs = -BigInt(oldPrincipal.toString());
     const oldBalanceCalculated = -(oldPrincipalAbs * baseBorrowIndex / BASE_INDEX_SCALE);
     console.log('oldPrincipal:', oldPrincipal.toString());
     console.log('oldBalance (calculated):', oldBalanceCalculated.toString());

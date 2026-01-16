@@ -625,7 +625,7 @@ describe('configurator', function () {
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
       expect(event(txn, 0)).to.be.deep.equal({
-        SetHealthFactor: {
+        SetTargetHealthFactor: {
           cometProxy: cometProxy.address,
           oldHealthFactor,
           newHealthFactor,

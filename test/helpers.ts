@@ -10,7 +10,7 @@ import {
   CometExt__factory,
   CometExtAssetList,
   CometExtAssetList__factory,
-  CometExtPartialLiquidation,
+  // CometExtPartialLiquidation,
   CometExtPartialLiquidation__factory,
   CometHarness__factory,
   CometHarnessInterface as Comet,
@@ -42,8 +42,7 @@ import {
   AssetListFactory__factory,
   CometHarnessExtendedAssetList__factory,
   CometHarnessInterfaceExtendedAssetList as CometWithExtendedAssetList,
-  CometWithPartialLiquidation,
-  CometWithPartialLiquidation__factory,
+  // CometWithPartialLiquidation,
   CometFactoryWithPartialLiquidation__factory,
   CometHarnessPartialLiquidation__factory,
   CometHarnessInterfacePartialLiquidation,
@@ -114,7 +113,6 @@ export type Protocol = {
   pauseGuardian: SignerWithAddress;
   extensionDelegate: CometExt;
   extensionDelegateAssetList: CometExtAssetList;
-  extensionDelegatePartialLiquidation: CometExtPartialLiquidation;
   users: SignerWithAddress[];
   base: string;
   reward: string;
@@ -139,7 +137,6 @@ export type ConfiguratorAndProtocol = {
   cometFactoryWithExtendedAssetList: CometFactoryWithExtendedAssetList;
   cometProxy: TransparentUpgradeableProxy;
   cometProxyWithPartialLiquidation: TransparentUpgradeableProxy;
-  cometWithPartialLiquidation: CometWithPartialLiquidation;
   cometProxyWithExtendedAssetList: TransparentUpgradeableProxy;
 } & Protocol;
 
@@ -304,18 +301,8 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
 
   // Deploy CometHarnessPartialLiquidation
   // For CometHarnessPartialLiquidation, we need a simple health factor holder as extensionDelegate
-  let extensionDelegatePartialLiquidation = opts.extensionDelegate;
 
-  let simpleHealthFactorHolder: SimpleHealthFactorHolder;
-  if (extensionDelegatePartialLiquidation === undefined) {
-    const SimpleHealthFactorHolder: SimpleHealthFactorHolder__factory = await ethers.getContractFactory('SimpleHealthFactorHolder') as SimpleHealthFactorHolder__factory;
-    simpleHealthFactorHolder = await SimpleHealthFactorHolder.deploy() as SimpleHealthFactorHolder;
-    await simpleHealthFactorHolder.deployed();
-    const CometExtPartialLiquidationFactory = (await ethers.getContractFactory('CometExtPartialLiquidation')) as CometExtPartialLiquidation__factory;
-    extensionDelegatePartialLiquidation = await CometExtPartialLiquidationFactory.deploy({ name32, symbol32 }, assetListFactory.address, simpleHealthFactorHolder.address);
-    await extensionDelegatePartialLiquidation.deployed();
-  }
-  let extensionDelegate = opts.extensionDelegate || extensionDelegatePartialLiquidation;
+  let extensionDelegate = opts.extensionDelegate;
   if (extensionDelegate === undefined) {
     const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
     extensionDelegate = await CometExtFactory.deploy({ name32, symbol32 });
@@ -376,18 +363,29 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     }
     return acc;
   }, []);
-  let extensionDelegateAssetList = opts.extensionDelegate || extensionDelegatePartialLiquidation;
+  let extensionDelegateAssetList = opts.extensionDelegate;
   if (extensionDelegateAssetList === undefined) {
     const CometExtFactory = (await ethers.getContractFactory('CometExtAssetList')) as CometExtAssetList__factory;
     extensionDelegateAssetList = await CometExtFactory.deploy({ name32, symbol32 }, assetListFactory.address);
     await extensionDelegateAssetList.deployed();
   }
   config.extensionDelegate = extensionDelegateAssetList.address;
-
   const CometFactoryWithExtendedAssetList = (await ethers.getContractFactory('CometHarnessExtendedAssetList')) as CometHarnessExtendedAssetList__factory;
+
   const cometWithExtendedAssetList = await CometFactoryWithExtendedAssetList.deploy(config);
   await cometWithExtendedAssetList.deployed();
 
+  let extensionDelegatePartialLiquidation = opts.extensionDelegate;
+
+  let simpleHealthFactorHolder: SimpleHealthFactorHolder;
+  if (extensionDelegatePartialLiquidation === undefined) {
+    const SimpleHealthFactorHolder: SimpleHealthFactorHolder__factory = await ethers.getContractFactory('SimpleHealthFactorHolder') as SimpleHealthFactorHolder__factory;
+    simpleHealthFactorHolder = await SimpleHealthFactorHolder.deploy() as SimpleHealthFactorHolder;
+    await simpleHealthFactorHolder.deployed();
+    const CometExtPartialLiquidationFactory = (await ethers.getContractFactory('CometExtPartialLiquidation')) as CometExtPartialLiquidation__factory;
+    extensionDelegatePartialLiquidation = await CometExtPartialLiquidationFactory.deploy({ name32, symbol32 }, assetListFactory.address, simpleHealthFactorHolder.address);
+    await extensionDelegatePartialLiquidation.deployed();
+  }
   // Create config for CometHarnessPartialLiquidation with correct extensionDelegate
   const configPartialLiquidation = {
     ...config,
@@ -399,8 +397,8 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   await cometWithPartialLiquidation.deployed();
 
   if (opts.start) await ethers.provider.send('evm_setNextBlockTimestamp', [opts.start]);
-  await comet.initializeStorage();
   
+  await comet.initializeStorage();
   await cometWithExtendedAssetList.initializeStorage();
   await cometWithPartialLiquidation.initializeStorage();
 
@@ -411,6 +409,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   const baseTokenBalance = opts.baseTokenBalance;
   if (baseTokenBalance) {
     const baseToken = tokens[base];
+    await wait(baseToken.allocateTo(comet.address, baseTokenBalance));
     await wait(baseToken.allocateTo(cometWithPartialLiquidation.address, baseTokenBalance));
   }
 
@@ -420,7 +419,6 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     pauseGuardian,
     extensionDelegate,
     extensionDelegateAssetList: extensionDelegateAssetList as CometExtAssetList,
-    extensionDelegatePartialLiquidation: extensionDelegatePartialLiquidation as CometExtPartialLiquidation,
     users,
     base,
     reward,
@@ -470,10 +468,13 @@ export async function getConfigurationForConfigurator(
   const cometFactory = await CometFactoryFactory.deploy();
   await cometFactory.deployed();
 
-  // Deploy CometFactoryWithPartialLiquidation
-  const CometFactoryFactoryWithPartialLiquidation = (await ethers.getContractFactory('CometFactoryWithPartialLiquidation')) as CometFactoryWithPartialLiquidation__factory;
-  const cometFactoryWithPartialLiquidationFactory = await CometFactoryFactoryWithPartialLiquidation.deploy();
-  await cometFactoryWithPartialLiquidationFactory.deployed();
+  const CometFactoryWithExtendedAssetListFactory = (await ethers.getContractFactory('CometFactoryWithExtendedAssetList')) as CometFactoryWithExtendedAssetList__factory;
+  const cometFactoryWithExtendedAssetList = await CometFactoryWithExtendedAssetListFactory.deploy();
+  await cometFactoryWithExtendedAssetList.deployed();
+
+  const CometFactoryWithPartialLiquidationFactory = (await ethers.getContractFactory('CometFactoryWithPartialLiquidation')) as CometFactoryWithPartialLiquidation__factory;
+  const cometFactoryWithPartialLiquidation = await CometFactoryWithPartialLiquidationFactory.deploy();
+  await cometFactoryWithPartialLiquidation.deployed();
 
   // Deploy Configurator
   const ConfiguratorFactory = (await ethers.getContractFactory('ConfiguratorPartialLiquidation')) as ConfiguratorPartialLiquidation__factory;
@@ -529,7 +530,7 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     reward,
     comet,
     cometWithExtendedAssetList,
-    extensionDelegatePartialLiquidation,
+    cometWithPartialLiquidation,
     extensionDelegateAssetList,
     assetListFactory,
     tokens,
@@ -549,7 +550,6 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     proxyAdmin.address,
     (await comet.populateTransaction.initializeStorage()).data,
   );
-
   await cometProxy.deployed();
   const configuration = await getConfigurationForConfigurator(
     opts,
@@ -597,27 +597,11 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   );
   await configuratorProxy.deployed();
 
-  configuration.extensionDelegate = extensionDelegatePartialLiquidation.address;
   
-  // Deploy Comet with Partial Liquidation
-  const CometWithPartialLiquidationFactory = (await ethers.getContractFactory('CometWithPartialLiquidation')) as CometWithPartialLiquidation__factory;
-  const cometWithPartialLiquidationContract = await CometWithPartialLiquidationFactory.deploy(configuration);
-  await cometWithPartialLiquidationContract.deployed();
-
-  
-  // Deploy Comet proxy
-  // const CometProxy = (await ethers.getContractFactory('TransparentUpgradeableProxy')) as TransparentUpgradeableProxy__factory;
-  // const cometProxy = await CometProxy.deploy(
-  //   comet.address,
-  //   proxyAdmin.address,
-  //   (await comet.populateTransaction.initializeStorage()).data,
-  // );
-  // await cometProxy.deployed();
-
   const cometProxyWithPartialLiquidation = await CometProxy.deploy(
-    cometWithPartialLiquidationContract.address,
+    cometWithPartialLiquidation.address,
     proxyAdmin.address,
-    (await cometWithPartialLiquidationContract.populateTransaction.initializeStorage()).data,
+    (await cometWithPartialLiquidation.populateTransaction.initializeStorage()).data,
   );
   await cometProxyWithPartialLiquidation.deployed();
 
@@ -648,15 +632,21 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     await proxyAdmin.connect(governor).setMarketAdminPermissionChecker(marketAdminPermissionCheckerContract.address);
   }
 
+  let extensionDelegatePartialLiquidation = opts.extensionDelegate;
+  if (extensionDelegatePartialLiquidation === undefined) {
+    const name32 = ethers.utils.formatBytes32String((opts.name || 'Compound Comet'));
+    const symbol32 = ethers.utils.formatBytes32String((opts.symbol || '📈BASE'));
+    const CometExtPartialLiquidationFactory = (await ethers.getContractFactory('CometExtPartialLiquidation')) as CometExtPartialLiquidation__factory;
+    extensionDelegatePartialLiquidation = await CometExtPartialLiquidationFactory.deploy({ name32, symbol32 }, assetListFactory.address, configuratorAsProxy.address);
+    await extensionDelegatePartialLiquidation.deployed();
+  }
+  configuration.extensionDelegate = extensionDelegatePartialLiquidation.address;
   await configuratorAsProxy.connect(governor).setConfiguration(cometProxyWithPartialLiquidation.address, configuration);
   await configuratorAsProxy.connect(governor).setTargetHealthFactor(cometProxyWithPartialLiquidation.address, exp(1.05, 18));
   await configuratorAsProxy.connect(governor).setFactory(cometProxyWithPartialLiquidation.address, cometFactoryWithPartialLiquidation.address);
 
-  await proxyAdmin.connect(governor).deployAndUpgradeTo(configuratorProxy.address, cometProxy.address);
-  await proxyAdmin.connect(governor).deployAndUpgradeTo(configuratorProxy.address, cometProxyWithExtendedAssetList.address);
   await proxyAdmin.connect(governor).deployAndUpgradeTo(configuratorProxy.address, cometProxyWithPartialLiquidation.address);
 
-  const cometWithPartialLiquidation = await ethers.getContractAt('CometHarnessInterfacePartialLiquidation', cometWithPartialLiquidationContract.address) as CometHarnessInterfacePartialLiquidation;
   return {
     opts,
     governor,
@@ -673,7 +663,6 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     assetListFactory,
     cometProxy,
     cometProxyWithPartialLiquidation,
-    extensionDelegatePartialLiquidation,
     cometProxyWithExtendedAssetList,
     configurator,
     configuratorProxy,
@@ -848,5 +837,3 @@ function convertToBigInt(arr) {
 export function getGasUsed(tx: TransactionResponseExt): bigint {
   return tx.receipt.gasUsed.mul(tx.receipt.effectiveGasPrice).toBigInt();
 }
-
-
