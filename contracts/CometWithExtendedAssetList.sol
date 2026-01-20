@@ -113,8 +113,6 @@ contract CometWithExtendedAssetList is CometMainInterface {
     /// and keeps protocol reserves from exhaustion
     uint256 public constant MAX_SUPPORTED_UTILIZATION = 2e18;
 
-    receive() external payable {}
-
     /**
      * @notice Construct a new protocol instance
      * @param config The mapping of initial/constant parameters
