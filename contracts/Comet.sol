@@ -907,6 +907,7 @@ contract Comet is CometMainInterface {
      */
     function supplyCollateral(address from, address dst, address asset, uint128 amount) internal {
         amount = safe128(doTransferIn(asset, from, amount));
+        accrueInternal();
 
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         TotalsCollateral memory totals = totalsCollateral[asset];
@@ -1133,6 +1134,8 @@ contract Comet is CometMainInterface {
      * @dev Withdraw an amount of collateral asset from src to `to`
      */
     function withdrawCollateral(address src, address to, address asset, uint128 amount) internal {
+        accrueInternal();
+
         uint128 srcCollateral = userCollateral[src][asset].balance;
         uint128 srcCollateralNew = srcCollateral - amount;
 
@@ -1142,7 +1145,6 @@ contract Comet is CometMainInterface {
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         updateAssetsIn(src, assetInfo, srcCollateral, srcCollateralNew);
 
-        // Note: no accrue interest, BorrowCF < LiquidationCF covers small changes
         if (!isBorrowCollateralized(src)) revert NotCollateralized();
 
         doTransferOut(asset, to, amount);

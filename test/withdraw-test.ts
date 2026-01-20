@@ -279,7 +279,35 @@ describe('withdrawTo', function () {
     expect(q1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(q1.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(t1.totalSupplyAsset).to.be.equal(0n);
-    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(85000);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(100000);
+  });
+
+  it('accrues state during collateral withdrawal', async () => {
+    const protocol = await makeProtocol({ base: 'USDC' });
+    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { USDC, COMP } = tokens;
+
+    await USDC.allocateTo(alice.address, 100e6);
+    await USDC.connect(alice).approve(comet.address, 100e6);
+    await comet.connect(alice).supply(USDC.address, 100e6);
+
+    await COMP.allocateTo(bob.address, exp(10, 18));
+    await COMP.connect(bob).approve(comet.address, exp(10, 18));
+    await comet.connect(bob).supply(COMP.address, exp(10, 18));
+    await comet.connect(bob).withdraw(USDC.address, 50e6);
+
+    const t0 = await comet.totalsBasic();
+    const supplyIndexBefore = t0.baseSupplyIndex;
+    const lastAccrualTimeBefore = t0.lastAccrualTime;
+
+    await fastForward(86400);
+
+    await wait(comet.connect(bob).withdraw(COMP.address, exp(1, 18)));
+
+    const t1 = await comet.totalsBasic();
+
+    expect(t1.lastAccrualTime).to.be.greaterThan(lastAccrualTimeBefore);
+    expect(t1.baseSupplyIndex).to.be.greaterThan(supplyIndexBefore);
   });
 
   it('calculates base principal correctly', async () => {
