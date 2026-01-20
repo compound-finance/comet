@@ -458,6 +458,21 @@ export async function supportUtilizationLimit(ctx: CometContext): Promise<boolea
   }
 }
 
+/**
+ * @notice Checks if the market is fresh (no supplies and no borrows)
+ * @dev A fresh market has totalSupplyBase == 0 and totalBorrowBase == 0
+ *      This is used to filter scenarios that should only run on new/empty markets
+ */
+export async function isFreshMarket(ctx: CometContext): Promise<boolean> {
+  try {
+    const comet = await ctx.getComet();
+    const totals = await comet.totalsBasic();
+    return totals.totalSupplyBase.isZero() && totals.totalBorrowBase.isZero();
+  } catch (error) {
+    return false;
+  }
+}
+
 export async function fetchLogs(
   contract: Contract,
   filter: EventFilter,

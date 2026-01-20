@@ -8,6 +8,8 @@ import "./IAssetListFactory.sol";
 import "./IAssetListFactoryHolder.sol";
 import "./IAssetList.sol";
 
+import 'hardhat/console.sol';
+
 /**
  * @title Compound's Comet Contract
  * @notice An efficient monolithic money market protocol
@@ -112,8 +114,6 @@ contract CometWithExtendedAssetList is CometMainInterface {
     /// It keeps healthy state of the market, with no over-utilization leading to illiquidity,
     /// and keeps protocol reserves from exhaustion
     uint256 public constant MAX_SUPPORTED_UTILIZATION = 2e18;
-
-    receive() external payable {}
 
     /**
      * @notice Construct a new protocol instance
@@ -268,6 +268,19 @@ contract CometWithExtendedAssetList is CometMainInterface {
             baseSupplyIndex_ += safe64(mulFactor(baseSupplyIndex_, supplyRate * timeElapsed));
             baseBorrowIndex_ += safe64(mulFactor(baseBorrowIndex_, borrowRate * timeElapsed));
         }
+
+        /// @dev Prevent lenders' illiquidity when there are no borrowers
+        /// In markets with reserves and lenders but no borrows, lenders earn the base supply rate
+        /// funded from reserves. Without this cap, totalSupply() could exceed the actual token balance,
+        /// making it impossible for lenders to withdraw their full entitled amount.
+        /// This safeguard recalculates the supply index to match the available balance exactly,
+        /// ensuring withdrawals remain possible even when interest accrual outpaces reserves.
+        if (totalBorrowBase == 0 && totalSupplyBase > 0) {
+            uint256 baseBalance = IERC20NonStandard(baseToken).balanceOf(address(this));
+            if (presentValueSupply(baseSupplyIndex_, totalSupplyBase) > baseBalance) 
+                baseSupplyIndex_ = safe64((baseBalance * BASE_INDEX_SCALE) / totalSupplyBase);
+        }
+
         return (baseSupplyIndex_, baseBorrowIndex_);
     }
 
@@ -305,6 +318,20 @@ contract CometWithExtendedAssetList is CometMainInterface {
      * @return The per second supply rate at `utilization`
      */
     function getSupplyRate(uint utilization) override public view returns (uint64) {
+        /// No supply - no supply interest
+        if (totalSupplyBase == 0) return 0;
+
+        /// In several situations new market with reserves and have lenders, but may not have borrows
+        /// In such case, lenders will farm on this market on the base supply per second, until reserves are exhausted
+        /// So, we limit the farming possibility by the size of reserves:
+        /// - for the new market with no borrows, the balance consists of reserves and supplied base asset
+        /// - totalSupply() will grow based on the base rate until it will reach the available balance
+        /// - once it happens - we cut off the supply rate to avoid illiquidity (when lenders will not be able to
+        ///   withdraw as there is no tokens on the Comet balance
+        if (utilization == 0 && supplyPerSecondInterestRateBase != 0) {
+            if (presentValueSupply(baseSupplyIndex, totalSupplyBase) >= IERC20NonStandard(baseToken).balanceOf(address(this))) return 0;
+        }
+
         if (utilization <= supplyKink) {
             // interestRateBase + interestRateSlopeLow * utilization
             return safe64(supplyPerSecondInterestRateBase + mulFactor(supplyPerSecondInterestRateSlopeLow, utilization));
