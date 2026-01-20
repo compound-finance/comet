@@ -8,8 +8,6 @@ import "./IAssetListFactory.sol";
 import "./IAssetListFactoryHolder.sol";
 import "./IAssetList.sol";
 
-import 'hardhat/console.sol';
-
 /**
  * @title Compound's Comet Contract
  * @notice An efficient monolithic money market protocol
