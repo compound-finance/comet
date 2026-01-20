@@ -48,6 +48,7 @@ export class MigrationConstraint<T extends CometContext> implements StaticConstr
         for (const migrationData of migrations) {
           const migration = migrationData.migration;
           const artifact = await migration.actions.prepare(ctx.world.deploymentManager, govDeploymentManager);
+          await govDeploymentManager.storeArtifact(migration, artifact);
           debug(`${label} Prepared migration ${migration.name}.\n  Artifact\n-------\n\n${JSON.stringify(artifact, null, 2)}\n-------\n`);
           if (await isEnacted(migration.actions, ctx.world.deploymentManager, govDeploymentManager)) {
             migrationData.skipVerify = true;

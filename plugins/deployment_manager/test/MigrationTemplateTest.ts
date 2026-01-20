@@ -14,12 +14,16 @@ import { migration } from '../../../../plugins/deployment_manager/Migration';
 interface Vars {};
 
 export default migration('1_cool', {
-  prepare: async (deploymentManager: DeploymentManager) => {
+  async prepare(deploymentManager: DeploymentManager) {
     return {};
   },
 
-  enact: async (deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, vars: Vars) => {
+  async enact(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, vars: Vars) {
     // No governance changes
+  },
+
+  async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, preMigrationBlockNumber: number, vars: Vars) {
+    // Verify migration success
   }
 });
 `;
