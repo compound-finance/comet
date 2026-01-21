@@ -4,6 +4,7 @@ import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, proposal } from '../../../../src/deploy';
 import { utils } from 'ethers';
 
+const WSTETH_USD_PRICE_FEED_ADDRESS = '0x1738FCAe8D5A6aEf39985dF31Fe60e5Dc5e1a7b3';
 const WETH_TO_USD_SVR_PRICE_FEED_ADDRESS = '0x1428C9E908e32dD2839F99D63C242c91329A58C0';
 const USDC_TO_USD_SVR_PRICE_FEED_ADDRESS = '0x1401Fd60F9ba4F718a2fE6149aadf3d1F0dB1b0A';
 
@@ -12,6 +13,7 @@ let newPriceFeedUSDCAddress: string;
 
 let oldWETHPriceFeed: string;
 let oldUSDCPriceFeed: string;
+let oldWstETHPriceFeed: string;
 
 export default migration('1766363631_change_price_feeds_to_svr', {
   async prepare(deploymentManager: DeploymentManager) {
@@ -61,6 +63,7 @@ export default migration('1766363631_change_price_feeds_to_svr', {
       cometAdmin,
       configurator,
       WETH,
+      wstETH,
       USDC
     } = await deploymentManager.getContracts();
 
@@ -82,6 +85,14 @@ export default migration('1766363631_change_price_feeds_to_svr', {
       )
     );
 
+    const updateWstETHPriceFeedCalldata = await calldata(
+      configurator.populateTransaction.updateAssetPriceFeed(
+        comet.address,
+        wstETH.address,
+        WSTETH_USD_PRICE_FEED_ADDRESS
+      )
+    );
+
     const deployAndUpgradeToCalldata = await calldata(
       cometAdmin.populateTransaction.deployAndUpgradeTo(
         configurator.address,
@@ -92,15 +103,16 @@ export default migration('1766363631_change_price_feeds_to_svr', {
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
-        [configurator.address, configurator.address, cometAdmin.address],
-        [0, 0, 0],
-        ['updateAssetPriceFeed(address,address,address)', 'updateAssetPriceFeed(address,address,address)', 'deployAndUpgradeTo(address,address)'],
-        [updateWEthPriceFeedCalldata, updateUSDCPriceFeedCalldata, deployAndUpgradeToCalldata],
+        [configurator.address, configurator.address, configurator.address, cometAdmin.address],
+        [0, 0, 0, 0],
+        ['updateAssetPriceFeed(address,address,address)', 'updateAssetPriceFeed(address,address,address)', 'updateAssetPriceFeed(address,address,address)', 'deployAndUpgradeTo(address,address)'],
+        [updateWEthPriceFeedCalldata, updateUSDCPriceFeedCalldata, updateWstETHPriceFeedCalldata, deployAndUpgradeToCalldata],
       ]
     );
 
     [,, oldWETHPriceFeed] = await comet.getAssetInfoByAddress(WETH.address);
     [,, oldUSDCPriceFeed] = await comet.getAssetInfoByAddress(USDC.address);
+    [,, oldWstETHPriceFeed] = await comet.getAssetInfoByAddress(wstETH.address);
 
     const mainnetActions = [
       {
@@ -114,11 +126,11 @@ export default migration('1766363631_change_price_feeds_to_svr', {
       },
     ];
 
-    const description = `# Update WETH and USDC price feeds in cAEROv3 on Base with SVR price feeds.
+    const description = `# Update WETH, USDC, and wstETH price feeds in cAEROv3 on Base with SVR price feeds
 
 ## Proposal summary
 
-This proposal updates existing price feeds for WETH and USDC assets on the AERO market on Base.
+This proposal updates existing price feeds for WETH, USDC, and wstETH assets on the AERO market on Base.
 
 ### SVR summary
 
@@ -132,7 +144,7 @@ SVR generates revenue from liquidators and Compound DAO will receive that revenu
 
 ## Proposal actions
 
-The first action updates WETH and USDC price feeds to the SVR implementation. This sends the encoded 'updateAssetPriceFeed' and 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Base.
+The first action updates WETH, USDC, and wstETH price feeds to the SVR implementation. This sends the encoded 'updateAssetPriceFeed' and 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Base.
 `;
     const txn = await govDeploymentManager.retry(async () =>
       trace(
@@ -157,6 +169,7 @@ The first action updates WETH and USDC price feeds to the SVR implementation. Th
       configurator,
       WETH,
       USDC,
+      wstETH,
     } = await deploymentManager.getContracts();
 
     // 1. WETH
@@ -188,5 +201,20 @@ The first action updates WETH and USDC price feeds to the SVR implementation. Th
     expect(USDCInConfiguratorInfoWETHComet.priceFeed).to.eq(newPriceFeedUSDCAddress);
 
     expect(await comet.getPrice(newPriceFeedUSDCAddress)).to.be.closeTo(await comet.getPrice(oldUSDCPriceFeed), 1e8); // 1$
+
+    // 3. wstETH
+    const wstETHIndexInComet = await configurator.getAssetIndex(
+      comet.address,
+      wstETH.address
+    );
+    const wstETHInCometInfo = await comet.getAssetInfoByAddress(wstETH.address);
+    const wstETHInConfiguratorInfoWETHComet = (
+      await configurator.getConfiguration(comet.address)
+    ).assetConfigs[wstETHIndexInComet];
+
+    expect(wstETHInCometInfo.priceFeed).to.eq(WSTETH_USD_PRICE_FEED_ADDRESS);
+    expect(wstETHInConfiguratorInfoWETHComet.priceFeed).to.eq(WSTETH_USD_PRICE_FEED_ADDRESS);
+
+    expect(await comet.getPrice(WSTETH_USD_PRICE_FEED_ADDRESS)).to.be.closeTo(await comet.getPrice(oldWstETHPriceFeed), 5e8); // 5$
   },
 });
