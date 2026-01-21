@@ -5,7 +5,7 @@ import { calldata, proposal, exp } from '../../../../src/deploy';
 import { AggregatorV3Interface } from '../../../../build/types';
 import { utils } from 'ethers';
 
-const WSTETH_STETH_PRICE_FEED_ADDRESS = '0x731564585278f228FB8F93a0BF62729E24367662';
+const WSTETH_STETH_PRICE_FEED_ADDRESS = '0xB88BAc61a4Ca37C43a3725912B1f472c9A5bc061';
 const ETH_TO_USD_SVR_PRICE_FEED_ADDRESS = '0xe6eb5B9b85cFF2C84Df3De6e7855bC9E76f034d5';
 const USDC_TO_USD_SVR_PRICE_FEED_ADDRESS = '0x3e6D1ccA8Eee6d02f1f578B613374EB53E6823B4';
 
@@ -33,7 +33,7 @@ export default migration('1766403952_change_price_feeds_to_svr', {
         timelock.address,
         ETH_TO_USD_SVR_PRICE_FEED_ADDRESS,
         WSTETH_STETH_PRICE_FEED_ADDRESS,
-        'wstETH / ETH CAPO Price Feed',
+        'wstETH / USD CAPO SVR Price Feed',
         8,
         3600,
         {
@@ -110,7 +110,7 @@ export default migration('1766403952_change_price_feeds_to_svr', {
     );
 
     [,, oldWETHPriceFeed] = await comet.getAssetInfoByAddress(WETH.address);
-    [, , oldWSTETHPriceFeed] = await comet.getAssetInfoByAddress(wstETH.address);
+    [,, oldWSTETHPriceFeed] = await comet.getAssetInfoByAddress(wstETH.address);
     oldUSDCPriceFeed = await comet.baseTokenPriceFeed();
 
     const mainnetActions = [
