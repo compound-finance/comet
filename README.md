@@ -84,8 +84,6 @@ An example deployment command looks like:
 
 ## Supplementary contracts
 
-**[Bulker.sol](https://github.com/compound-finance/comet/blob/main/contracts/Bulker.sol)** - Contract that allows multiple Comet functions to be called in a single transaction.
-
 **[CometRewards.sol](https://github.com/compound-finance/comet/blob/main/contracts/CometRewards.sol)** - Contract that allows Comet users to claim rewards based on their protocol participation.
 
 ## Vendor contracts
