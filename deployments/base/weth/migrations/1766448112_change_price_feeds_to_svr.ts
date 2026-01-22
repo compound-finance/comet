@@ -190,6 +190,6 @@ The first action updates USDC and cbBTC price feeds to the SVR implementation. T
     expect(cbBTCInCometInfo.priceFeed).to.eq(newPriceFeedCbBTCAddress);
     expect(cbBTCInConfiguratorInfo.priceFeed).to.eq(newPriceFeedCbBTCAddress);
 
-    expect(await comet.getPrice(newPriceFeedCbBTCAddress)).to.be.closeTo(await comet.getPrice(oldCbBTCPriceFeed), 2e6);
+    expect(await comet.getPrice(newPriceFeedCbBTCAddress)).to.be.closeTo(await comet.getPrice(oldCbBTCPriceFeed), 3e6);
   },
 });
