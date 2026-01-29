@@ -185,12 +185,12 @@ export function divPrice(n: bigint, price: bigint, toScale: bigint): bigint {
   return n * toScale / price;
 }
 
-const BASE_INDEX_SCALE = 1e15;
+const BASE_INDEX_SCALE = 10n ** 15n;
 
 export function presentValueSupply(baseSupplyIndex: bigint | BigNumber, principalValue: bigint | BigNumber): bigint {
   const principal = toBigInt(principalValue);
   const index = toBigInt(baseSupplyIndex);
-  return principal * index / BigInt(BASE_INDEX_SCALE);
+  return principal * index / BASE_INDEX_SCALE;
 }
 
 function presentValueBorrow(baseBorrowIndex: bigint | BigNumber, principalValue: bigint | BigNumber): bigint {
