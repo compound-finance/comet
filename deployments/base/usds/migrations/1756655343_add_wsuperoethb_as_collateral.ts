@@ -47,7 +47,7 @@ export default migration('1756655343_add_wsuperoethb_as_collateral', {
       borrowCollateralFactor: exp(0.80, 18),
       liquidateCollateralFactor: exp(0.85, 18),
       liquidationFactor: exp(0.9, 18),
-      supplyCap: exp(2_000, 18),
+      supplyCap: exp(500, 18),
     };
 
     newPriceFeedAddress = wsuperOETHbPriceFeed.address;
@@ -124,7 +124,7 @@ The first proposal action adds wsuperOETHb to the USDS Comet on Base. This sends
       borrowCollateralFactor: exp(0.80, 18),
       liquidateCollateralFactor: exp(0.85, 18),
       liquidationFactor: exp(0.9, 18),
-      supplyCap: exp(2_000, 18),
+      supplyCap: exp(500, 18),
     };
 
     // 1. Compare proposed asset config with Comet asset info
