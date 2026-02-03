@@ -315,6 +315,7 @@ const config: HardhatUserConfig = {
             hardforkHistory: {
               berlin: 1,
               london: 2,
+              shanghai: 3,
             }
           };
           return acc;
@@ -342,6 +343,7 @@ const config: HardhatUserConfig = {
             hardforkHistory: {
               berlin: 1,
               london: 2,
+              shanghai: 3,
             }
           };
           return acc;
