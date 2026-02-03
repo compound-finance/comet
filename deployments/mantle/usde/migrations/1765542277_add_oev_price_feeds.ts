@@ -235,8 +235,8 @@ The first action updates USDe, mETH, WETH and FBTC price feeds to the CAPO and S
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(): Promise<boolean> {
-    return false;
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
   }, 
 
   async verify(deploymentManager: DeploymentManager) {
