@@ -1,41 +1,60 @@
 import { expect } from 'chai';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
-import { calldata, proposal } from '../../../../src/deploy';
+import { calldata, proposal, exp } from '../../../../src/deploy';
 import { utils } from 'ethers';
 import { applyL1ToL2Alias, estimateL2Transaction } from '../../../../scenario/utils/arbitrumUtils';
-
-// chainlink SVR oracle
-const USDT_TO_USD_SVR_PRICE_FEED_ADDRESS = '0x6AA147E11E423F529BEDAed75F3128D5fbE67939';
+import { AggregatorV3Interface } from '../../../../build/types';
 
 // scaling price feeds
+const USDT_TO_USD_SVR_PRICE_FEED_ADDRESS = '0xedfB5fD27B0259B0A696364b183223B5ca3CBE62';
 const WETH_TO_USD_SVR_PRICE_FEED_ADDRESS = '0xb2988bDAdc45c43e3fE1A728F715E94bee4DB406';
 const ARB_TO_USD_SVR_PRICE_FEED_ADDRESS = '0x5998a5C516bD5E479E0B6aa6F243d372730B68d2';
 const WBTC_TO_USD_SVR_PRICE_FEED_ADDRESS = '0xcc392d2c3b37520e01712320bE331D41F7661013';
 
+// chainlink oracles
+const ETH_TO_USD_ORACLE_ADDRESS = '0xe4dF63Bf89fD868A899F2422B030709FD79Be921';
+const WSTETH_STETH_ORACLE_ADDRESS = '0xB1552C5e96B312d0Bf8b554186F846C40614a540';
 
-let newPriceFeedUSDTAddress: string;
+let newPriceFeedWstETHAddress: string;
 
 let oldWETHPriceFeed: string;
 let oldUSDTPriceFeed: string;
 let oldARBPriceFeed: string;
 let oldWBTCPriceFeed: string;
+let oldWstETHPriceFeed: string;
+
+const blockToFetch = 425000000;
 
 export default migration('1766659887_change_price_feeds_to_svr', {
   async prepare(deploymentManager: DeploymentManager) {
-    const _USDTPriceFeed = await deploymentManager.deploy(
-      'USDT:priceFeed',
-      'pricefeeds/ScalingPriceFeedWithCustomDescription.sol',
+    const { timelock } = await deploymentManager.getContracts();
+
+    const rateProviderWstEth = await deploymentManager.existing('wstETH:_rateProvider', WSTETH_STETH_ORACLE_ADDRESS, 'arbitrum', 'contracts/capo/contracts/interfaces/AggregatorV3Interface.sol:AggregatorV3Interface') as AggregatorV3Interface;
+    const [, currentRatioWstEth] = await rateProviderWstEth.latestRoundData({ blockTag: blockToFetch });
+    const timestamp = (await deploymentManager.hre.ethers.provider.getBlock(blockToFetch))?.timestamp;
+
+    const wstEthCapoPriceFeed = await deploymentManager.deploy(
+      'wstETH:priceFeed',
+      'capo/contracts/ChainlinkCorrelatedAssetsPriceOracle.sol',
       [
-        USDT_TO_USD_SVR_PRICE_FEED_ADDRESS, // USDT / USD price feed
-        8,                                  // decimals
-        'USDT / USD SVR Price Feed'         // custom description
+        timelock.address,
+        ETH_TO_USD_ORACLE_ADDRESS,
+        WSTETH_STETH_ORACLE_ADDRESS,
+        'wstETH / USD CAPO SVR Price Feed',
+        8,
+        3600,
+        {
+          snapshotRatio: currentRatioWstEth,
+          snapshotTimestamp: timestamp,
+          maxYearlyRatioGrowthPercent: exp(0.0404, 4) // 4.04%
+        }
       ],
       true
     );
 
     return {
-      USDTPriceFeedAddress: _USDTPriceFeed.address,
+      wstEthCapoPriceFeedAddress: wstEthCapoPriceFeed.address
     };
   },
 
@@ -43,11 +62,11 @@ export default migration('1766659887_change_price_feeds_to_svr', {
     deploymentManager: DeploymentManager,
     govDeploymentManager: DeploymentManager,
     { 
-      USDTPriceFeedAddress,
+      wstEthCapoPriceFeedAddress,
     }
   ) => {
     const trace = deploymentManager.tracer();
-    newPriceFeedUSDTAddress = USDTPriceFeedAddress;
+    newPriceFeedWstETHAddress = wstEthCapoPriceFeedAddress;
 
     const {
       bridgeReceiver,
@@ -57,6 +76,7 @@ export default migration('1766659887_change_price_feeds_to_svr', {
       configurator,
       WETH,
       ARB,
+      wstETH,
       WBTC
     } = await deploymentManager.getContracts();
 
@@ -72,7 +92,15 @@ export default migration('1766659887_change_price_feeds_to_svr', {
     const updateUSDTPriceFeedCalldata = await calldata(
       configurator.populateTransaction.setBaseTokenPriceFeed(
         comet.address,
-        newPriceFeedUSDTAddress
+        USDT_TO_USD_SVR_PRICE_FEED_ADDRESS
+      )
+    );
+
+    const updateWstETHPriceFeedCalldata = await calldata(
+      configurator.populateTransaction.updateAssetPriceFeed(
+        comet.address,
+        wstETH.address,
+        wstEthCapoPriceFeedAddress
       )
     );
 
@@ -107,12 +135,14 @@ export default migration('1766659887_change_price_feeds_to_svr', {
           configurator.address,
           configurator.address,
           configurator.address,
+          configurator.address,
           cometAdmin.address
         ],
-        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0],
         [
           'updateAssetPriceFeed(address,address,address)',
           'setBaseTokenPriceFeed(address,address)',
+          'updateAssetPriceFeed(address,address,address)',
           'updateAssetPriceFeed(address,address,address)',
           'updateAssetPriceFeed(address,address,address)',
           'deployAndUpgradeTo(address,address)'
@@ -122,6 +152,7 @@ export default migration('1766659887_change_price_feeds_to_svr', {
           updateUSDTPriceFeedCalldata,
           updateARBPriceFeedCalldata,
           updateWBTCPriceFeedCalldata,
+          updateWstETHPriceFeedCalldata,
           deployAndUpgradeToCalldata],
       ]
     );
@@ -130,6 +161,7 @@ export default migration('1766659887_change_price_feeds_to_svr', {
     oldUSDTPriceFeed = await comet.baseTokenPriceFeed();
     [,, oldARBPriceFeed] = await comet.getAssetInfoByAddress(ARB.address);
     [,, oldWBTCPriceFeed] = await comet.getAssetInfoByAddress(WBTC.address);
+    [,, oldWstETHPriceFeed] = await comet.getAssetInfoByAddress(wstETH.address);
     
     const createRetryableTicketGasParams = await estimateL2Transaction(
       {
@@ -160,13 +192,21 @@ export default migration('1766659887_change_price_feeds_to_svr', {
       },
     ];
 
-    const description = `# Update price feeds in cUSDTv3 on Arbitrum with SVR price feeds.
+    const description = `# Update price feeds in cUSDTv3 on Arbitrum with CAPO and SVR price feeds.
 
 ## Proposal summary
 
-This proposal updates existing price feeds for WETH, ARB, WBTC and USDT assets on the USDT market on Arbitrum.
+This proposal updates existing price feeds for WETH, ARB, WBTC, wstETH and USDT assets on the USDT market on Arbitrum.
 
-Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1079) and [forum discussion for SVR](https://www.comp.xyz/t/request-for-proposal-rfp-oracle-extractable-value-oev-solution-for-compound-protocol/6786).
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1079), [forum discussion for CAPO](https://www.comp.xyz/t/woof-correlated-assets-price-oracle-capo/6245) and [forum discussion for SVR](https://www.comp.xyz/t/request-for-proposal-rfp-oracle-extractable-value-oev-solution-for-compound-protocol/6786).
+
+### CAPO summary
+
+CAPO is a price oracle adapter designed to support assets that grow gradually relative to a base asset - such as liquid staking tokens that accumulate yield over time. It provides a mechanism to track this expected growth while protecting downstream protocol from sudden or manipulated price spikes. wstETH price feed are updated to their CAPO implementations.
+
+### CAPO audit
+
+CAPO has been audited by [OpenZeppelin](https://www.comp.xyz/t/capo-price-feed-audit/6631, as well as the LST / LRT implementation [here](https://www.comp.xyz/t/capo-lst-lrt-audit/7118).
 
 ### SVR fee recipient
 
@@ -174,7 +214,7 @@ SVR generates revenue from liquidators and Compound DAO will receive that revenu
 
 ## Proposal actions
 
-The first action updates WETH, ARB, WBTC and USDT price feeds to the SVR implementation. This sends the encoded 'updateAssetPriceFeed' and 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Arbitrum.
+The first action updates WETH, ARB, WBTC, wstETH  and USDT price feeds to the SVR implementation. This sends the encoded 'updateAssetPriceFeed' and 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Arbitrum.
 `;
     const txn = await govDeploymentManager.retry(async () =>
       trace(
@@ -199,6 +239,7 @@ The first action updates WETH, ARB, WBTC and USDT price feeds to the SVR impleme
       configurator,
       WETH,
       ARB,
+      wstETH,
       WBTC
     } = await deploymentManager.getContracts();
 
@@ -223,10 +264,10 @@ The first action updates WETH, ARB, WBTC and USDT price feeds to the SVR impleme
       await configurator.getConfiguration(comet.address)
     ).baseTokenPriceFeed;
 
-    expect(USDTPriceFeedFromComet).to.eq(newPriceFeedUSDTAddress);
-    expect(USDTPriceFeedFromConfigurator).to.eq(newPriceFeedUSDTAddress);
+    expect(USDTPriceFeedFromComet).to.eq(USDT_TO_USD_SVR_PRICE_FEED_ADDRESS);
+    expect(USDTPriceFeedFromConfigurator).to.eq(USDT_TO_USD_SVR_PRICE_FEED_ADDRESS);
 
-    expect(await comet.getPrice(newPriceFeedUSDTAddress)).to.be.closeTo(await comet.getPrice(oldUSDTPriceFeed), 1e8); // 1$
+    expect(await comet.getPrice(USDT_TO_USD_SVR_PRICE_FEED_ADDRESS)).to.be.closeTo(await comet.getPrice(oldUSDTPriceFeed), 1e8); // 1$
 
     // 3. ARB
     const ARBIndexInComet = await configurator.getAssetIndex(
@@ -257,5 +298,20 @@ The first action updates WETH, ARB, WBTC and USDT price feeds to the SVR impleme
     expect(WBTCInConfiguratorInfoWETHComet.priceFeed).to.eq(WBTC_TO_USD_SVR_PRICE_FEED_ADDRESS);
 
     expect(await comet.getPrice(WBTC_TO_USD_SVR_PRICE_FEED_ADDRESS)).to.be.closeTo(await comet.getPrice(oldWBTCPriceFeed), 250e8); // 250$
+
+    // 5. wstETH
+    const wstETHIndexInComet = await configurator.getAssetIndex(
+      comet.address,
+      wstETH.address
+    );
+    const wstETHInCometInfo = await comet.getAssetInfoByAddress(wstETH.address);
+    const wstETHInConfiguratorInfoWETHComet = (
+      await configurator.getConfiguration(comet.address)
+    ).assetConfigs[wstETHIndexInComet];
+
+    expect(wstETHInCometInfo.priceFeed).to.eq(newPriceFeedWstETHAddress);
+    expect(wstETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newPriceFeedWstETHAddress);
+
+    expect(await comet.getPrice(newPriceFeedWstETHAddress)).to.be.closeTo(await comet.getPrice(oldWstETHPriceFeed), 5e8); // 5$
   },
 });
