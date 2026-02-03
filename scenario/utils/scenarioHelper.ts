@@ -236,5 +236,13 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
     config.liquidationAsset = 100;
   }
 
+  if (ctx.world.base.network === 'mantle' && ctx.world.base.deployment === 'usde') {
+    config.bulkerAsset = 100;
+    config.bulkerAsset1 = 100;
+    config.rewardsAsset = 100;
+    config.transferAsset = 100;
+    config.transferAsset1 = 100;
+  }
+
   return config;
 }
