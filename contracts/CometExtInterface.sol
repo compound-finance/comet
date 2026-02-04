@@ -182,15 +182,10 @@ abstract contract CometExtInterface is CometCore {
      */
     event CollateralAssetSupplyPauseAction(uint24 assetIndex, bool collateralAssetSupplyPaused);
     /**
-     * @notice Emitted when the pause status for lenders' supply is changed
-     * @param lendersSupplyPaused Whether lenders' supply is now paused
+     * @notice Emitted when the pause status for base supply is changed
+     * @param baseSupplyPaused Whether base supply is now paused
      */
-    event LendersSupplyPauseAction(bool lendersSupplyPaused);
-    /**
-     * @notice Emitted when the pause status for borrowers' supply is changed
-     * @param borrowersSupplyPaused Whether borrowers' supply is now paused
-     */
-    event BorrowersSupplyPauseAction(bool borrowersSupplyPaused);
+    event BaseSupplyPauseAction(bool baseSupplyPaused);
     /**
      * @notice Emitted when the pause status for lenders' transfers is changed
      * @param lendersTransferPaused Whether lenders' transfers are now paused

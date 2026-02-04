@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts v4.4.1 (proxy/transparent/ProxyAdmin.sol)
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.15;
 
 import "./TransparentUpgradeableProxy.sol";
 import "../../access/Ownable.sol";
@@ -11,6 +11,12 @@ import "../../access/Ownable.sol";
  * explanation of why you would want to use this see the documentation for {TransparentUpgradeableProxy}.
  */
 contract ProxyAdmin is Ownable {
+
+    /**
+    * @dev Sets the initial owner who can perform upgrades.
+     */
+    constructor(address initialOwner) Ownable(initialOwner) {}
+
     /**
      * @dev Returns the current implementation of `proxy`.
      *

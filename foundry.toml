@@ -7,3 +7,25 @@ cache_path  = 'forge/cache'
 
 # disable for CI (used for debugging liquidity issues)
 no_match_test = "test.*SwapVia"
+
+evm_version = "cancun"
+solc_version = "0.8.15"
+
+optimizer = true
+optimizer_runs = 1
+via_ir = true
+
+remappings = [
+    "@forge-std/=forge/lib/forge-std/",
+    "@comet-contracts/=contracts/",
+]
+
+[rpc_endpoints]
+mainnet = "${MAINNET_QUICKNODE_LINK}"
+polygon = "${POLYGON_QUICKNODE_LINK}"
+arbitrum = "${ARBITRUM_QUICKNODE_LINK}"
+optimism = "${OPTIMISM_QUICKNODE_LINK}"
+scroll = "${SCROLL_RPC_URL}"
+base = "${BASE_QUICKNODE_LINK}"
+sepolia = "${SEPOLIA_RPC_URL}"
+mantle = "${MANTLE_QUICKNODE_LINK}"

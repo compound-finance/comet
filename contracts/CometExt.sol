@@ -247,7 +247,7 @@ contract CometExt is CometExtInterface {
      * @return The current status of the pause offset
      */
     function currentPauseOffsetStatus(uint24 offset) internal view returns (bool) {
-        return toBool(uint8(extendedPauseFlags & (uint24(1) << offset)));
+        return (extendedPauseFlags & (uint24(1) << offset)) != 0;
     }
 
     /**
@@ -287,7 +287,7 @@ contract CometExt is CometExtInterface {
      * @inheritdoc CometExtInterface
      */
     function pauseCollateralAssetWithdraw(uint24 assetIndex, bool paused) override external onlyGovernorOrPauseGuardian isValidAssetIndex(assetIndex) {
-        if (toBool(uint8(collateralsWithdrawPauseFlags & (uint24(1) << assetIndex))) == paused) revert CollateralAssetOffsetStatusAlreadySet(collateralsWithdrawPauseFlags, assetIndex, paused);
+        if ((collateralsWithdrawPauseFlags & (uint24(1) << assetIndex) != 0) == paused) revert CollateralAssetOffsetStatusAlreadySet(collateralsWithdrawPauseFlags, assetIndex, paused);
 
         paused ? collateralsWithdrawPauseFlags |= (uint24(1) << assetIndex) : collateralsWithdrawPauseFlags &= ~(uint24(1) << assetIndex);
 
@@ -302,7 +302,7 @@ contract CometExt is CometExtInterface {
 
         setPauseFlag(PAUSE_COLLATERAL_SUPPLY_OFFSET, paused);
         
-        emit LendersSupplyPauseAction(paused);
+        emit CollateralSupplyPauseAction(paused);
     }
 
     /**
@@ -313,14 +313,14 @@ contract CometExt is CometExtInterface {
 
         setPauseFlag(PAUSE_BASE_SUPPLY_OFFSET, paused);
 
-        emit BorrowersSupplyPauseAction(paused);
+        emit BaseSupplyPauseAction(paused);
     }
 
     /**
      * @inheritdoc CometExtInterface
      */
     function pauseCollateralAssetSupply(uint24 assetIndex, bool paused) override external onlyGovernorOrPauseGuardian isValidAssetIndex(assetIndex) {
-        if (toBool(uint8(collateralsSupplyPauseFlags & (uint24(1) << assetIndex))) == paused) revert CollateralAssetOffsetStatusAlreadySet(collateralsSupplyPauseFlags, assetIndex, paused);
+        if ((collateralsSupplyPauseFlags & (uint24(1) << assetIndex) != 0) == paused) revert CollateralAssetOffsetStatusAlreadySet(collateralsSupplyPauseFlags, assetIndex, paused);
 
         paused ? collateralsSupplyPauseFlags |= (uint24(1) << assetIndex) : collateralsSupplyPauseFlags &= ~(uint24(1) << assetIndex);
 
@@ -364,7 +364,7 @@ contract CometExt is CometExtInterface {
      * @inheritdoc CometExtInterface
      */
     function pauseCollateralAssetTransfer(uint24 assetIndex, bool paused) override external onlyGovernorOrPauseGuardian isValidAssetIndex(assetIndex) {
-        if (toBool(uint8(collateralsTransferPauseFlags & (uint24(1) << assetIndex))) == paused) revert CollateralAssetOffsetStatusAlreadySet(collateralsTransferPauseFlags, assetIndex, paused);
+        if ((collateralsTransferPauseFlags & (uint24(1) << assetIndex) != 0) == paused) revert CollateralAssetOffsetStatusAlreadySet(collateralsTransferPauseFlags, assetIndex, paused);
 
         paused ? collateralsTransferPauseFlags |= (uint24(1) << assetIndex) : collateralsTransferPauseFlags &= ~(uint24(1) << assetIndex);
 

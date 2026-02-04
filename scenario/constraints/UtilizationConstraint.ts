@@ -6,22 +6,22 @@ import { expect } from 'chai';
 import { Requirements } from './Requirements';
 
 /**
-  # Utilization Constraint
+ # Utilization Constraint
 
-  This constraint is used to constrain the utilization rate, by adjust the total
-  supply and/or borrows of Comet.
+ This constraint is used to constrain the utilization rate, by adjust the total
+ supply and/or borrows of Comet.
 
-  ## Configuration
+ ## Configuration
 
-  **requirements**: `{ utilization: number }`
+ **requirements**: `{ utilization: number }`
 
-  If passed in, the constraint will ensure that the utilization of the protocol
-  is exactly the given value. If this constraint cannot be fulfilled, we will
-  throw an error, rather than return "no solutions."
+ If passed in, the constraint will ensure that the utilization of the protocol
+ is exactly the given value. If this constraint cannot be fulfilled, we will
+ throw an error, rather than return "no solutions."
 
-  * Example: `{ utilization: 0.5 }` to target 50% utilization (borrows / supply).
-  * Note: if utilization is passed as 0, this will target either borrows=0 or supply=0
-**/
+ * Example: `{ utilization: 0.5 }` to target 50% utilization (borrows / supply).
+ * Note: if utilization is passed as 0, this will target either borrows=0 or supply=0
+ **/
 
 interface UtilizationConfig {
   utilization?: number;

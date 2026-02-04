@@ -49,6 +49,8 @@ describe('supply functionality', function () {
       protocolWithMaxAssets.cometWithExtendedAssetList;
     tokensWithMaxAssets = protocolWithMaxAssets.tokens;
 
+    await cometWithExtendedAssetListMaxAssets.connect(bob).allow(alice.address, true);
+
     snapshot = await takeSnapshot();
   });
 
@@ -506,6 +508,25 @@ describe('supply functionality', function () {
       });
     }
 
+    for (let i = 1; i <= MAX_ASSETS; i++) {
+      it(`allows to supplyTo collateral asset ${i} when asset becomes unpaused`, async () => {
+        // Get the asset at index i-1
+        const assetIndex = i - 1;
+        const assetToken = tokensWithMaxAssets[`ASSET${assetIndex}`];
+        const collateralBalance = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(alice.address, assetToken.address);
+
+        // Unpause specific collateral asset supply at index assetIndex
+        await cometWithExtendedAssetListMaxAssets
+          .connect(pauseGuardian)
+          .pauseCollateralAssetSupply(assetIndex, false);
+
+        await cometWithExtendedAssetListMaxAssets.connect(bob).supplyTo(alice.address, assetToken.address, collateralTokenSupplyAmount);
+
+        const collateralBalanceAfter = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(alice.address, assetToken.address);
+        expect(collateralBalanceAfter).to.be.equal(collateralBalance.add(collateralTokenSupplyAmount));
+      });
+    }
+
     it('reverts if supply max for a collateral asset', async () => {
       const protocol = await makeProtocol({ base: 'USDC' });
       const { comet, tokens, users: [alice, bob] } = protocol;
@@ -789,6 +810,24 @@ describe('supply functionality', function () {
         );
       });
     }
+
+    for (let i = 1; i <= MAX_ASSETS; i++) {
+      it(`allows to supply collateral asset ${i} when asset becomes unpaused`, async () => {
+        // Get the asset at index i-1
+        const assetIndex = i - 1;
+        const assetToken = tokensWithMaxAssets[`ASSET${assetIndex}`];
+        const collateralBalance = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(bob.address, assetToken.address);
+
+        // Unpause specific collateral asset supply at index assetIndex
+        await cometWithExtendedAssetListMaxAssets.connect(pauseGuardian).pauseCollateralAssetSupply(assetIndex, false);
+
+        // Supply the asset
+        await cometWithExtendedAssetListMaxAssets.connect(bob).supply(assetToken.address, collateralTokenSupplyAmount);
+
+        const collateralBalanceAfter = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(bob.address, assetToken.address);
+        expect(collateralBalanceAfter).to.be.equal(collateralBalance.add(collateralTokenSupplyAmount));
+      });
+    }
   });
 
   describe('supplyFrom', function () {
@@ -926,9 +965,7 @@ describe('supply functionality', function () {
             cometWithExtendedAssetListMaxAssets.address,
             collateralTokenSupplyAmount
           );
-        await cometWithExtendedAssetListMaxAssets
-          .connect(bob)
-          .allow(alice.address, true);
+        
         await expect(
           cometWithExtendedAssetListMaxAssets
             .connect(alice)
@@ -942,6 +979,26 @@ describe('supply functionality', function () {
           cometWithExtendedAssetListMaxAssets,
           'CollateralAssetSupplyPaused'
         );
+      });
+    }
+
+    for (let i = 1; i <= MAX_ASSETS; i++) {
+      it(`allows to supplyFrom collateral asset ${i} when asset becomes unpaused`, async () => {
+        // Get the asset at index i-1
+        const assetIndex = i - 1;
+        const assetToken = tokensWithMaxAssets[`ASSET${assetIndex}`];
+        const collateralBalance = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(alice.address, assetToken.address);
+
+        // Unpause specific collateral asset supply at index assetIndex
+        await cometWithExtendedAssetListMaxAssets
+          .connect(pauseGuardian)
+          .pauseCollateralAssetSupply(assetIndex, false);
+
+        // Supply the asset
+        await cometWithExtendedAssetListMaxAssets.connect(alice).supplyFrom(bob.address, alice.address, assetToken.address, collateralTokenSupplyAmount);
+
+        const collateralBalanceAfter = await cometWithExtendedAssetListMaxAssets.collateralBalanceOf(alice.address, assetToken.address);
+        expect(collateralBalanceAfter).to.be.equal(collateralBalance.add(collateralTokenSupplyAmount));
       });
     }
   });

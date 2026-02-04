@@ -408,7 +408,7 @@ describe('extended pause functionality', function () {
         });
 
         for (let i = 1; i <= MAX_ASSETS; i++) {
-          it(`allows to call pauseCollateralAssetWithdraw for asset ${i} with ${i} collaterals`, async function () {
+          it(`allows to pause collateral asset withdraw for asset ${i} with ${MAX_ASSETS} collaterals`, async function () {
             const assetIndex = i - 1;
 
             // Pause the collateral at index i
@@ -419,6 +419,21 @@ describe('extended pause functionality', function () {
             // Verify that the asset at index i is paused
             expect(await cometWithMaxAssets.isCollateralAssetWithdrawPaused(assetIndex)).to
               .be.true;
+          });
+        }
+
+        for (let i = 1; i <= MAX_ASSETS; i++) {
+          it(`allows to unpause collateral asset withdraw for asset ${i} with ${MAX_ASSETS} collaterals`, async function () {
+            const assetIndex = i - 1;
+
+            // Unpause the collateral at index i
+            await cometExtWithMaxAssets
+              .connect(governor)
+              .pauseCollateralAssetWithdraw(assetIndex, false);
+
+            // Verify that the asset at index i is paused
+            expect(await cometWithMaxAssets.isCollateralAssetWithdrawPaused(assetIndex)).to
+              .be.false;
           });
         }
       });
@@ -492,7 +507,7 @@ describe('extended pause functionality', function () {
 
         it('allows governor to unpause', async function () {
           await expect(cometExt.connect(governor).pauseCollateralSupply(false))
-            .to.emit(cometExt, 'LendersSupplyPauseAction')
+            .to.emit(cometExt, 'CollateralSupplyPauseAction')
             .withArgs(false);
         });
 
@@ -521,7 +536,7 @@ describe('extended pause functionality', function () {
           await expect(
             cometExt.connect(pauseGuardian).pauseCollateralSupply(false)
           )
-            .to.emit(cometExt, 'LendersSupplyPauseAction')
+            .to.emit(cometExt, 'CollateralSupplyPauseAction')
             .withArgs(false);
         });
 
@@ -577,7 +592,7 @@ describe('extended pause functionality', function () {
 
         it('allows governor to unpause', async function () {
           await expect(cometExt.connect(governor).pauseBaseSupply(false))
-            .to.emit(cometExt, 'BorrowersSupplyPauseAction')
+            .to.emit(cometExt, 'BaseSupplyPauseAction')
             .withArgs(false);
         });
 
@@ -604,7 +619,7 @@ describe('extended pause functionality', function () {
 
         it('allows pause guardian to unpause', async function () {
           await expect(cometExt.connect(pauseGuardian).pauseBaseSupply(false))
-            .to.emit(cometExt, 'BorrowersSupplyPauseAction')
+            .to.emit(cometExt, 'BaseSupplyPauseAction')
             .withArgs(false);
         });
 
@@ -708,7 +723,7 @@ describe('extended pause functionality', function () {
         });
 
         for (let i = 1; i <= MAX_ASSETS; i++) {
-          it(`allows to call pauseCollateralAssetSupply for asset ${i} with ${i} collaterals`, async function () {
+          it(`allows to pause collateral asset supply for asset ${i} with ${MAX_ASSETS} collaterals`, async function () {
             const assetIndex = i - 1;
 
             // Pause the collateral at index i
@@ -719,6 +734,21 @@ describe('extended pause functionality', function () {
             // Verify that the asset at index i is paused
             expect(await cometWithMaxAssets.isCollateralAssetSupplyPaused(assetIndex)).to.be
               .true;
+          });
+        }
+
+        for (let i = 1; i <= MAX_ASSETS; i++) {
+          it(`allows to unpause collateral asset supply for asset ${i} with ${MAX_ASSETS} collaterals`, async function () {
+            const assetIndex = i - 1;
+
+            // Pause the collateral at index i
+            await cometExtWithMaxAssets
+              .connect(governor)
+              .pauseCollateralAssetSupply(assetIndex, false);
+
+            // Verify that the asset at index i is paused
+            expect(await cometWithMaxAssets.isCollateralAssetSupplyPaused(assetIndex)).to.be
+              .false;
           });
         }
       });
@@ -1097,7 +1127,7 @@ describe('extended pause functionality', function () {
         });
 
         for (let i = 1; i <= MAX_ASSETS; i++) {
-          it(`allows to call pauseCollateralAssetTransfer for asset ${i} with ${i} collaterals`, async function () {
+          it(`allows to pause collateral asset transfer for asset ${i} with ${MAX_ASSETS} collaterals`, async function () {
             const assetIndex = i - 1;
 
             // Pause the collateral at index i
@@ -1108,6 +1138,21 @@ describe('extended pause functionality', function () {
             // Verify that the asset at index i is paused
             expect(await cometWithMaxAssets.isCollateralAssetTransferPaused(assetIndex)).to
               .be.true;
+          });
+        }
+
+        for (let i = 1; i <= MAX_ASSETS; i++) {
+          it(`allows to unpause collateral asset transfer for asset ${i} with ${MAX_ASSETS} collaterals`, async function () {
+            const assetIndex = i - 1;
+
+            // Pause the collateral at index i
+            await cometExtWithMaxAssets
+              .connect(governor)
+              .pauseCollateralAssetTransfer(assetIndex, false);
+
+            // Verify that the asset at index i is paused
+            expect(await cometWithMaxAssets.isCollateralAssetTransferPaused(assetIndex)).to
+              .be.false;
           });
         }
       });
