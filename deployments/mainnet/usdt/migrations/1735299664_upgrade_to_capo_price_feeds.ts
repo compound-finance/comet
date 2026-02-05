@@ -307,7 +307,7 @@ The ninth action deploys and upgrades Comet to a new version.
   },
 
   async enacted(): Promise<boolean> {
-    return false;
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {
