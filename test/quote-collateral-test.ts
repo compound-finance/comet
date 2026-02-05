@@ -1,4 +1,4 @@
-import { CometProxyAdmin, CometWithExtendedAssetList, Configurator, ConfiguratorProxy, FaucetToken, NonStandardFaucetFeeToken } from 'build/types';
+import { CometProxyAdmin, CometWithExtendedAssetList, Configurator, ConfiguratorProxy, FaucetToken, NonStandardFaucetFeeToken, PriceFeedWithRevert, PriceFeedWithRevert__factory } from 'build/types';
 import { expect, exp, makeProtocol, makeConfigurator, factorScale, mulFactor, ethers, MAX_ASSETS, SnapshotRestorer, takeSnapshot } from './helpers';
 import { BigNumber } from 'ethers';
 import { AssetInfoStructOutput } from 'build/types/CometWithExtendedAssetList';
@@ -338,5 +338,81 @@ describe('quoteCollateral', function () {
         expect(quoteAmount).to.eq(expectedQuoteWithoutDiscount);
       });
     }
+
+    
+    describe('edge cases', function () {
+      describe('revert on price feed side', function () {
+        /*
+        * Edge cases around price feeds and quoteCollateral.
+        *
+        * These tests simulate a governance action that replaces the collateral asset's price feed
+        * with a feed that always reverts on `latestRoundData` (PriceFeedWithRevert). This mirrors
+        * the "price feed paralysis" scenario exercised in the absorb tests, but focused on
+        * `quoteCollateral`:
+        *
+        * 1. With the normal price feed, quoteCollateral should succeed for the target collateral.
+        * 2. After governance updates the asset's price feed to PriceFeedWithRevert, quoteCollateral
+        *    should revert with the `Reverted` custom error, since it calls getPrice(asset.priceFeed).
+        * 3. When governance restores the original (non-reverting) price feed, quoteCollateral should
+        *    succeed again, showing that the paralysis is solely caused by the reverting feed.
+        */
+        let priceFeedWithRevert: PriceFeedWithRevert;
+        let originalPriceFeed: string;
+        let targetAsset: FaucetToken | NonStandardFaucetFeeToken;
+
+        before(async () => {
+        // Start from the common baseline state for this suite
+          await snapshot.restore();
+
+          targetAsset = quoteCollateralToken;
+
+          // Record the current (normal) price feed for the quoted asset
+          const assetInfoBefore = await comet.getAssetInfoByAddress(targetAsset.address);
+          originalPriceFeed = assetInfoBefore.priceFeed;
+
+          // Deploy a price feed that always reverts on latestRoundData
+          const PriceFeedWithRevertFactory = (await ethers.getContractFactory('PriceFeedWithRevert')) as PriceFeedWithRevert__factory;
+          priceFeedWithRevert = await PriceFeedWithRevertFactory.deploy(100, 8);
+          await priceFeedWithRevert.deployed();
+        });
+
+        it('quoteCollateral works with the normal price feed', async () => {
+        // Sanity check: initial call should not revert
+          const quote = await comet.quoteCollateral(targetAsset.address, QUOTE_AMOUNT);
+          expect(quote).to.be.gt(0);
+        });
+
+        it('governance updates collateral price feed to a reverting implementation', async () => {
+          await configurator.updateAssetPriceFeed(cometProxyAddress, targetAsset.address, priceFeedWithRevert.address);
+          await proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxyAddress);
+        });
+
+        it('price feed for quoted asset is now the reverting implementation', async () => {
+          const assetInfoAfter = await comet.getAssetInfoByAddress(targetAsset.address);
+          expect(assetInfoAfter.priceFeed).to.equal(priceFeedWithRevert.address);
+        });
+
+        it('quoteCollateral reverts when collateral price feed reverts', async () => {
+          await expect(
+            comet.quoteCollateral(targetAsset.address, QUOTE_AMOUNT)
+          ).to.be.revertedWithCustomError(priceFeedWithRevert, 'Reverted');
+        });
+
+        it('governance restores the normal collateral price feed', async () => {
+          await configurator.updateAssetPriceFeed(cometProxyAddress, targetAsset.address, originalPriceFeed);
+          await proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxyAddress);
+        });
+
+        it('price feed for quoted asset is restored to the normal implementation', async () => {
+          const assetInfoAfter = await comet.getAssetInfoByAddress(targetAsset.address);
+          expect(assetInfoAfter.priceFeed).to.equal(originalPriceFeed);
+        });
+
+        it('quoteCollateral works again after restoring the normal price feed', async () => {
+          const quote = await comet.quoteCollateral(targetAsset.address, QUOTE_AMOUNT);
+          expect(quote).to.be.gt(0);
+        });
+      });
+    });
   });
 });

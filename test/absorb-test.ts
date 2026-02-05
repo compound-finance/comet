@@ -1,7 +1,7 @@
 import { ContractTransaction, BigNumber } from 'ethers';
 import { event, expect, exp, factor, defaultAssets, makeProtocol, mulPrice, portfolio, totalsAndReserves, wait, bumpTotalsCollateral, setTotalsBasic, makeConfigurator, takeSnapshot, SnapshotRestorer, MAX_ASSETS, divPrice, presentValue, principalValue } from './helpers';
 import { ethers } from './helpers';
-import { CometExtAssetList, CometProxyAdmin, CometWithExtendedAssetList, Configurator, ConfiguratorProxy, FaucetToken, NonStandardFaucetFeeToken, SimplePriceFeed } from 'build/types';
+import { CometExtAssetList, CometProxyAdmin, CometWithExtendedAssetList, Configurator, ConfiguratorProxy, FaucetToken, NonStandardFaucetFeeToken, PriceFeedWithRevert, PriceFeedWithRevert__factory, SimplePriceFeed } from 'build/types';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 
 describe('absorb', function () {
@@ -1026,8 +1026,9 @@ describe('absorb', function () {
       });
     });
 
-    for (let i = 1; i <= MAX_ASSETS; i++) {
-      it(`skips absorption of asset ${i - 1} with liquidation factor = 0 with collaterals ${i}`, async () => {
+    describe('24 collateral assets', function () {
+      for (let i = 1; i <= MAX_ASSETS; i++) {
+        it(`skips absorption of asset ${i - 1} with liquidation factor = 0 with collaterals ${i}`, async () => {
         /**
          * This parameterized test verifies that absorb skips assets with liquidation factor = 0.
          * For each iteration (i = 1 to 24), it tests asset i-1 in a protocol with i total collaterals.
@@ -1036,116 +1037,203 @@ describe('absorb', function () {
          * (4) verifies that the target asset is skipped (user collateral balance and totalsCollateral totalSupplyAsset remain unchanged).
          */
 
-        const targetSymbol = `ASSET${i - 1}`;
-        const targetToken = tokens24Assets[targetSymbol];
+          const targetSymbol = `ASSET${i - 1}`;
+          const targetToken = tokens24Assets[targetSymbol];
 
+          // Supply, borrow, and make liquidatable
+          const supplyAmount = exp(1, 18);
+          await targetToken.allocateTo(underwater24Assets.address, supplyAmount);
+          await targetToken.connect(underwater24Assets).approve(comet24Assets.address, supplyAmount);
+          await comet24Assets.connect(underwater24Assets).supply(targetToken.address, supplyAmount);
+
+          const borrowAmount = exp(150, 6);
+          await baseToken24Assets.allocateTo(comet24Assets.address, borrowAmount);
+          await comet24Assets.connect(underwater24Assets).withdraw(baseToken24Assets.address, borrowAmount);
+
+          // Drop price of token to make liquidatable
+          await priceFeeds24Assets[targetSymbol].setRoundData(0, 100, 0, 0, 0);
+
+          expect(await comet24Assets.isLiquidatable(underwater24Assets.address)).to.be.true;
+
+          // Step 3: Update liquidationFactor to 0 for target asset
+          await configuratorProxy24Assets.updateAssetLiquidationFactor(comet24Assets.address, targetToken.address, exp(0, 18));
+
+          // Upgrade proxy again after updating liquidationFactor
+          await proxyAdmin24Assets.deployAndUpgradeTo(configuratorProxy24Assets.address, comet24Assets.address);
+
+          // Verify liquidationFactor is 0
+          expect((await comet24Assets.getAssetInfoByAddress(targetToken.address)).liquidationFactor).to.equal(0);
+
+          // Step 4: Save balances before absorb
+          const userCollateralBefore = (await comet24Assets.userCollateral(underwater24Assets.address, targetToken.address)).balance;
+          const totalsBefore = (await comet24Assets.totalsCollateral(targetToken.address)).totalSupplyAsset;
+
+          expect(userCollateralBefore).to.equal(supplyAmount);
+          expect(totalsBefore).to.equal(supplyAmount);
+
+          // Step 5: Absorb should skip this asset (no seizure) and balances remain unchanged
+          await comet24Assets.connect(absorber24Assets).absorb(absorber24Assets.address, [underwater24Assets.address]);
+
+          // Verify balances remain unchanged
+          expect((await comet24Assets.userCollateral(underwater24Assets.address, targetToken.address)).balance).to.equal(userCollateralBefore);
+          expect((await comet24Assets.totalsCollateral(targetToken.address)).totalSupplyAsset).to.equal(totalsBefore);
+        });
+      }
+    });
+
+    describe('edge cases', function () {
+      it('absorbs with mixed liquidation factors and skips zeroed assets', async () => {
+        /**
+         * This test checks that when there are five collateral assets with mixed liquidation factors,
+         * the absorb function only seizes (liquidates) those assets whose liquidationFactor is nonzero,
+         * and skips assets whose liquidationFactor is zero (leaving their balances unchanged after absorb).
+         * It sets up the protocol, configures various assets, updates some to have zero liquidation factor,
+         * and verifies that 'absorb' seizes only the correct collateral, without affecting those set to be skipped.
+         */
+  
+        await snapshot.restore();
+  
         // Supply, borrow, and make liquidatable
         const supplyAmount = exp(1, 18);
-        await targetToken.allocateTo(underwater24Assets.address, supplyAmount);
-        await targetToken.connect(underwater24Assets).approve(comet24Assets.address, supplyAmount);
-        await comet24Assets.connect(underwater24Assets).supply(targetToken.address, supplyAmount);
-
-        const borrowAmount = exp(150, 6);
+        const targetSymbols = ['ASSET0', 'ASSET1', 'ASSET2', 'ASSET3', 'ASSET4'];
+        for (const sym of targetSymbols) {
+          const token = tokens24Assets[sym];
+          await token.allocateTo(underwater24Assets.address, supplyAmount);
+          await token.connect(underwater24Assets).approve(comet24Assets.address, supplyAmount);
+          await comet24Assets.connect(underwater24Assets).supply(token.address, supplyAmount);
+        }
+  
+        const borrowAmount = exp(500, 6);
         await baseToken24Assets.allocateTo(comet24Assets.address, borrowAmount);
         await comet24Assets.connect(underwater24Assets).withdraw(baseToken24Assets.address, borrowAmount);
-
-        // Drop price of token to make liquidatable
-        await priceFeeds24Assets[targetSymbol].setRoundData(0, 100, 0, 0, 0);
-
+  
+        // Drop price of all tokens to make liquidatable
+        for (const sym of targetSymbols) {
+          await priceFeeds24Assets[sym].setRoundData(0, 100, 0, 0, 0);
+        }
+  
         expect(await comet24Assets.isLiquidatable(underwater24Assets.address)).to.be.true;
-
-        // Step 3: Update liquidationFactor to 0 for target asset
-        await configuratorProxy24Assets.updateAssetLiquidationFactor(comet24Assets.address, targetToken.address, exp(0, 18));
-
+  
+        // Update liquidationFactor to 0 for three assets (ASSET1, ASSET3, ASSET4)
+        const zeroLfSymbols = ['ASSET1', 'ASSET3', 'ASSET4'];
+        for (const sym of zeroLfSymbols) {
+          await configuratorProxy24Assets.updateAssetLiquidationFactor(comet24Assets.address, tokens24Assets[sym].address, exp(0, 18));
+        }
+  
         // Upgrade proxy again after updating liquidationFactor
         await proxyAdmin24Assets.deployAndUpgradeTo(configuratorProxy24Assets.address, comet24Assets.address);
-
-        // Verify liquidationFactor is 0
-        expect((await comet24Assets.getAssetInfoByAddress(targetToken.address)).liquidationFactor).to.equal(0);
-
-        // Step 4: Save balances before absorb
-        const userCollateralBefore = (await comet24Assets.userCollateral(underwater24Assets.address, targetToken.address)).balance;
-        const totalsBefore = (await comet24Assets.totalsCollateral(targetToken.address)).totalSupplyAsset;
-
-        expect(userCollateralBefore).to.equal(supplyAmount);
-        expect(totalsBefore).to.equal(supplyAmount);
-
-        // Step 5: Absorb should skip this asset (no seizure) and balances remain unchanged
+  
+        // Save balances before absorb for two categories
+        // - Should be seized: ASSET0, ASSET2
+        // - Should be skipped (unchanged): ASSET1, ASSET3, ASSET4
+        const userBefore: Record<string, BigNumber> = {} as any;
+        const totalsBefore: Record<string, BigNumber> = {} as any;
+        for (const sym of ['ASSET0', 'ASSET1', 'ASSET2', 'ASSET3', 'ASSET4']) {
+          userBefore[sym] = (await comet24Assets.userCollateral(underwater24Assets.address, tokens24Assets[sym].address)).balance;
+          totalsBefore[sym] = (await comet24Assets.totalsCollateral(tokens24Assets[sym].address)).totalSupplyAsset;
+          expect(userBefore[sym]).to.equal(supplyAmount);
+          expect(totalsBefore[sym]).to.equal(supplyAmount);
+        }
+  
+        // Absorb - should skip assets with LF = 0
         await comet24Assets.connect(absorber24Assets).absorb(absorber24Assets.address, [underwater24Assets.address]);
-
-        // Verify balances remain unchanged
-        expect((await comet24Assets.userCollateral(underwater24Assets.address, targetToken.address)).balance).to.equal(userCollateralBefore);
-        expect((await comet24Assets.totalsCollateral(targetToken.address)).totalSupplyAsset).to.equal(totalsBefore);
+  
+        // Verify skipped assets remain unchanged
+        for (const sym of ['ASSET1', 'ASSET3', 'ASSET4']) {
+          expect((await comet24Assets.userCollateral(underwater24Assets.address, tokens24Assets[sym].address)).balance).to.equal(userBefore[sym]);
+          expect((await comet24Assets.totalsCollateral(tokens24Assets[sym].address)).totalSupplyAsset).to.equal(totalsBefore[sym]);
+        }
+  
+        // Verify seized assets set user balance to 0 and reduce totals
+        for (const sym of ['ASSET0', 'ASSET2']) {
+          expect((await comet24Assets.userCollateral(underwater24Assets.address, tokens24Assets[sym].address)).balance).to.equal(0);
+          expect((await comet24Assets.totalsCollateral(tokens24Assets[sym].address)).totalSupplyAsset).to.equal(0);
+        }
       });
-    }
+    });
 
-    it('absorbs with mixed liquidation factors and skips zeroed assets', async () => {
-      /**
-       * This test checks that when there are five collateral assets with mixed liquidation factors,
-       * the absorb function only seizes (liquidates) those assets whose liquidationFactor is nonzero,
-       * and skips assets whose liquidationFactor is zero (leaving their balances unchanged after absorb).
-       * It sets up the protocol, configures various assets, updates some to have zero liquidation factor,
-       * and verifies that 'absorb' seizes only the correct collateral, without affecting those set to be skipped.
+    describe('revert on price feed side', function () {
+      /*
+       * This test suite reproduces the "price feed paralysis" edge case on top of the
+       * Comet/Configurator deployment and user positions that are already set up in the
+       * outer `before` block.
+       *
+       * At the point we enter this `describe`, Alice already has a borrow position that is
+       * liquidatable under normal (non-reverting) price feeds; this suite does NOT open that
+       * position, it just reuses it.
+       *
+       * The tests then walk through the problematic sequence:
+       * 1. Assert that Alice is liquidatable with the normal COMP price feed.
+       * 2. Have governance update COMP's price feed to `PriceFeedWithRevert`, which always
+       *    reverts on `latestRoundData`, and verify that the feed address on Comet changed.
+       * 3. Show that any call that needs the COMP price (`isLiquidatable`, `isBorrowCollateralized`,
+       *    or `absorb`) now reverts with the `Reverted` custom error, effectively freezing
+       *    liquidations for that collateral.
+       * 4. Finally, revert the price feed back to the normal implementation and verify that
+       *    the same calls succeed again, demonstrating that the paralysis is solely due to
+       *    the reverting price feed.
+       *
+       * Each `it` in this `describe` advances the shared state one step on top of the common
+       * baseline snapshot: from "liquidatable and working normally" → "paralyzed by a reverting
+       * price feed" → "recovered after restoring a healthy feed".
        */
+      let priceFeedWithRevert: PriceFeedWithRevert;
+      before(async () => {
+        // Start from the common baseline state for this suite
+        await snapshot.restore();
 
-      await snapshot.restore();
+        const PriceFeedWithRevert = await ethers.getContractFactory('PriceFeedWithRevert') as PriceFeedWithRevert__factory;
+        priceFeedWithRevert = await PriceFeedWithRevert.deploy(100, 8);
+        await priceFeedWithRevert.deployed();
+      });
 
-      // Supply, borrow, and make liquidatable
-      const supplyAmount = exp(1, 18);
-      const targetSymbols = ['ASSET0', 'ASSET1', 'ASSET2', 'ASSET3', 'ASSET4'];
-      for (const sym of targetSymbols) {
-        const token = tokens24Assets[sym];
-        await token.allocateTo(underwater24Assets.address, supplyAmount);
-        await token.connect(underwater24Assets).approve(comet24Assets.address, supplyAmount);
-        await comet24Assets.connect(underwater24Assets).supply(token.address, supplyAmount);
-      }
+      it('alice is liquidable', async () => {
+        expect(await comet.isLiquidatable(alice.address)).to.be.true;
+      });
 
-      const borrowAmount = exp(500, 6);
-      await baseToken24Assets.allocateTo(comet24Assets.address, borrowAmount);
-      await comet24Assets.connect(underwater24Assets).withdraw(baseToken24Assets.address, borrowAmount);
+      it('governance updates price feed to reverting implementation', async () => {
+        await configurator.updateAssetPriceFeed(cometProxyAddress, compToken.address, priceFeedWithRevert.address);
+        await proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxyAddress);
+      });
 
-      // Drop price of all tokens to make liquidatable
-      for (const sym of targetSymbols) {
-        await priceFeeds24Assets[sym].setRoundData(0, 100, 0, 0, 0);
-      }
+      it('price feed updated to reverting implementation', async () => {
+        expect((await comet.getAssetInfoByAddress(compToken.address)).priceFeed).to.equal(priceFeedWithRevert.address);
+      });
 
-      expect(await comet24Assets.isLiquidatable(underwater24Assets.address)).to.be.true;
+      it('isLiquidatable now reverts due to reverting price feed', async () => {
+        await expect(comet.isLiquidatable(alice.address)).to.be.revertedWithCustomError(priceFeedWithRevert, 'Reverted');
+      });
 
-      // Update liquidationFactor to 0 for three assets (ASSET1, ASSET3, ASSET4)
-      const zeroLfSymbols = ['ASSET1', 'ASSET3', 'ASSET4'];
-      for (const sym of zeroLfSymbols) {
-        await configuratorProxy24Assets.updateAssetLiquidationFactor(comet24Assets.address, tokens24Assets[sym].address, exp(0, 18));
-      }
+      it('isBorrowCollateralized now reverts due to reverting price feed', async () => {
+        await expect(comet.isBorrowCollateralized(alice.address)).to.be.revertedWithCustomError(priceFeedWithRevert, 'Reverted');
+      });
 
-      // Upgrade proxy again after updating liquidationFactor
-      await proxyAdmin24Assets.deployAndUpgradeTo(configuratorProxy24Assets.address, comet24Assets.address);
+      it('absorb reverts when collateral price cannot be fetched', async () => {
+        await expect(
+          comet.connect(bob).absorb(bob.address, [alice.address])
+        ).to.be.revertedWithCustomError(priceFeedWithRevert, 'Reverted');
+      });
 
-      // Save balances before absorb for two categories
-      // - Should be seized: ASSET0, ASSET2
-      // - Should be skipped (unchanged): ASSET1, ASSET3, ASSET4
-      const userBefore: Record<string, BigNumber> = {} as any;
-      const totalsBefore: Record<string, BigNumber> = {} as any;
-      for (const sym of ['ASSET0', 'ASSET1', 'ASSET2', 'ASSET3', 'ASSET4']) {
-        userBefore[sym] = (await comet24Assets.userCollateral(underwater24Assets.address, tokens24Assets[sym].address)).balance;
-        totalsBefore[sym] = (await comet24Assets.totalsCollateral(tokens24Assets[sym].address)).totalSupplyAsset;
-        expect(userBefore[sym]).to.equal(supplyAmount);
-        expect(totalsBefore[sym]).to.equal(supplyAmount);
-      }
+      it('governance updates price feed to normal implementation', async () => {
+        await configurator.updateAssetPriceFeed(cometProxyAddress, compToken.address, compPriceFeed.address);
+        await proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxyAddress);
+      });
 
-      // Absorb - should skip assets with LF = 0
-      await comet24Assets.connect(absorber24Assets).absorb(absorber24Assets.address, [underwater24Assets.address]);
+      it('price feed updated to normal implementation', async () => {
+        expect((await comet.getAssetInfoByAddress(compToken.address)).priceFeed).to.equal(compPriceFeed.address);
+      });
 
-      // Verify skipped assets remain unchanged
-      for (const sym of ['ASSET1', 'ASSET3', 'ASSET4']) {
-        expect((await comet24Assets.userCollateral(underwater24Assets.address, tokens24Assets[sym].address)).balance).to.equal(userBefore[sym]);
-        expect((await comet24Assets.totalsCollateral(tokens24Assets[sym].address)).totalSupplyAsset).to.equal(totalsBefore[sym]);
-      }
+      it('isLiquidatable now does not revert', async () => {
+        expect(await comet.isLiquidatable(alice.address)).to.not.be.reverted;
+      });
 
-      // Verify seized assets set user balance to 0 and reduce totals
-      for (const sym of ['ASSET0', 'ASSET2']) {
-        expect((await comet24Assets.userCollateral(underwater24Assets.address, tokens24Assets[sym].address)).balance).to.equal(0);
-        expect((await comet24Assets.totalsCollateral(tokens24Assets[sym].address)).totalSupplyAsset).to.equal(0);
-      }
+      it('isBorrowCollateralized now does not revert', async () => {
+        expect(await comet.isBorrowCollateralized(alice.address)).to.not.be.reverted;
+      });
+
+      it('absorb does not revert', async () => {
+        await expect(comet.connect(bob).absorb(bob.address, [alice.address])).to.not.be.reverted;
+      });
     });
   });
 });
