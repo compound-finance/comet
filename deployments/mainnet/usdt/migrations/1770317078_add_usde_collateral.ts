@@ -64,7 +64,7 @@ export default migration('1770317078_add_usde_collateral', {
 ## Proposal summary
 
 WOOF! proposes to add USDe into cUSDTv3 on Ethereum network. This proposal takes the governance steps recommended and necessary to update a Compound III USDT market on Ethereum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based on the [recommendations from Gauntlet](https://www.comp.xyz/t/gauntlet-parameter-recommendations-for-usde-on-mainnet-usdc-usdt-comets/7580/1).
-Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1089) and [forum discussion](https://www.comp.xyz/t/gauntlet-parameter-recommendations-for-usde-on-mainnet-usdc-usdt-comets/7580).
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1090) and [forum discussion](https://www.comp.xyz/t/gauntlet-parameter-recommendations-for-usde-on-mainnet-usdc-usdt-comets/7580).
 
 
 ## Proposal Actions
