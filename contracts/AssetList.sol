@@ -138,7 +138,7 @@ contract AssetList {
         if (IERC20NonStandard(asset).decimals() != decimals_) revert CometMainInterface.BadDecimals();
 
         // Ensure collateral factors are within range
-        if (assetConfig.borrowCollateralFactor >= assetConfig.liquidateCollateralFactor) revert CometMainInterface.BorrowCFTooLarge();
+        if (assetConfig.borrowCollateralFactor > MAX_COLLATERAL_FACTOR) revert CometMainInterface.BorrowCFTooLarge();
         if (assetConfig.liquidateCollateralFactor > MAX_COLLATERAL_FACTOR) revert CometMainInterface.LiquidateCFTooLarge();
 
         unchecked {

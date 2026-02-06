@@ -722,7 +722,6 @@ describe('absorb', function () {
             liquidationFactor: exp(0.6, 18),
           },
         },
-        withMockAssetListFactory: true,
       });
       // Note: Always interact with the proxy address, we'll upgrade implementation later
       cometProxyAddress = configuratorAndProtocol.cometProxy.address;
@@ -799,9 +798,7 @@ describe('absorb', function () {
         ])
       );
       // Create protocol with configurator so we can update liquidationFactor later
-      const configuratorAndProtocol24Assets = await makeConfigurator({
-        assets: { USDC: { decimals: 6, initialPrice: 1 }, ...collaterals }, withMockAssetListFactory: true
-      });
+      const configuratorAndProtocol24Assets = await makeConfigurator({ assets: { USDC: { decimals: 6, initialPrice: 1 }, ...collaterals }});
       comet24Assets = configuratorAndProtocol24Assets.cometWithExtendedAssetList.attach(configuratorAndProtocol24Assets.cometProxy.address) as CometWithExtendedAssetList;
       underwater24Assets = configuratorAndProtocol24Assets.users[0];
       absorber24Assets = configuratorAndProtocol24Assets.users[1];
