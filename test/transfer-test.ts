@@ -1,5 +1,5 @@
-import { CometHarnessInterfaceExtendedAssetList, FaucetToken } from 'build/types';
-import { ethers, expect, exp, makeProtocol, presentValue, ZERO_ADDRESS, presentValueSupply, mulPrice, mulFactor } from './helpers';
+import { CometHarnessInterfaceExtendedAssetList, FaucetToken, NonStandardFaucetFeeToken, NonStandardFaucetFeeToken__factory } from 'build/types';
+import { ethers, expect, exp, makeProtocol, presentValue, ZERO_ADDRESS, presentValueSupply, mulPrice, mulFactor, defaultAssets } from './helpers';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { BigNumber, ContractTransaction } from 'ethers';
 import { SnapshotRestorer, takeSnapshot } from './helpers/snapshot';
@@ -1249,6 +1249,178 @@ describe('transfer', function () {
       for (const asset in collaterals) {
         expect(await comet.collateralBalanceOf(bob.address, collaterals[asset].address)).to.equal(TRANSFER_AMOUNT);
       }
+    });
+  });
+
+  describe('non-standard tokens', function () {
+    describe('USDT-like token', function () {
+      let comet: CometHarnessInterfaceExtendedAssetList;
+      let alice: SignerWithAddress;
+      let bob: SignerWithAddress;
+      let usdt: NonStandardFaucetFeeToken;
+      let nonStdCollateral: NonStandardFaucetFeeToken;
+      const USDT_AMOUNT = exp(1, 6);
+      const NON_STD_COLLATERAL_AMOUNT = exp(1, 18);
+
+      before(async function () {
+        const assets = defaultAssets();
+        assets['USDT'] = {
+          initial: 1e6,
+          decimals: 6,
+          factory: (await ethers.getContractFactory('NonStandardFaucetFeeToken')) as NonStandardFaucetFeeToken__factory,
+        };
+        assets['NonStdCollateral'] = {
+          initial: 1e8,
+          decimals: 18,
+          factory: (await ethers.getContractFactory('NonStandardFaucetFeeToken')) as NonStandardFaucetFeeToken__factory,
+        };
+
+        const protocol = await makeProtocol({ base: 'USDT', assets: assets });
+        comet = protocol.cometWithExtendedAssetList;
+        const tokens = protocol.tokens;
+        [alice, bob] = protocol.users;
+
+        usdt = tokens['USDT'] as NonStandardFaucetFeeToken;
+        nonStdCollateral = tokens['NonStdCollateral'] as NonStandardFaucetFeeToken;
+      });
+
+      it('can transfer base token - non-standard ERC20 (without return interface) e.g. USDT', async () => {
+        await usdt.allocateTo(alice.address, USDT_AMOUNT);
+
+        await usdt.connect(alice).approve(comet.address, USDT_AMOUNT);
+        await comet.connect(alice).supply(usdt.address, USDT_AMOUNT);
+
+        // as per the initial test case, 1st deposit will end with the same principal
+        expect((await comet.userBasic(alice.address)).principal).to.equal(USDT_AMOUNT);
+
+        await expect(comet.connect(alice).transfer(bob.address, USDT_AMOUNT)).to.not.be.reverted;
+
+        // bob's principal should be equal to the transferred amount
+        expect((await comet.userBasic(bob.address)).principal).to.equal(USDT_AMOUNT);
+      });
+
+      it('can transfer collateral - non-standard ERC20 (without return interface) e.g. USDT', async () => {
+        await nonStdCollateral.allocateTo(alice.address, NON_STD_COLLATERAL_AMOUNT);
+
+        await nonStdCollateral.connect(alice).approve(comet.address, NON_STD_COLLATERAL_AMOUNT);
+        await comet.connect(alice).supply(nonStdCollateral.address, NON_STD_COLLATERAL_AMOUNT);
+
+        expect((await comet.userCollateral(alice.address, nonStdCollateral.address)).balance).to.equal(NON_STD_COLLATERAL_AMOUNT);
+
+        await expect(comet.connect(alice).transferAsset(bob.address, nonStdCollateral.address, NON_STD_COLLATERAL_AMOUNT)).to.not.be.reverted;
+
+        // bob's collateral balance should be equal to the transferred amount
+        expect((await comet.userCollateral(bob.address, nonStdCollateral.address)).balance).to.equal(NON_STD_COLLATERAL_AMOUNT);
+      });
+    });
+
+    describe('fee-on-transfer token has no impact on transfer', function () {
+      const BASE_TOKEN_AMOUNT = exp(1, 6);
+      const COLLATERAL_TOKEN_AMOUNT = exp(0.5, 18);
+      const NUMERATOR = 10;
+      const DENOMINATOR = 10000;
+      let feeComet: CometHarnessInterfaceExtendedAssetList;
+      let feeBaseToken: NonStandardFaucetFeeToken;
+      let feeCollateral: NonStandardFaucetFeeToken;
+      let alice: SignerWithAddress;
+      let bob: SignerWithAddress;
+      let transferFeeTx: ContractTransaction;
+      let baseAmountWithoutFee: BigNumber;
+      let collateralAmountWithoutFee: BigNumber;
+
+      before(async function () {
+        const assets = defaultAssets();
+        assets['USDT'] = {
+          initial: 1e6,
+          decimals: 6,
+          factory: (await ethers.getContractFactory('NonStandardFaucetFeeToken')) as NonStandardFaucetFeeToken__factory,
+        };
+        assets['FeeCollateral'] = {
+          initial: 1e8,
+          decimals: 18,
+          factory: (await ethers.getContractFactory('NonStandardFaucetFeeToken')) as NonStandardFaucetFeeToken__factory,
+        };
+
+        const protocol = await makeProtocol({ base: 'USDT', assets: assets });
+        
+        feeComet = protocol.cometWithExtendedAssetList;
+        feeBaseToken = protocol.tokens['USDT'] as NonStandardFaucetFeeToken;
+        feeCollateral = protocol.tokens['FeeCollateral'] as NonStandardFaucetFeeToken;
+        [alice, bob] = protocol.users;
+
+        // Allocate tokens to Alice
+        await feeCollateral.allocateTo(alice.address, COLLATERAL_TOKEN_AMOUNT);
+        await feeBaseToken.allocateTo(alice.address, BASE_TOKEN_AMOUNT);
+
+        // Set fee to 0.1%
+        await feeBaseToken.setParams(10, exp(100, 18));
+        await feeCollateral.setParams(10, exp(100, 18));
+
+        // Base token preparation
+        // We supply the amount with fee to check that it's work even on supply phase
+        const baseAmountDeposited = BigNumber.from(BASE_TOKEN_AMOUNT);
+        const baseFee = baseAmountDeposited.mul(NUMERATOR).div(DENOMINATOR);
+        baseAmountWithoutFee = baseAmountDeposited.sub(baseFee);
+        await feeBaseToken.connect(alice).approve(feeComet.address, BASE_TOKEN_AMOUNT);
+        await feeComet.connect(alice).supply(feeBaseToken.address, BASE_TOKEN_AMOUNT);
+
+        // Collateral token preparation
+        // We supply the amount with fee to check that it's work even on supply phase
+        const collateralAmountDeposited = BigNumber.from(COLLATERAL_TOKEN_AMOUNT);
+        const collateralFee = collateralAmountDeposited.mul(NUMERATOR).div(DENOMINATOR);
+        collateralAmountWithoutFee = collateralAmountDeposited.sub(collateralFee);
+        await feeCollateral.connect(alice).approve(feeComet.address, COLLATERAL_TOKEN_AMOUNT);
+        await feeComet.connect(alice).supply(feeCollateral.address, COLLATERAL_TOKEN_AMOUNT);
+
+        // we are checking that the (amount - fee) is considered as deposit
+        expect((await feeComet.userBasic(alice.address)).principal).to.equal(baseAmountWithoutFee);
+        expect((await feeComet.userCollateral(alice.address, feeCollateral.address)).balance).to.equal(collateralAmountWithoutFee);
+      });
+
+      it('no fee is charged for transfer base token - fee-on-transfer token', async () => {
+        const feeBalanceBefore = await feeBaseToken.balanceOf(feeBaseToken.address);
+
+        transferFeeTx = await feeComet.connect(alice).transfer(bob.address, baseAmountWithoutFee);
+        await expect(transferFeeTx).to.not.be.reverted;
+
+        // bob's principal should be equal to the transferred amount (no fee is charged)
+        expect((await feeComet.userBasic(bob.address)).principal).to.equal(baseAmountWithoutFee);
+
+        const feeBalanceAfter = await feeBaseToken.balanceOf(feeBaseToken.address);
+
+        // no fee is charged
+        expect(feeBalanceAfter.sub(feeBalanceBefore)).to.equal(0);
+      });
+
+      it('correct amount in the Transfer event (withdraw) - fee-on-transfer token', async () => {
+        // event should contain amount without fee
+        await expect(transferFeeTx).to.emit(feeComet, 'Transfer').withArgs(alice.address, ZERO_ADDRESS, baseAmountWithoutFee);
+      });
+
+      it('correct amount in the Transfer event (supply) - fee-on-transfer token', async () => {
+        // event should contain amount without fee
+        await expect(transferFeeTx).to.emit(feeComet, 'Transfer').withArgs(ZERO_ADDRESS, bob.address, baseAmountWithoutFee);
+      });
+
+      it('no fee is charged for transfer collateral token - fee-on-transfer token', async () => {
+        const feeBalanceBefore = await feeCollateral.balanceOf(feeCollateral.address);
+
+        transferFeeTx = await feeComet.connect(alice).transferAsset(bob.address, feeCollateral.address, collateralAmountWithoutFee);
+        await expect(transferFeeTx).to.not.be.reverted;
+
+        const feeBalanceAfter = await feeCollateral.balanceOf(feeCollateral.address);
+
+        // no fee is charged
+        expect(feeBalanceAfter.sub(feeBalanceBefore)).to.equal(0);
+
+        // bob's collateral balance should be equal to the transferred amount
+        expect((await feeComet.userCollateral(bob.address, feeCollateral.address)).balance).to.equal(collateralAmountWithoutFee);
+      });
+
+      it('correct amount in the TransferCollateral event - fee-on-transfer token', async () => {
+        // event should contain amount without fee - the actual received on the contract
+        await expect(transferFeeTx).to.emit(feeComet, 'TransferCollateral').withArgs(alice.address, bob.address, feeCollateral.address, collateralAmountWithoutFee);
+      });
     });
   });
 });
