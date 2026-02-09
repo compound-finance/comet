@@ -38,6 +38,24 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
     uint8 internal constant PAUSE_ABSORB_OFFSET = 3;
     uint8 internal constant PAUSE_BUY_OFFSET = 4;
 
+    /// @dev Offsets for specific actions in the extended pause flag bit array
+    /// @dev Offset of pause lenders withdraw
+    uint24 internal constant PAUSE_LENDERS_WITHDRAW_OFFSET = 0;
+    /// @dev Offset of pause borrowers withdraw
+    uint24 internal constant PAUSE_BORROWERS_WITHDRAW_OFFSET = 1;
+    /// @dev Offset of pause collateral supply
+    uint24 internal constant PAUSE_COLLATERAL_SUPPLY_OFFSET = 2;
+    /// @dev Offset of pause base supply
+    uint24 internal constant PAUSE_BASE_SUPPLY_OFFSET = 3;
+    /// @dev Offset of pause lenders transfer
+    uint24 internal constant PAUSE_LENDERS_TRANSFER_OFFSET = 4;
+    /// @dev Offset of pause borrowers transfer
+    uint24 internal constant PAUSE_BORROWERS_TRANSFER_OFFSET = 5;
+    /// @dev Offset of pause collateral transfer
+    uint24 internal constant PAUSE_COLLATERALS_TRANSFER_OFFSET = 6;
+    /// @dev Offset of pause collateral withdraw
+    uint24 internal constant PAUSE_COLLATERALS_WITHDRAW_OFFSET = 7;
+
     /// @dev The decimals required for a price feed
     uint8 internal constant PRICE_FEED_DECIMALS = 8;
 

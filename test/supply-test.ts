@@ -4,10 +4,10 @@ import { BigNumber, ContractTransaction } from 'ethers';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 
 // Note: isolated supply functionality, withdraw and repay are tested in separate testsets
-describe('5. supply', function () {
+describe.only('5. supply', function () {
   const baseTokenDecimals = 6;
 
-  let comet: CometHarnessInterface;
+  let comet: CometHarnessInterfaceExtendedAssetList;
   let baseToken: FaucetToken | NonStandardFaucetFeeToken;
   let collaterals: {
     [symbol: string]: FaucetToken | NonStandardFaucetFeeToken;
@@ -22,7 +22,7 @@ describe('5. supply', function () {
   before(async function () {
     const protocol = await makeProtocol({base: 'USDC'});
 
-    comet = protocol.comet;
+    comet = protocol.cometWithExtendedAssetList;
     baseToken = protocol.tokens[protocol.base];
     collaterals = Object.fromEntries(
       Object.entries(protocol.tokens).filter(([_symbol, token]) => token.address !== baseToken.address)
@@ -76,8 +76,7 @@ describe('5. supply', function () {
 
     describe('supply base asset: reverts', function () {
       it('reverts if supply is paused', async () => {
-        await baseToken.allocateTo(alice.address, 1);
-        await wait(comet.connect(pauseGuardian).pause(true, false, false, false, false));
+        await comet.connect(pauseGuardian).pause(true, false, false, false, false);
         expect(await comet.isSupplyPaused()).to.be.true;
 
         await baseToken.connect(alice).approve(comet.address, 1);
@@ -85,13 +84,18 @@ describe('5. supply', function () {
         await comet.connect(pauseGuardian).pause(false, false, false, false, false);
       });
 
+      it('reverts if base supply is paused', async () => {
+        await comet.connect(pauseGuardian).pauseBaseSupply(true);
+        expect(await comet.isBaseSupplyPaused()).to.be.true;
+
+        await expect(comet.connect(alice).supply(baseToken.address, 1)).to.be.revertedWithCustomError(comet, 'BaseSupplyPaused');
+        await comet.connect(pauseGuardian).pauseBaseSupply(false);
+      });
+
       // Note: we skip this test for now, because this feature is not implemented in the comet contract yet
       // This is different from Sandbox behavior - original Comet allows 0 supply
       it.skip('reverts for 0 base asset supply', async () => {
-        const s0 = await wait(comet.connect(alice).supply(baseToken.address, 0));
-        expect(event(s0, 1)).to.be.deep.equal({
-          Supply: { from: alice.address, dst: alice.address, amount: 0n }
-        });
+        await expect(comet.connect(alice).supply(baseToken.address, 0)).to.be.revertedWithCustomError(comet, 'ZeroAmount');
       });
 
       it('reverts for not enough base asset balance', async () => {
@@ -1511,7 +1515,7 @@ describe('5. supply', function () {
       await EVIL.setAttack(attack);
 
       await comet.connect(alice).allow(EVIL.address, true);
-      await wait(EVIL.connect(alice).approve(comet.address, 75e6));
+      await EVIL.connect(alice).approve(comet.address, 75e6);
       await EVIL.allocateTo(alice.address, 75e6);
 
       await expect(

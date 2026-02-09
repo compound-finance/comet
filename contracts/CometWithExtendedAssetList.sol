@@ -557,6 +557,86 @@ contract CometWithExtendedAssetList is CometMainInterface {
     }
 
     /**
+     * @return Whether or not lenders withdraw actions are paused
+     */
+    function isLendersWithdrawPaused() public view returns (bool) {
+        return (extendedPauseFlags & (uint24(1) << PAUSE_LENDERS_WITHDRAW_OFFSET)) != 0;
+    }
+
+    /**
+     * @return Whether or not borrowers withdraw actions are paused
+     */
+    function isBorrowersWithdrawPaused() public view returns (bool) {
+        return (extendedPauseFlags & (uint24(1) << PAUSE_BORROWERS_WITHDRAW_OFFSET)) != 0;
+    }
+
+    /**
+     * @param assetIndex The index of the asset (offset)
+     * @return Whether or not collateral asset withdraw actions are paused
+     */
+    function isCollateralAssetWithdrawPaused(uint24 assetIndex)  public view returns (bool) {
+        return (collateralsWithdrawPauseFlags & (uint24(1) << assetIndex)) != 0;
+    }
+
+    /**
+     * @return Whether or not collateral withdraw actions are paused
+     */
+    function isCollateralWithdrawPaused() public view returns (bool) {
+        return (extendedPauseFlags & (uint24(1) << PAUSE_COLLATERALS_WITHDRAW_OFFSET)) != 0;
+    }
+
+    /**
+     * @return Whether or not collateral supply actions are paused
+     */
+    function isCollateralSupplyPaused() public view returns (bool) {
+        return (extendedPauseFlags & (uint24(1) << PAUSE_COLLATERAL_SUPPLY_OFFSET)) != 0;
+    }
+
+    /**
+     * @return Whether or not base supply actions are paused
+     */
+    function isBaseSupplyPaused() public view returns (bool) {
+        return (extendedPauseFlags & (uint24(1) << PAUSE_BASE_SUPPLY_OFFSET)) != 0;
+    }
+
+    /**
+     * @param assetIndex The index of the asset (offset)
+     * @return Whether or not collateral asset supply actions are paused
+     */
+    function isCollateralAssetSupplyPaused(uint24 assetIndex) public view returns (bool) {
+        return (collateralsSupplyPauseFlags & (uint24(1) << assetIndex)) != 0;
+    }
+
+    /**
+     * @return Whether or not lenders transfer actions are paused
+     */
+    function isLendersTransferPaused() public view returns (bool) {
+        return (extendedPauseFlags & (uint24(1) << PAUSE_LENDERS_TRANSFER_OFFSET)) != 0;
+    }
+
+    /**
+     * @return Whether or not borrowers transfer actions are paused
+     */
+    function isBorrowersTransferPaused() public view returns (bool) {
+        return (extendedPauseFlags & (uint24(1) << PAUSE_BORROWERS_TRANSFER_OFFSET)) != 0;
+    }
+
+    /**
+     * @param assetIndex The index of the asset (offset)
+     * @return Whether or not collateral asset transfer actions are paused
+     */
+    function isCollateralAssetTransferPaused(uint24 assetIndex) public view returns (bool) {
+        return (collateralsTransferPauseFlags & (uint24(1) << assetIndex)) != 0;
+    }
+
+    /**
+     * @return Whether or not collateral transfer actions are paused
+     */
+    function isCollateralTransferPaused() public view returns (bool) {
+        return (extendedPauseFlags & (uint24(1) << PAUSE_COLLATERALS_TRANSFER_OFFSET)) != 0;
+    }
+
+    /**
      * @dev Multiply a number by a factor
      */
     function mulFactor(uint n, uint factor) internal pure returns (uint) {
@@ -747,11 +827,13 @@ contract CometWithExtendedAssetList is CometMainInterface {
         if (!hasPermission(from, operator)) revert Unauthorized();
 
         if (asset == baseToken) {
+            if (isBaseSupplyPaused()) revert BaseSupplyPaused();
             if (amount == type(uint256).max) {
                 amount = borrowBalanceOf(dst);
             }
             return supplyBase(from, dst, amount);
         } else {
+            if (isCollateralSupplyPaused()) revert CollateralSupplyPaused();
             return supplyCollateral(from, dst, asset, safe128(amount));
         }
     }
@@ -787,9 +869,13 @@ contract CometWithExtendedAssetList is CometMainInterface {
      * @dev Supply an amount of collateral asset from `from` to dst
      */
     function supplyCollateral(address from, address dst, address asset, uint128 amount) internal {
+        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
+        uint8 offset = assetInfo.offset;
+
+        if (isCollateralAssetSupplyPaused(offset)) revert CollateralAssetSupplyPaused(offset);
+
         amount = safe128(doTransferIn(asset, from, amount));
 
-        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         TotalsCollateral memory totals = totalsCollateral[asset];
         totals.totalSupplyAsset += amount;
         if (totals.totalSupplyAsset > assetInfo.supplyCap) revert SupplyCapExceeded();
@@ -864,6 +950,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
             }
             return transferBase(src, dst, amount);
         } else {
+            if (isCollateralTransferPaused()) revert CollateralTransferPaused();
             return transferCollateral(src, dst, asset, safe128(amount));
         }
     }
@@ -895,8 +982,11 @@ contract CometWithExtendedAssetList is CometMainInterface {
         updateBasePrincipal(dst, dstUser, dstPrincipalNew);
 
         if (srcBalance < 0) {
+            if (isBorrowersTransferPaused()) revert BorrowersTransferPaused();
             if (uint256(-srcBalance) < baseBorrowMin) revert BorrowTooSmall();
             if (!isBorrowCollateralized(src)) revert NotCollateralized();
+        } else {
+            if (isLendersTransferPaused()) revert LendersTransferPaused();
         }
 
         if (withdrawAmount > 0) {
@@ -921,6 +1011,9 @@ contract CometWithExtendedAssetList is CometMainInterface {
         userCollateral[dst][asset].balance = dstCollateralNew;
 
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
+        uint8 offset = assetInfo.offset;
+
+        if (isCollateralAssetTransferPaused(offset)) revert CollateralAssetTransferPaused(offset);
         updateAssetsIn(src, assetInfo, srcCollateral, srcCollateralNew);
         updateAssetsIn(dst, assetInfo, dstCollateral, dstCollateralNew);
 
@@ -974,6 +1067,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
             }
             return withdrawBase(src, to, amount);
         } else {
+            if (isCollateralWithdrawPaused()) revert CollateralWithdrawPaused();
             return withdrawCollateral(src, to, asset, safe128(amount));
         }
     }
@@ -997,11 +1091,14 @@ contract CometWithExtendedAssetList is CometMainInterface {
         updateBasePrincipal(src, srcUser, srcPrincipalNew);
 
         if (srcBalance < 0) {
+            if (isBorrowersWithdrawPaused()) revert BorrowersWithdrawPaused();
             if (uint256(-srcBalance) < baseBorrowMin) revert BorrowTooSmall();
             if (!isBorrowCollateralized(src)) revert NotCollateralized();
             /// @dev safeguard against the over-utilization leading to illiquidity and reserves exhaustion
             /// At this point totals are updated and it is a borrow case, so we can check resulting utilization
             if (getUtilization() > MAX_SUPPORTED_UTILIZATION) revert ExceedsSupportedUtilization();
+        } else {
+            if (isLendersWithdrawPaused()) revert LendersWithdrawPaused();
         }
 
         doTransferOut(baseToken, to, amount);
@@ -1024,6 +1121,9 @@ contract CometWithExtendedAssetList is CometMainInterface {
         userCollateral[src][asset].balance = srcCollateralNew;
 
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
+        uint8 offset = assetInfo.offset;
+        if (isCollateralAssetWithdrawPaused(offset)) revert CollateralAssetWithdrawPaused(offset);
+
         updateAssetsIn(src, assetInfo, srcCollateral, srcCollateralNew);
 
         // Note: no accrue interest, BorrowCF < LiquidationCF covers small changes

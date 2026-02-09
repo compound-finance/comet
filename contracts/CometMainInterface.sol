@@ -36,6 +36,31 @@ abstract contract CometMainInterface is CometCore {
 
     /// @dev Error emitted when the utilization exceeds the supported utilization
     error ExceedsSupportedUtilization();
+    /// @notice Error emitted when base supply is paused
+    error BaseSupplyPaused();
+    /// @notice Error emitted when collateral supply is paused
+    error CollateralSupplyPaused();
+    /// @notice Error emitted when a specific collateral asset supply is paused
+    /// @param assetIndex The index of the collateral asset
+    error CollateralAssetSupplyPaused(uint24 assetIndex);
+    /// @notice Error emitted when borrowers' transfers are paused
+    error BorrowersTransferPaused();
+    /// @notice Error emitted when lenders' transfers are paused
+    error LendersTransferPaused();
+    /// @notice Error emitted when collateral transfers are paused
+    error CollateralTransferPaused();
+    /// @notice Error emitted when a specific collateral asset transfer is paused
+    /// @param assetIndex The index of the collateral asset
+    error CollateralAssetTransferPaused(uint24 assetIndex);
+    /// @notice Error emitted when borrowers' withdrawals are paused
+    error BorrowersWithdrawPaused();
+    /// @notice Error emitted when lenders' withdrawals are paused
+    error LendersWithdrawPaused();
+    /// @notice Error emitted when collateral withdrawals are paused
+    error CollateralWithdrawPaused();
+    /// @notice Error emitted when a specific collateral asset withdrawal is paused
+    /// @param assetIndex The index of the collateral asset
+    error CollateralAssetWithdrawPaused(uint24 assetIndex);
 
     event Supply(address indexed from, address indexed dst, uint amount);
     event Transfer(address indexed from, address indexed to, uint amount);
