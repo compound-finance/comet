@@ -4,7 +4,7 @@ import { BigNumber, ContractTransaction } from 'ethers';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 
 // Note: isolated supply functionality, withdraw and repay are tested in separate testsets
-describe.only('supply', function () {
+describe('supply', function () {
   // Constants
   const baseTokenDecimals = 6;
   // Contracts
