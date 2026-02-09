@@ -4,16 +4,17 @@ import { BigNumber, ContractTransaction } from 'ethers';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 
 // Note: isolated supply functionality, withdraw and repay are tested in separate testsets
-describe.only('5. supply', function () {
+describe.only('supply', function () {
+  // Constants
   const baseTokenDecimals = 6;
-
+  // Contracts
   let comet: CometHarnessInterfaceExtendedAssetList;
   let baseToken: FaucetToken | NonStandardFaucetFeeToken;
+  // Tokens
   let collaterals: {
     [symbol: string]: FaucetToken | NonStandardFaucetFeeToken;
   };
   let unsupportedToken: FaucetToken;
-
   // Accounts
   let alice: SignerWithAddress;
   let bob: SignerWithAddress;
@@ -41,6 +42,10 @@ describe.only('5. supply', function () {
     describe('default state (un-accrued)', function () {
       it('supply is not paused by default', async () => {
         expect(await comet.isSupplyPaused()).to.be.false;
+      });
+
+      it('base supply is not paused by default', async () => {
+        expect(await comet.isBaseSupplyPaused()).to.be.false;
       });
 
       it('no base token on the comet', async () => {
@@ -123,6 +128,7 @@ describe.only('5. supply', function () {
       const BASE_AMOUNT: bigint = exp(5e9, baseTokenDecimals);
       let aliceBalanceBefore: BigNumber;
       let aliceBalanceAfter: BigNumber;
+      let supplyTx: ContractTransaction;
 
       it('wait and accrue state', async () => {
         // wait with empty comet for a while
@@ -131,38 +137,29 @@ describe.only('5. supply', function () {
 
         await comet.accrueAccount(alice.address);
       });
-      
-      it('emits Supply event when supplies base asset into empty pool', async () => {
-        const snapshot: SnapshotRestorer = await takeSnapshot();
 
-        await baseToken.connect(alice).approve(comet.address, BASE_AMOUNT);
-        expect(await comet.connect(alice).supply(baseToken.address, BASE_AMOUNT))
-          .emit(comet, 'Supply')
-          .withArgs(alice.address, alice.address, BASE_AMOUNT);
-
-        await snapshot.restore();
-      });
-
-      it('emits Transfer event when supplies base asset into empty pool (as supply growths)', async () => {
-        const snapshot: SnapshotRestorer = await takeSnapshot();
-
-        const principalFromBase = BASE_AMOUNT; // default index for the empty pool gives same supply amount
-
-        await baseToken.connect(alice).approve(comet.address, BASE_AMOUNT);
-        expect(await comet.connect(alice).supply(baseToken.address, BASE_AMOUNT))
-          .emit(comet, 'Transfer')
-          .withArgs(ZERO_ADDRESS, alice.address, principalFromBase);
-
-        await snapshot.restore();
-      });
-
-      it('supplies base asset into empty pool', async () => {
+      it('supply base asset into empty pool is successful', async () => {
         aliceBalanceBefore = await baseToken.balanceOf(alice.address);
 
         await baseToken.connect(alice).approve(comet.address, BASE_AMOUNT);
-        await expect(comet.connect(alice).supply(baseToken.address, BASE_AMOUNT)).to.not.be.reverted;
+        supplyTx = await comet.connect(alice).supply(baseToken.address, BASE_AMOUNT);
+        await expect(supplyTx).to.not.be.reverted;
 
         aliceBalanceAfter = await baseToken.balanceOf(alice.address);
+      });
+      
+      it('emits Supply event when supplies base asset into empty pool', async () => {
+        await expect(supplyTx)
+          .emit(comet, 'Supply')
+          .withArgs(alice.address, alice.address, BASE_AMOUNT);
+      });
+
+      it('emits Transfer event when supplies base asset into empty pool (as supply growths)', async () => {
+        const principalFromBase = BASE_AMOUNT; // default index for the empty pool gives same supply amount
+
+        await expect(supplyTx)
+          .emit(comet, 'Transfer')
+          .withArgs(ZERO_ADDRESS, alice.address, principalFromBase);
       });
 
       it('should supply the exact balance as passed as a parameter', async () => {
@@ -654,6 +651,14 @@ describe.only('5. supply', function () {
         await comet.connect(pauseGuardian).pause(false, false, false, false, false);
       });
 
+      it('reverts if collateral supply is paused', async () => {
+        await comet.connect(pauseGuardian).pauseCollateralSupply(true);
+        expect(await comet.isCollateralSupplyPaused()).to.be.true;
+
+        await expect(comet.connect(alice).supply(collateral.address, 1)).to.be.revertedWithCustomError(comet, 'CollateralSupplyPaused');
+        await comet.connect(pauseGuardian).pauseCollateralSupply(false);
+      });
+
       it('reverts for not enough collateral balance', async () => {
         const balanceBefore = await collateral.balanceOf(alice.address);
 
@@ -690,6 +695,7 @@ describe.only('5. supply', function () {
       let totalSupplyBefore: BigNumber;
       let alicePrincipalBefore: BigNumber;
       let cometUpdatedTimeBefore: number;
+      let supplyTx: ContractTransaction;
 
       before(async function () {
         const totals = await comet.totalsBasic();
@@ -722,20 +728,16 @@ describe.only('5. supply', function () {
         expect(await collateral.balanceOf(comet.address)).to.equal(0);
       });
 
-      it('should emit event during 1st collateral deposit', async () => {
-        const snapshot: SnapshotRestorer = await takeSnapshot();
-
-        await collateral.connect(alice).approve(comet.address, ALICE_COLLATERAL_AMOUNT);
-        expect(await comet.connect(alice).supply(collateral.address, ALICE_COLLATERAL_AMOUNT))
-          .to.emit(comet, 'SupplyCollateral')
-          .withArgs(alice.address, alice.address, collateral.address, ALICE_COLLATERAL_AMOUNT);
-
-        await snapshot.restore();
-      });
-      
       it('should allow collateral deposit', async () => {
         await collateral.connect(alice).approve(comet.address, ALICE_COLLATERAL_AMOUNT);
-        await expect(comet.connect(alice).supply(collateral.address, ALICE_COLLATERAL_AMOUNT)).to.not.be.reverted;
+        supplyTx = await comet.connect(alice).supply(collateral.address, ALICE_COLLATERAL_AMOUNT);
+        await expect(supplyTx).to.not.be.reverted;
+      });
+
+      it('should emit event during 1st collateral deposit', async () => {
+        await expect(supplyTx)
+          .to.emit(comet, 'SupplyCollateral')
+          .withArgs(alice.address, alice.address, collateral.address, ALICE_COLLATERAL_AMOUNT);
       });
 
       it("collateral is added to user's tokens", async () => {
@@ -908,6 +910,14 @@ describe.only('5. supply', function () {
         await comet.connect(pauseGuardian).pause(false, false, false, false, false);
       });
 
+      it('reverts if base supply is paused', async () => {
+        await comet.connect(pauseGuardian).pauseBaseSupply(true);
+        expect(await comet.isBaseSupplyPaused()).to.be.true;
+
+        await expect(comet.connect(alice).supplyTo(bob.address, baseToken.address, 1)).to.be.revertedWithCustomError(comet, 'BaseSupplyPaused');
+        await comet.connect(pauseGuardian).pauseBaseSupply(false);
+      });
+
       it('should accrue state (same as supply())', async () => {
         const snapshot: SnapshotRestorer = await takeSnapshot();
 
@@ -1066,6 +1076,14 @@ describe.only('5. supply', function () {
         await comet.connect(pauseGuardian).pause(false, false, false, false, false);
       });
 
+      it('reverts if base supply is paused', async () => {
+        await comet.connect(pauseGuardian).pauseBaseSupply(true);
+        expect(await comet.isBaseSupplyPaused()).to.be.true;
+
+        await expect(comet.connect(alice).supplyFrom(alice.address, bob.address, baseToken.address, 1)).to.be.revertedWithCustomError(comet, 'BaseSupplyPaused');
+        await comet.connect(pauseGuardian).pauseBaseSupply(false);
+      });
+
       it('should accrue state (same as supply())', async () => {
         const snapshot: SnapshotRestorer = await takeSnapshot();
 
@@ -1154,23 +1172,17 @@ describe.only('5. supply', function () {
 
         await snapshot.restore();
       });
-
-      // Note: supplyFrom() with different operator is tested in allowance tests.
     });
   });
 
   describe('supply 24 collaterals', function () {
     const MAX_ASSETS = 24;
     const SUPPLY_COLLATERAL_AMOUNT: bigint = exp(1, 18);
-
     let comet: CometHarnessInterfaceExtendedAssetList;
     let collaterals: { [symbol: string]: FaucetToken } = {};
-
     let alice: SignerWithAddress;
     let dave: SignerWithAddress;
-
-    let asset: FaucetToken;
-    let supplyTx: ContractTransaction;
+    let supplyTxs: ContractTransaction[] = [];
     let alicePrincipalBefore: BigNumber;
     let davePrincipalBefore: BigNumber;
 
@@ -1193,7 +1205,7 @@ describe.only('5. supply', function () {
 
       comet = protocol.cometWithExtendedAssetList;
       baseToken = protocol.tokens[protocol.base] as FaucetToken;
-      for (let asset in protocol.tokens) {
+      for (const asset in protocol.tokens) {
         if (asset === 'USDC') continue;
         collaterals[asset] = protocol.tokens[asset] as FaucetToken;
       }
@@ -1209,38 +1221,48 @@ describe.only('5. supply', function () {
     describe('supply', function () {
       this.afterAll(async () => snapshot.restore());
 
-      for(let i = 0; i < MAX_ASSETS; i++) {
-        it(`supply collateral with index ${i + 1} is successful`, async () => {
-          asset = collaterals[`ASSET${i}`];
+      it(`each collateral supply is successful`, async () => {
+        for (const asset of Object.values(collaterals)) {
           await asset.allocateTo(alice.address, SUPPLY_COLLATERAL_AMOUNT);
           await asset.connect(alice).approve(comet.address, SUPPLY_COLLATERAL_AMOUNT);
-          supplyTx = await comet.connect(alice).supply(asset.address, SUPPLY_COLLATERAL_AMOUNT);
+          const supplyTx = await comet.connect(alice).supply(asset.address, SUPPLY_COLLATERAL_AMOUNT);
           expect(supplyTx).to.not.be.reverted;
-        });
+          supplyTxs.push(supplyTx);
+        }
+      });
 
-        it(`SupplyCollateral event is emitted`, async () => {
-          await expect(supplyTx)
+      it(`SupplyCollateral event is emitted for each collateral`, async () => {
+        for (let i = 0; i < supplyTxs.length; i++) {
+          await expect(supplyTxs[i])
             .to.emit(comet, 'SupplyCollateral')
-            .withArgs(alice.address, alice.address, asset.address, SUPPLY_COLLATERAL_AMOUNT);
-        });
+            .withArgs(alice.address, alice.address, Object.values(collaterals)[i].address, SUPPLY_COLLATERAL_AMOUNT);
+        }
+        // reset supplyTxs
+        supplyTxs = [];
+      });
 
-        it(`alice collateral balance is equal to supplied amount`, async () => {
+      it(`each collateral balance is equal to supplied amount`, async () => {
+        for (const asset of Object.values(collaterals)) {
           expect(await comet.collateralBalanceOf(alice.address, asset.address)).to.be.equal(SUPPLY_COLLATERAL_AMOUNT);
-        });
+        }
+      });
 
-        it('alice asset list contains asset', async () => {
-          const assetList = await comet.getAssetList(alice.address);
+      it('alice asset list contains all collaterals', async () => {
+        const assetList = await comet.getAssetList(alice.address);
+        for (const asset of Object.values(collaterals)) {
           expect(assetList).to.include(asset.address);
-        });
+        }
+      });
 
-        it('comet total supplied collateral amount is equal to alice supplied amount', async () => {
+      it('each collateral comet total supplied collateral amount is equal to alice supplied amount', async () => {
+        for (const asset of Object.values(collaterals)) {
           expect((await comet.totalsCollateral(asset.address)).totalSupplyAsset).to.be.equal(SUPPLY_COLLATERAL_AMOUNT);
-        }); 
+        }
+      });
 
-        it('alice principal is not changed', async () => {
-          expect((await comet.userBasic(alice.address)).principal).to.be.equal(alicePrincipalBefore);
-        });
-      }
+      it('alice principal is not changed', async () => {
+        expect((await comet.userBasic(alice.address)).principal).to.be.equal(alicePrincipalBefore);
+      });
     });
 
     describe('supplyTo', function () {
@@ -1249,39 +1271,50 @@ describe.only('5. supply', function () {
       });
 
       this.afterAll(async () => snapshot.restore());
-      
-      for(let i = 0; i < MAX_ASSETS; i++) {
-        it(`supply collateral with index ${i + 1} is successful`, async () => {
-          asset = collaterals[`ASSET${i}`];
+
+      it(`each collateral supplyTo is successful`, async () => {
+        for (const asset of Object.values(collaterals)) {
           await asset.allocateTo(alice.address, SUPPLY_COLLATERAL_AMOUNT);
           await asset.connect(alice).approve(comet.address, SUPPLY_COLLATERAL_AMOUNT);
-          supplyTx = await comet.connect(alice).supplyTo(dave.address, asset.address, SUPPLY_COLLATERAL_AMOUNT);
-          expect(supplyTx).to.not.be.reverted;
-        });
+          const supplyToTx = await comet.connect(alice).supplyTo(dave.address, asset.address, SUPPLY_COLLATERAL_AMOUNT);
+          expect(supplyToTx).to.not.be.reverted;
+          supplyTxs.push(supplyToTx);
+        }
+      });
 
-        it(`SupplyCollateral event is emitted`, async () => {
-          await expect(supplyTx)
+      it(`SupplyCollateral event is emitted for each collateral`, async () => {
+        const assets = Object.values(collaterals);
+        for (let i = 0; i < assets.length; i++) {
+          await expect(supplyTxs[i])
             .to.emit(comet, 'SupplyCollateral')
-            .withArgs(alice.address, dave.address, asset.address, SUPPLY_COLLATERAL_AMOUNT);
-        });
+            .withArgs(alice.address, dave.address, assets[i].address, SUPPLY_COLLATERAL_AMOUNT);
+        }
+        // reset supplyTxs
+        supplyTxs = [];
+      });
 
-        it(`dave collateral balance is equal to supplied amount`, async () => {
+      it(`each collateral balance for dave is equal to supplied amount`, async () => {
+        for (const asset of Object.values(collaterals)) {
           expect(await comet.collateralBalanceOf(dave.address, asset.address)).to.be.equal(SUPPLY_COLLATERAL_AMOUNT);
-        });
+        }
+      });
 
-        it('alice asset list contains asset', async () => {
-          const assetList = await comet.getAssetList(dave.address);
+      it('dave asset list contains all collaterals', async () => {
+        const assetList = await comet.getAssetList(dave.address);
+        for (const asset of Object.values(collaterals)) {
           expect(assetList).to.include(asset.address);
-        });
+        }
+      });
 
-        it('comet total supplied collateral amount is equal to alice supplied amount', async () => {
+      it('each collateral comet total supplied collateral amount is equal to alice supplied amount', async () => {
+        for (const asset of Object.values(collaterals)) {
           expect((await comet.totalsCollateral(asset.address)).totalSupplyAsset).to.be.equal(SUPPLY_COLLATERAL_AMOUNT);
-        }); 
+        }
+      }); 
 
-        it('alice principal is not changed', async () => {
-          expect((await comet.userBasic(dave.address)).principal).to.be.equal(davePrincipalBefore);
-        });
-      }
+      it('dave principal is not changed', async () => {
+        expect((await comet.userBasic(dave.address)).principal).to.be.equal(davePrincipalBefore);
+      });
     });
 
     describe('supplyFrom', function () {
@@ -1290,39 +1323,48 @@ describe.only('5. supply', function () {
       });
 
       this.afterAll(async () => snapshot.restore());
-      
-      for(let i = 0; i < MAX_ASSETS; i++) {
-        it(`supply collateral with index ${i + 1} is successful`, async () => {
-          asset = collaterals[`ASSET${i}`];
+
+      it(`each collateral supplyFrom is successful`, async () => {
+        for (const asset of Object.values(collaterals)) {
           await asset.allocateTo(alice.address, SUPPLY_COLLATERAL_AMOUNT);
           await asset.connect(alice).approve(comet.address, SUPPLY_COLLATERAL_AMOUNT);
-          supplyTx = await comet.connect(dave).supplyFrom(alice.address, alice.address, asset.address, SUPPLY_COLLATERAL_AMOUNT);
-          expect(supplyTx).to.not.be.reverted;
-        });
+          const supplyFromTx = await comet.connect(dave).supplyFrom(alice.address, alice.address, asset.address, SUPPLY_COLLATERAL_AMOUNT);
+          expect(supplyFromTx).to.not.be.reverted;
+          supplyTxs.push(supplyFromTx);
+        }
+      });
 
-        it(`SupplyCollateral event is emitted`, async () => {
-          await expect(supplyTx)
+      it(`SupplyCollateral event is emitted for each collateral`, async () => {
+        const assets = Object.values(collaterals);
+        for (let i = 0; i < assets.length; i++) {
+          await expect(supplyTxs[i])
             .to.emit(comet, 'SupplyCollateral')
-            .withArgs(alice.address, alice.address, asset.address, SUPPLY_COLLATERAL_AMOUNT);
-        });
+            .withArgs(alice.address, alice.address, assets[i].address, SUPPLY_COLLATERAL_AMOUNT);
+        }
+      });
 
-        it(`alice collateral balance is equal to supplied amount`, async () => {
+      it(`each collateral balance for alice is equal to supplied amount`, async () => {
+        for (const asset of Object.values(collaterals)) {
           expect(await comet.collateralBalanceOf(alice.address, asset.address)).to.be.equal(SUPPLY_COLLATERAL_AMOUNT);
-        });
+        }
+      });
 
-        it('alice asset list contains asset', async () => {
-          const assetList = await comet.getAssetList(alice.address);
+      it('alice asset list contains all collaterals', async () => {
+        const assetList = await comet.getAssetList(alice.address);
+        for (const asset of Object.values(collaterals)) {
           expect(assetList).to.include(asset.address);
-        });
+        }
+      });
 
-        it('comet total supplied collateral amount is equal to alice supplied amount', async () => {
+      it('each collateral comet total supplied collateral amount is equal to alice supplied amount', async () => {
+        for (const asset of Object.values(collaterals)) {
           expect((await comet.totalsCollateral(asset.address)).totalSupplyAsset).to.be.equal(SUPPLY_COLLATERAL_AMOUNT);
-        }); 
+        }
+      }); 
 
-        it('alice principal is not changed', async () => {
-          expect((await comet.userBasic(alice.address)).principal).to.be.equal(alicePrincipalBefore);
-        });
-      }
+      it('alice principal is not changed', async () => {
+        expect((await comet.userBasic(alice.address)).principal).to.be.equal(alicePrincipalBefore);
+      });
     });
   });
 
