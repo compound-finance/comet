@@ -1,5 +1,5 @@
 import { CometHarnessInterfaceExtendedAssetList, FaucetToken, NonStandardFaucetFeeToken, NonStandardFaucetFeeToken__factory } from 'build/types';
-import { ethers, expect, exp, makeProtocol, presentValue, ZERO_ADDRESS, presentValueSupply, mulPrice, mulFactor, defaultAssets } from './helpers';
+import { ethers, expect, exp, makeProtocol, presentValue, ZERO_ADDRESS, presentValueSupply, mulPrice, mulFactor, defaultAssets, MAX_ASSETS } from './helpers';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { BigNumber, ContractTransaction } from 'ethers';
 import { SnapshotRestorer, takeSnapshot } from './helpers/snapshot';
@@ -76,6 +76,16 @@ describe('transfer', function () {
         await comet.connect(pauseGuardian).pause(false, false, false, false, false);
       });
 
+      it('lenders transfer is paused', async () => {
+        // Pause lenders transfer
+        await comet.connect(pauseGuardian).pauseLendersTransfer(true);
+
+        await expect(comet.connect(alice).transfer(bob.address, SUPPLY_AMOUNT)).to.be.revertedWithCustomError(comet, 'LendersTransferPaused');
+
+        // Unpause lenders transfer
+        await comet.connect(pauseGuardian).pauseLendersTransfer(false);
+      });
+
       // In case when user has no collateral supplied and lend position
       // transfering will revert with BorrowTooSmall, as amount to transfer is greater than
       // user's balance, he'll become a borrower and his balance will be negative on 1 wei
@@ -102,6 +112,19 @@ describe('transfer', function () {
         expect(baseBorrowMin).to.lessThanOrEqual(-srcBalance);
 
         await expect(comet.connect(alice).transfer(bob.address, amountToTransfer)).to.be.revertedWithCustomError(comet, 'NotCollateralized');
+      });
+
+      it('borrowers transfer is paused', async () => {
+        // Pause borrowers transfer
+        await comet.connect(pauseGuardian).pauseBorrowersTransfer(true);
+
+        const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
+        // Transfer will make Alice a borrower, so amount to transfer is greater than her balance
+        const transferAmount = SUPPLY_AMOUNT + baseBorrowMin;
+        await expect(comet.connect(alice).transfer(bob.address, transferAmount)).to.be.revertedWithCustomError(comet, 'BorrowersTransferPaused');
+
+        // Unpause borrowers transfer
+        await comet.connect(pauseGuardian).pauseBorrowersTransfer(false);
       });
     });
 
@@ -561,16 +584,40 @@ describe('transfer', function () {
         )).to.be.revertedWithCustomError(comet, 'NoSelfTransfer');
       });
 
-      it('pause', async () => {
+      it('global transfer pause', async () => {
         await comet.connect(pauseGuardian).pause(false, true, false, false, false);
 
         await expect(comet.connect(alice).transferAsset(
-          alice.address,
+          bob.address,
           collateral.address,
           TRANSFER_AMOUNT
         )).to.be.revertedWithCustomError(comet, 'Paused');
 
         await comet.connect(pauseGuardian).pause(false, false, false, false, false);
+      });
+
+      it('collaterals transfers pause', async () => {
+        await comet.connect(pauseGuardian).pauseCollateralTransfer(true);
+
+        await expect(comet.connect(alice).transferAsset(
+          bob.address,
+          collateral.address,
+          TRANSFER_AMOUNT
+        )).to.be.revertedWithCustomError(comet, 'CollateralTransferPaused');
+
+        await comet.connect(pauseGuardian).pauseCollateralTransfer(false);
+      });
+
+      it('specific collateral asset transfer pause', async () => {
+        await comet.connect(pauseGuardian).pauseCollateralAssetTransfer(0, true);
+
+        await expect(comet.connect(alice).transferAsset(
+          bob.address,
+          collateral.address,
+          TRANSFER_AMOUNT
+        )).to.be.revertedWithCustomError(comet, 'CollateralAssetTransferPaused');
+
+        await comet.connect(pauseGuardian).pauseCollateralAssetTransfer(0, false);
       });
 
       it('unsupported asset & amount > 0', async () => {
@@ -1167,12 +1214,13 @@ describe('transfer', function () {
     });
   });
 
-  describe('absorb with 24 collaterals', function () {
-    const MAX_ASSETS = 24;
+  describe('transfer with 24 collaterals', function () {
     const TRANSFER_AMOUNT: bigint = exp(1, 18);
 
     let comet: CometHarnessInterfaceExtendedAssetList;
     let collaterals: { [symbol: string]: FaucetToken } = {};
+
+    let transferTxs: ContractTransaction[] = [];
 
     let alice: SignerWithAddress;
     let bob: SignerWithAddress;
@@ -1201,54 +1249,76 @@ describe('transfer', function () {
       [alice, bob] = protocol.users;
     });
 
-    it('alice supply each of collaterals', async () => {
-      for (const asset in collaterals) {
-        await collaterals[asset].allocateTo(alice.address, TRANSFER_AMOUNT);
-        await collaterals[asset].connect(alice).approve(comet.address, TRANSFER_AMOUNT);
-        await comet.connect(alice).supply(collaterals[asset].address, TRANSFER_AMOUNT);
-      }
+    describe('pause can be set for each collateral', function () {
+      it('setup: alice supply each of collaterals', async () => {
+        for (const asset in collaterals) {
+          await collaterals[asset].allocateTo(alice.address, TRANSFER_AMOUNT);
+          await collaterals[asset].connect(alice).approve(comet.address, TRANSFER_AMOUNT);
+          await comet.connect(alice).supply(collaterals[asset].address, TRANSFER_AMOUNT);
+        }
+      });
+
+      it('should allow to pause each collateral transfers', async () => {
+        for(let i = 0; i < MAX_ASSETS; i++) {
+          await comet.connect(pauseGuardian).pauseCollateralAssetTransfer(i, true);
+          expect(await comet.isCollateralAssetTransferPaused(i)).to.be.true;
+        }
+      });
+
+      it('should revert when transferring collateral asset that is paused', async () => {
+        for (const asset in collaterals) {
+          await expect(comet.connect(alice).transferAsset(bob.address, collaterals[asset].address, TRANSFER_AMOUNT)).to.be.revertedWithCustomError(comet, 'CollateralAssetTransferPaused');
+        }
+      });
+
+      it('should allow to unpause each collateral transfers', async () => {
+        for(let i = 0; i < MAX_ASSETS; i++) {
+          await comet.connect(pauseGuardian).pauseCollateralAssetTransfer(i, false);
+          expect(await comet.isCollateralAssetTransferPaused(i)).to.be.false;
+        }
+      });
     });
 
-    it('each collateral balance is equal to supply amount', async () => {
-      for (const asset in collaterals) {
-        expect(await comet.collateralBalanceOf(alice.address, collaterals[asset].address)).to.be.equal(TRANSFER_AMOUNT);
-      }
-    });
+    describe('transfer collateral works for each collateral', function () {
+      it('each collateral balance is equal to supply amount', async () => {
+        for (const asset in collaterals) {
+          expect(await comet.collateralBalanceOf(alice.address, collaterals[asset].address)).to.be.equal(TRANSFER_AMOUNT);
+        }
+      });
 
-    it('each collateral bob balance is equal to 0', async () => {
-      for (const asset in collaterals) {
-        expect(await comet.collateralBalanceOf(bob.address, collaterals[asset].address)).to.equal(0);
-      }
-    });
+      it('each collateral bob balance is equal to 0', async () => {
+        for (const asset in collaterals) {
+          expect(await comet.collateralBalanceOf(bob.address, collaterals[asset].address)).to.equal(0);
+        }
+      });
 
-    it('transfer is successful for each collateral', async () => {
-      const snapshot: SnapshotRestorer = await takeSnapshot();
+      it('transfer is successful for each collateral', async () => {
+        for (const asset in collaterals) {
+          const tx = await comet.connect(alice).transferAsset(bob.address, collaterals[asset].address, TRANSFER_AMOUNT);
+          await expect(tx).to.not.be.reverted;
+          transferTxs.push(tx);
+        }
+      });
 
-      for (const asset in collaterals) {
-        await comet.connect(alice).transferAsset(bob.address, collaterals[asset].address, TRANSFER_AMOUNT);
-      }
+      it('for each collateral emits TransferCollateral event', async () => {
+        for (let i = 0; i < MAX_ASSETS; i++) {
+          await expect(transferTxs[i])
+            .to.emit(comet, 'TransferCollateral')
+            .withArgs(alice.address, bob.address, collaterals[`ASSET${i}`].address, TRANSFER_AMOUNT);
+        }
+      });
 
-      await snapshot.restore();
-    });
+      it('each collateral alice balance is equal to 0', async () => {
+        for (const asset in collaterals) {
+          expect(await comet.collateralBalanceOf(alice.address, collaterals[asset].address)).to.equal(0);
+        }
+      });
 
-    it('for each collateral emits TransferCollateral event', async () => {
-      for (const asset in collaterals) {
-        await expect(comet.connect(alice).transferAsset(bob.address, collaterals[asset].address, TRANSFER_AMOUNT))
-          .to.emit(comet, 'TransferCollateral')
-          .withArgs(alice.address, bob.address, collaterals[asset].address, TRANSFER_AMOUNT);
-      }
-    });
-
-    it('each collateral alice balance is equal to 0', async () => {
-      for (const asset in collaterals) {
-        expect(await comet.collateralBalanceOf(alice.address, collaterals[asset].address)).to.equal(0);
-      }
-    });
-
-    it('each collateral bob balance is equal to transfer amount', async () => {
-      for (const asset in collaterals) {
-        expect(await comet.collateralBalanceOf(bob.address, collaterals[asset].address)).to.equal(TRANSFER_AMOUNT);
-      }
+      it('each collateral bob balance is equal to transfer amount', async () => {
+        for (const asset in collaterals) {
+          expect(await comet.collateralBalanceOf(bob.address, collaterals[asset].address)).to.equal(TRANSFER_AMOUNT);
+        }
+      });
     });
   });
 
