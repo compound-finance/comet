@@ -2,14 +2,15 @@ import { expect } from 'chai';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, proposal, exp } from '../../../../src/deploy';
-import { utils, constants } from 'ethers';
-
+import { utils } from 'ethers';
 
 const destinationChainSelector = '6916147374840168594';
 
 const USDC_TO_USD_API3_PRICE_FEED_ADDRESS = '0xf061d556F5136263c4d66d9fFCADE8Ab43a3a704';
 const RON_TO_USD_API3_PRICE_FEED_ADDRESS = '0xA708247a64Fad46874A57BA274451a8a1A1daa0c';
 const ETH_TO_USD_API3_PRICE_FEED_ADDRESS = '0xbBF6e0D078c7F5750d0732cD8f3EACe9A87b2b58';
+
+const GHO_STABLE_TOKEN = '0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f';
 
 let newPriceFeedUSDCAddress: string;
 let newPriceFeedWRONAddress: string;
@@ -270,12 +271,18 @@ export default migration('1767882783_depreciate_comet', {
       utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
       l2ProposalData,
       [],
-      constants.AddressZero,
+      GHO_STABLE_TOKEN,
       '0x'
     ]);
 
     const mainnetActions = [
-      // 1. Set Comet configuration and deployAndUpgradeTo WETH Comet on Ronin.
+      // 1. Approve GHO stable token transfer to pay for the proposal execution fee on Ronin.
+      {
+        target: GHO_STABLE_TOKEN,
+        signature: 'approve(address,uint256)',
+        calldata: utils.defaultAbiCoder.encode(['address', 'uint256'], [l1CCIPRouter.address, fee.mul(2)]) // approve 20% more than the estimated fee to account for potential fluctuations in fee estimation
+      },
+      // 2. Set Comet configuration and deployAndUpgradeTo WETH Comet on Ronin.
       {
         contract: l1CCIPRouter,
         signature: 'ccipSend(uint64,(bytes,bytes,(address,uint256)[],address,bytes))',
@@ -286,11 +293,10 @@ export default migration('1767882783_depreciate_comet', {
               utils.defaultAbiCoder.encode(['address'], [bridgeReceiver.address]),
               l2ProposalData,
               [],
-              constants.AddressZero,
+              GHO_STABLE_TOKEN,
               '0x'
             ]
           ],
-        value: fee
       },
     ];
 
@@ -306,7 +312,9 @@ Further detailed information can be found on the corresponding [proposal pull re
 
 ## Proposal actions
 
-The proposal sends the following encoded calls to the governance receiver on Ronin:
+The first proposal action approves the L1CCIPRouter to transfer GHO stable token from the timelock to pay for the proposal execution fee on Ronin.
+
+The second proposal action sends the following encoded calls to the governance receiver on Ronin:
 - Update USDC, AXS, and WRON price feeds to API3 oracle
 - Set supply caps to 0 for all collateral assets
 - Reduce collateral factors
@@ -335,8 +343,8 @@ The proposal sends the following encoded calls to the governance receiver on Ron
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return true;
+  async enacted(): Promise<boolean> {
+    return false;
   },
 
   async verify(deploymentManager: DeploymentManager) {
