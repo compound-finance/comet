@@ -659,6 +659,14 @@ describe('supply', function () {
         await comet.connect(pauseGuardian).pauseCollateralSupply(false);
       });
 
+      it('reverts if specific collateral supply is paused', async () => {
+        await comet.connect(pauseGuardian).pauseCollateralAssetSupply(0, true);
+        expect(await comet.isCollateralAssetSupplyPaused(0)).to.be.true;
+
+        await expect(comet.connect(alice).supply(collateral.address, 1)).to.be.revertedWithCustomError(comet, 'CollateralAssetSupplyPaused');
+        await comet.connect(pauseGuardian).pauseCollateralAssetSupply(0, false);
+      });
+
       it('reverts for not enough collateral balance', async () => {
         const balanceBefore = await collateral.balanceOf(alice.address);
 
@@ -1214,8 +1222,31 @@ describe('supply', function () {
 
       alicePrincipalBefore = (await comet.userBasic(alice.address)).principal;
       davePrincipalBefore = (await comet.userBasic(dave.address)).principal;
+    });
 
-      snapshot = await takeSnapshot();
+    describe('pause can be set for each collateral', function () {
+      it('should allow to pause each collateral supply', async () => {
+        for (let i = 0; i < MAX_ASSETS; i++) {
+          await comet.connect(pauseGuardian).pauseCollateralAssetSupply(i, true);
+          expect(await comet.isCollateralAssetSupplyPaused(i)).to.be.true;
+        }
+      });
+
+      it('should revert if specific collateral supply is paused', async () => {
+        for (let i = 0; i < MAX_ASSETS; i++) {
+          await collaterals[`ASSET${i}`].allocateTo(alice.address, SUPPLY_COLLATERAL_AMOUNT);
+          await collaterals[`ASSET${i}`].connect(alice).approve(comet.address, SUPPLY_COLLATERAL_AMOUNT);
+          await expect(comet.connect(alice).supply(collaterals[`ASSET${i}`].address, SUPPLY_COLLATERAL_AMOUNT)).to.be.revertedWithCustomError(comet, 'CollateralAssetSupplyPaused').withArgs(i);
+        }
+      });
+
+      it('should allow to unpause each collateral supply', async () => {
+        for (let i = 0; i < MAX_ASSETS; i++) {
+          await comet.connect(pauseGuardian).pauseCollateralAssetSupply(i, false);
+          expect(await comet.isCollateralAssetSupplyPaused(i)).to.be.false;
+        }
+        snapshot = await takeSnapshot();
+      });
     });
 
     describe('supply', function () {
