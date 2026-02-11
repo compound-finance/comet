@@ -491,6 +491,7 @@ async function redeployRenzoOracle(dm: DeploymentManager) {
 const tokens = [
   ['mainnet', 'WETH', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'],
   ['mainnet', 'LINK', '0x514910771AF9Ca656af840dff83E8264EcF986CA'],
+  ['mainnet', 'GHO', '0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f'],
   ['ronin', 'WETH', '0xc99a6a985ed2cac1ef41640596c5a5f9f4e19ef5'],
   ['ronin', 'WRON', '0xe514d9deb7966c8be0ca922de8a064264ea6bcd4'],
   ['ronin', 'LINK', '0x3902228d6a3d2dc44731fd9d45fee6a61c722d0b'],
