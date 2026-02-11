@@ -72,6 +72,14 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
     config.liquidationAsset = 100;
   }
 
+  if (ctx.world.base.network === 'mainnet' && ctx.world.base.deployment === 'usdt') {
+    if(i == 12) {
+      config.supplyCollateral = 0;
+      config.transferCollateral = 0;
+      config.withdrawCollateral = 0;
+    }
+  }
+
   if (ctx.world.base.network === 'base' && ctx.world.base.deployment === 'aero') {
     config.interestSeconds = 110;
   }
