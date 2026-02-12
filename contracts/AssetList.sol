@@ -137,9 +137,15 @@ contract AssetList {
         if (IPriceFeed(priceFeed).decimals() != PRICE_FEED_DECIMALS) revert CometMainInterface.BadDecimals();
         if (IERC20NonStandard(asset).decimals() != decimals_) revert CometMainInterface.BadDecimals();
 
-        // Ensure collateral factors are within range
-        if (assetConfig.borrowCollateralFactor > MAX_COLLATERAL_FACTOR) revert CometMainInterface.BorrowCFTooLarge();
-        if (assetConfig.liquidateCollateralFactor > MAX_COLLATERAL_FACTOR) revert CometMainInterface.LiquidateCFTooLarge();
+        // To de-list (disable) an asset as collateral, both borrowCollateralFactor and
+        // liquidateCollateralFactor must be set to 0. Setting only one to 0 is not
+        // supported — the validation below is skipped entirely when either factor is 0,
+        // so a partial zero configuration would bypass the range and ordering checks.
+        if (assetConfig.borrowCollateralFactor != 0 && assetConfig.liquidateCollateralFactor != 0) {
+            // Ensure collateral factors are within range
+            if (assetConfig.borrowCollateralFactor > assetConfig.liquidateCollateralFactor) revert CometMainInterface.BorrowCFTooLarge();
+            if (assetConfig.liquidateCollateralFactor > MAX_COLLATERAL_FACTOR) revert CometMainInterface.LiquidateCFTooLarge();
+        }
 
         unchecked {
             // Keep 4 decimals for each factor
@@ -147,6 +153,11 @@ contract AssetList {
             uint16 borrowCollateralFactor = uint16(assetConfig.borrowCollateralFactor / descale);
             uint16 liquidateCollateralFactor = uint16(assetConfig.liquidateCollateralFactor / descale);
             uint16 liquidationFactor = uint16(assetConfig.liquidationFactor / descale);
+
+            if (borrowCollateralFactor != 0 && liquidateCollateralFactor != 0) {
+                // Be nice and check descaled values are still within range
+                if (borrowCollateralFactor >= liquidateCollateralFactor) revert CometMainInterface.BorrowCFTooLarge();
+            }
 
             // Keep whole units of asset for supply cap
             uint64 supplyCap = uint64(assetConfig.supplyCap / (10 ** decimals_));

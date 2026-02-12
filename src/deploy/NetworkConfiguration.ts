@@ -169,8 +169,7 @@ function getOverridesOrConfig(
   const result = Object.entries(mapping()).reduce((acc, [k, f]) => {
     return { [k]: overrides[k] ?? f(config), ...acc };
   }, {});
-  // Preserve any override keys that aren't in the mapping (e.g., withMockAssetListFactory)
-  return { ...result, ...Object.fromEntries(Object.entries(overrides).filter(([k]) => !(k in result))) };
+  return result;
 }
 
 export async function getConfiguration(

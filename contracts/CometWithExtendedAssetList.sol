@@ -389,7 +389,6 @@ contract CometWithExtendedAssetList is CometMainInterface {
 
         AssetInfo memory asset;
         uint256 newAmount;
-        uint64 borrowCollateralFactor;
         for (uint8 i; i < numAssets; ) {
             if (isInAsset(assetsIn, i, _reserved)) {
                 if (liquidity >= 0) {
@@ -397,9 +396,15 @@ contract CometWithExtendedAssetList is CometMainInterface {
                 }
 
                 asset = getAssetInfo(i);
-                borrowCollateralFactor = asset.borrowCollateralFactor;
 
-                if (borrowCollateralFactor == 0) { 
+                // Skip assets with borrowCollateralFactor == 0 — they provide no
+                // borrowing power, so mulFactor(value, 0) would add nothing to liquidity.
+                // More critically, this avoids calling getPrice() for their price feed:
+                // if a non-contributing asset's oracle reverts (stale, broken, decommissioned),
+                // it would otherwise block the entire collateralization check, paralyzing
+                // borrows and transfers for every account that holds that asset — even though
+                // the asset has zero influence on their borrow capacity.
+                if (asset.borrowCollateralFactor == 0) { 
                     unchecked { i++; } 
                     continue; 
                 }
@@ -411,7 +416,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
                 );
                 liquidity += signed256(mulFactor(
                     newAmount,
-                    borrowCollateralFactor
+                    asset.borrowCollateralFactor
                 ));
             }
             unchecked { i++; }
@@ -442,7 +447,6 @@ contract CometWithExtendedAssetList is CometMainInterface {
 
         AssetInfo memory asset;
         uint256 newAmount;
-        uint64 liquidateCollateralFactor;
         for (uint8 i; i < numAssets; ) {
             if (isInAsset(assetsIn, i, _reserved)) {
                 if (liquidity >= 0) {
@@ -450,9 +454,16 @@ contract CometWithExtendedAssetList is CometMainInterface {
                 }
 
                 asset = getAssetInfo(i);
-                liquidateCollateralFactor = asset.liquidateCollateralFactor;
-                
-                if (liquidateCollateralFactor == 0) { 
+
+                // Skip assets with liquidateCollateralFactor == 0 — they do not count
+                // toward the liquidation collateral threshold, so including them would
+                // add nothing to liquidity (mulFactor(value, 0) == 0).
+                // More critically, this avoids calling getPrice() for their price feed:
+                // if a non-contributing asset's oracle reverts (stale, broken, decommissioned),
+                // it would otherwise block the entire liquidation check, preventing
+                // liquidations for every account that holds that asset — even though
+                // the asset has zero influence on their liquidation status.
+                if (asset.liquidateCollateralFactor == 0) { 
                     unchecked { i++; } 
                     continue; 
                 }
@@ -464,7 +475,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
                 );
                 liquidity += signed256(mulFactor(
                     newAmount,
-                    liquidateCollateralFactor
+                    asset.liquidateCollateralFactor
                 ));
             }
             unchecked { i++; }
@@ -1188,13 +1199,19 @@ contract CometWithExtendedAssetList is CometMainInterface {
         address asset;
         uint128 seizeAmount;
         uint256 value;
-        uint64 liquidationFactor;
         for (uint8 i; i < numAssets; ) {
             if (isInAsset(assetsIn, i, _reserved)) {
                 assetInfo = getAssetInfo(i);
 
-                liquidationFactor = assetInfo.liquidationFactor;
-                if (liquidationFactor == 0) {
+                // Skip assets with liquidationFactor == 0 — they are non-liquidatable and
+                // must not be seized during absorption. This serves three purposes:
+                // 1. The collateral remains with the borrower: non-liquidatable assets should
+                //    not be confiscated, and their value should not offset the account's debt.
+                // 2. Avoids calling getPrice() on their price feed below: if the oracle is
+                //    disabled or reverting, it would otherwise block absorption of the entire
+                //    account, preventing liquidation even for assets that *should* be seized.
+                // 3. mulFactor(value, 0) would contribute nothing to deltaValue anyway.
+                if (assetInfo.liquidationFactor == 0) {
                     unchecked { i++; }
                     continue;
                 }
@@ -1205,7 +1222,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
                 totalsCollateral[asset].totalSupplyAsset -= seizeAmount;
 
                 value = mulPrice(seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale);
-                deltaValue += mulFactor(value, liquidationFactor);
+                deltaValue += mulFactor(value, assetInfo.liquidationFactor);
 
                 emit AbsorbCollateral(absorber, account, asset, seizeAmount, value);
             }
@@ -1279,22 +1296,42 @@ contract CometWithExtendedAssetList is CometMainInterface {
      */
     function quoteCollateral(address asset, uint baseAmount) override public view returns (uint) {
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
-        uint256 assetPrice = getPrice(assetInfo.priceFeed);
-        uint64 liquidationFactor = assetInfo.liquidationFactor;
 
-        // If liquidation factor is not zero, calculate the discount
-        if (liquidationFactor != 0) {
+        // NOTE: This getPrice() call is intentionally left unguarded. Unlike isBorrowCollateralized
+        // and isLiquidatable — where we skip zero-factor assets to prevent a broken price feed
+        // from paralyzing collateral checks — quoteCollateral is only called from buyCollateral,
+        // which is a voluntary action by an external buyer. If the asset's price feed is disabled
+        // or reverting, it is acceptable (and safer) for the quote to revert: the protocol should
+        // not sell collateral whose price it cannot verify.
+        uint256 assetPriceDiscounted = getPrice(assetInfo.priceFeed);
+
+        // Only apply the store front discount for assets that participate in liquidation
+        // (i.e. liquidationFactor > 0). Assets with liquidationFactor == 0 are non-liquidatable:
+        // they are skipped during absorption (see absorbInternal) and therefore should not
+        // receive a liquidation discount when purchased via buyCollateral.
+        //
+        // Additionally, if liquidationFactor == 0 the discount math would compute
+        // discountFactor = storeFrontPriceFactor * (FACTOR_SCALE - 0) / FACTOR_SCALE
+        //                = storeFrontPriceFactor,
+        // and when storeFrontPriceFactor == FACTOR_SCALE (100%) that yields
+        // assetPrice = assetPrice * (FACTOR_SCALE - FACTOR_SCALE) / FACTOR_SCALE = 0,
+        // which would cause a division-by-zero revert in the return statement below.
+        //
+        // By skipping the discount, the protocol sells such collateral at the fair oracle
+        // price — no liquidation incentive is needed for non-liquidatable assets.
+        // Market price will be used if liquidationFactor == 0   
+        if (assetInfo.liquidationFactor != 0) {
             // Store front discount is derived from the collateral asset's liquidationFactor and storeFrontPriceFactor
             // discount = storeFrontPriceFactor * (1e18 - liquidationFactor)
-            uint256 discountFactor = mulFactor(storeFrontPriceFactor, FACTOR_SCALE - liquidationFactor);
-            assetPrice = mulFactor(assetPrice, FACTOR_SCALE - discountFactor);
+            uint256 discountFactor = mulFactor(storeFrontPriceFactor, FACTOR_SCALE - assetInfo.liquidationFactor);
+            assetPriceDiscounted = mulFactor(assetPriceDiscounted, FACTOR_SCALE - discountFactor);
         }
 
         uint256 basePrice = getPrice(baseTokenPriceFeed);
         // # of collateral assets
         // = (TotalValueOfBaseAmount / DiscountedPriceOfCollateralAsset) * assetScale
         // = ((basePrice * baseAmount / baseScale) / assetPrice) * assetScale
-        return basePrice * baseAmount * assetInfo.scale / assetPrice / baseScale;
+        return basePrice * baseAmount * assetInfo.scale / assetPriceDiscounted / baseScale;
     }
 
     /**

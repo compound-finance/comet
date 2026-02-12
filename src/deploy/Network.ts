@@ -1,4 +1,3 @@
-import { Contract } from 'ethers';
 import { Deployed, DeploymentManager } from '../../plugins/deployment_manager';
 import { DeploySpec, ProtocolConfiguration, wait, COMP_WHALES } from './index';
 import { getConfiguration } from './NetworkConfiguration';
@@ -119,7 +118,6 @@ export async function deployNetworkComet(
     targetReserves,
     assetConfigs,
     rewardTokenAddress,
-    withMockAssetListFactory
   } = await getConfiguration(deploymentManager, configOverrides);
 
   /* Deploy contracts */
@@ -138,22 +136,12 @@ export async function deployNetworkComet(
   let cometExt;
 
   if(withAssetList) {
-    let assetListFactory : Contract;
-    if(withMockAssetListFactory) {
-      assetListFactory = await deploymentManager.deploy(
-        'mockAssetListFactory',
-        'test/MockAssetListFactory.sol',
-        [],
-        maybeForce()
-      );
-    } else {
-      assetListFactory = await deploymentManager.deploy(
-        'assetListFactory',
-        'AssetListFactory.sol',
-        [],
-        maybeForce()
-      );
-    }
+    let assetListFactory = await deploymentManager.deploy(
+      'assetListFactory',
+      'AssetListFactory.sol',
+      [],
+      maybeForce()
+    );
     cometExt = await deploymentManager.deploy(
       'comet:implementation:implementation',
       'CometExtAssetList.sol',

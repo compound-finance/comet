@@ -508,3 +508,174 @@ for (let i = 0; i < MAX_ASSETS; i++) {
   );
 }
 
+/**
+ * @title Liquidation Scenario - Two collaterals, one with liquidationFactor = 0
+ * @notice Tests that absorption correctly skips a non-liquidatable collateral while seizing the other
+ *
+ * @dev This scenario verifies the selective seizure behavior during absorption when an account
+ * holds two different collateral assets (asset0 and asset1) and one of them has its
+ * liquidationFactor set to 0 (simulating a de-listed asset whose price feed may be unavailable).
+ *
+ * @dev The test proceeds through the following phases:
+ * 1. Setup: Supply two collateral assets (asset0 and asset1) and borrow base tokens
+ * 2. Wait until the position becomes liquidatable through interest accrual
+ * 3. De-list asset0 by setting its liquidationFactor to 0 via governance (configurator + upgrade)
+ * 4. Absorb (liquidate) the account
+ * 5. Verify that:
+ *    - Asset0 (liquidationFactor = 0) remains on the user's balance — it was NOT seized
+ *    - Asset1 (normal liquidationFactor) was fully seized — its balance is now 0
+ *
+ * @dev This proves that absorbInternal correctly skips non-liquidatable collateral (avoiding
+ * a getPrice() call on a potentially broken oracle) while still proceeding with seizure of
+ * all other liquidatable assets. The account's debt is absorbed regardless.
+ */
+scenario(
+  'Comet#liquidation > two collaterals: asset0 (liqFactor=0) retained, asset1 absorbed',
+  {
+    filter: async (ctx) =>
+      await isValidAssetIndex(ctx, 0) &&
+      await isValidAssetIndex(ctx, 1) &&
+      await isTriviallySourceable(ctx, 0, getConfigForScenario(ctx, 0).supplyCollateral) &&
+      await isTriviallySourceable(ctx, 1, getConfigForScenario(ctx, 1).supplyCollateral) &&
+      await usesAssetList(ctx) &&
+      !(await isAssetDelisted(ctx, 0)) &&
+      !(await isAssetDelisted(ctx, 1)) &&
+      await supportsExtendedPause(ctx),
+    tokenBalances: async (ctx) => ({
+      albert: { $base: '== 0' },
+      $comet: {
+        $base: getConfigForScenario(ctx).withdrawBase
+      }
+    }),
+  },
+  async ({ comet, configurator, proxyAdmin, actors }, context, world) => {
+    const { albert, betty, admin } = actors;
+    const baseToken = await comet.baseToken();
+    const baseScale = (await comet.baseScale()).toBigInt();
+    const basePrice = (await comet.getPrice(await comet.baseTokenPriceFeed())).toBigInt();
+    const factorScale = (await comet.factorScale()).toBigInt();
+
+    // ── Step 1: Supply two different collateral assets ──
+    // Asset0 — this one will later be de-listed (liquidationFactor set to 0)
+    const assetInfo0 = await comet.getAssetInfo(0);
+    const collateralAsset0 = context.getAssetByAddress(assetInfo0.asset);
+    const collateralPrice0 = (await comet.getPrice(assetInfo0.priceFeed)).toBigInt();
+
+    // Asset1 — this one keeps normal parameters and should be seized during absorption
+    const assetInfo1 = await comet.getAssetInfo(1);
+    const collateralAsset1 = context.getAssetByAddress(assetInfo1.asset);
+    const collateralPrice1 = (await comet.getPrice(assetInfo1.priceFeed)).toBigInt();
+
+    // Calculate how much of each collateral to supply so that combined they cover the borrow.
+    // We split the borrow coverage roughly 50/50 between the two assets.
+    const targetBorrowBase = BigInt(getConfigForScenario(context).withdrawBase);
+    const targetBorrowBaseWei = targetBorrowBase * baseScale;
+    const halfBorrowWei = targetBorrowBaseWei / 2n;
+
+    // Collateral needed for asset0 (covers ~half the borrow)
+    const collateralWeiPerUnitBase0 = (assetInfo0.scale.toBigInt() * basePrice) / collateralPrice0;
+    let collateralNeeded0 = (collateralWeiPerUnitBase0 * halfBorrowWei) / baseScale;
+    collateralNeeded0 = (collateralNeeded0 * factorScale) / assetInfo0.borrowCollateralFactor.toBigInt();
+    collateralNeeded0 = (collateralNeeded0 * 12n) / 10n; // 20% buffer
+
+    // Collateral needed for asset1 (covers ~half the borrow)
+    const collateralWeiPerUnitBase1 = (assetInfo1.scale.toBigInt() * basePrice) / collateralPrice1;
+    let collateralNeeded1 = (collateralWeiPerUnitBase1 * halfBorrowWei) / baseScale;
+    collateralNeeded1 = (collateralNeeded1 * factorScale) / assetInfo1.borrowCollateralFactor.toBigInt();
+    collateralNeeded1 = (collateralNeeded1 * 12n) / 10n; // 20% buffer
+
+    // Source, approve, and supply collateral asset0
+    await context.sourceTokens(collateralNeeded0, collateralAsset0, albert);
+    await collateralAsset0.approve(albert, comet.address);
+    await albert.safeSupplyAsset({ asset: collateralAsset0.address, amount: collateralNeeded0 });
+
+    // Source, approve, and supply collateral asset1
+    await context.sourceTokens(collateralNeeded1, collateralAsset1, albert);
+    await collateralAsset1.approve(albert, comet.address);
+    await albert.safeSupplyAsset({ asset: collateralAsset1.address, amount: collateralNeeded1 });
+
+    // ── Step 2: Borrow base tokens ──
+    // This creates a negative base balance, making the account a borrower
+    await albert.withdrawAsset({ asset: baseToken, amount: targetBorrowBaseWei });
+
+    // Verify initial state: position should be collateralized and not liquidatable
+    expect(await comet.isBorrowCollateralized(albert.address)).to.be.true;
+    expect(await comet.isLiquidatable(albert.address)).to.be.false;
+
+    // Set up betty with base tokens so she can force accrue later
+    const bettyBaseAmount = BigInt(getConfigForScenario(context).withdrawBase) * baseScale;
+    const baseAsset = context.getAssetByAddress(baseToken);
+    await context.sourceTokens(bettyBaseAmount, baseAsset, betty);
+    await baseAsset.approve(betty, comet.address);
+    await betty.supplyAsset({ asset: baseToken, amount: bettyBaseAmount });
+
+    // ── Step 3: Wait until the position becomes liquidatable via interest accrual ──
+    const timeBeforeLiquidation = await timeUntilUnderwater({
+      comet,
+      actor: albert,
+      fudgeFactor: 6000n * 6000n // ~1 hour past underwater
+    });
+
+    while (!(await comet.isLiquidatable(albert.address))) {
+      await comet.accrueAccount(albert.address);
+      await world.increaseTime(timeBeforeLiquidation);
+    }
+
+    // Force accrue to ensure state is up to date
+    await betty.withdrawAsset({ asset: baseToken, amount: BigInt(getConfigForScenario(context).withdrawBase) / 100n * baseScale });
+
+    expect(await comet.isLiquidatable(albert.address)).to.be.true;
+
+    // ── Step 4: De-list asset0 by setting its liquidationFactor to 0 ──
+    // This simulates a governance action to de-list an asset whose price feed
+    // has become unavailable. After this, absorbInternal should skip asset0
+    // entirely — not seize it, not call getPrice() on it.
+    await context.setNextBaseFeeToZero();
+    await configurator.connect(admin.signer).updateAssetLiquidationFactor(
+      comet.address, assetInfo0.asset, 0n, { gasPrice: 0 }
+    );
+    await context.setNextBaseFeeToZero();
+    await proxyAdmin.connect(admin.signer).deployAndUpgradeTo(
+      configurator.address, comet.address, { gasPrice: 0 }
+    );
+
+    // Verify liquidationFactor for asset0 is now 0
+    const updatedAssetInfo0 = await comet.getAssetInfoByAddress(assetInfo0.asset);
+    expect(updatedAssetInfo0.liquidationFactor).to.equal(0);
+
+    // Account should still be liquidatable (asset1 alone may not cover the debt,
+    // and asset0 no longer contributes to the liquidation threshold)
+    expect(await comet.isLiquidatable(albert.address)).to.be.true;
+
+    // Record balances before absorption (we expect asset0 unchanged, asset1 fully seized)
+    const collateralBalance0_before = (await comet.userCollateral(albert.address, assetInfo0.asset)).balance;
+    const totalSupply0_before = (await comet.totalsCollateral(assetInfo0.asset)).totalSupplyAsset;
+    const collateralBalance1_before = (await comet.userCollateral(albert.address, assetInfo1.asset)).balance;
+    const totalSupply1_before = (await comet.totalsCollateral(assetInfo1.asset)).totalSupplyAsset;
+
+    // ── Step 5: Absorb (liquidate) the account ──
+    await betty.absorb({ absorber: betty.address, accounts: [albert.address] });
+
+    // ── Step 6: Verify selective seizure ──
+    // Asset0 (liquidationFactor = 0): NOT seized — balance and totals unchanged.
+    // The collateral remains with the user because the protocol intentionally
+    // skips non-liquidatable assets during absorption.
+    expect((await comet.userCollateral(albert.address, assetInfo0.asset)).balance)
+      .to.equal(collateralBalance0_before);
+    expect((await comet.totalsCollateral(assetInfo0.asset)).totalSupplyAsset)
+      .to.equal(totalSupply0_before);
+
+    // Asset1 (normal liquidationFactor): fully seized — balance is now 0
+    // and totals decreased by the seized amount. This asset participated in
+    // the liquidation normally.
+    expect((await comet.userCollateral(albert.address, assetInfo1.asset)).balance)
+      .to.equal(0);
+    expect((await comet.totalsCollateral(assetInfo1.asset)).totalSupplyAsset)
+      .to.equal(totalSupply1_before.sub(collateralBalance1_before));
+
+    // Debt was absorbed: albert's base balance should be >= 0
+    const baseBalance = await albert.getCometBaseBalance();
+    expect(Number(baseBalance)).to.be.greaterThanOrEqual(0);
+  }
+);
+

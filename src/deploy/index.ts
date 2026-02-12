@@ -34,7 +34,6 @@ export interface ProtocolConfiguration {
   targetReserves?: BigNumberish;
   assetConfigs?: AssetConfigStruct[];
   rewardTokenAddress?: string;
-  withMockAssetListFactory?: boolean;
 }
 
 // If `all` is specified, it takes precedence.
