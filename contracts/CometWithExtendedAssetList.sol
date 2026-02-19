@@ -794,7 +794,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
      * @param amount The quantity to supply
      */
     function supply(address asset, uint amount) override external {
-        return supplyInternal(msg.sender, msg.sender, msg.sender, asset, amount);
+        return supplyInternal(msg.sender, msg.sender, asset, amount);
     }
 
     /**
@@ -804,7 +804,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
      * @param amount The quantity to supply
      */
     function supplyTo(address dst, address asset, uint amount) override external {
-        return supplyInternal(msg.sender, msg.sender, dst, asset, amount);
+        return supplyInternal(msg.sender, dst, asset, amount);
     }
 
     /**
@@ -815,16 +815,16 @@ contract CometWithExtendedAssetList is CometMainInterface {
      * @param amount The quantity to supply
      */
     function supplyFrom(address from, address dst, address asset, uint amount) override external {
-        return supplyInternal(msg.sender, from, dst, asset, amount);
+        return supplyInternal(from, dst, asset, amount);
     }
 
     /**
      * @dev Supply either collateral or base asset, depending on the asset, if operator is allowed
      * @dev Note: Specifying an `amount` of uint256.max will repay all of `dst`'s accrued base borrow balance
      */
-    function supplyInternal(address operator, address from, address dst, address asset, uint amount) internal nonReentrant {
+    function supplyInternal(address from, address dst, address asset, uint amount) internal nonReentrant {
         if (isSupplyPaused()) revert Paused();
-        if (!hasPermission(from, operator)) revert Unauthorized();
+        if (!hasPermission(from, msg.sender)) revert Unauthorized();
 
         if (asset == baseToken) {
             if (isBaseSupplyPaused()) revert BaseSupplyPaused();
