@@ -5,7 +5,7 @@ import { calldata, exp, proposal } from '../../../../src/deploy';
 import { utils } from 'ethers';
 
 const WSUPEROETHB_ADDRESS = '0x7FcD174E80f264448ebeE8c88a7C4476AAF58Ea6';
-const WSUPEROETHB_PRICE_FEED = '0x8671d5e3a10639a573bACffEF448CA076b2d5cD7';
+const WSUPEROETHB_PRICE_FEED = '0x319F19fFb23fDFE322873Af6480685f4DB7F7D96';
 let newPriceFeedAddress: string;
 
 export default migration('1756655343_add_wsuperoethb_as_collateral', {
