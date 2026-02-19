@@ -663,6 +663,7 @@ describe('supply', function () {
         await comet.connect(pauseGuardian).pauseCollateralAssetSupply(0, true);
         expect(await comet.isCollateralAssetSupplyPaused(0)).to.be.true;
 
+        await collateral.connect(alice).approve(comet.address, 1);
         await expect(comet.connect(alice).supply(collateral.address, 1)).to.be.revertedWithCustomError(comet, 'CollateralAssetSupplyPaused');
         await comet.connect(pauseGuardian).pauseCollateralAssetSupply(0, false);
       });
@@ -704,13 +705,19 @@ describe('supply', function () {
       let alicePrincipalBefore: BigNumber;
       let cometUpdatedTimeBefore: number;
       let supplyTx: ContractTransaction;
+      let cometSupplyIndexBefore: BigNumber;
+      let cometSupplyRateBefore: BigNumber;
+      let aliceDisplayBalanceBefore: BigNumber;
 
       before(async function () {
         const totals = await comet.totalsBasic();
         aliceCollateralBalanceBefore = await collateral.balanceOf(alice.address);
 
         totalSupplyBefore = totals.totalSupplyBase;
+        cometSupplyIndexBefore = totals.baseSupplyIndex;
+        cometSupplyRateBefore = await comet.getSupplyRate(0);
         alicePrincipalBefore = (await comet.userBasic(alice.address)).principal;
+        aliceDisplayBalanceBefore = await comet.balanceOf(alice.address);
 
         cometUpdatedTimeBefore = totals.lastAccrualTime;
 
@@ -773,15 +780,34 @@ describe('supply', function () {
         expect((await comet.totalsCollateral(collateral.address)).totalSupplyAsset).to.equal(ALICE_COLLATERAL_AMOUNT);
       });
 
-      it('accrue state should be same as before during collateral supply', async () => {
+      it('should accrue state during collateral supply', async () => {
         const lastUpdated = (await comet.totalsBasic()).lastAccrualTime;
 
-        expect(lastUpdated).to.equal(cometUpdatedTimeBefore);
-        expect(lastUpdated).to.be.lessThan((await ethers.provider.getBlock('latest')).timestamp);
+        expect(lastUpdated).to.be.greaterThan(cometUpdatedTimeBefore);
+        expect(lastUpdated).to.equal((await ethers.provider.getBlock('latest')).timestamp);
       });
 
       it('should not change alice principal after accrual (no collateral effect on principal)', async () => {
         expect((await comet.userBasic(alice.address)).principal).to.equal(alicePrincipalBefore);
+      });
+
+      it('should have correct display of alice principal', async () => {
+        const curTime = (await ethers.provider.getBlock('latest')).timestamp;
+        const timeElapsed = curTime - cometUpdatedTimeBefore;
+        const accruedIndex = cometSupplyIndexBefore.add(cometSupplyIndexBefore.mul(cometSupplyRateBefore).mul(timeElapsed).div(exp(1, 18)));
+
+        // healthcheck than current index is re-calculated correctly
+        const index = (await comet.totalsBasic()).baseSupplyIndex;
+        expect(index).to.equal(accruedIndex);
+
+        const newBalanceFromPrincipal = alicePrincipalBefore.mul(accruedIndex).div(exp(1, 15));
+
+        // current balance
+        const newBalance = await comet.balanceOf(alice.address);
+
+        expect(newBalance).to.equal(newBalanceFromPrincipal);
+        // check the invariant that lender's balance can only grow
+        expect(newBalance).to.be.eq(aliceDisplayBalanceBefore);
       });
 
       it("should change comet's total supply correctly after accrual (no collateral effect on supply)", async () => {

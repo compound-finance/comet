@@ -1,6 +1,7 @@
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { CometHarnessInterfaceExtendedAssetList, EvilToken, EvilToken__factory, FaucetToken, NonStandardFaucetFeeToken, } from '../build/types';
 import { baseBalanceOf, ethers, event, expect, exp, makeProtocol, portfolio, ReentryAttack, setTotalsBasic, wait, fastForward, MAX_ASSETS, SnapshotRestorer, takeSnapshot } from './helpers';
+import { BigNumber, ContractTransaction } from 'ethers';
 
 describe('withdraw functionality', function () {
   // Snapshot
@@ -692,6 +693,164 @@ describe('withdraw functionality', function () {
       await expect(
         comet.connect(alice).withdraw(WETH.address, exp(1, 18))
       ).to.be.revertedWith("custom error 'NotCollateralized()'");
+    });
+
+    describe('collateral withdraw', function () {
+      const WITHDRAW_AMOUNT = exp(1, 18);
+
+      let withdrawTx: ContractTransaction;
+      let aliceCollateralBefore: BigNumber;
+      let aliceCollateralTokenBefore: BigNumber;
+      let cometCollateralTokenBefore: BigNumber;
+      let totalCollateralSupplyBefore: BigNumber;
+      let totalSupplyBaseBefore: BigNumber;
+      let alicePrincipalBefore: BigNumber;
+      let aliceDisplayBalanceBefore: BigNumber;
+      let cometSupplyIndexBefore: BigNumber;
+      let cometSupplyRateBefore: BigNumber;
+      let cometUpdatedTimeBefore: number;
+
+      before(async function () {
+        // Restore clean state — preceding `it` tests at the same level
+        // (pause tests, borrower test) run before nested describes in Mocha
+        await snapshot.restore();
+
+        // Supply the collateral first
+        await collateralToken.allocateTo(alice.address, WITHDRAW_AMOUNT);
+        await collateralToken.connect(alice).approve(cometWithExtendedAssetList.address, WITHDRAW_AMOUNT);
+        await cometWithExtendedAssetList.connect(alice).supply(collateralToken.address, WITHDRAW_AMOUNT);
+
+        const totals = await cometWithExtendedAssetList.totalsBasic();
+        aliceCollateralBefore = (await cometWithExtendedAssetList.userCollateral(alice.address, collateralToken.address)).balance;
+        aliceCollateralTokenBefore = await collateralToken.balanceOf(alice.address);
+        cometCollateralTokenBefore = await collateralToken.balanceOf(cometWithExtendedAssetList.address);
+        totalCollateralSupplyBefore = (await cometWithExtendedAssetList.totalsCollateral(collateralToken.address)).totalSupplyAsset;
+        totalSupplyBaseBefore = totals.totalSupplyBase;
+        alicePrincipalBefore = (await cometWithExtendedAssetList.userBasic(alice.address)).principal;
+        aliceDisplayBalanceBefore = await cometWithExtendedAssetList.balanceOf(alice.address);
+        cometSupplyIndexBefore = totals.baseSupplyIndex;
+        cometSupplyRateBefore = await cometWithExtendedAssetList.getSupplyRate(await cometWithExtendedAssetList.getUtilization());
+        cometUpdatedTimeBefore = totals.lastAccrualTime;
+
+        // Advance time to verify accrual during withdrawal
+        await ethers.provider.send('evm_increaseTime', [60 * 60]); // 1 hr
+        await ethers.provider.send('evm_mine', []);
+      });
+
+      it('alice has collateral registered before withdrawal', async () => {
+        const collateralIndex = (await cometWithExtendedAssetList.getAssetInfoByAddress(collateralToken.address)).offset;
+        const userData = await cometWithExtendedAssetList.userBasic(alice.address);
+        const offset = 1 << collateralIndex;
+
+        expect(userData.assetsIn & offset).to.equal(offset);
+      });
+
+      it('alice collateral balance equals supplied amount', async () => {
+        expect(aliceCollateralBefore).to.equal(WITHDRAW_AMOUNT);
+      });
+
+      it('collateral withdrawal is successful', async () => {
+        withdrawTx = await cometWithExtendedAssetList.connect(alice).withdraw(collateralToken.address, WITHDRAW_AMOUNT);
+        await expect(withdrawTx).to.not.be.reverted;
+      });
+
+      it('emits WithdrawCollateral event', async () => {
+        await expect(withdrawTx)
+          .to.emit(cometWithExtendedAssetList, 'WithdrawCollateral')
+          .withArgs(alice.address, alice.address, collateralToken.address, WITHDRAW_AMOUNT);
+      });
+
+      it('accrues state during collateral withdrawal', async () => {
+        const lastUpdated = (await cometWithExtendedAssetList.totalsBasic()).lastAccrualTime;
+
+        expect(lastUpdated).to.be.greaterThan(cometUpdatedTimeBefore);
+        expect(lastUpdated).to.equal((await ethers.provider.getBlock('latest')).timestamp);
+      });
+
+      it('supply index is updated correctly after accrual', async () => {
+        const curTime = (await ethers.provider.getBlock('latest')).timestamp;
+        const timeElapsed = curTime - cometUpdatedTimeBefore;
+        const accruedIndex = cometSupplyIndexBefore.add(
+          cometSupplyIndexBefore.mul(cometSupplyRateBefore).mul(timeElapsed).div(exp(1, 18))
+        );
+
+        const index = (await cometWithExtendedAssetList.totalsBasic()).baseSupplyIndex;
+        expect(index).to.equal(accruedIndex);
+      });
+
+      it('alice receives exact collateral tokens', async () => {
+        const aliceCollateralTokenAfter = await collateralToken.balanceOf(alice.address);
+
+        expect(aliceCollateralTokenAfter.sub(aliceCollateralTokenBefore)).to.equal(WITHDRAW_AMOUNT);
+      });
+
+      it("comet's collateral token balance decreases by withdraw amount", async () => {
+        const cometCollateralTokenAfter = await collateralToken.balanceOf(cometWithExtendedAssetList.address);
+
+        expect(cometCollateralTokenBefore.sub(cometCollateralTokenAfter)).to.equal(WITHDRAW_AMOUNT);
+      });
+
+      it("alice's collateral balance on comet is zero after full withdrawal", async () => {
+        expect((await cometWithExtendedAssetList.userCollateral(alice.address, collateralToken.address)).balance).to.equal(0);
+      });
+
+      it('total collateral supply decreases by withdraw amount', async () => {
+        const totalCollateralSupplyAfter = (await cometWithExtendedAssetList.totalsCollateral(collateralToken.address)).totalSupplyAsset;
+
+        expect(totalCollateralSupplyBefore.sub(totalCollateralSupplyAfter)).to.equal(WITHDRAW_AMOUNT);
+      });
+
+      it('assetsIn is cleared when collateral balance goes to zero', async () => {
+        const collateralIndex = (await cometWithExtendedAssetList.getAssetInfoByAddress(collateralToken.address)).offset;
+        const userData = await cometWithExtendedAssetList.userBasic(alice.address);
+        const offset = 1 << collateralIndex;
+
+        expect(userData.assetsIn & offset).to.equal(0);
+      });
+
+      it('alice principal is not changed after collateral withdrawal', async () => {
+        expect((await cometWithExtendedAssetList.userBasic(alice.address)).principal).to.equal(alicePrincipalBefore);
+      });
+
+      it('alice displayed base balance is correct after accrual', async () => {
+        const curTime = (await ethers.provider.getBlock('latest')).timestamp;
+        const timeElapsed = curTime - cometUpdatedTimeBefore;
+        const accruedIndex = cometSupplyIndexBefore.add(
+          cometSupplyIndexBefore.mul(cometSupplyRateBefore).mul(timeElapsed).div(exp(1, 18))
+        );
+
+        const index = (await cometWithExtendedAssetList.totalsBasic()).baseSupplyIndex;
+        expect(index).to.equal(accruedIndex);
+
+        const newBalanceFromPrincipal = alicePrincipalBefore.mul(accruedIndex).div(exp(1, 15));
+        const newBalance = await cometWithExtendedAssetList.balanceOf(alice.address);
+
+        expect(newBalance).to.equal(newBalanceFromPrincipal);
+        expect(newBalance).to.be.eq(aliceDisplayBalanceBefore);
+      });
+
+      it("comet's total supply base is not changed by collateral withdrawal", async () => {
+        expect((await cometWithExtendedAssetList.totalsBasic()).totalSupplyBase).to.equal(totalSupplyBaseBefore);
+      });
+
+      it("comet's displayed total supply is correct after accrual", async () => {
+        const curTime = (await ethers.provider.getBlock('latest')).timestamp;
+        const timeElapsed = curTime - cometUpdatedTimeBefore;
+        const accruedIndex = cometSupplyIndexBefore.add(
+          cometSupplyIndexBefore.mul(cometSupplyRateBefore).mul(timeElapsed).div(exp(1, 18))
+        );
+
+        const displayedTotalSupply = await cometWithExtendedAssetList.totalSupply();
+        const expectedTotalSupply = totalSupplyBaseBefore.mul(accruedIndex).div(exp(1, 15));
+
+        expect(displayedTotalSupply).to.equal(expectedTotalSupply);
+      });
+
+      it("bob's collateral balance is not affected by alice's withdrawal", async () => {
+        expect(
+          (await cometWithExtendedAssetList.userCollateral(bob.address, collateralToken.address)).balance
+        ).to.equal(collateralTokenSupplyAmount);
+      });
     });
   
     describe('reentrancy', function () {
