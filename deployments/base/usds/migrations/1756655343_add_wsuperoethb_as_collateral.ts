@@ -98,7 +98,7 @@ The first proposal action adds wsuperOETHb to the USDS Comet on Base. This sends
     const txn = await govDeploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
-      )
+      ), 0, 300_000
     );
 
     const event = txn.events.find(
