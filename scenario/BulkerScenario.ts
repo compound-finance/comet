@@ -441,6 +441,7 @@ scenario(
     const toSupplyEth = exp(0.01, 18);
     const toWithdrawEth = exp(0.005, 18);
 
+    await context.sourceTokens(exp(100, 18), rewardTokenAddress, rewards.address);
     // Approvals
     await baseAsset.approve(albert, comet.address);
     await collateralAsset.approve(albert, comet.address);
