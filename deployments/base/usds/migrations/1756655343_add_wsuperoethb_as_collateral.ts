@@ -90,6 +90,15 @@ WOOF! proposes to add wsuperOETHb into cUSDSv3 on the Base network. This proposa
 
 Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1021) and [forum discussion](https://www.comp.xyz/t/add-wsuperoethb-market-to-base-stablecoin-markets-usdc-usds/7101).
 
+### CAPO summary
+
+CAPO is a price oracle adapter designed to support assets that grow gradually relative to a base asset - such as liquid staking tokens that accumulate yield over time. It provides a mechanism to track this expected growth while protecting downstream protocol from sudden or manipulated price spikes. wsuperOETHb price feed is deployed with its CAPO implementation.
+
+Further detailed information can be found on the [forum discussion for CAPO](https://www.comp.xyz/t/woof-correlated-assets-price-oracle-capo/6245).
+
+### CAPO audit
+
+CAPO has been audited by [OpenZeppelin](https://www.comp.xyz/t/capo-price-feed-audit/6631, as well as the LST / LRT implementation [here](https://www.comp.xyz/t/capo-lst-lrt-audit/7118).
 
 ## Proposal Actions
 
