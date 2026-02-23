@@ -1,14 +1,9 @@
 import { expect } from 'chai';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
-import { calldata, proposal } from '../../../../src/deploy';
+import { calldata, proposal, exp } from '../../../../src/deploy';
 import { utils } from 'ethers';
-import { Numeric } from '../../../../test/helpers';
 import { AggregatorV3Interface } from '../../../../build/types';
-
-export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
-  return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
-}
 
 const ETH_USD_PRICE_FEED = '0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70';
 
