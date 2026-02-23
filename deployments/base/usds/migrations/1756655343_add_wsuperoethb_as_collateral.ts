@@ -2,20 +2,53 @@ import { expect } from 'chai';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, exp, proposal } from '../../../../src/deploy';
+import { IERC4626 } from '../../../../build/types';
 import { utils } from 'ethers';
 
 const WSUPEROETHB_ADDRESS = '0x7FcD174E80f264448ebeE8c88a7C4476AAF58Ea6';
-const WSUPEROETHB_PRICE_FEED = '0x319F19fFb23fDFE322873Af6480685f4DB7F7D96';
+const ETH_USD_SVR_PRICE_FEED = '0x1428C9E908e32dD2839F99D63C242c91329A58C0';
+
+const blockToFetch = 40000000;
+
 let newPriceFeedAddress: string;
 
 export default migration('1756655343_add_wsuperoethb_as_collateral', {
-  async prepare() {
-    return {};
+  async prepare(deploymentManager: DeploymentManager) {
+    const { timelock } = await deploymentManager.getContracts();
+    const blockToFetchTimestamp = (await deploymentManager.hre.ethers.provider.getBlock(blockToFetch))!.timestamp;
+
+    //1. wsuperOETHb
+    const rateProviderWsuperOETHb = await deploymentManager.existing('wsuperOETHb:_priceFeed', WSUPEROETHB_ADDRESS, 'base', 'contracts/IERC4626.sol:IERC4626') as IERC4626;
+    const currentRatioWsuperOETHb = await rateProviderWsuperOETHb.convertToAssets(exp(1, 18));
+
+    const wsuperOETHbCapoPriceFeed = await deploymentManager.deploy(
+      'wsuperOETHb:priceFeed',
+      'capo/contracts/ERC4626CorrelatedAssetsPriceOracle.sol',
+      [
+        timelock.address,
+        ETH_USD_SVR_PRICE_FEED,
+        WSUPEROETHB_ADDRESS,
+        'wsuperOETHb / USD CAPO SVR Price Feed',
+        8,
+        3600,
+        {
+          snapshotRatio: currentRatioWsuperOETHb,
+          snapshotTimestamp: blockToFetchTimestamp,
+          maxYearlyRatioGrowthPercent: exp(0.0647, 4)
+        }
+      ],
+      true
+    );
+
+    return { wsuperOETHbPriceFeedAddress: wsuperOETHbCapoPriceFeed.address };
   },
 
   enact: async (
     deploymentManager: DeploymentManager,
-    govDeploymentManager: DeploymentManager
+    govDeploymentManager: DeploymentManager,
+    {
+      wsuperOETHbPriceFeedAddress,
+    }
   ) => {
     const trace = deploymentManager.tracer();
 
@@ -27,9 +60,11 @@ export default migration('1756655343_add_wsuperoethb_as_collateral', {
     );
     const wsuperOETHbPriceFeed = await deploymentManager.existing(
       'wsuperOETHb:priceFeed',
-      WSUPEROETHB_PRICE_FEED,
+      wsuperOETHbPriceFeedAddress,
       'base'
     );
+
+    newPriceFeedAddress = wsuperOETHbPriceFeed.address;
 
     const {
       bridgeReceiver,
