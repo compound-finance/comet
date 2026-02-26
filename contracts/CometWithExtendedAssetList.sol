@@ -8,6 +8,8 @@ import "./IAssetListFactory.sol";
 import "./IAssetListFactoryHolder.sol";
 import "./IAssetList.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @title Compound's Comet Contract
  * @notice An efficient monolithic money market protocol
@@ -974,6 +976,11 @@ contract CometWithExtendedAssetList is CometMainInterface {
         (uint104 withdrawAmount, uint104 borrowAmount) = withdrawAndBorrowAmount(srcPrincipal, srcPrincipalNew);
         (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstPrincipal, dstPrincipalNew);
 
+        // console.log(withdrawAmount);
+        // console.log(borrowAmount);
+        // console.log(repayAmount);
+        // console.log(supplyAmount);
+
         // Note: Instead of `total += addAmount - subAmount` to avoid underflow errors.
         totalSupplyBase = totalSupplyBase + supplyAmount - withdrawAmount;
         totalBorrowBase = totalBorrowBase + borrowAmount - repayAmount;
@@ -985,6 +992,9 @@ contract CometWithExtendedAssetList is CometMainInterface {
             if (isBorrowersTransferPaused()) revert BorrowersTransferPaused();
             if (uint256(-srcBalance) < baseBorrowMin) revert BorrowTooSmall();
             if (!isBorrowCollateralized(src)) revert NotCollateralized();
+            /// @dev safeguard against the over-utilization leading to illiquidity and reserves exhaustion
+            /// At this point totals are updated and it is a borrow case, so we can check resulting utilization
+            if (getUtilization() > MAX_SUPPORTED_UTILIZATION) revert ExceedsSupportedUtilization();
         } else {
             if (isLendersTransferPaused()) revert LendersTransferPaused();
         }
@@ -1088,15 +1098,16 @@ contract CometWithExtendedAssetList is CometMainInterface {
         totalSupplyBase -= withdrawAmount;
         totalBorrowBase += borrowAmount;
 
+        /// @dev safeguard against the over-utilization leading to illiquidity and reserves exhaustion
+        /// At this point totals are updated and it is a borrow case, so we can check resulting utilization
+        if (getUtilization() > MAX_SUPPORTED_UTILIZATION) revert ExceedsSupportedUtilization();
+
         updateBasePrincipal(src, srcUser, srcPrincipalNew);
 
         if (srcBalance < 0) {
             if (isBorrowersWithdrawPaused()) revert BorrowersWithdrawPaused();
             if (uint256(-srcBalance) < baseBorrowMin) revert BorrowTooSmall();
             if (!isBorrowCollateralized(src)) revert NotCollateralized();
-            /// @dev safeguard against the over-utilization leading to illiquidity and reserves exhaustion
-            /// At this point totals are updated and it is a borrow case, so we can check resulting utilization
-            if (getUtilization() > MAX_SUPPORTED_UTILIZATION) revert ExceedsSupportedUtilization();
         } else {
             if (isLendersWithdrawPaused()) revert LendersWithdrawPaused();
         }
