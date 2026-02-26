@@ -139,6 +139,12 @@ export default migration('1766403952_change_price_feeds_to_svr', {
 
     const description = `# Update price feeds in cUSDCv3 on Base with CAPO and SVR price feeds.
 
+## Resubmit
+
+This proposal is a resubmission of previously passed Proposal 526, as it was not executed on L2.
+
+Original proposal: https://www.tally.xyz/gov/compound/proposal/526
+
 ## Proposal summary
 
 This proposal updates existing price feeds for WETH, USDC, cbETH and wstETH assets on the USDC market on Base.
@@ -178,8 +184,8 @@ The first action updates WETH, USDC, cbETH and wstETH price feeds to the CAPO an
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return true;
+  async enacted(): Promise<boolean> {
+    return false;
   },
 
   async verify(deploymentManager: DeploymentManager) {
