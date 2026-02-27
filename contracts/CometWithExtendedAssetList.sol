@@ -655,52 +655,28 @@ contract CometWithExtendedAssetList is CometMainInterface {
      * @param assetIndex The index of the asset
      * @return Whether the collateral asset is deactivated
      *
-     * ─── Collateral deactivation lifecycle ───────────────────────────────────────
-     *
-     * Deactivation is the final stage of removing a collateral asset from the protocol.
-     * It follows a gradual wind-down process modelled after wUSDM and deUSD de-listings:
-     *
-     *   Phase 1 — Wind-down (via governance proposal through Configurator):
-     *     - Supply cap is set to 0 (no new deposits).
-     *     - borrowCollateralFactor, liquidateCollateralFactor, and liquidationFactor are
-     *       progressively reduced toward 0, giving users time to unwind positions.
-     *
-     *   Phase 2 — Deactivation (via pause guardian calling deactivateCollateral):
-     *     - The asset's deactivated bit is set in `deactivatedCollaterals`.
-     *     - Supply and transfer of the collateral are automatically paused.
-     *     - From this point, the asset is considered fully deactivated.
+     * Deactivation is an emergency action only. It can be called and executed
+     * immediately by the pause guardian via `deactivateCollateral`.
+     * When executed, the asset's bit is set in `deactivatedCollaterals`, and
+     * supply and transfer for that collateral are paused.
      *
      * ─── Impact on borrowers holding deactivated collateral ─────────────────────
      *
-     * Once an asset is deactivated, any borrower who still holds it is blocked from
-     * all borrow-side actions (borrow, withdraw-while-borrowing, transfer-while-borrowing,
-     * withdraw/transfer other collateral) because `isBorrowCollateralized` reverts with
-     * `TokenIsDeactivated` when it encounters a deactivated asset in `assetsIn`.
+     * If a borrower still has debt and still holds deactivated collateral, borrow-side
+     * actions are blocked because `isBorrowCollateralized` reverts with
+     * `TokenIsDeactivated` when that asset is encountered in `assetsIn`.
      *
-     * This forces the borrower to withdraw the deactivated collateral first:
+     * The borrower then has two options:
      *
-     *   1. The borrower calls `withdrawCollateral` for the deactivated asset.
-     *      If ALL of it is withdrawn, the asset's bit is cleared from `assetsIn`,
-     *      and subsequent `isBorrowCollateralized` calls proceed normally.
+     *   1. Repay debt until principal is > 0 (i.e. no borrow position). This avoids
+     *      collateral liquidity checks in `isBorrowCollateralized`, allowing the borrower
+     *      to withdraw the deactivated collateral.
      *
-     *   2. However, removing the deactivated collateral may cause the remaining active
-     *      collateral to be insufficient for the borrow → `NotCollateralized` revert.
-     *      The borrower is now stuck: cannot withdraw deactivated collateral (under-
-     *      collateralized), and cannot do anything else (TokenIsDeactivated).
+     *   2. Wait for liquidation (`absorbInternal`), where collateral is seized and debt
+     *      is absorbed according to the protocol's liquidation rules.
      *
-     *   3. The stuck borrower simply waits for liquidation. We assume that a borrower
-     *      who still holds deactivated collateral has no means to post new collateral
-     *      or repay the debt.
-     *
-     *   4. During liquidation (absorbInternal), ALL collateral — including deactivated —
-     *      is seized by the protocol. If the deactivated asset's liquidationFactor is 0,
-     *      its value does NOT offset the borrower's debt, but the tokens are still seized.
-     *      The borrower receives a base-asset cashback for whatever debt is covered by the
-     *      active collateral (subject to the usual penalty/discount).
-     *
-     *   5. After absorption, the protocol (Comet) is left holding the deactivated
-     *      collateral tokens in its reserves. Governance can later decide how to handle
-     *      them (e.g. withdraw via `withdrawReserves`, sell OTC, or wait for re-listing).
+     * If a user is not a borrower (no debt / principal >= 0), they can withdraw
+     * deactivated collateral without these borrow-side restrictions.
      */
     function isCollateralDeactivated(uint24 assetIndex) public view returns (bool) {
         return (deactivatedCollaterals & (uint24(1) << assetIndex)) != 0;

@@ -171,7 +171,7 @@ describe('collateral deactivation functionality', function () {
       it('collateral is already deactivated', async function () {
         await expect(
           cometExt.connect(pauseGuardian).deactivateCollateral(ASSET_INDEX)
-        ).to.be.revertedWithCustomError(cometExt, 'CollateralAlreadyDeactivated')
+        ).to.be.revertedWithCustomError(cometExt, 'CollateralIsDeactivated')
           .withArgs(ASSET_INDEX);
       });
     });
@@ -223,7 +223,7 @@ describe('collateral deactivation functionality', function () {
 
       it('collateral is already activated', async function () {
         await expect(cometExt.connect(governor).activateCollateral(ASSET_INDEX))
-          .to.be.revertedWithCustomError(cometExt, 'CollateralAlreadyActivated')
+          .to.be.revertedWithCustomError(cometExt, 'CollateralIsActivated')
           .withArgs(ASSET_INDEX);
       });
     });
@@ -243,7 +243,7 @@ describe('collateral deactivation functionality', function () {
 
         it('reverts on double deactivation', async function () {
           await expect(cometExt.connect(pauseGuardian).deactivateCollateral(assetIndex))
-            .to.be.revertedWithCustomError(cometExt, 'CollateralAlreadyDeactivated')
+            .to.be.revertedWithCustomError(cometExt, 'CollateralIsDeactivated')
             .withArgs(assetIndex);
         });
       }
@@ -262,7 +262,7 @@ describe('collateral deactivation functionality', function () {
 
         it('reverts on double activation', async function () {
           await expect(cometExt.connect(governor).activateCollateral(assetIndex))
-            .to.be.revertedWithCustomError(cometExt, 'CollateralAlreadyActivated')
+            .to.be.revertedWithCustomError(cometExt, 'CollateralIsActivated')
             .withArgs(assetIndex);
         });
       }

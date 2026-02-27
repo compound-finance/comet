@@ -251,6 +251,15 @@ contract CometExt is CometExtInterface {
     }
 
     /**
+     * @notice Check if the collateral asset is deactivated
+     * @param assetIndex The index of the collateral asset
+     * @return Whether the collateral asset is deactivated
+     */
+    function isCollateralDeactivated(uint24 assetIndex) public view returns (bool) {
+        return (deactivatedCollaterals & (uint24(1) << assetIndex) != 0) == true;
+    }
+
+    /**
      * @inheritdoc CometExtInterface
      */
     function pauseLendersWithdraw(bool paused) override external onlyGovernorOrPauseGuardian {
@@ -321,6 +330,7 @@ contract CometExt is CometExtInterface {
      */
     function pauseCollateralAssetSupply(uint24 assetIndex, bool paused) override external onlyGovernorOrPauseGuardian isValidAssetIndex(assetIndex) {
         if ((collateralsSupplyPauseFlags & (uint24(1) << assetIndex) != 0) == paused) revert CollateralAssetOffsetStatusAlreadySet(collateralsSupplyPauseFlags, assetIndex, paused);
+        if (!paused && isCollateralDeactivated(assetIndex)) revert CollateralIsDeactivated(assetIndex);
 
         paused ? collateralsSupplyPauseFlags |= (uint24(1) << assetIndex) : collateralsSupplyPauseFlags &= ~(uint24(1) << assetIndex);
 
@@ -365,6 +375,7 @@ contract CometExt is CometExtInterface {
      */
     function pauseCollateralAssetTransfer(uint24 assetIndex, bool paused) override external onlyGovernorOrPauseGuardian isValidAssetIndex(assetIndex) {
         if ((collateralsTransferPauseFlags & (uint24(1) << assetIndex) != 0) == paused) revert CollateralAssetOffsetStatusAlreadySet(collateralsTransferPauseFlags, assetIndex, paused);
+        if (!paused && isCollateralDeactivated(assetIndex)) revert CollateralIsDeactivated(assetIndex);
 
         paused ? collateralsTransferPauseFlags |= (uint24(1) << assetIndex) : collateralsTransferPauseFlags &= ~(uint24(1) << assetIndex);
 
@@ -376,7 +387,7 @@ contract CometExt is CometExtInterface {
      */
     function deactivateCollateral(uint24 assetIndex) override external isValidAssetIndex(assetIndex) {
         if (msg.sender != CometMainInterface(address(this)).pauseGuardian()) revert OnlyPauseGuardian();
-        if ((deactivatedCollaterals & (uint24(1) << assetIndex) != 0) == true) revert CollateralAlreadyDeactivated(assetIndex);
+        if (isCollateralDeactivated(assetIndex)) revert CollateralIsDeactivated(assetIndex);
 
         // Mark collateral as deactivated
         deactivatedCollaterals |= (uint24(1) << assetIndex);
@@ -396,7 +407,7 @@ contract CometExt is CometExtInterface {
      */
     function activateCollateral(uint24 assetIndex) override external isValidAssetIndex(assetIndex) {
         if (msg.sender != CometMainInterface(address(this)).governor()) revert OnlyGovernor();
-        if ((deactivatedCollaterals & (uint24(1) << assetIndex) != 0) == false) revert CollateralAlreadyActivated(assetIndex);
+        if ((deactivatedCollaterals & (uint24(1) << assetIndex) != 0) == false) revert CollateralIsActivated(assetIndex);
 
         // Mark collateral as activated
         deactivatedCollaterals &= ~(uint24(1) << assetIndex);
