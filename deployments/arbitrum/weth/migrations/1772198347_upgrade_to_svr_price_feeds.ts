@@ -160,7 +160,7 @@ export default migration('1772198347_upgrade_to_svr_price_feeds', {
 
 This proposal updates existing price feeds for rsETH and WBTC assets on the WETH market on Arbitrum.
 
-Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/<>), [forum discussion for CAPO](https://www.comp.xyz/t/woof-correlated-assets-price-oracle-capo/6245) and [forum discussion for SVR](https://www.comp.xyz/t/request-for-proposal-rfp-oracle-extractable-value-oev-solution-for-compound-protocol/6786).
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1092), [forum discussion for CAPO](https://www.comp.xyz/t/woof-correlated-assets-price-oracle-capo/6245) and [forum discussion for SVR](https://www.comp.xyz/t/request-for-proposal-rfp-oracle-extractable-value-oev-solution-for-compound-protocol/6786).
 
 ### rsETH price feed change
 
