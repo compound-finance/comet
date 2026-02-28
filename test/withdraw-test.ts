@@ -7,6 +7,7 @@ describe('withdraw', function () {
   const baseTokenDecimals = 6;
 
   let comet: CometHarnessInterface;
+  let cometExtended: CometHarnessInterfaceExtendedAssetList;
   let baseToken: FaucetToken;
   let collaterals: { [symbol: string]: FaucetToken };
   let priceFeeds: { [symbol: string]: SimplePriceFeed };
@@ -22,6 +23,7 @@ describe('withdraw', function () {
     const protocol = await makeProtocol({ base: 'USDC' });
 
     comet = protocol.comet;
+    cometExtended = protocol.cometWithExtendedAssetList;
     baseToken = protocol.tokens[protocol.base] as FaucetToken;
     collaterals = Object.fromEntries(
       Object.entries(protocol.tokens).filter(([_symbol, token]) => token.address !== baseToken.address)
@@ -95,6 +97,23 @@ describe('withdraw', function () {
         await expect(
           comet.connect(alice).withdraw(baseToken.address, exp(1000, baseTokenDecimals))
         ).to.be.revertedWithCustomError(comet, 'NotCollateralized');
+      });
+
+      it('reverts if lender withdraw is paused (extended pause)', async () => {
+        const snapshot = await takeSnapshot();
+
+        await baseToken.connect(bob).approve(cometExtended.address, exp(100, baseTokenDecimals));
+        await cometExtended.connect(bob).supply(baseToken.address, exp(100, baseTokenDecimals));
+
+        await cometExtended.connect(pauseGuardian).pauseLendersWithdraw(true);
+        expect(await cometExtended.isLendersWithdrawPaused()).to.be.true;
+
+        await expect(
+          cometExtended.connect(bob).withdraw(baseToken.address, exp(50, baseTokenDecimals))
+        ).to.be.revertedWithCustomError(cometExtended, 'LendersWithdrawPaused');
+
+        await cometExtended.connect(pauseGuardian).pauseLendersWithdraw(false);
+        await snapshot.restore();
       });
     });
 
@@ -453,6 +472,17 @@ describe('withdraw', function () {
         await comet.connect(pauseGuardian).pause(false, false, false, false, false);
       });
 
+      it('reverts if collateral withdraw is paused (extended pause)', async () => {
+        await cometExtended.connect(pauseGuardian).pauseCollateralWithdraw(true);
+        expect(await cometExtended.isCollateralWithdrawPaused()).to.be.true;
+
+        await expect(
+          cometExtended.connect(alice).withdraw(collaterals['COMP'].address, 1)
+        ).to.be.revertedWithCustomError(cometExtended, 'CollateralWithdrawPaused');
+
+        await cometExtended.connect(pauseGuardian).pauseCollateralWithdraw(false);
+      });
+
       it('reverts if withdrawing more collateral than supplied', async () => {
         await baseSnapshot.restore();
         
@@ -475,6 +505,9 @@ describe('withdraw', function () {
         await comet.connect(alice).supply(collaterals['WETH'].address, ALICE_COLLATERAL_AMOUNT);
         await comet.connect(alice).withdraw(baseToken.address, BORROW_AMOUNT);
 
+        // alice has 1 WETH as collateral and borrowed 100 USDC
+        // Withdrawing all WETH leaves 0 weighted collateral, but debt = 100 USDC ($100)
+        // 0 < 100 → NotCollateralized
         await expect(
           comet.connect(alice).withdraw(collaterals['WETH'].address, ALICE_COLLATERAL_AMOUNT)
         ).to.be.revertedWithCustomError(comet, 'NotCollateralized');
@@ -676,6 +709,10 @@ describe('withdraw', function () {
         await collaterals['WETH'].connect(alice).approve(comet.address, ALICE_COLLATERAL_AMOUNT);
         await comet.connect(alice).supply(collaterals['WETH'].address, ALICE_COLLATERAL_AMOUNT);
 
+        const collateralValueUsd = Number(ALICE_COLLATERAL_AMOUNT) / 1e18 * 3000;
+        const borrowValueUsd = Number(LARGE_BORROW_AMOUNT) / 1e6;
+        expect(borrowValueUsd).to.be.gt(collateralValueUsd);
+
         await expect(
           comet.connect(alice).withdraw(baseToken.address, LARGE_BORROW_AMOUNT)
         ).to.be.revertedWithCustomError(comet, 'NotCollateralized');
@@ -698,9 +735,34 @@ describe('withdraw', function () {
         });
 
         it("can't borrow less than minBorrow", async () => {
+
+          const borrowAmount = exp(0.5, 6);
+          const baseBorrowMin = await comet.baseBorrowMin();
+          expect(borrowAmount).to.be.lt(baseBorrowMin);
+
           await expect(
-            comet.connect(alice).withdraw(baseToken.address, exp(0.5, 6))
+            comet.connect(alice).withdraw(baseToken.address, borrowAmount)
           ).to.be.revertedWithCustomError(comet, 'BorrowTooSmall');
+        });
+
+        it('reverts if borrower withdraw is paused (extended pause)', async () => {
+          const snapshot = await takeSnapshot();
+
+          await baseToken.connect(bob).approve(cometExtended.address, BOB_SUPPLY_AMOUNT);
+          await cometExtended.connect(bob).supply(baseToken.address, BOB_SUPPLY_AMOUNT);
+          await collaterals['WETH'].allocateTo(alice.address, ALICE_COLLATERAL_AMOUNT);
+          await collaterals['WETH'].connect(alice).approve(cometExtended.address, ALICE_COLLATERAL_AMOUNT);
+          await cometExtended.connect(alice).supply(collaterals['WETH'].address, ALICE_COLLATERAL_AMOUNT);
+
+          await cometExtended.connect(pauseGuardian).pauseBorrowersWithdraw(true);
+          expect(await cometExtended.isBorrowersWithdrawPaused()).to.be.true;
+
+          await expect(
+            cometExtended.connect(alice).withdraw(baseToken.address, SMALL_BORROW_AMOUNT)
+          ).to.be.revertedWithCustomError(cometExtended, 'BorrowersWithdrawPaused');
+
+          await cometExtended.connect(pauseGuardian).pauseBorrowersWithdraw(false);
+          await snapshot.restore();
         });
 
         it('reverts borrow if collateral oracle returns 0', async () => {
@@ -735,6 +797,10 @@ describe('withdraw', function () {
       });
 
       it('principal from the 1st borrow equals to the requested amount', async () => {
+        const collateralValueUsd = Number(ALICE_COLLATERAL_AMOUNT) / 1e18 * 3000;
+        const borrowValueUsd = Number(BORROW_AMOUNT) / 1e6;
+        expect(collateralValueUsd).to.be.gt(borrowValueUsd);
+
         await baseToken.connect(bob).approve(comet.address, BOB_SUPPLY_AMOUNT);
         await comet.connect(bob).supply(baseToken.address, BOB_SUPPLY_AMOUNT);
 
@@ -817,6 +883,55 @@ describe('withdraw', function () {
       expect(await comet.balanceOf(bob.address)).to.equal(0);
       expect(await baseToken.balanceOf(bob.address)).to.equal(bobUsdcBefore.add(SUPPLY_AMOUNT));
     });
+
+    it('reverts if collateral withdraw is paused (extended pause)', async () => {
+      await baseSnapshot.restore();
+
+      await cometExtended.connect(pauseGuardian).pauseCollateralWithdraw(true);
+      expect(await cometExtended.isCollateralWithdrawPaused()).to.be.true;
+
+      await expect(
+        cometExtended.connect(bob).withdrawTo(alice.address, collaterals['COMP'].address, 1)
+      ).to.be.revertedWithCustomError(cometExtended, 'CollateralWithdrawPaused');
+
+      await cometExtended.connect(pauseGuardian).pauseCollateralWithdraw(false);
+    });
+
+    it('reverts if lender withdraw is paused (extended pause)', async () => {
+      await baseSnapshot.restore();
+
+      await baseToken.connect(bob).approve(cometExtended.address, SUPPLY_AMOUNT);
+      await cometExtended.connect(bob).supply(baseToken.address, SUPPLY_AMOUNT);
+
+      await cometExtended.connect(pauseGuardian).pauseLendersWithdraw(true);
+      expect(await cometExtended.isLendersWithdrawPaused()).to.be.true;
+
+      await expect(
+        cometExtended.connect(bob).withdrawTo(alice.address, baseToken.address, exp(50, baseTokenDecimals))
+      ).to.be.revertedWithCustomError(cometExtended, 'LendersWithdrawPaused');
+
+      await cometExtended.connect(pauseGuardian).pauseLendersWithdraw(false);
+    });
+
+    it('reverts if borrower withdraw is paused (extended pause)', async () => {
+      await baseSnapshot.restore();
+
+      await baseToken.connect(bob).approve(cometExtended.address, SUPPLY_AMOUNT);
+      await cometExtended.connect(bob).supply(baseToken.address, SUPPLY_AMOUNT);
+
+      await collaterals['WETH'].allocateTo(alice.address, exp(1, 18));
+      await collaterals['WETH'].connect(alice).approve(cometExtended.address, exp(1, 18));
+      await cometExtended.connect(alice).supply(collaterals['WETH'].address, exp(1, 18));
+
+      await cometExtended.connect(pauseGuardian).pauseBorrowersWithdraw(true);
+      expect(await cometExtended.isBorrowersWithdrawPaused()).to.be.true;
+
+      await expect(
+        cometExtended.connect(alice).withdrawTo(bob.address, baseToken.address, exp(10, baseTokenDecimals))
+      ).to.be.revertedWithCustomError(cometExtended, 'BorrowersWithdrawPaused');
+
+      await cometExtended.connect(pauseGuardian).pauseBorrowersWithdraw(false);
+    });
   });
 
   describe('withdrawFrom', function () {
@@ -866,6 +981,62 @@ describe('withdraw', function () {
       ).to.be.revertedWithCustomError(comet, 'Paused');
 
       await comet.connect(pauseGuardian).pause(false, false, false, false, false);
+    });
+
+    it('reverts if collateral withdraw is paused (extended pause)', async () => {
+      await withdrawFromSnapshot.restore();
+
+      await cometExtended.connect(bob).allow(charlie.address, true);
+      await collaterals['COMP'].allocateTo(bob.address, SUPPLY_AMOUNT);
+      await collaterals['COMP'].connect(bob).approve(cometExtended.address, SUPPLY_AMOUNT);
+      await cometExtended.connect(bob).supply(collaterals['COMP'].address, SUPPLY_AMOUNT);
+
+      await cometExtended.connect(pauseGuardian).pauseCollateralWithdraw(true);
+      expect(await cometExtended.isCollateralWithdrawPaused()).to.be.true;
+
+      await expect(
+        cometExtended.connect(charlie).withdrawFrom(bob.address, alice.address, collaterals['COMP'].address, SUPPLY_AMOUNT)
+      ).to.be.revertedWithCustomError(cometExtended, 'CollateralWithdrawPaused');
+
+      await cometExtended.connect(pauseGuardian).pauseCollateralWithdraw(false);
+    });
+
+    it('reverts if lender withdraw is paused (extended pause)', async () => {
+      await withdrawFromSnapshot.restore();
+
+      await baseToken.connect(bob).approve(cometExtended.address, exp(100, baseTokenDecimals));
+      await cometExtended.connect(bob).supply(baseToken.address, exp(100, baseTokenDecimals));
+      await cometExtended.connect(bob).allow(charlie.address, true);
+
+      await cometExtended.connect(pauseGuardian).pauseLendersWithdraw(true);
+      expect(await cometExtended.isLendersWithdrawPaused()).to.be.true;
+
+      await expect(
+        cometExtended.connect(charlie).withdrawFrom(bob.address, alice.address, baseToken.address, exp(50, baseTokenDecimals))
+      ).to.be.revertedWithCustomError(cometExtended, 'LendersWithdrawPaused');
+
+      await cometExtended.connect(pauseGuardian).pauseLendersWithdraw(false);
+    });
+
+    it('reverts if borrower withdraw is paused (extended pause)', async () => {
+      await withdrawFromSnapshot.restore();
+
+      await baseToken.connect(bob).approve(cometExtended.address, exp(100, baseTokenDecimals));
+      await cometExtended.connect(bob).supply(baseToken.address, exp(100, baseTokenDecimals));
+
+      await collaterals['WETH'].allocateTo(alice.address, exp(1, 18));
+      await collaterals['WETH'].connect(alice).approve(cometExtended.address, exp(1, 18));
+      await cometExtended.connect(alice).supply(collaterals['WETH'].address, exp(1, 18));
+      await cometExtended.connect(alice).allow(charlie.address, true);
+
+      await cometExtended.connect(pauseGuardian).pauseBorrowersWithdraw(true);
+      expect(await cometExtended.isBorrowersWithdrawPaused()).to.be.true;
+
+      await expect(
+        cometExtended.connect(charlie).withdrawFrom(alice.address, bob.address, baseToken.address, exp(10, baseTokenDecimals))
+      ).to.be.revertedWithCustomError(cometExtended, 'BorrowersWithdrawPaused');
+
+      await cometExtended.connect(pauseGuardian).pauseBorrowersWithdraw(false);
     });
   });
 
@@ -1305,43 +1476,17 @@ describe('withdraw', function () {
     });
   });
 
-  describe('extended pause', function () {
-    let cometExtended: CometHarnessInterfaceExtendedAssetList;
+  describe('per-asset collateral pause (24 assets)', function () {
     let cometExtendedMaxAssets: CometHarnessInterfaceExtendedAssetList;
-    let extBaseToken: FaucetToken;
-    let extCollateralToken: FaucetToken;
     let extTokensWithMaxAssets: { [symbol: string]: FaucetToken };
     let extAlice: SignerWithAddress;
     let extBob: SignerWithAddress;
     let extPauseGuardian: SignerWithAddress;
     let extSnapshot: SnapshotRestorer;
 
-    const baseTokenSupplyAmount = exp(100, 6);
     const collateralTokenSupplyAmount = exp(5, 18);
 
     before(async () => {
-      const protocol = await makeProtocol({
-        assets: {
-          USDC: { initialPrice: 1, decimals: 6 },
-          COMP: { initialPrice: 200, decimals: 18 },
-        },
-      });
-      cometExtended = protocol.cometWithExtendedAssetList;
-      extBaseToken = protocol.tokens.USDC as FaucetToken;
-      extCollateralToken = protocol.tokens.COMP as FaucetToken;
-      extPauseGuardian = protocol.pauseGuardian;
-      extAlice = protocol.users[0];
-      extBob = protocol.users[1];
-
-      await extBaseToken.allocateTo(extBob.address, baseTokenSupplyAmount);
-      await extCollateralToken.allocateTo(extBob.address, collateralTokenSupplyAmount);
-      await extBaseToken.allocateTo(cometExtended.address, baseTokenSupplyAmount * 5n);
-
-      await extCollateralToken.connect(extBob).approve(cometExtended.address, collateralTokenSupplyAmount);
-      await cometExtended.connect(extBob).supply(extCollateralToken.address, collateralTokenSupplyAmount);
-      await extBaseToken.connect(extBob).approve(cometExtended.address, baseTokenSupplyAmount);
-      await cometExtended.connect(extBob).supply(extBaseToken.address, baseTokenSupplyAmount);
-
       const maxAssetsCollaterals = Object.fromEntries(
         Array.from({ length: MAX_ASSETS }, (_, j) => [`ASSET${j}`, {}])
       );
@@ -1350,8 +1495,9 @@ describe('withdraw', function () {
       });
       cometExtendedMaxAssets = protocolMaxAssets.cometWithExtendedAssetList;
       extTokensWithMaxAssets = protocolMaxAssets.tokens as { [symbol: string]: FaucetToken };
+      extPauseGuardian = protocolMaxAssets.pauseGuardian;
+      [extAlice, extBob] = protocolMaxAssets.users;
 
-      await cometExtended.connect(extBob).allow(extAlice.address, true);
       await cometExtendedMaxAssets.connect(extBob).allow(extAlice.address, true);
 
       extSnapshot = await takeSnapshot();
@@ -1359,51 +1505,6 @@ describe('withdraw', function () {
 
     describe('withdraw', function () {
       this.afterAll(async () => extSnapshot.restore());
-
-      it('reverts if collateral withdraw is paused', async () => {
-        await cometExtended
-          .connect(extPauseGuardian)
-          .pauseCollateralWithdraw(true);
-
-        await expect(
-          cometExtended
-            .connect(extBob)
-            .withdraw(extCollateralToken.address, collateralTokenSupplyAmount)
-        ).to.be.revertedWithCustomError(
-          cometExtended,
-          'CollateralWithdrawPaused'
-        );
-      });
-
-      it('reverts if lender withdraw is paused', async () => {
-        await cometExtended
-          .connect(extPauseGuardian)
-          .pauseLendersWithdraw(true);
-
-        await expect(
-          cometExtended
-            .connect(extBob)
-            .withdraw(extBaseToken.address, baseTokenSupplyAmount)
-        ).to.be.revertedWithCustomError(
-          cometExtended,
-          'LendersWithdrawPaused'
-        );
-      });
-
-      it('reverts if borrower withdraw is paused', async () => {
-        await cometExtended
-          .connect(extPauseGuardian)
-          .pauseBorrowersWithdraw(true);
-
-        await expect(
-          cometExtended
-            .connect(extBob)
-            .withdraw(extBaseToken.address, baseTokenSupplyAmount * 2n)
-        ).to.be.revertedWithCustomError(
-          cometExtended,
-          'BorrowersWithdrawPaused'
-        );
-      });
 
       for (let i = 1; i <= MAX_ASSETS; i++) {
         it(`withdraw reverts if collateral asset ${i} withdraw is paused`, async () => {
@@ -1461,62 +1562,6 @@ describe('withdraw', function () {
 
     describe('withdrawTo', function () {
       this.afterAll(async () => extSnapshot.restore());
-
-      it('reverts if collateral withdraw is paused', async () => {
-        await cometExtended
-          .connect(extPauseGuardian)
-          .pauseCollateralWithdraw(true);
-
-        await expect(
-          cometExtended
-            .connect(extBob)
-            .withdrawTo(
-              extAlice.address,
-              extCollateralToken.address,
-              collateralTokenSupplyAmount
-            )
-        ).to.be.revertedWithCustomError(
-          cometExtended,
-          'CollateralWithdrawPaused'
-        );
-      });
-
-      it('reverts if lender withdraw is paused', async () => {
-        await cometExtended
-          .connect(extPauseGuardian)
-          .pauseLendersWithdraw(true);
-
-        await expect(
-          cometExtended
-            .connect(extBob)
-            .withdrawTo(extAlice.address, extBaseToken.address, baseTokenSupplyAmount)
-        ).to.be.revertedWithCustomError(
-          cometExtended,
-          'LendersWithdrawPaused'
-        );
-      });
-
-      it('reverts if borrower withdraw is paused', async () => {
-        await cometExtended
-          .connect(extBob)
-          .withdraw(extBaseToken.address, baseTokenSupplyAmount * 2n);
-
-        const userBasic = await cometExtended.userBasic(extBob.address);
-        expect(userBasic.principal).to.be.lessThan(0);
-
-        await cometExtended
-          .connect(extPauseGuardian)
-          .pauseBorrowersWithdraw(true);
-
-        await expect(
-          cometExtended
-            .connect(extAlice)
-            .withdrawTo(extBob.address, extBaseToken.address, baseTokenSupplyAmount)
-        ).to.be.revertedWithCustomError(
-          cometExtended,
-          'BorrowersWithdrawPaused'
-        );
-      });
 
       for (let i = 1; i <= MAX_ASSETS; i++) {
         it(`withdrawTo reverts if collateral asset ${i} withdraw is paused`, async () => {
@@ -1586,66 +1631,6 @@ describe('withdraw', function () {
 
     describe('withdrawFrom', function () {
       this.afterAll(async () => extSnapshot.restore());
-
-      it('reverts if collateral withdraw is paused', async () => {
-        await cometExtended
-          .connect(extPauseGuardian)
-          .pauseCollateralWithdraw(true);
-
-        await expect(
-          cometExtended
-            .connect(extAlice)
-            .withdrawFrom(
-              extBob.address,
-              extAlice.address,
-              extCollateralToken.address,
-              collateralTokenSupplyAmount
-            )
-        ).to.be.revertedWithCustomError(
-          cometExtended,
-          'CollateralWithdrawPaused'
-        );
-      });
-
-      it('reverts if lender withdraw is paused', async () => {
-        await cometExtended
-          .connect(extPauseGuardian)
-          .pauseLendersWithdraw(true);
-
-        await expect(
-          cometExtended
-            .connect(extAlice)
-            .withdrawFrom(
-              extBob.address,
-              extAlice.address,
-              extBaseToken.address,
-              baseTokenSupplyAmount
-            )
-        ).to.be.revertedWithCustomError(
-          cometExtended,
-          'LendersWithdrawPaused'
-        );
-      });
-
-      it('reverts if borrower withdraw is paused', async () => {
-        await cometExtended
-          .connect(extPauseGuardian)
-          .pauseBorrowersWithdraw(true);
-
-        await expect(
-          cometExtended
-            .connect(extAlice)
-            .withdrawFrom(
-              extBob.address,
-              extAlice.address,
-              extBaseToken.address,
-              baseTokenSupplyAmount * 2n
-            )
-        ).to.be.revertedWithCustomError(
-          cometExtended,
-          'BorrowersWithdrawPaused'
-        );
-      });
 
       for (let i = 1; i <= MAX_ASSETS; i++) {
         it(`withdrawFrom reverts if collateral asset ${i} withdraw is paused`, async () => {
