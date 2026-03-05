@@ -6,7 +6,7 @@ import { BigNumber } from 'ethers';
 
 const amountOfAccidentalTransfers = exp(19_958.414155, 6);
 
-const USER_ADDRESS = '0xF27696C8BCa7D54D696189085Ae1283f59342fA6';
+const USER_ADDRESS = '0x34074a8706e952a02f8a3def416bab745b54a3ed';
 
 let balanceBefore: BigNumber;
 
@@ -43,7 +43,7 @@ Further detailed information can be found on the corresponding [forum discussion
 
 Accidental transfer tx hash: 0x92b03289ad09323ec897e106442096f3fc07f4c9cee4e02add7ee2b672d865e3
 Amount sent: 19_958.414155
-User address: 0xF27696C8BCa7D54D696189085Ae1283f59342fA6
+User address: 0x34074a8706e952a02f8a3def416bab745b54a3ed 
 
 ## Proposal actions
 
