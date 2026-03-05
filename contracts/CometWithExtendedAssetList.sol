@@ -868,13 +868,14 @@ contract CometWithExtendedAssetList is CometMainInterface {
      * @dev Supply an amount of collateral asset from `from` to dst
      */
     function supplyCollateral(address from, address dst, address asset, uint128 amount) internal {
-        amount = safe128(doTransferIn(asset, from, amount));
         accrueInternal();
 
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         uint8 offset = assetInfo.offset;
 
         if (isCollateralAssetSupplyPaused(offset)) revert CollateralAssetSupplyPaused(offset);
+
+        amount = safe128(doTransferIn(asset, from, amount));
 
         TotalsCollateral memory totals = totalsCollateral[asset];
         totals.totalSupplyAsset += amount;
