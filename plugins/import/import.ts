@@ -478,6 +478,47 @@ export async function loadRoninContract(network: string, address: string) {
 
       return contractBuild;
     } catch (error) {
+      // for some reason Ronin is not syncing Sourcify verification status, so we have to hardcode the ABI for the WRON and WETH price feed contracts
+      if(address.toLowerCase() == '0xb88e4078aac88f10c0ca71086ddcf512ec54498a' || address.toLowerCase() == '0x5d173813b4505701e79e654b36a95e6c1fad4448') {
+        console.log(`Special case for ${address} on Ronin, returning hardcoded PriceFeed ABI`);
+        const priceFeedContractAbi =
+          [
+            'function latestRoundData() view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)',
+            'function decimals() view returns (int256)'
+          ];
+        // fetch RONIN_QUICKNODE_LINK from env variables
+        const rpcUrl = process.env.RONIN_QUICKNODE_LINK;
+        if (!rpcUrl) {
+          throw new Error('RONIN_QUICKNODE_LINK environment variable not set');
+        }
+        return {
+          contract: 'PriceFeed',
+          contracts: {
+            'PriceFeed.sol:PriceFeed': {
+              network,
+              address,
+              name: 'PriceFeed',
+              abi: JSON.stringify(priceFeedContractAbi),
+              bin: '',
+              constructorArgs: '',
+              metadata: JSON.stringify({
+                compiler: {
+                  version: '0.8.0',
+                },
+                language: 'Solidity',
+                output: {
+                  abi: JSON.stringify(priceFeedContractAbi),
+                },
+                devdoc: {},
+                sources: {},
+                settings: {},
+                version: 1,
+              }),
+            },
+          },
+          version: '0.8.0',
+        };
+      }
       lastError = error;
       debug(`Attempt ${i + 1} failed for loadRoninContract: ${error.message}`);
       if (i < maxRetries - 1) {
