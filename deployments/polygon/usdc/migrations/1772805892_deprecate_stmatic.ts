@@ -92,7 +92,7 @@ export default migration('1772805892_deprecate_stmatic', {
 
 WOOF! propose to deprecate stMATIC as collateral in cUSDCv3 on Polygon by updating its price feed to a constant price feed with a price of 1 wei and set its supply cap to 0.
 
-Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/<>) and [forum discussion](https://www.comp.xyz/t/gauntlet-depreciating-stmatic-on-polygon-usdt-and-usdc-e-comets/7083).
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1094) and [forum discussion](https://www.comp.xyz/t/gauntlet-depreciating-stmatic-on-polygon-usdt-and-usdc-e-comets/7083).
 
 ## Proposal actions
 
@@ -102,7 +102,7 @@ The first action updates stMATIC price feed to the constant price feed with a pr
     const txn = await deploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
-      )
+      ), 0, 300_000
     );
     const event = txn.events.find(
       (event: { event: string }) => event.event === 'ProposalCreated'
