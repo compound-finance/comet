@@ -195,6 +195,7 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
     config.withdrawAsset = 10000;
     config.transferAsset = 500000;
     config.transferBase = 100;
+    config.rewardsAsset = 30000;
   }
 
   if (ctx.world.base.network === 'scroll' && ctx.world.base.deployment === 'usdc') {
