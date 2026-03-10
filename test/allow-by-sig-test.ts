@@ -29,7 +29,7 @@ const types = {
 
 describe('allowBySig', function () {
   beforeEach(async () => {
-    comet = (await makeProtocol()).comet;
+    comet = (await makeProtocol()).cometWithExtendedAssetList;
     [_admin, pauseGuardian, signer, manager] = await ethers.getSigners();
 
     domain = {
