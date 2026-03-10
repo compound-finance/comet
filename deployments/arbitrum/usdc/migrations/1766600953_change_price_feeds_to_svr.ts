@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, proposal } from '../../../../src/deploy';
-import { utils } from 'ethers';
+import { utils, Contract } from 'ethers';
 import { applyL1ToL2Alias, estimateL2Transaction } from '../../../../scenario/utils/arbitrumUtils';
 
 const WETH_TO_USD_SVR_PRICE_FEED_ADDRESS = '0xe4dF63Bf89fD868A899F2422B030709FD79Be921';
@@ -259,6 +259,16 @@ The first action updates WETH, ARB, WBTC and USDC price feeds to the SVR impleme
 
     expect(await comet.getPrice(newPriceFeedWETHAddress)).to.be.closeTo(await comet.getPrice(oldWETHPriceFeed), 5e8); // 5$
 
+    const wethPriceFeedContract = new Contract(
+      newPriceFeedWETHAddress,
+      [
+        'function underlyingPriceFeed() view returns (address)',
+      ],
+      await deploymentManager.getSigner()
+    );
+
+    expect(await wethPriceFeedContract.underlyingPriceFeed()).to.eq(WETH_TO_USD_SVR_PRICE_FEED_ADDRESS);
+
     // 2. USDC
     const USDCPriceFeedFromComet = await comet.baseTokenPriceFeed();
     const USDCPriceFeedFromConfigurator = (
@@ -269,6 +279,16 @@ The first action updates WETH, ARB, WBTC and USDC price feeds to the SVR impleme
     expect(USDCPriceFeedFromConfigurator).to.eq(newPriceFeedUSDCAddress);
 
     expect(await comet.getPrice(newPriceFeedUSDCAddress)).to.be.closeTo(await comet.getPrice(oldUSDCPriceFeed), 1e8); // 1$
+
+    const usdcPriceFeedContract = new Contract(
+      newPriceFeedUSDCAddress,
+      [
+        'function underlyingPriceFeed() view returns (address)',
+      ],
+      await deploymentManager.getSigner()
+    );
+
+    expect(await usdcPriceFeedContract.underlyingPriceFeed()).to.eq(USDC_TO_USD_SVR_PRICE_FEED_ADDRESS);
 
     // 3. ARB
     const ARBIndexInComet = await configurator.getAssetIndex(
@@ -285,6 +305,16 @@ The first action updates WETH, ARB, WBTC and USDC price feeds to the SVR impleme
 
     expect(await comet.getPrice(newPriceFeedARBAddress)).to.be.closeTo(await comet.getPrice(oldARBPriceFeed), 5e6); // 0.05$
 
+    const arbPriceFeedContract = new Contract(
+      newPriceFeedARBAddress,
+      [
+        'function underlyingPriceFeed() view returns (address)',
+      ],
+      await deploymentManager.getSigner()
+    );
+
+    expect(await arbPriceFeedContract.underlyingPriceFeed()).to.eq(ARB_TO_USD_SVR_PRICE_FEED_ADDRESS);
+
     // 4. WBTC
     const WBTCIndexInComet = await configurator.getAssetIndex(
       comet.address,
@@ -299,5 +329,15 @@ The first action updates WETH, ARB, WBTC and USDC price feeds to the SVR impleme
     expect(WBTCInConfiguratorInfoWETHComet.priceFeed).to.eq(newPriceFeedWBTCAddress);
 
     expect(await comet.getPrice(newPriceFeedWBTCAddress)).to.be.closeTo(await comet.getPrice(oldWBTCPriceFeed), 250e8); // 250$
+
+    const wbtcPriceFeedContract = new Contract(
+      newPriceFeedWBTCAddress,
+      [
+        'function underlyingPriceFeed() view returns (address)',
+      ],
+      await deploymentManager.getSigner()
+    );
+
+    expect(await wbtcPriceFeedContract.underlyingPriceFeed()).to.eq(WBTC_TO_USD_SVR_PRICE_FEED_ADDRESS);
   },
 });

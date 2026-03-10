@@ -123,7 +123,8 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
   if (ctx.world.base.network === 'arbitrum' && ctx.world.base.deployment === 'usdc') {
     config.bulkerAsset = 100000;
     config.bulkerAsset1 = 100000;
-    config.withdrawAsset = 10000;
+    config.rewardsAsset = 100000;
+    config.withdrawAsset = 100000;
     config.transferAsset = 500000;
     config.transferAsset1 = 500000;
     config.transferBase = 100;
