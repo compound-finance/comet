@@ -68,7 +68,21 @@ export default migration('1773227248_update_reth_pricefeed', {
         args: [configurator.address, comet.address],
       },
     ];
-    const description = '\n\n\n\nDESCRIPTION\n\n\n\n';
+    const description = `# Update rETH price feed in cWETHv3 on Mainnet
+
+## Proposal summary
+
+This proposal updates the rETH price feed in the Compound III WETH market on Ethereum.
+
+Due to the deprecation of the RETH / ETH Chainlink Oracle, the rETH price feed must be replaced with a new CAPO price feed that fetches the rETH / ETH exchange rate directly from the rETH contract. The new price feed retains the same CAPO parameters as the previous price feed.
+
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1097).
+
+## Proposal Actions
+
+The first action updates the rETH price feed to the new CAPO contract.
+
+The second action deploys and upgrades Comet to a new version.`;
     const txn = await deploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
