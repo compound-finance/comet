@@ -3,6 +3,8 @@ import { expect } from 'chai';
 import { expectApproximately, expectRevertCustom, hasMinBorrowGreaterThanOne, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
 import { ContractReceipt } from 'ethers';
 import { getConfigForScenario } from './utils/scenarioHelper';
+import { matchesDeployment } from './utils';
+import { exp } from '../test/helpers';
 
 async function testWithdrawCollateral(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
   const comet = await context.getComet();
@@ -201,6 +203,40 @@ scenario(
     expectApproximately(await albert.getCometBaseBalance(), -BigInt(getConfigForScenario(context).withdrawBase) * scale, precision);
 
     return txn; // return txn to measure gas
+  }
+);
+
+scenario(
+  'Comet#withdraw COMP delegation on Mainnet',
+  {
+    supplyCaps: {
+      $asset0: 100,
+    },
+    cometBalances: {
+      albert: {
+        [`$asset0`]: 100
+      },
+    },
+    filter: async (ctx) => matchesDeployment(ctx, [
+      { network: 'mainnet', deployment: 'usdc' },
+      { network: 'mainnet', deployment: 'usdt' }
+    ]),
+  },
+  async ({ comet, actors }, context) => {
+    const { albert } = actors;
+    const { COMP } = await context.world.deploymentManager.getContracts();
+
+    const withdrawAmount = exp(100, 18);
+
+    const delegationTarget = await COMP.delegates(comet.address);
+    expect(delegationTarget).to.not.equal(comet.address);
+
+    const votesBefore = await COMP.getCurrentVotes(delegationTarget);
+
+    await albert.withdrawAsset({ asset: COMP.address, amount: withdrawAmount });
+
+    const votesAfter = await COMP.getCurrentVotes(delegationTarget);
+    expect(votesBefore.sub(votesAfter)).to.be.equal(withdrawAmount);
   }
 );
 
