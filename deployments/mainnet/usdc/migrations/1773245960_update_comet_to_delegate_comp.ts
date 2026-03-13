@@ -95,7 +95,7 @@ export default migration('1773245960_update_comet_to_delegate_comp', {
 
 WOOF! proposes upgrading cUSDCv3 and cUSDTv3 on Ethereum to a new Comet implementation that supports COMP vote delegation. The Comet markets hold COMP tokens as collateral, and currently those tokens' voting power is unused. This proposal deploys a new Comet factory, upgrades both markets, and delegates their COMP voting power to an address appointed by governance. A new governor-only \`updateDelegationTarget\` function allows governance to change the delegation target in the future.
 
-Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/<>) and [forum discussion](https://www.comp.xyz/t/<>).
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1098) and [forum discussion](https://www.comp.xyz/t/<>).
 
 
 ## Proposal Actions
