@@ -406,12 +406,20 @@ scenario(
 scenario(
   'Comet#supplyFrom > repay borrow',
   {
-    tokenBalances: {
-      albert: { $base: 1010 }
-    },
-    cometBalances: {
-      betty: { $base: '<= -1000' } // in units of asset, not wei
-    },
+    tokenBalances: async (ctx) => (
+      {
+        albert: {
+          $base: getConfigForScenario(ctx).supplyBase + (0.01 * getConfigForScenario(ctx).supplyBase)
+        }
+      }
+    ),
+    cometBalances: async (ctx) => (
+      {
+        betty: {
+          $base: `<= -${getConfigForScenario(ctx).supplyBase}`
+        }
+      }
+    ),
   },
   async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
@@ -429,6 +437,39 @@ scenario(
     expectBase(await betty.getCometBaseBalance(), 0n);
 
     return txn; // return txn to measure gas
+  }
+);
+
+scenario(
+  'Comet#supply COMP delegation on Mainnet',
+  {
+    tokenBalances: {
+      albert: { $asset0: 100 }, // COMP
+    },
+    supplyCaps: {
+      $asset0: 100,
+    },
+    filter: async (ctx) => matchesDeployment(ctx, [
+      { network: 'mainnet', deployment: 'usdc' },
+      { network: 'mainnet', deployment: 'usdt' }
+    ]),
+  },
+  async ({ comet, actors }, context) => {
+    const { albert } = actors;
+    const { COMP } = await context.world.deploymentManager.getContracts();
+
+    const supplyAmount = exp(100, 18);
+    await COMP.connect(albert.signer).approve(comet.address, supplyAmount);
+
+    const delegationTarget = await COMP.delegates(comet.address);
+    expect(delegationTarget).to.not.equal(comet.address);
+
+    const votesBefore = await COMP.getCurrentVotes(delegationTarget);
+
+    await albert.supplyAsset({ asset: COMP.address, amount: supplyAmount });
+
+    const votesAfter = await COMP.getCurrentVotes(delegationTarget);
+    expect(votesAfter.sub(votesBefore)).to.be.equal(supplyAmount);
   }
 );
 
