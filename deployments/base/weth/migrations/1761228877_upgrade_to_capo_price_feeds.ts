@@ -1,14 +1,9 @@
 import { expect } from 'chai';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
-import { calldata, proposal } from '../../../../src/deploy';
+import { calldata, proposal, exp } from '../../../../src/deploy';
 import { utils } from 'ethers';
-import { Numeric } from '../../../../test/helpers';
 import { AggregatorV3Interface } from '../../../../build/types';
-
-export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
-  return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
-}
 
 const WSTETH_ADDRESS = '0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452';
 const WSTETH_STETH_PRICE_FEED_ADDRESS = '0xB88BAc61a4Ca37C43a3725912B1f472c9A5bc061'; 
