@@ -25,7 +25,7 @@ export default migration('1770826596_rescue_funds', {
     } = await deploymentManager.getContracts();
 
     const mainnetActions = [
-      // 1. Add tBTC as asset
+      // 1. Return accidentally sent funds to the user
       {
         contract: comet,
         signature: 'withdrawReserves(address,uint256)',
@@ -70,6 +70,6 @@ The first action withdraws accidentally sent funds from a comet and transfers th
   async verify(deploymentManager: DeploymentManager) {
     const { USDT } = await deploymentManager.getContracts();
 
-    expect(balanceBefore.add(amountOfAccidentalTransfers)).to.equal(await USDT.balanceOf(USER_ADDRESS));
+    expect(balanceBefore.add('19958414155')).to.equal(await USDT.balanceOf(USER_ADDRESS));
   },
 });
