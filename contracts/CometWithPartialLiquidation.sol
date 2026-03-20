@@ -1061,22 +1061,15 @@ contract CometWithPartialLiquidation is CometMainInterface {
     }
     struct LiquidationData {
         uint256 seizeAmount;
-        uint256 collateralValue;
-        uint256 collaterizationValue;
-        uint256 collaterizationValue2;
-        uint256 totalCollaterizedValue;
-        uint256 totalCollaterizedValue2;
         uint256 seizedValue;
-        uint256 expectedHF;
+        uint256 totalCollaterizedValue;
         uint256 currentHF;
-        bool calculation;
     }
     
     /**
      * @dev Transfer user's collateral and debt to the protocol itself.
      */
     function absorbInternal(address absorber, address account) internal {
-        console.log("absorbInternal", absorber, account);
         if (!isLiquidatable(account)) revert NotLiquidatable();
         UserBasic memory accountUser = userBasic[account];
         int104 oldPrincipal = accountUser.principal;
@@ -1093,112 +1086,54 @@ contract CometWithPartialLiquidation is CometMainInterface {
         uint256 targetHF = IHealthFactorHolder(extensionDelegate).targetHealthFactor(address(this));
 
         LiquidationData memory liquidationData;
-        liquidationData.totalCollaterizedValue = _getLiquidity(account, false); // sum of colalteral value * price * BF
+        liquidationData.totalCollaterizedValue = _getLiquidity(account, false);
         AssetInfo memory assetInfo;
-        
-        for(uint8 i; i < numAssets; ) {
-            if (isInAsset(accountUser.assetsIn, i, accountUser._reserved)) {
-                assetInfo = getAssetInfo(i);
-                liquidationData.totalCollaterizedValue2 += mulFactor(
-                    mulPrice(userCollateral[account][assetInfo.asset].balance, getPrice(assetInfo.priceFeed), assetInfo.scale), 
-                    assetInfo.liquidationFactor
-                );
-            }
-            unchecked {
-                ++i;
-            }
-        }
-        // If the total collaterized value is greater than the debt, we need to seize only part of the collateral
+
         for (uint8 i; i < numAssets; ) {
             if (isInAsset(accountUser.assetsIn, i, accountUser._reserved)) {
                 assetInfo = getAssetInfo(i);
-                console.log("assetInfo.asset", assetInfo.asset);
-                console.log("assetInfo.borrowCollateralFactor", assetInfo.borrowCollateralFactor);
-                console.log("assetInfo.liquidationFactor", assetInfo.liquidationFactor);
-                console.log("assetInfo.priceFeed", assetInfo.priceFeed);
-                console.log("assetInfo.scale", assetInfo.scale);
-                liquidationData.seizeAmount = userCollateral[account][assetInfo.asset].balance;
-                console.log("seizeAmount", liquidationData.seizeAmount);
-                liquidationData.collateralValue = mulPrice(liquidationData.seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale);
-                console.log("collateralValue", mulPrice(liquidationData.seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale));
-                liquidationData.collaterizationValue = mulFactor(
-                    mulPrice(liquidationData.seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale), 
-                    assetInfo.borrowCollateralFactor
-                );
-                liquidationData.collaterizationValue2 = mulFactor(
-                    mulPrice(liquidationData.seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale), 
-                    assetInfo.liquidationFactor
-                );
-                console.log("collaterizationValue2", liquidationData.collaterizationValue2);
-                console.log("collaterizationValue", liquidationData.collaterizationValue);
-                console.log("seizedValue * assetInfo.liquidationFactor", mulFactor(liquidationData.collateralValue, assetInfo.liquidationFactor));
-                liquidationData.seizedValue = mulFactor(liquidationData.collateralValue, assetInfo.liquidationFactor);
-                console.log("seizedValue", liquidationData.seizedValue);
-                console.log("totalCollaterizedValue", liquidationData.totalCollaterizedValue);     
-                console.log("totalCollaterizedValue2", liquidationData.totalCollaterizedValue2);
-                console.log("uint256(-debt) - deltaValue", uint256(-debt) - deltaValue);
-                console.log("deltaValue", deltaValue);
-                console.log("---------------------------------------------");
+                uint256 price = getPrice(assetInfo.priceFeed);
+                uint256 fullBalance = userCollateral[account][assetInfo.asset].balance;
+                uint256 availableUSD = mulPrice(fullBalance, price, assetInfo.scale);
 
-                console.log("expectedHF", liquidationData.expectedHF);
-                if (liquidationData.totalCollaterizedValue == liquidationData.collaterizationValue && liquidationData.totalCollaterizedValue2 > uint256(-debt) - deltaValue) {
-                    console.log("totalCollaterizedValue == collaterizationValue");
-                    liquidationData.calculation = true;
-                } else if (liquidationData.totalCollaterizedValue > liquidationData.collaterizationValue) {
-                    console.log("totalCollaterizedValue != collaterizationValue");
-                    liquidationData.expectedHF = ((liquidationData.totalCollaterizedValue - liquidationData.collaterizationValue) * FACTOR_SCALE) / (uint256(-debt) - deltaValue - liquidationData.seizedValue);
-                } else if (liquidationData.totalCollaterizedValue > uint256(-debt) - deltaValue) {
-                    liquidationData.calculation = true;
-                } 
-                else {
-                    console.log("full liquidation of collateral");
-                    liquidationData.expectedHF = 0;
-                }
-                
-                console.log("expectedHF", liquidationData.expectedHF);
-                if (liquidationData.expectedHF >= targetHF || liquidationData.calculation) { // we need to seize only part of collateral
-                    /// target HF = (collateral value - delta * CF) / (debt - delta * LF)
-                    /// =>
-                    /// delta = (collateral value - debt * THF) / (LF * THF - CF)
-                    console.log("assetInfo.borrowCollateralFactor", assetInfo.borrowCollateralFactor);
-                    //console.log("(mulFactor(assetInfo.liquidationFactor, targetHF) - assetInfo.borrowCollateralFactor)", (mulFactor(assetInfo.liquidationFactor, targetHF) - assetInfo.borrowCollateralFactor));
-                    console.log("mulFactor(liquidationData.totalCollaterizedValue2, targetHF)", mulFactor(liquidationData.totalCollaterizedValue2, targetHF));
-                    // console.log("liquidationData.totalCollaterizedValue - mulFactor(uint256(-debt) - deltaValue, targetHF)", liquidationData.totalCollaterizedValue - mulFactor(uint256(-debt) - deltaValue, targetHF));
-                    // liquidationData.seizedValue = (mulFactor(liquidationData.totalCollaterizedValue2, targetHF) - (uint256(-debt) - deltaValue)) * FACTOR_SCALE / (mulFactor(assetInfo.liquidationFactor, targetHF) - assetInfo.borrowCollateralFactor);
-                    // liquidationData.seizedValue = (mulFactor(uint256(-debt) - deltaValue, targetHF) - liquidationData.totalCollaterizedValue) * FACTOR_SCALE / (mulFactor(assetInfo.liquidationFactor, targetHF) - assetInfo.borrowCollateralFactor);
-                    // liquidationData.seizedValue = (uint256(-debt) - deltaValue - mulFactor(liquidationData.totalCollaterizedValue, targetHF)) * FACTOR_SCALE / (mulFactor(assetInfo.liquidationFactor, targetHF) - assetInfo.borrowCollateralFactor);
-                    // Check if we can reach target HF with available collateral
-                    uint256 requiredCollateralValue = mulFactor(uint256(-debt) - deltaValue, targetHF);
-                    if (liquidationData.totalCollaterizedValue2 >= requiredCollateralValue) {
-                        // Partial liquidation - calculate exact amount to seize
-                        liquidationData.seizedValue = (liquidationData.totalCollaterizedValue2 - requiredCollateralValue) * FACTOR_SCALE / (mulFactor(assetInfo.liquidationFactor, targetHF) - assetInfo.borrowCollateralFactor);
-                        liquidationData.seizeAmount = divPrice(liquidationData.seizedValue, getPrice(assetInfo.priceFeed), assetInfo.scale);
-                        liquidationData.currentHF = targetHF;   
+                uint256 denom = mulFactor(assetInfo.liquidationFactor, targetHF);
+                if (denom > assetInfo.borrowCollateralFactor) {
+                    denom -= assetInfo.borrowCollateralFactor;
+                    uint256 debtRemaining = uint256(-debt) - deltaValue;
+                    // Fix 1: correct numerator — (targetHF × debt − totalCV_CF)
+                    // Fix 3: guard on denominator positivity and available balance
+                    uint256 rawCollateralUSD = (mulFactor(debtRemaining, targetHF) - liquidationData.totalCollaterizedValue)
+                        * FACTOR_SCALE / denom;
+
+                    if (rawCollateralUSD <= availableUSD) {
+                        // Partial seizure: exactly reaches targetHF
+                        // Fix 2: seizeAmount from rawUSD, seizedValue = rawUSD × LP
+                        liquidationData.seizeAmount = divPrice(rawCollateralUSD, price, assetInfo.scale);
+                        liquidationData.seizedValue = mulFactor(rawCollateralUSD, assetInfo.liquidationFactor);
+                        liquidationData.currentHF = targetHF;
                     } else {
-                        // Cannot reach target HF - seize all remaining collateral
-                        liquidationData.seizeAmount = userCollateral[account][assetInfo.asset].balance;
-                        liquidationData.seizedValue = mulFactor(
-                            mulPrice(liquidationData.seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale),
-                            assetInfo.liquidationFactor
-                        );
-                        liquidationData.currentHF = 0; // Could not reach target
+                        // This asset is insufficient — seize fully, continue to next
+                        liquidationData.seizeAmount = fullBalance;
+                        liquidationData.seizedValue = mulFactor(availableUSD, assetInfo.liquidationFactor);
+                        liquidationData.currentHF = 0;
                     }
-                    liquidationData.calculation = false;
                 } else {
-                    liquidationData.currentHF = liquidationData.expectedHF;
+                    // LP × targetHF ≤ CF: seizing this asset cannot improve HF — seize fully
+                    liquidationData.seizeAmount = fullBalance;
+                    liquidationData.seizedValue = mulFactor(availableUSD, assetInfo.liquidationFactor);
+                    liquidationData.currentHF = 0;
                 }
-            
-                console.log("deltaValue", deltaValue);
-                console.log("targetHF", targetHF);
-                console.log("liquidationData.seizedValue", liquidationData.seizedValue);
+
                 deltaValue += liquidationData.seizedValue;
-                // console.log("totalCollaterizedValue", totalCollaterizedValue);
-                liquidationData.totalCollaterizedValue -= liquidationData.collaterizationValue;
-                liquidationData.totalCollaterizedValue2 -= liquidationData.collaterizationValue2;
+                // Update remaining CF-weighted collateral only for full seizure (next iteration needs it)
+                if (liquidationData.currentHF < targetHF) {
+                    liquidationData.totalCollaterizedValue -= mulFactor(availableUSD, assetInfo.borrowCollateralFactor);
+                }
+
                 emit AbsorbCollateral(absorber, account, assetInfo.asset, liquidationData.seizeAmount, liquidationData.seizedValue);
                 userCollateral[account][assetInfo.asset].balance -= uint128(liquidationData.seizeAmount);
                 totalsCollateral[assetInfo.asset].totalSupplyAsset -= uint128(liquidationData.seizeAmount);
-                
+
                 if (liquidationData.currentHF >= targetHF) break;
             }
             unchecked {
@@ -1206,7 +1141,6 @@ contract CometWithPartialLiquidation is CometMainInterface {
             }
         }
         
-        console.log("deltaValue", deltaValue);
         int256 newBalance = oldBalance + signed256(divPrice(deltaValue, basePrice, uint64(baseScale)));
         // New balance can be negative, but only if target health factor is reached
         if (newBalance < 0 && liquidationData.currentHF < targetHF) {
