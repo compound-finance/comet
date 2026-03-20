@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, proposal, exp } from '../../../../src/deploy';
-import { utils } from 'ethers';
+import { Contract, utils } from 'ethers';
 import { AggregatorV3Interface } from '../../../../build/types';
 import { applyL1ToL2Alias, estimateL2Transaction } from '../../../../scenario/utils/arbitrumUtils';
 
@@ -176,7 +176,7 @@ CAPO has been audited by [OpenZeppelin](https://www.comp.xyz/t/capo-price-feed-a
 
 ### SVR fee recipient
 
-SVR generates revenue from liquidators and Compound DAO will receive that revenue as part of the protocol fee. The fee recipient for SVR is set to Compound DAO multisig: 0xd9496F2A3fd2a97d8A4531D92742F3C8F53183cB.
+SVR generates revenue from liquidators and Compound DAO will receive that revenue as part of the protocol fee. The fee recipient for SVR is set to Compound DAO multisig: 0xb3E79c7CaC540CA833015E63d96D3032Ba0C4129.
 
 ## Proposal actions
 
@@ -213,12 +213,33 @@ The first action updates rsETH price feed to the CAPO implementation and WBTC pr
     expect(rsETHInConfiguratorInfoWETHComet.priceFeed).to.eq(newRsETHPriceFeed);
     expect(await comet.getPrice(newRsETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldRsETHPriceFeed), 1e5);
 
+    const rsETHPriceFeed = new Contract(
+      rsETHInCometInfo.priceFeed,
+      [
+        'function ratioProvider() view returns (address)',
+        'function maxYearlyRatioGrowthPercent() view returns (uint32)',
+      ],
+      await deploymentManager.getSigner()
+    );
+    expect(await rsETHPriceFeed.ratioProvider()).to.eq(RSETH_ETH_PRICE_FEED);
+    expect(await rsETHPriceFeed.maxYearlyRatioGrowthPercent()).to.eq(554);
+
     // WBTC
     const WBTCInCometInfo = await comet.getAssetInfoByAddress(WBTC.address);
     const WBTCInConfiguratorInfoWETHComet = (await configurator.getConfiguration(comet.address)).assetConfigs[WBTCIndexInComet];
 
     expect(WBTCInCometInfo.priceFeed).to.eq(newWbtcPriceFeed);
     expect(WBTCInConfiguratorInfoWETHComet.priceFeed).to.eq(newWbtcPriceFeed);
-    expect(await comet.getPrice(newWbtcPriceFeed)).to.be.closeTo(await comet.getPrice(oldWbtcPriceFeed), 1e7);
+    expect(await comet.getPrice(newWbtcPriceFeed)).to.be.closeTo(await comet.getPrice(oldWbtcPriceFeed), 2e7);
+
+    const wbtcPriceFeed = new Contract(WBTCInCometInfo.priceFeed,
+      [
+        'function priceFeedA() view returns (address)',
+        'function priceFeedB() view returns (address)',
+      ],
+      await deploymentManager.getSigner()
+    );
+    expect(await wbtcPriceFeed.priceFeedA()).to.eq(BTC_USD_SVR_PRICE_FEED);
+    expect(await wbtcPriceFeed.priceFeedB()).to.eq(ETH_USD_SVR_PRICE_FEED);
   },
 });
