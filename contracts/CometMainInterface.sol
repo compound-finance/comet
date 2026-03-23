@@ -145,6 +145,8 @@ abstract contract CometMainInterface is CometCore {
     /// @dev uint104
     function targetReserves() virtual external view returns (uint);
 
+    function targetHealthFactor() virtual external view returns (uint);
+
     function numAssets() virtual external view returns (uint8);
     function decimals() virtual external view returns (uint8);
 

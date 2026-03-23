@@ -33,6 +33,7 @@ contract Configurator is ConfiguratorStorage {
     event SetBaseMinForRewards(address indexed cometProxy, uint104 oldBaseMinForRewards, uint104 newBaseMinForRewards);
     event SetBaseBorrowMin(address indexed cometProxy, uint104 oldBaseBorrowMin, uint104 newBaseBorrowMin);
     event SetTargetReserves(address indexed cometProxy, uint104 oldTargetReserves, uint104 newTargetReserves);
+    event SetTargetHealthFactor(address indexed cometProxy, uint64 oldHealthFactor, uint64 newHealthFactor);
     event UpdateAsset(address indexed cometProxy, AssetConfig oldAssetConfig, AssetConfig newAssetConfig);
     event UpdateAssetPriceFeed(address indexed cometProxy, address indexed asset, address oldPriceFeed, address newPriceFeed);
     event UpdateAssetBorrowCollateralFactor(address indexed cometProxy, address indexed asset, uint64 oldBorrowCF, uint64 newBorrowCF);
@@ -238,6 +239,12 @@ contract Configurator is ConfiguratorStorage {
         emit SetTargetReserves(cometProxy, oldTargetReserves, newTargetReserves);
     }
 
+    function setTargetHealthFactor(address cometProxy, uint64 newTargetHealthFactor) external governorOrMarketAdmin {
+        uint64 oldTargetHealthFactor = configuratorParams[cometProxy].targetHealthFactor;
+        configuratorParams[cometProxy].targetHealthFactor = newTargetHealthFactor;
+        emit SetTargetHealthFactor(cometProxy, oldTargetHealthFactor, newTargetHealthFactor);
+    }
+
     function addAsset(address cometProxy, AssetConfig calldata assetConfig) external {
         if (msg.sender != governor) revert Unauthorized();
 
@@ -292,6 +299,10 @@ contract Configurator is ConfiguratorStorage {
     }
 
     /** Other helpers **/
+
+    function targetHealthFactors(address cometProxy) external view returns (uint64) {
+        return configuratorParams[cometProxy].targetHealthFactor;
+    }
 
     /**
      * @dev Determine index of asset that matches given address

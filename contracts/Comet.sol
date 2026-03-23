@@ -91,6 +91,9 @@ contract Comet is CometMainInterface {
     /// @notice The minimum base token reserves which must be held before collateral is hodled
     uint public override immutable targetReserves;
 
+    /// @notice The target health factor for partial liquidation (0 = full liquidation)
+    uint public override immutable targetHealthFactor;
+
     /// @notice The number of decimals for wrapped base token
     uint8 public override immutable decimals;
 
@@ -154,6 +157,8 @@ contract Comet is CometMainInterface {
             trackingIndexScale = config.trackingIndexScale;
             if (baseScale < BASE_ACCRUAL_SCALE) revert BadDecimals();
             accrualDescaleFactor = baseScale / BASE_ACCRUAL_SCALE;
+
+            targetHealthFactor = config.targetHealthFactor;
 
             baseMinForRewards = config.baseMinForRewards;
             baseTrackingSupplySpeed = config.baseTrackingSupplySpeed;

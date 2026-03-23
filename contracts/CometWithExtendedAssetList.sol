@@ -7,7 +7,6 @@ import "./IPriceFeed.sol";
 import "./IAssetListFactory.sol";
 import "./IAssetListFactoryHolder.sol";
 import "./IAssetList.sol";
-import "./IHealthFactorHolder.sol";
 
 /**
  * @title Compound's Comet Contract
@@ -95,6 +94,9 @@ contract CometWithExtendedAssetList is CometMainInterface {
     /// @notice The minimum base token reserves which must be held before collateral is hodled
     uint public override immutable targetReserves;
 
+    /// @notice The target health factor for partial liquidation (0 = full liquidation)
+   uint public override immutable targetHealthFactor;
+
     /// @notice The number of decimals for wrapped base token
     uint8 public override immutable decimals;
 
@@ -143,6 +145,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
 
             baseBorrowMin = config.baseBorrowMin;
             targetReserves = config.targetReserves;
+            targetHealthFactor = config.targetHealthFactor;
         }
 
         // Set interest rate model configs
@@ -1082,16 +1085,6 @@ contract CometWithExtendedAssetList is CometMainInterface {
         uint256 currentHF;
     }
 
-    /// @notice Returns the target health factor configured in the extension delegate.
-    ///         Returns 0 if the extension delegate does not support partial liquidation.
-    function targetHealthFactor() external view returns (uint256) {
-        try IHealthFactorHolder(extensionDelegate).targetHealthFactor(address(this)) returns (uint256 hf) {
-            return hf;
-        } catch {
-            return 0;
-        }
-    }
-
     /**
      * @dev Transfer user's collateral and debt to the protocol itself.
      *      When targetHF > 0 (set via extension delegate) performs partial liquidation
@@ -1107,12 +1100,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
         uint256 basePrice = getPrice(baseTokenPriceFeed);
 
         uint256 deltaValue;
-        uint256 targetHF;
-        try IHealthFactorHolder(extensionDelegate).targetHealthFactor(address(this)) returns (uint256 hf) {
-            targetHF = hf;
-        } catch {
-            targetHF = 0;
-        }
+        uint256 targetHF = targetHealthFactor;
 
         if (targetHF > 0) {
             // --- Partial liquidation path ---

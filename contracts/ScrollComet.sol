@@ -91,6 +91,9 @@ contract ScrollComet is CometMainInterface {
     /// @notice The minimum base token reserves which must be held before collateral is hodled
     uint public override immutable targetReserves;
 
+    /// @notice The target health factor for partial liquidation (0 = full liquidation)
+    uint public override immutable targetHealthFactor;
+
     /// @notice The number of decimals for wrapped base token
     uint8 public override immutable decimals;
 
@@ -167,6 +170,8 @@ contract ScrollComet is CometMainInterface {
 
             baseBorrowMin = config.baseBorrowMin;
             targetReserves = config.targetReserves;
+
+            targetHealthFactor = config.targetHealthFactor;
         }
 
         // Set interest rate model configs
