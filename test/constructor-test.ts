@@ -73,6 +73,7 @@ describe('constructor', function () {
       baseMinForRewards: exp(1, 6),
       baseBorrowMin: exp(1, 6),
       targetReserves: 0,
+      targetHealthFactor: 0,
       assetConfigs: [{
         asset: tokens['EVIL'].address,
         priceFeed: priceFeeds['EVIL'].address,

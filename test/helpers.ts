@@ -10,7 +10,6 @@ import {
   CometExt__factory,
   CometExtAssetList,
   CometExtAssetList__factory,
-  CometExtPartialLiquidation__factory,
   CometHarness__factory,
   CometHarnessInterface as Comet,
   CometRewards,
@@ -31,8 +30,8 @@ import {
   CometFactory__factory,
   CometFactoryWithExtendedAssetList,
   CometFactoryWithExtendedAssetList__factory,
-  ConfiguratorPartialLiquidation,
-  ConfiguratorPartialLiquidation__factory,
+  Configurator,
+  Configurator__factory,
   CometHarnessInterface,
   CometInterface,
   NonStandardFaucetFeeToken,
@@ -41,8 +40,6 @@ import {
   AssetListFactory__factory,
   CometHarnessExtendedAssetList__factory,
   CometHarnessInterfaceExtendedAssetList as CometWithExtendedAssetList,
-  SimpleHealthFactorHolder__factory,
-  SimpleHealthFactorHolder,
   MarketAdminPermissionChecker, MarketAdminPermissionChecker__factory,
 } from '../build/types';
 import { BigNumber } from 'ethers';
@@ -125,7 +122,7 @@ export type Protocol = {
 };
 
 export type ConfiguratorAndProtocol = {
-  configurator: ConfiguratorPartialLiquidation;
+  configurator: Configurator;
   configuratorProxy: ConfiguratorProxy;
   proxyAdmin: CometProxyAdmin;
   cometFactory: CometFactory;
@@ -328,6 +325,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     baseMinForRewards,
     baseBorrowMin,
     targetReserves,
+    targetHealthFactor: 0n,
     assetConfigs: Object.entries(assets).reduce((acc, [symbol, config], _i) => {
       if (symbol != base && _i <= 12) {
         acc.push({
@@ -372,21 +370,10 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   const cometWithExtendedAssetList = await CometFactoryWithExtendedAssetList.deploy(config);
   await cometWithExtendedAssetList.deployed();
 
-  let extensionDelegatePartialLiquidation = opts.extensionDelegate;
-
-  let simpleHealthFactorHolder: SimpleHealthFactorHolder;
-  if (extensionDelegatePartialLiquidation === undefined) {
-    const SimpleHealthFactorHolder: SimpleHealthFactorHolder__factory = await ethers.getContractFactory('SimpleHealthFactorHolder') as SimpleHealthFactorHolder__factory;
-    simpleHealthFactorHolder = await SimpleHealthFactorHolder.deploy() as SimpleHealthFactorHolder;
-    await simpleHealthFactorHolder.deployed();
-    const CometExtPartialLiquidationFactory = (await ethers.getContractFactory('CometExtPartialLiquidation')) as CometExtPartialLiquidation__factory;
-    extensionDelegatePartialLiquidation = await CometExtPartialLiquidationFactory.deploy({ name32, symbol32 }, assetListFactory.address, simpleHealthFactorHolder.address);
-    await extensionDelegatePartialLiquidation.deployed();
-  }
-  // Deploy a second CometHarnessExtendedAssetList instance with partial liquidation extension
+  // Deploy a second CometHarnessExtendedAssetList instance with targetHealthFactor = 1.05 for partial liquidation
   const configPartialLiquidation = {
     ...config,
-    extensionDelegate: extensionDelegatePartialLiquidation.address,
+    targetHealthFactor: exp(1.05, 18),
   };
 
   const CometFactoryWithExtendedAssetListForPartial = (await ethers.getContractFactory('CometHarnessExtendedAssetList')) as CometHarnessExtendedAssetList__factory;
@@ -398,10 +385,6 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   await comet.initializeStorage();
   await cometWithExtendedAssetList.initializeStorage();
   await cometWithPartialLiquidationImpl.initializeStorage();
-
-  if (opts.extensionDelegate === undefined) {
-    await simpleHealthFactorHolder.setTargetHealthFactor(cometWithPartialLiquidationImpl.address, exp(1.05, 18));
-  }
 
   const baseTokenBalance = opts.baseTokenBalance;
   if (baseTokenBalance) {
@@ -470,7 +453,7 @@ export async function getConfigurationForConfigurator(
   await cometFactoryWithExtendedAssetList.deployed();
 
   // Deploy Configurator
-  const ConfiguratorFactory = (await ethers.getContractFactory('ConfiguratorPartialLiquidation')) as ConfiguratorPartialLiquidation__factory;
+  const ConfiguratorFactory = (await ethers.getContractFactory('Configurator')) as Configurator__factory;
   const configurator = await ConfiguratorFactory.deploy();
   await configurator.deployed();
   const configuration = {
@@ -494,6 +477,7 @@ export async function getConfigurationForConfigurator(
     baseMinForRewards,
     baseBorrowMin,
     targetReserves,
+    targetHealthFactor: 0n,
     assetConfigs: Object.entries(assets).reduce((acc, [symbol, config], _i) => {
       if (symbol != base) {
         acc.push({
@@ -572,7 +556,7 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   await cometFactoryWithExtendedAssetList.deployed();
 
   // Deploy Configurator
-  const ConfiguratorFactory = (await ethers.getContractFactory('ConfiguratorPartialLiquidation')) as ConfiguratorPartialLiquidation__factory;
+  const ConfiguratorFactory = (await ethers.getContractFactory('Configurator')) as Configurator__factory;
   const configurator = await ConfiguratorFactory.deploy();
   await configurator.deployed();
 
@@ -621,17 +605,9 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     await proxyAdmin.connect(governor).setMarketAdminPermissionChecker(marketAdminPermissionCheckerContract.address);
   }
 
-  let extensionDelegatePartialLiquidation = opts.extensionDelegate;
-  if (extensionDelegatePartialLiquidation === undefined) {
-    const name32 = ethers.utils.formatBytes32String((opts.name || 'Compound Comet'));
-    const symbol32 = ethers.utils.formatBytes32String((opts.symbol || '📈BASE'));
-    const CometExtPartialLiquidationFactory = (await ethers.getContractFactory('CometExtPartialLiquidation')) as CometExtPartialLiquidation__factory;
-    extensionDelegatePartialLiquidation = await CometExtPartialLiquidationFactory.deploy({ name32, symbol32 }, assetListFactory.address, configuratorAsProxy.address);
-    await extensionDelegatePartialLiquidation.deployed();
-  }
-  configuration.extensionDelegate = extensionDelegatePartialLiquidation.address;
+  configuration.extensionDelegate = extensionDelegateAssetList.address;
+  configuration.targetHealthFactor = exp(1.05, 18);
   await configuratorAsProxy.connect(governor).setConfiguration(cometProxyWithPartialLiquidation.address, configuration);
-  await configuratorAsProxy.connect(governor).setTargetHealthFactor(cometProxyWithPartialLiquidation.address, exp(1.05, 18));
   await configuratorAsProxy.connect(governor).setFactory(cometProxyWithPartialLiquidation.address, cometFactoryWithExtendedAssetList.address);
 
   await proxyAdmin.connect(governor).deployAndUpgradeTo(configuratorProxy.address, cometProxyWithPartialLiquidation.address);

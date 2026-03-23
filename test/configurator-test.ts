@@ -53,6 +53,7 @@ function convertToEventConfiguration(configuration: ConfigurationStructOutput) {
     configuration.baseMinForRewards.toBigInt(),
     configuration.baseBorrowMin.toBigInt(),
     configuration.targetReserves.toBigInt(),
+    configuration.targetHealthFactor.toBigInt(),
     [] // leave asset configs empty for simplicity
   ];
 }
