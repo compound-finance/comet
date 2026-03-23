@@ -41,9 +41,6 @@ import {
   AssetListFactory__factory,
   CometHarnessExtendedAssetList__factory,
   CometHarnessInterfaceExtendedAssetList as CometWithExtendedAssetList,
-  CometFactoryWithPartialLiquidation__factory,
-  CometHarnessPartialLiquidation__factory,
-  CometHarnessInterfacePartialLiquidation,
   SimpleHealthFactorHolder__factory,
   SimpleHealthFactorHolder,
   MarketAdminPermissionChecker, MarketAdminPermissionChecker__factory,
@@ -116,7 +113,7 @@ export type Protocol = {
   reward: string;
   comet: Comet;
   cometWithExtendedAssetList: CometWithExtendedAssetList;
-  cometWithPartialLiquidation: CometHarnessInterfacePartialLiquidation;
+  cometWithPartialLiquidation: CometWithExtendedAssetList;
   assetListFactory: AssetListFactory;
   tokens: {
     [symbol: string]: FaucetToken | NonStandardFaucetFeeToken;
@@ -386,31 +383,31 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     extensionDelegatePartialLiquidation = await CometExtPartialLiquidationFactory.deploy({ name32, symbol32 }, assetListFactory.address, simpleHealthFactorHolder.address);
     await extensionDelegatePartialLiquidation.deployed();
   }
-  // Create config for CometHarnessPartialLiquidation with correct extensionDelegate
+  // Deploy a second CometHarnessExtendedAssetList instance with partial liquidation extension
   const configPartialLiquidation = {
     ...config,
     extensionDelegate: extensionDelegatePartialLiquidation.address,
   };
 
-  const CometFactoryPartialLiquidation = (await ethers.getContractFactory('CometHarnessPartialLiquidation')) as CometHarnessPartialLiquidation__factory;
-  const cometWithPartialLiquidation = await CometFactoryPartialLiquidation.deploy(configPartialLiquidation);
-  await cometWithPartialLiquidation.deployed();
+  const CometFactoryWithExtendedAssetListForPartial = (await ethers.getContractFactory('CometHarnessExtendedAssetList')) as CometHarnessExtendedAssetList__factory;
+  const cometWithPartialLiquidationImpl = await CometFactoryWithExtendedAssetListForPartial.deploy(configPartialLiquidation);
+  await cometWithPartialLiquidationImpl.deployed();
 
   if (opts.start) await ethers.provider.send('evm_setNextBlockTimestamp', [opts.start]);
-  
+
   await comet.initializeStorage();
   await cometWithExtendedAssetList.initializeStorage();
-  await cometWithPartialLiquidation.initializeStorage();
+  await cometWithPartialLiquidationImpl.initializeStorage();
 
   if (opts.extensionDelegate === undefined) {
-    await simpleHealthFactorHolder.setTargetHealthFactor(cometWithPartialLiquidation.address, exp(1.05, 18));
+    await simpleHealthFactorHolder.setTargetHealthFactor(cometWithPartialLiquidationImpl.address, exp(1.05, 18));
   }
 
   const baseTokenBalance = opts.baseTokenBalance;
   if (baseTokenBalance) {
     const baseToken = tokens[base];
     await wait(baseToken.allocateTo(comet.address, baseTokenBalance));
-    await wait(baseToken.allocateTo(cometWithPartialLiquidation.address, baseTokenBalance));
+    await wait(baseToken.allocateTo(cometWithPartialLiquidationImpl.address, baseTokenBalance));
   }
 
   return {
@@ -424,7 +421,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     reward,
     comet: await ethers.getContractAt('CometHarnessInterface', comet.address) as Comet,
     cometWithExtendedAssetList: await ethers.getContractAt('CometHarnessInterfaceExtendedAssetList', cometWithExtendedAssetList.address) as CometWithExtendedAssetList,
-    cometWithPartialLiquidation: await ethers.getContractAt('CometHarnessInterfacePartialLiquidation', cometWithPartialLiquidation.address) as CometHarnessInterfacePartialLiquidation,
+    cometWithPartialLiquidation: await ethers.getContractAt('CometHarnessInterfaceExtendedAssetList', cometWithPartialLiquidationImpl.address) as CometWithExtendedAssetList,
     assetListFactory: assetListFactory,
     tokens,
     unsupportedToken,
@@ -471,10 +468,6 @@ export async function getConfigurationForConfigurator(
   const CometFactoryWithExtendedAssetListFactory = (await ethers.getContractFactory('CometFactoryWithExtendedAssetList')) as CometFactoryWithExtendedAssetList__factory;
   const cometFactoryWithExtendedAssetList = await CometFactoryWithExtendedAssetListFactory.deploy();
   await cometFactoryWithExtendedAssetList.deployed();
-
-  const CometFactoryWithPartialLiquidationFactory = (await ethers.getContractFactory('CometFactoryWithPartialLiquidation')) as CometFactoryWithPartialLiquidation__factory;
-  const cometFactoryWithPartialLiquidation = await CometFactoryWithPartialLiquidationFactory.deploy();
-  await cometFactoryWithPartialLiquidation.deployed();
 
   // Deploy Configurator
   const ConfiguratorFactory = (await ethers.getContractFactory('ConfiguratorPartialLiquidation')) as ConfiguratorPartialLiquidation__factory;
@@ -578,10 +571,6 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   const cometFactoryWithExtendedAssetList = await CometFactoryWithExtendedAssetListFactory.deploy();
   await cometFactoryWithExtendedAssetList.deployed();
 
-  const CometFactoryWithPartialLiquidation = (await ethers.getContractFactory('CometFactoryWithPartialLiquidation')) as CometFactoryWithPartialLiquidation__factory;
-  const cometFactoryWithPartialLiquidation = await CometFactoryWithPartialLiquidation.deploy();
-  await cometFactoryWithPartialLiquidation.deployed();
-
   // Deploy Configurator
   const ConfiguratorFactory = (await ethers.getContractFactory('ConfiguratorPartialLiquidation')) as ConfiguratorPartialLiquidation__factory;
   const configurator = await ConfiguratorFactory.deploy();
@@ -643,7 +632,7 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   configuration.extensionDelegate = extensionDelegatePartialLiquidation.address;
   await configuratorAsProxy.connect(governor).setConfiguration(cometProxyWithPartialLiquidation.address, configuration);
   await configuratorAsProxy.connect(governor).setTargetHealthFactor(cometProxyWithPartialLiquidation.address, exp(1.05, 18));
-  await configuratorAsProxy.connect(governor).setFactory(cometProxyWithPartialLiquidation.address, cometFactoryWithPartialLiquidation.address);
+  await configuratorAsProxy.connect(governor).setFactory(cometProxyWithPartialLiquidation.address, cometFactoryWithExtendedAssetList.address);
 
   await proxyAdmin.connect(governor).deployAndUpgradeTo(configuratorProxy.address, cometProxyWithPartialLiquidation.address);
 

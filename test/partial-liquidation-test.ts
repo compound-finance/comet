@@ -27,7 +27,7 @@ async function borrowCapacityForAsset(comet: CometInterface, actor: SignerWithAd
 
 }
 
-describe('CometWithPartialLiquidation', function() {
+describe('CometWithExtendedAssetList - Partial Liquidation', function() {
 
   it('should demonstrate partial liquidation with one collateral', async function () {
     const protocol = await makeProtocol({
