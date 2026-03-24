@@ -73,6 +73,11 @@ async function deployContracts(
     'ronin'
   );
 
+  const l2CCIPOnRamp = await deploymentManager.existing(
+    'l2CCIPOnRamp',
+    '0x02b60267bceeaFDC45005e0Fa0dd783eFeBc9F1b',
+    'ronin'
+  );
 
   // Deploy Local Timelock
   const localTimelock = await deploymentManager.deploy(
@@ -195,6 +200,7 @@ async function deployContracts(
     bridgeReceiver,
     l2CCIPRouter,
     l2CCIPOffRamp,
+    l2CCIPOnRamp,
     roninl2NativeBridge,
     bulker,
     // COMP
