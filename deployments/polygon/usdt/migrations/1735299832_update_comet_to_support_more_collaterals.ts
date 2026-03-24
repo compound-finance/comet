@@ -13,13 +13,15 @@ export default migration('1735299832_update_comet_to_support_more_collaterals', 
     const _assetListFactory = await deploymentManager.deploy(
       'assetListFactory',
       'AssetListFactory.sol',
-      []
+      [],
+      true
     );
 
     const cometFactoryWithExtendedAssetList = await deploymentManager.deploy(
       'cometFactoryWithExtendedAssetList',
       'CometFactoryWithExtendedAssetList.sol',
-      []
+      [],
+      true
     );
     const {
       comet
@@ -110,11 +112,11 @@ export default migration('1735299832_update_comet_to_support_more_collaterals', 
     const txn = await deploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
-      )
+      ), 0, 300_000
     );
 
     const event = txn.events.find(
-      (event) => event.event === 'ProposalCreated'
+      (event: { event: string }) => event.event === 'ProposalCreated'
     );
     const [proposalId] = event.args;
     trace(`Created proposal ${proposalId}.`);
