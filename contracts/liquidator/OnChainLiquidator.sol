@@ -43,13 +43,12 @@ contract OnChainLiquidator is IUniswapV3FlashCallback, PeripheryImmutableState, 
         Curve
     }
 
-    // XXX make this less gassy; rearrange fields
     struct PoolConfig {
+        bytes32 balancerPoolId; // pool id for the asset pair; only applies to Balancer pool configs
+        address curvePool;      // address of target Curve pool; only applies to Curve pool configs
         Exchange exchange;      // which exchange the config applies to
         uint24 uniswapPoolFee;  // fee for the swap pool (e.g. 3000, 500, 100); only applies to Uniswap pool configs
         bool swapViaWeth;       // whether to swap the asset to WETH before swapping to base token; applies to SushiSwap and Uniswap pool configs
-        bytes32 balancerPoolId; // pool id for the asset pair; only applies to Balancer pool configs
-        address curvePool;      // address of target Curve pool; only applies to Curve pool configs
     }
 
     /** OnChainLiquidator immutables **/
