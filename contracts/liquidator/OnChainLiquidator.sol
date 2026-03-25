@@ -77,6 +77,9 @@ contract OnChainLiquidator is IUniswapV3FlashCallback, PeripheryImmutableState, 
     /// @notice The scale for asset price calculations
     uint256 public constant QUOTE_PRICE_SCALE = 1e18;
 
+    /// @notice Default Uniswap pool fee used for WETH intermediate swaps
+    uint24 public constant DEFAULT_WETH_POOL_FEE = 500;
+
     /// @notice The asset pool configurations
     mapping(address => PoolConfig) public poolConfigs;
 
@@ -340,7 +343,7 @@ contract OnChainLiquidator is IUniswapV3FlashCallback, PeripheryImmutableState, 
             emit Swap(asset, WETH9, swapAmount, swapAmountNew, poolConfig);
             swapAmount = swapAmountNew;
             swapToken = WETH9;
-            poolFee = 500; // XXX move into constant
+            poolFee = DEFAULT_WETH_POOL_FEE;
 
             TransferHelper.safeApprove(WETH9, address(uniswapRouter), swapAmount);
         }
