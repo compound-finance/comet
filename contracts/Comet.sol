@@ -809,6 +809,9 @@ contract Comet is CometMainInterface {
      * @dev Note: Safely handles non-standard ERC-20 tokens that do not return a value. See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
      */
     function doTransferOut(address asset, address to, uint amount) internal {
+        // Skip zero-amount transfers -- some non-standard ERC-20 tokens revert
+        // on transfer(to, 0), which would block liquidation batches in absorb()
+        if (amount == 0) return;
         IERC20NonStandard(asset).transfer(to, amount);
         bool success;
         assembly ("memory-safe") {
