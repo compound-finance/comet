@@ -8,6 +8,8 @@ import "./IAssetListFactory.sol";
 import "./IAssetListFactoryHolder.sol";
 import "./IAssetList.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @title Compound's Comet Contract
  * @notice An efficient monolithic money market protocol
@@ -95,7 +97,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
     uint public override immutable targetReserves;
 
     /// @notice The target health factor for partial liquidation (0 = full liquidation)
-   uint public override immutable targetHealthFactor;
+    uint public override immutable targetHealthFactor;
 
     /// @notice The number of decimals for wrapped base token
     uint8 public override immutable decimals;
@@ -111,6 +113,9 @@ contract CometWithExtendedAssetList is CometMainInterface {
 
     uint8 internal constant MAX_ASSETS_FOR_ASSET_LIST = 24;
 
+    /// @notice The minimum allowed value for targetHealthFactor (1.05 in factor scale)
+    uint64 internal constant MIN_TARGET_HEALTH_FACTOR = 105e16;
+
     /**
      * @notice Construct a new protocol instance
      * @param config The mapping of initial/constant parameters
@@ -119,10 +124,16 @@ contract CometWithExtendedAssetList is CometMainInterface {
         // Sanity checks
         uint8 decimals_ = IERC20NonStandard(config.baseToken).decimals();
         if (decimals_ > MAX_BASE_DECIMALS) revert BadDecimals();
+        uint64 baseScale_ = uint64(10 ** decimals_);
+        if (baseScale_ < BASE_ACCRUAL_SCALE) revert BadDecimals();
         if (config.storeFrontPriceFactor > FACTOR_SCALE) revert BadDiscount();
         if (config.assetConfigs.length > MAX_ASSETS_FOR_ASSET_LIST) revert TooManyAssets();
         if (config.baseMinForRewards == 0) revert BadMinimum();
         if (IPriceFeed(config.baseTokenPriceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
+        if (config.targetHealthFactor < MIN_TARGET_HEALTH_FACTOR) revert BadHealthFactor();
+        for (uint8 i = 0; i < config.assetConfigs.length; i++) {
+            if (mulFactor(config.assetConfigs[i].liquidationFactor, config.targetHealthFactor) <= config.assetConfigs[i].borrowCollateralFactor) revert BadAssetHealthFactor();
+        }
 
         // Copy configuration
         unchecked {
@@ -132,17 +143,13 @@ contract CometWithExtendedAssetList is CometMainInterface {
             baseTokenPriceFeed = config.baseTokenPriceFeed;
             extensionDelegate = config.extensionDelegate;
             storeFrontPriceFactor = config.storeFrontPriceFactor;
-
             decimals = decimals_;
-            baseScale = uint64(10 ** decimals_);
+            baseScale = baseScale_;
             trackingIndexScale = config.trackingIndexScale;
-            if (baseScale < BASE_ACCRUAL_SCALE) revert BadDecimals();
             accrualDescaleFactor = baseScale / BASE_ACCRUAL_SCALE;
-
             baseMinForRewards = config.baseMinForRewards;
             baseTrackingSupplySpeed = config.baseTrackingSupplySpeed;
             baseTrackingBorrowSpeed = config.baseTrackingBorrowSpeed;
-
             baseBorrowMin = config.baseBorrowMin;
             targetReserves = config.targetReserves;
             targetHealthFactor = config.targetHealthFactor;
@@ -1102,8 +1109,8 @@ contract CometWithExtendedAssetList is CometMainInterface {
         uint256 deltaValue;
         uint256 targetHF = targetHealthFactor;
 
-        if (targetHF > 0) {
-            // --- Partial liquidation path ---
+        {
+            // --- Partial liquidation path (targetHealthFactor always > 0, validated in constructor) ---
             int debt = signedMulPrice(presentValue(oldPrincipal), basePrice, uint64(baseScale));
 
             LiquidationData memory liquidationData;
@@ -1150,6 +1157,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
                     emit AbsorbCollateral(absorber, account, assetInfo.asset, liquidationData.seizeAmount, liquidationData.seizedValue);
                     userCollateral[account][assetInfo.asset].balance -= uint128(liquidationData.seizeAmount);
                     totalsCollateral[assetInfo.asset].totalSupplyAsset -= uint128(liquidationData.seizeAmount);
+                    updateAssetsIn(account, assetInfo, uint128(fullBalance), userCollateral[account][assetInfo.asset].balance);
 
                     if (liquidationData.currentHF >= targetHF) break;
                 }
@@ -1163,6 +1171,10 @@ contract CometWithExtendedAssetList is CometMainInterface {
             }
 
             int104 newPrincipal = principalValue(newBalance);
+            // Sync assetsIn/_reserved bits updated by updateAssetsIn during the loop
+            // before updateBasePrincipal writes accountUser back to storage.
+            accountUser.assetsIn = userBasic[account].assetsIn;
+            accountUser._reserved = userBasic[account]._reserved;
             updateBasePrincipal(account, accountUser, newPrincipal);
             (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(oldPrincipal, newPrincipal);
             totalSupplyBase += supplyAmount;
@@ -1174,48 +1186,6 @@ contract CometWithExtendedAssetList is CometMainInterface {
                 emit Transfer(address(0), account, presentValueSupply(baseSupplyIndex, unsigned104(newPrincipal)));
             }
 
-        } else {
-            // --- Full liquidation path (original behaviour, targetHF == 0) ---
-            uint16 assetsIn = accountUser.assetsIn;
-            uint8 _reserved = accountUser._reserved;
-
-            for (uint8 i = 0; i < numAssets; ) {
-                if (isInAsset(assetsIn, i, _reserved)) {
-                    AssetInfo memory assetInfo = getAssetInfo(i);
-                    address asset = assetInfo.asset;
-                    uint128 seizeAmount = userCollateral[account][asset].balance;
-                    userCollateral[account][asset].balance = 0;
-                    totalsCollateral[asset].totalSupplyAsset -= seizeAmount;
-
-                    uint256 value = mulPrice(seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale);
-                    deltaValue += mulFactor(value, assetInfo.liquidationFactor);
-
-                    emit AbsorbCollateral(absorber, account, asset, seizeAmount, value);
-                }
-                unchecked { i++; }
-            }
-
-            uint256 deltaBalance = divPrice(deltaValue, basePrice, uint64(baseScale));
-            int256 newBalance = oldBalance + signed256(deltaBalance);
-            // New balance will not be negative, all excess debt absorbed by reserves
-            if (newBalance < 0) {
-                newBalance = 0;
-            }
-
-            int104 newPrincipal = principalValue(newBalance);
-            updateBasePrincipal(account, accountUser, newPrincipal);
-            // reset assetsIn after full seizure
-            userBasic[account].assetsIn = 0;
-            userBasic[account]._reserved = 0;
-            (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(oldPrincipal, newPrincipal);
-            totalSupplyBase += supplyAmount;
-            totalBorrowBase -= repayAmount;
-            uint256 basePaidOut = unsigned256(newBalance - oldBalance);
-            uint256 valueOfBasePaidOut = mulPrice(basePaidOut, basePrice, uint64(baseScale));
-            emit AbsorbDebt(absorber, account, basePaidOut, valueOfBasePaidOut);
-            if (newPrincipal > 0) {
-                emit Transfer(address(0), account, presentValueSupply(baseSupplyIndex, unsigned104(newPrincipal)));
-            }
         }
     }
 
