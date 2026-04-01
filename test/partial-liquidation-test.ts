@@ -54,6 +54,17 @@ async function makeLiquidatable(
   }
 }
 
+async function setupLiquidator(
+  comet: CometInterface,
+  tokens: any,
+  governor: SignerWithAddress,
+  liquidator: SignerWithAddress
+) {
+  await tokens.USDC.connect(governor).transfer(liquidator.address, exp(10000, 6));
+  await tokens.USDC.connect(liquidator).approve(comet.address, exp(10000, 6));
+  await comet.connect(liquidator).supply(tokens.USDC.address, exp(10000, 6));
+}
+
 describe('CometWithExtendedAssetList - Partial Liquidation', function() {
 
   // ── Demonstration scenarios (demos 1+2 share protocol; demo 3 standalone) ──
@@ -103,66 +114,47 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
       const { USDC, COMP } = tokens;
       const { COMP: priceFeedCOMP, USDC: priceFeedUSDC } = priceFeeds;
 
-      console.log('USDC', USDC.address);
-      console.log('COMP', COMP.address);
-      console.log('baseToken', await comet.baseToken());
-      console.log('assetInfo(0)', await comet.getAssetInfo(0));
-
       await setPrice(priceFeedCOMP, governor, 1);
       await setPrice(priceFeedUSDC, governor, 1);
-
-      let _userBasicAfter = await comet.userBasic(user1.address);
-      console.log('assetsIn:', _userBasicAfter);
-
 
       await USDC.connect(governor).transfer(user1.address, exp(2_000_000, 6));
       await USDC.connect(user1).approve(comet.address, exp(2_000_000, 6));
       await comet.connect(user1).supply(USDC.address, exp(2_000_000, 6));
-
-      _userBasicAfter = await comet.userBasic(user1.address);
-      console.log('\x1b[36m%s', 'assetsIn:', _userBasicAfter);
 
       const compAmount = exp(100_000, 18);
       await COMP.connect(governor).transfer(userToLiquidate.address, compAmount);
       await COMP.connect(userToLiquidate).approve(comet.address, compAmount);
       await comet.connect(userToLiquidate).supply(COMP.address, compAmount);
 
-      _userBasicAfter = await comet.userBasic(user1.address);
-      console.log('\x1b[36m%s', 'assetsIn:', _userBasicAfter);
-
-      let borrowCapacityCOMP = await borrowCapacityForAsset(comet, userToLiquidate, 0);
-      console.log(`Borrow Capacity: ${borrowCapacityCOMP} USDC`);
+      const borrowCapacityCOMP = await borrowCapacityForAsset(comet, userToLiquidate, 0);
       await comet.connect(userToLiquidate).withdraw(USDC.address, borrowCapacityCOMP);
       expect(await comet.borrowBalanceOf(userToLiquidate.address)).to.equal(borrowCapacityCOMP);
 
+      const compBalanceBefore = (await comet.userCollateral(userToLiquidate.address, COMP.address)).balance.toBigInt();
+      console.log('\x1b[35m%s','Init COMP:', Number(compBalanceBefore) / 1e18);
+
+      const debtBefore = (await comet.borrowBalanceOf(userToLiquidate.address)).toBigInt();
+      console.log('\x1b[35m%s','Init debt (USDC):', Number(debtBefore) / 1e6);
+
       await setPrice(priceFeedCOMP, governor, 0.94);
       await comet.accrueAccount(userToLiquidate.address);
-      borrowCapacityCOMP = await borrowCapacityForAsset(comet, userToLiquidate, 0);
-      console.log(`Borrow Capacity: ${borrowCapacityCOMP} USDC`);
-      console.log('isLiquidatable', await comet.isLiquidatable(userToLiquidate.address));
 
       expect(await comet.isLiquidatable(userToLiquidate.address)).to.be.true;
-      const userBasicBefore = await comet.userBasic(userToLiquidate.address);
-      console.log('User basic before:', userBasicBefore);
       await comet.connect(user1).absorb(user1.address, [userToLiquidate.address]);
-      const userBasicAfter = await comet.userBasic(userToLiquidate.address);
-      console.log('User basic after:', userBasicAfter);
-      console.log('borrowBalanceOf', await comet.borrowBalanceOf(userToLiquidate.address));
-      console.log('userCollateral', await comet.userCollateral(userToLiquidate.address, COMP.address));
-      console.log('isLiquidatable', await comet.isLiquidatable(userToLiquidate.address));
+      
+      expect(await comet.isLiquidatable(userToLiquidate.address)).to.be.false;
+
+      const compBalanceAfter = (await comet.userCollateral(userToLiquidate.address, COMP.address)).balance.toBigInt();
+      console.log('\x1b[36m%s','Remaining COMP:', Number(compBalanceAfter) / 1e18);
+
+      const debtAfter = (await comet.borrowBalanceOf(userToLiquidate.address)).toBigInt();
+      console.log('\x1b[36m%s','Remaining debt (USDC):', Number(debtAfter) / 1e6);
     });
 
     it('should demonstrate partial liquidation with two collateral', async function () {
       const [user1, userToLiquidate] = users;
       const { USDC, COMP, USDT } = tokens;
       const { COMP: priceFeedCOMP, USDC: priceFeedUSDC, USDT: priceFeedUSDT } = priceFeeds;
-
-      console.log('USDC', USDC.address);
-      console.log('COMP', COMP.address);
-      console.log('USDT', USDT.address);
-      console.log('baseToken', await comet.baseToken());
-      console.log('assetInfo(0)', await comet.getAssetInfo(0));
-      console.log('assetInfo(1)', await comet.getAssetInfo(1));
 
       await setPrice(priceFeedCOMP, governor, 1);
       await setPrice(priceFeedUSDC, governor, 1);
@@ -176,39 +168,41 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
       await COMP.connect(governor).transfer(userToLiquidate.address, compAmount);
       await COMP.connect(userToLiquidate).approve(comet.address, compAmount);
       await comet.connect(userToLiquidate).supply(COMP.address, compAmount);
-      let borrowCapacityCOMP = await borrowCapacityForAsset(comet, userToLiquidate, 0);
-      console.log(`Borrow Capacity: ${borrowCapacityCOMP} for COMP`);
+      const borrowCapacityCOMP = await borrowCapacityForAsset(comet, userToLiquidate, 0);
 
       const usdtAmount = exp(100_000, 6);
       await USDT.connect(governor).transfer(userToLiquidate.address, usdtAmount);
       await USDT.connect(userToLiquidate).approve(comet.address, usdtAmount);
       await comet.connect(userToLiquidate).supply(USDT.address, usdtAmount);
-      let borrowCapacityUSDT = await borrowCapacityForAsset(comet, userToLiquidate, 1);
-      console.log(`Borrow Capacity: ${borrowCapacityUSDT} for USDT`);
+      const borrowCapacityUSDT = await borrowCapacityForAsset(comet, userToLiquidate, 1);
 
       const totalBorrowAmount = borrowCapacityCOMP.add(borrowCapacityUSDT);
       await comet.connect(userToLiquidate).withdraw(USDC.address, totalBorrowAmount);
       expect(await comet.borrowBalanceOf(userToLiquidate.address)).to.equal(totalBorrowAmount);
 
+      const compBalanceBefore = (await comet.userCollateral(userToLiquidate.address, COMP.address)).balance.toBigInt();
+      console.log('\x1b[35m%s','Init COMP:', Number(compBalanceBefore) / 1e18);
+      const usdtBalanceBefore = (await comet.userCollateral(userToLiquidate.address, USDT.address)).balance.toBigInt();
+      console.log('\x1b[35m%s','Init USDT:', Number(usdtBalanceBefore) / 1e6);
+
+      const debtBefore = (await comet.borrowBalanceOf(userToLiquidate.address)).toBigInt();
+      console.log('\x1b[35m%s','Init debt (USDC):', Number(debtBefore) / 1e6);
+
       await setPrice(priceFeedCOMP, governor, 0.62);
       await comet.accrueAccount(userToLiquidate.address);
-      borrowCapacityCOMP = await borrowCapacityForAsset(comet, userToLiquidate, 0);
-      borrowCapacityUSDT = await borrowCapacityForAsset(comet, userToLiquidate, 1);
-      console.log('borrowBalanceOf', await comet.borrowBalanceOf(userToLiquidate.address));
-      console.log(`Borrow Capacity: ${borrowCapacityCOMP} for COMP`);
-      console.log(`Borrow Capacity: ${borrowCapacityUSDT} for USDT`);
-      console.log('isLiquidatable', await comet.isLiquidatable(userToLiquidate.address));
 
       expect(await comet.isLiquidatable(userToLiquidate.address)).to.be.true;
-      const userBasicBefore = await comet.userBasic(userToLiquidate.address);
-      console.log('User basic before:', userBasicBefore);
       await comet.connect(user1).absorb(user1.address, [userToLiquidate.address]);
-      const userBasicAfter = await comet.userBasic(userToLiquidate.address);
-      console.log('User basic after:', userBasicAfter);
-      console.log('borrowBalanceOf', await comet.borrowBalanceOf(userToLiquidate.address));
-      console.log('userCollateral 0', await comet.userCollateral(userToLiquidate.address, COMP.address));
-      console.log('userCollateral 1', await comet.userCollateral(userToLiquidate.address, USDT.address));
-      console.log('isLiquidatable', await comet.isLiquidatable(userToLiquidate.address));
+
+      expect(await comet.isLiquidatable(userToLiquidate.address)).to.be.false;
+
+      const compBalanceAfter = (await comet.userCollateral(userToLiquidate.address, COMP.address)).balance.toBigInt();
+      console.log('\x1b[36m%s','Remaining COMP:', Number(compBalanceAfter) / 1e18);
+      const usdtBalanceAfter = (await comet.userCollateral(userToLiquidate.address, USDT.address)).balance.toBigInt();
+      console.log('\x1b[36m%s','Remaining USDT:', Number(usdtBalanceAfter) / 1e6);
+
+      const debtAfter = (await comet.borrowBalanceOf(userToLiquidate.address)).toBigInt();
+      console.log('\x1b[36m%s','Remaining debt (USDC):', Number(debtAfter) / 1e6);
     });
   });
 
@@ -262,7 +256,6 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
     const borrowCapacityCOMP = await borrowCapacityForAsset(cometWithPartialLiquidation, userToLiquidate, 0);
     const borrowCapacityUSDT = await borrowCapacityForAsset(cometWithPartialLiquidation, userToLiquidate, 1);
     const borrowCapacity = borrowCapacityCOMP.add(borrowCapacityUSDT);
-    console.log(`Borrow Capacity: ${borrowCapacity} USDC`);
     await cometWithPartialLiquidation.connect(userToLiquidate).withdraw(USDC.address, borrowCapacity);
     expect(await cometWithPartialLiquidation.borrowBalanceOf(userToLiquidate.address)).to.equal(borrowCapacity);
 
@@ -272,15 +265,10 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
       await dropPriceByPercent(priceFeedUSDT, governor, 2);
       await ethers.provider.send('evm_increaseTime', [1 * 24 * 60 * 60]);
       await ethers.provider.send('evm_mine', []);
-      console.log('iterations', iterations);
       iterations++;
     }
     expect(await cometWithPartialLiquidation.isLiquidatable(userToLiquidate.address)).to.be.true;
-    const userBasicBefore = await cometWithPartialLiquidation.userBasic(userToLiquidate.address);
-    console.log('User basic before:', userBasicBefore);
     await cometWithPartialLiquidation.connect(user1).absorb(user1.address, [userToLiquidate.address]);
-    const userBasicAfter = await cometWithPartialLiquidation.userBasic(userToLiquidate.address);
-    console.log('User basic after:', userBasicAfter);
   });
 
   // ── Single collateral (COMP, price=50, LF=0.7) ───────────────────────────
@@ -310,9 +298,7 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
       ({ cometWithPartialLiquidation: comet, tokens, priceFeeds, governor } = protocol);
       [user1, liquidator] = protocol.users;
 
-      await tokens.USDC.connect(governor).transfer(liquidator.address, exp(10000, 6));
-      await tokens.USDC.connect(liquidator).approve(comet.address, exp(10000, 6));
-      await comet.connect(liquidator).supply(tokens.USDC.address, exp(10000, 6));
+      await setupLiquidator(comet, tokens, governor, liquidator);
 
       snapshotId = await ethers.provider.send('evm_snapshot', []);
     });
@@ -497,9 +483,7 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
       ({ cometWithPartialLiquidation: comet, tokens, priceFeeds, governor } = protocol);
       [user1, liquidator] = protocol.users;
 
-      await tokens.USDC.connect(governor).transfer(liquidator.address, exp(10000, 6));
-      await tokens.USDC.connect(liquidator).approve(comet.address, exp(10000, 6));
-      await comet.connect(liquidator).supply(tokens.USDC.address, exp(10000, 6));
+      await setupLiquidator(comet, tokens, governor, liquidator);
 
       snapshotId = await ethers.provider.send('evm_snapshot', []);
     });
@@ -635,9 +619,7 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
       ({ cometWithPartialLiquidation: comet, tokens, priceFeeds, governor } = protocol);
       [user1, liquidator] = protocol.users;
 
-      await tokens.USDC.connect(governor).transfer(liquidator.address, exp(10000, 6));
-      await tokens.USDC.connect(liquidator).approve(comet.address, exp(10000, 6));
-      await comet.connect(liquidator).supply(tokens.USDC.address, exp(10000, 6));
+      await setupLiquidator(comet, tokens, governor, liquidator);
 
       snapshotId = await ethers.provider.send('evm_snapshot', []);
     });
@@ -1343,48 +1325,36 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
     });
   });
 
-  // ── Scenario 4a/4b — targetHealthFactor constructor validation (Fix 6 regression) ──
+  // ── Scenario 4a/4b — targetHealthFactor constructor validation ──
 
-  describe('Scenario 4 — targetHealthFactor constructor validation (Fix 6 regression)', function() {
+  describe('Scenario 4 — targetHealthFactor constructor validation', function() {
     let governor: SignerWithAddress;
     let pauseGuardian: SignerWithAddress;
     let baseConfig: any;
 
     before(async function() {
-      [governor, pauseGuardian] = await ethers.getSigners();
-
-      const FaucetFactory = await ethers.getContractFactory('FaucetToken');
-      const baseToken = await FaucetFactory.deploy(exp(1_000_000, 6), 'USDC', 6, 'USDC');
-      await baseToken.deployed();
-      const collateralToken = await FaucetFactory.deploy(exp(1_000_000, 18), 'COMP', 18, 'COMP');
-      await collateralToken.deployed();
-
-      const PriceFeedFactory = await ethers.getContractFactory('SimplePriceFeed');
-      const basePriceFeed = await PriceFeedFactory.deploy(exp(1, 8), 8);
-      await basePriceFeed.deployed();
-      const collateralPriceFeed = await PriceFeedFactory.deploy(exp(50, 8), 8);
-      await collateralPriceFeed.deployed();
-
-      const AssetListFactoryContract = await ethers.getContractFactory('AssetListFactory');
-      const assetListFactory = await AssetListFactoryContract.deploy();
-      await assetListFactory.deployed();
-
-      const CometExtFactory = await ethers.getContractFactory('CometExtAssetList');
-      const extensionDelegate = await CometExtFactory.deploy(
-        {
-          name32: ethers.utils.formatBytes32String('Compound Comet'),
-          symbol32: ethers.utils.formatBytes32String('cUSDCv3'),
+      const protocol = await makeProtocol({
+        assets: {
+          USDC: { initial: exp(1_000_000, 6), decimals: 6, initialPrice: 1 },
+          COMP: {
+            initial: exp(1_000_000, 18),
+            decimals: 18,
+            initialPrice: 50,
+            borrowCF: exp(0.85, 18),
+            liquidateCF: exp(0.9, 18),
+            liquidationFactor: exp(0.9, 18),
+            supplyCap: exp(1e5, 18),
+          },
         },
-        assetListFactory.address
-      );
-      await extensionDelegate.deployed();
-
+      });
+      governor = protocol.governor;
+      pauseGuardian = protocol.pauseGuardian;
       baseConfig = {
-        governor: governor.address,
-        pauseGuardian: pauseGuardian.address,
-        extensionDelegate: extensionDelegate.address,
-        baseToken: baseToken.address,
-        baseTokenPriceFeed: basePriceFeed.address,
+        governor: protocol.governor.address,
+        pauseGuardian: protocol.pauseGuardian.address,
+        extensionDelegate: protocol.extensionDelegateAssetList.address,
+        baseToken: protocol.tokens.USDC.address,
+        baseTokenPriceFeed: protocol.priceFeeds.USDC.address,
         supplyKink: exp(0.8, 18),
         supplyPerYearInterestRateBase: 0n,
         supplyPerYearInterestRateSlopeLow: exp(0.05, 18),
@@ -1402,8 +1372,8 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
         targetReserves: 0n,
         targetHealthFactor: exp(1.05, 18),
         assetConfigs: [{
-          asset: collateralToken.address,
-          priceFeed: collateralPriceFeed.address,
+          asset: protocol.tokens.COMP.address,
+          priceFeed: protocol.priceFeeds.COMP.address,
           decimals: 18,
           borrowCollateralFactor: exp(0.85, 18),
           liquidateCollateralFactor: exp(0.9, 18),
@@ -1420,7 +1390,7 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
       ).to.be.revertedWith("custom error 'BadHealthFactor()'");
     });
 
-    it('4b: reverts when LP × targetHealthFactor ≤ borrowCF (0.80 × 1.05 = 0.84 < borrowCF = 0.85)', async function() {
+    it('4b: reverts when LP * targetHealthFactor ≤ borrowCF (0.80 * 1.05 = 0.84 < borrowCF = 0.85)', async function() {
       const CometFactory = await ethers.getContractFactory('CometHarnessExtendedAssetList');
       await expect(
         CometFactory.deploy({
@@ -1528,7 +1498,7 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
       await comet.connect(borrower).supply(COMP.address, compAmount);
       await comet.connect(borrower).withdraw(USDC.address, exp(4000, 6));
 
-      // Drop COMP price to $43 → liquidateCF × value = 100 × 43 × 0.9 = 3870 < 4000 → liquidatable
+      // Drop COMP price to $43 -> liquidateCF × value = 100 × 43 × 0.9 = 3870 < 4000 -> liquidatable
       await setPrice(priceFeedCOMP, governor, 43);
       await comet.accrueAccount(borrower.address);
       expect(await comet.isLiquidatable(borrower.address)).to.be.true;
@@ -1538,12 +1508,12 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
 
       // All COMP seized (only asset):
       //   TCV_initial = 100×43×0.84 = 3612; denom = 0.80×1.06 - 0.84 = 0.008
-      //   rawCOMP = (4000×1.06 - 3612) / 0.008 = (4240 - 3612) / 0.008 = 628 / 0.008 = 78500 >> availableUSD = 4300 ✓
+      //   rawCOMP = (4000×1.06 - 3612) / 0.008 = (4240 - 3612) / 0.008 = 628 / 0.008 = 78500 >> availableUSD = 4300 
       const compBalance = (await comet.userCollateral(borrower.address, COMP.address)).balance;
       expect(compBalance.toBigInt()).to.equal(0n, 'All COMP should be seized');
 
       // Debt zeroed: seizedValue = LP × availableUSD = 0.80×4300 = 3440 < 4000 (debt)
-      // newBalance = -4000 + 3440 = -560; condition (newBalance < 0 && currentHF < targetHF) → newBalance = 0
+      // newBalance = -4000 + 3440 = -560; condition (newBalance < 0 && currentHF < targetHF) -> newBalance = 0
       const debtAfter = await comet.borrowBalanceOf(borrower.address);
       expect(debtAfter.toBigInt()).to.equal(0n, 'Debt should be zeroed after full COMP absorption');
 
@@ -1551,9 +1521,9 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
     });
   });
 
-  // ── Scenario 3a — assetsIn not cleared after full absorption (bug confirmation) ──
+  // ── Scenario 3a — assetsIn not cleared after full absorption ──
 
-  describe('Scenario 3a — assetsIn not cleared after full absorption (bug confirmation)', function() {
+  describe('Scenario 3a — assetsIn not cleared after full absorption', function() {
     let governor: SignerWithAddress;
     let liquidator: SignerWithAddress;
     let borrower: SignerWithAddress;
@@ -1566,88 +1536,35 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
     let snapshotId: string;
 
     before(async function() {
-      [governor, liquidator, borrower] = await ethers.getSigners();
-
-      const FaucetFactory = await ethers.getContractFactory('FaucetToken');
-      USDC = await FaucetFactory.deploy(exp(10_000_000, 6), 'USDC', 6, 'USDC');
-      await USDC.deployed();
-      COMP = await FaucetFactory.deploy(exp(1_000_000, 18), 'COMP', 18, 'COMP');
-      await COMP.deployed();
-      USDT = await FaucetFactory.deploy(exp(1_000_000, 6), 'USDT', 6, 'USDT');
-      await USDT.deployed();
-
-      const PriceFeedFactory = await ethers.getContractFactory('SimplePriceFeed');
-      const priceFeedUSDC = await PriceFeedFactory.deploy(exp(1, 8), 8);
-      await priceFeedUSDC.deployed();
-      priceFeedCOMP = await PriceFeedFactory.deploy(exp(50, 8), 8);
-      await priceFeedCOMP.deployed();
-      priceFeedUSDT = await PriceFeedFactory.deploy(exp(1, 8), 8);
-      await priceFeedUSDT.deployed();
-
-      const AssetListFactoryContract = await ethers.getContractFactory('AssetListFactory');
-      const assetListFactory = await AssetListFactoryContract.deploy();
-      await assetListFactory.deployed();
-
-      const CometExtFactory = await ethers.getContractFactory('CometExtAssetList');
-      const extensionDelegate = await CometExtFactory.deploy(
-        {
-          name32: ethers.utils.formatBytes32String('Compound Comet'),
-          symbol32: ethers.utils.formatBytes32String('cUSDCv3'),
-        },
-        assetListFactory.address
-      );
-      await extensionDelegate.deployed();
-
-      // COMP (asset 0): price=50, borrowCF=0.85, liquidateCF=0.9, liquidationFactor=0.9
-      // USDT (asset 1): price=1,  borrowCF=0.85, liquidateCF=0.9, liquidationFactor=0.9
-      // LP × targetHF = 0.9 × 1.05 = 0.945 > 0.85 ✓
-      const CometFactory = await ethers.getContractFactory('CometHarnessExtendedAssetList');
-      comet = await CometFactory.deploy({
-        governor: governor.address,
-        pauseGuardian: governor.address,
-        extensionDelegate: extensionDelegate.address,
-        baseToken: USDC.address,
-        baseTokenPriceFeed: priceFeedUSDC.address,
-        supplyKink: exp(0.8, 18),
-        supplyPerYearInterestRateBase: 0n,
-        supplyPerYearInterestRateSlopeLow: exp(0.05, 18),
-        supplyPerYearInterestRateSlopeHigh: exp(2, 18),
-        borrowKink: exp(0.8, 18),
-        borrowPerYearInterestRateBase: 0n,
-        borrowPerYearInterestRateSlopeLow: exp(0.1, 18),
-        borrowPerYearInterestRateSlopeHigh: exp(3, 18),
-        storeFrontPriceFactor: exp(1, 18),
-        trackingIndexScale: exp(1, 15),
-        baseTrackingSupplySpeed: 0n,
-        baseTrackingBorrowSpeed: 0n,
-        baseMinForRewards: exp(1, 6),
-        baseBorrowMin: exp(1, 6),
-        targetReserves: 0n,
-        targetHealthFactor: exp(1.05, 18),
-        assetConfigs: [
-          {
-            asset: COMP.address,
-            priceFeed: priceFeedCOMP.address,
+      const protocol = await makeProtocol({
+        assets: {
+          USDC: { initial: exp(10_000_000, 6), decimals: 6, initialPrice: 1 },
+          COMP: {
+            initial: exp(1_000_000, 18),
             decimals: 18,
-            borrowCollateralFactor: exp(0.85, 18),
-            liquidateCollateralFactor: exp(0.9, 18),
+            initialPrice: 50,
+            borrowCF: exp(0.85, 18),
+            liquidateCF: exp(0.9, 18),
             liquidationFactor: exp(0.9, 18),
             supplyCap: exp(1_000_000, 18),
           },
-          {
-            asset: USDT.address,
-            priceFeed: priceFeedUSDT.address,
+          USDT: {
+            initial: exp(1_000_000, 6),
             decimals: 6,
-            borrowCollateralFactor: exp(0.85, 18),
-            liquidateCollateralFactor: exp(0.9, 18),
+            initialPrice: 1,
+            borrowCF: exp(0.85, 18),
+            liquidateCF: exp(0.9, 18),
             liquidationFactor: exp(0.9, 18),
             supplyCap: exp(1_000_000, 6),
           },
-        ],
+        },
+        baseTrackingBorrowSpeed: 0,
       });
-      await comet.deployed();
-      await comet.initializeStorage();
-
+      ({ cometWithPartialLiquidation: comet, governor } = protocol);
+      ({ USDC, COMP, USDT } = protocol.tokens);
+      ({ COMP: priceFeedCOMP, USDT: priceFeedUSDT } = protocol.priceFeeds);
+      liquidator = protocol.pauseGuardian;
+      borrower = protocol.users[0];
       snapshotId = await ethers.provider.send('evm_snapshot', []);
     });
 
@@ -1656,14 +1573,14 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
       snapshotId = await ethers.provider.send('evm_snapshot', []);
     });
 
-    it('3a: assetsIn and _reserved remain non-zero after full absorption (bug confirmation — expected to fail before fix)', async function() {
+    it('3a: assetsIn and _reserved remain non-zero after full absorption', async function() {
       // Governor provides USDC liquidity
       await USDC.connect(governor).approve(comet.address, exp(1000, 6));
       await comet.connect(governor).supply(USDC.address, exp(1000, 6));
 
       // Borrower supplies COMP + USDT and borrows at max capacity
       // COMP: 10 × $50 × 0.85 = 425 USDC capacity
-      // USDT: 100 × $1 × 0.85 = 85 USDC capacity → total 510 USDC
+      // USDT: 100 × $1 × 0.85 = 85 USDC capacity -> total 510 USDC
       await COMP.connect(governor).transfer(borrower.address, exp(10, 18));
       await COMP.connect(borrower).approve(comet.address, exp(10, 18));
       await comet.connect(borrower).supply(COMP.address, exp(10, 18));
@@ -1678,8 +1595,8 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
       console.log('assetsIn after full absorption:', _userBasicAfter);
 
 
-      // Crash both prices to $1 → LP-weighted total = 9 + 90 = 99 << 510 debt
-      // Full absorption: targetHF is unreachable → all collateral seized, debt zeroed by reserves
+      // Crash both prices to $1 -> LP-weighted total = 9 + 90 = 99 << 510 debt
+      // Full absorption: targetHF is unreachable -> all collateral seized, debt zeroed by reserves
       await setPrice(priceFeedCOMP, governor, 1);
       await setPrice(priceFeedUSDT, governor, 1);
       await comet.accrueAccount(borrower.address);
@@ -1701,9 +1618,9 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
     });
   });
 
-  // ── Scenario 3b — assetsIn not cleared after mixed absorption (bug confirmation) ──
+  // ── Scenario 3b — assetsIn not cleared after mixed absorption ──
 
-  describe('Scenario 3b — assetsIn COMP bit not cleared after mixed partial/full absorption (bug confirmation)', function() {
+  describe('Scenario 3b — assetsIn COMP bit not cleared after mixed partial/full absorption', function() {
     let governor: SignerWithAddress;
     let liquidator: SignerWithAddress;
     let borrower: SignerWithAddress;
@@ -1716,90 +1633,35 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
     let snapshotId: string;
 
     before(async function() {
-      [governor, liquidator, borrower] = await ethers.getSigners();
-
-      const FaucetFactory = await ethers.getContractFactory('FaucetToken');
-      USDC = await FaucetFactory.deploy(exp(10_000_000, 6), 'USDC', 6, 'USDC');
-      await USDC.deployed();
-      COMP = await FaucetFactory.deploy(exp(1_000_000, 18), 'COMP', 18, 'COMP');
-      await COMP.deployed();
-      USDT = await FaucetFactory.deploy(exp(1_000_000, 6), 'USDT', 6, 'USDT');
-      await USDT.deployed();
-
-      const PriceFeedFactory = await ethers.getContractFactory('SimplePriceFeed');
-      const priceFeedUSDC = await PriceFeedFactory.deploy(exp(1, 8), 8);
-      await priceFeedUSDC.deployed();
-      priceFeedCOMP = await PriceFeedFactory.deploy(exp(50, 8), 8);
-      await priceFeedCOMP.deployed();
-      priceFeedUSDT = await PriceFeedFactory.deploy(exp(1, 8), 8);
-      await priceFeedUSDT.deployed();
-
-      const AssetListFactoryContract = await ethers.getContractFactory('AssetListFactory');
-      const assetListFactory = await AssetListFactoryContract.deploy();
-      await assetListFactory.deployed();
-
-      const CometExtFactory = await ethers.getContractFactory('CometExtAssetList');
-      const extensionDelegate = await CometExtFactory.deploy(
-        {
-          name32: ethers.utils.formatBytes32String('Compound Comet'),
-          symbol32: ethers.utils.formatBytes32String('cUSDCv3'),
-        },
-        assetListFactory.address
-      );
-      await extensionDelegate.deployed();
-
-      // COMP (asset 0): borrowCF=0.80, liquidateCF=0.85, liquidationFactor=0.9
-      // USDT (asset 1): borrowCF=0.80, liquidateCF=0.85, liquidationFactor=0.9
-      // targetHF=1.05, LP=0.9
-      // LP × targetHF = 0.9 × 1.05 = 0.945 > 0.80 (borrowCF) ✓
-      // liquidateCF=0.85 < LP=0.9: enables partial USDT seizure after full COMP seizure
-      const CometFactory = await ethers.getContractFactory('CometHarnessExtendedAssetList');
-      comet = await CometFactory.deploy({
-        governor: governor.address,
-        pauseGuardian: governor.address,
-        extensionDelegate: extensionDelegate.address,
-        baseToken: USDC.address,
-        baseTokenPriceFeed: priceFeedUSDC.address,
-        supplyKink: exp(0.8, 18),
-        supplyPerYearInterestRateBase: 0n,
-        supplyPerYearInterestRateSlopeLow: exp(0.05, 18),
-        supplyPerYearInterestRateSlopeHigh: exp(2, 18),
-        borrowKink: exp(0.8, 18),
-        borrowPerYearInterestRateBase: 0n,
-        borrowPerYearInterestRateSlopeLow: exp(0.1, 18),
-        borrowPerYearInterestRateSlopeHigh: exp(3, 18),
-        storeFrontPriceFactor: exp(1, 18),
-        trackingIndexScale: exp(1, 15),
-        baseTrackingSupplySpeed: 0n,
-        baseTrackingBorrowSpeed: 0n,
-        baseMinForRewards: exp(1, 6),
-        baseBorrowMin: exp(1, 6),
-        targetReserves: 0n,
-        targetHealthFactor: exp(1.05, 18),
-        assetConfigs: [
-          {
-            asset: COMP.address,
-            priceFeed: priceFeedCOMP.address,
+      const protocol = await makeProtocol({
+        assets: {
+          USDC: { initial: exp(10_000_000, 6), decimals: 6, initialPrice: 1 },
+          COMP: {
+            initial: exp(1_000_000, 18),
             decimals: 18,
-            borrowCollateralFactor: exp(0.80, 18),
-            liquidateCollateralFactor: exp(0.85, 18),
+            initialPrice: 50,
+            borrowCF: exp(0.80, 18),
+            liquidateCF: exp(0.85, 18),
             liquidationFactor: exp(0.9, 18),
             supplyCap: exp(1_000_000, 18),
           },
-          {
-            asset: USDT.address,
-            priceFeed: priceFeedUSDT.address,
+          USDT: {
+            initial: exp(1_000_000, 6),
             decimals: 6,
-            borrowCollateralFactor: exp(0.80, 18),
-            liquidateCollateralFactor: exp(0.85, 18),
+            initialPrice: 1,
+            borrowCF: exp(0.80, 18),
+            liquidateCF: exp(0.85, 18),
             liquidationFactor: exp(0.9, 18),
             supplyCap: exp(1_000_000, 6),
           },
-        ],
+        },
+        baseTrackingBorrowSpeed: 0,
       });
-      await comet.deployed();
-      await comet.initializeStorage();
-
+      ({ cometWithPartialLiquidation: comet, governor } = protocol);
+      ({ USDC, COMP, USDT } = protocol.tokens);
+      ({ COMP: priceFeedCOMP, USDT: priceFeedUSDT } = protocol.priceFeeds);
+      liquidator = protocol.pauseGuardian;
+      borrower = protocol.users[0];
       snapshotId = await ethers.provider.send('evm_snapshot', []);
     });
 
@@ -1814,9 +1676,9 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
       await comet.connect(governor).supply(USDC.address, exp(2000, 6));
 
       // Borrower supplies:
-      //   COMP (asset 0): 10 × $50 = $500, borrowCF=0.80 → capacity = $400
-      //   USDT (asset 1): 1000 × $1 = $1000, borrowCF=0.80 → capacity = $800
-      //   Total borrow capacity = $1200 → borrow 900 USDC
+      //   COMP (asset 0): 10 × $50 = $500, borrowCF=0.80 -> capacity = $400
+      //   USDT (asset 1): 1000 × $1 = $1000, borrowCF=0.80 -> capacity = $800
+      //   Total borrow capacity = $1200 -> borrow 900 USDC
       await COMP.connect(governor).transfer(borrower.address, exp(10, 18));
       await COMP.connect(borrower).approve(comet.address, exp(10, 18));
       await comet.connect(borrower).supply(COMP.address, exp(10, 18));
@@ -1830,24 +1692,24 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
       // Drop COMP price to $1. USDT stays at $1.
       // liquidateCF=0.85 for both assets.
       // TCV (liquidateCF-weighted) = 10×1×0.85 + 1000×1×0.85 = 8.5 + 850 = 858.5 USD
-      // debt=900 > 858.5 → isLiquidatable=true ✓
+      // debt=900 > 858.5 -> isLiquidatable=true 
       // denom = LP×targetHF - borrowCF = 0.9×1.05 - 0.80 = 0.145
-      // COMP rawUSD = (900×1.05 - 0.80×1010) / 0.145 = (945 - 808) / 0.145 ≈ 944.8 >> 10 → full seizure ✓
+      // COMP rawUSD = (900×1.05 - 0.80×1010) / 0.145 = (945 - 808) / 0.145 ≈ 944.8 >> 10 -> full seizure 
       // After COMP: debtRemaining ≈ 900 - 0.9×10×1 = 891; TCV remaining = 0.80×1000 = 800
-      // USDT rawUSD = (891×1.05 - 800) / 0.145 = (935.55 - 800) / 0.145 ≈ 934.8 ≤ 1000 → partial seizure ✓
+      // USDT rawUSD = (891×1.05 - 800) / 0.145 = (935.55 - 800) / 0.145 ≈ 934.8 ≤ 1000 -> partial seizure 
       await setPrice(priceFeedCOMP, governor, 1);
       await comet.accrueAccount(borrower.address);
       expect(await comet.isLiquidatable(borrower.address)).to.be.true;
 
       await comet.connect(liquidator).absorb(liquidator.address, [borrower.address]);
 
-      // COMP (asset 0): fully seized (balance → 0)
-      // rawCOMP = (900×1.05 - 0.80×(10+1000)×1) / (0.9×1.05 - 0.80) = (945 - 808) / 0.145 ≈ 944.8 >> 10 → full seizure ✓
+      // COMP (asset 0): fully seized (balance -> 0)
+      // rawCOMP = (900×1.05 - 0.80×(10+1000)×1) / (0.9×1.05 - 0.80) = (945 - 808) / 0.145 ≈ 944.8 >> 10 -> full seizure 
       expect((await comet.userCollateral(borrower.address, COMP.address)).balance.toBigInt()).to.equal(0n, 'COMP should be fully seized');
 
       // USDT (asset 1): partially seized (balance > 0)
       // After COMP full seizure: debtRemaining = 900 - 0.9×10×1 = 900 - 9 = 891 USD; TCV remaining = 0.80×1000 = 800
-      // rawUSDT = (891×1.05 - (1000×1×0.80)) / (0.9×1.05 - 0.80) = (935.55 - 800) / 0.145 ≈ 934.8 USDT ≤ 1000 → partial ✓
+      // rawUSDT = (891×1.05 - (1000×1×0.80)) / (0.9×1.05 - 0.80) = (935.55 - 800) / 0.145 ≈ 934.8 USDT ≤ 1000 -> partial 
       const usdtBalance = (await comet.userCollateral(borrower.address, USDT.address)).balance.toBigInt();
       expect(usdtBalance).to.be.gt(0n, 'USDT should be only partially seized');
 
@@ -1859,8 +1721,8 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
       expect(await comet.isLiquidatable(borrower.address)).to.be.false;
 
       // BUG CONFIRMATION: COMP (asset 0) bit in assetsIn not cleared after full seizure
-      // Asset 0 = bit 0 → assetsIn has bit 0 set even though COMP balance is 0
-      // Asset 1 = bit 1 → assetsIn has bit 1 set (USDT still has balance)
+      // Asset 0 = bit 0 -> assetsIn has bit 0 set even though COMP balance is 0
+      // Asset 1 = bit 1 -> assetsIn has bit 1 set (USDT still has balance)
       // Expected after fix: assetsIn = 2 (0b10, only USDT bit)
       // Current bug: assetsIn = 3 (0b11, both bits set — COMP bit not cleared)
       const userBasicAfter = await comet.userBasic(borrower.address);
@@ -1883,90 +1745,35 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
     let snapshotId: string;
 
     before(async function() {
-      [governor, liquidator, borrower] = await ethers.getSigners();
-
-      const FaucetFactory = await ethers.getContractFactory('FaucetToken');
-      USDC = await FaucetFactory.deploy(exp(10_000_000, 6), 'USDC', 6, 'USDC');
-      await USDC.deployed();
-      COMP = await FaucetFactory.deploy(exp(1_000_000, 18), 'COMP', 18, 'COMP');
-      await COMP.deployed();
-      USDT = await FaucetFactory.deploy(exp(1_000_000, 6), 'USDT', 6, 'USDT');
-      await USDT.deployed();
-
-      const PriceFeedFactory = await ethers.getContractFactory('SimplePriceFeed');
-      const priceFeedUSDC = await PriceFeedFactory.deploy(exp(1, 8), 8);
-      await priceFeedUSDC.deployed();
-      priceFeedCOMP = await PriceFeedFactory.deploy(exp(40, 8), 8);
-      await priceFeedCOMP.deployed();
-      const priceFeedUSDT = await PriceFeedFactory.deploy(exp(1, 8), 8);
-      await priceFeedUSDT.deployed();
-
-      const AssetListFactoryContract = await ethers.getContractFactory('AssetListFactory');
-      const assetListFactory = await AssetListFactoryContract.deploy();
-      await assetListFactory.deployed();
-
-      const CometExtFactory = await ethers.getContractFactory('CometExtAssetList');
-      const extensionDelegate = await CometExtFactory.deploy(
-        {
-          name32: ethers.utils.formatBytes32String('Compound Comet'),
-          symbol32: ethers.utils.formatBytes32String('cUSDCv3'),
-        },
-        assetListFactory.address
-      );
-      await extensionDelegate.deployed();
-
-      // COMP (asset 0): borrowCF=0.80, liquidateCF=0.85, liquidationFactor=0.9
-      // USDT (asset 1): borrowCF=0.80, liquidateCF=0.85, liquidationFactor=0.9
-      // targetHF=1.05, denom = LP×targetHF - borrowCF = 0.9×1.05 - 0.80 = 0.145
-      // Initial COMP $40: max borrow = (10×40 + 1000)×0.80 = 1120 USDC
-      // isLiquidatable at $25: TCV_liq = (10×25 + 1000)×0.85 = 1062.5 < 1100 ✓
-      const CometFactory = await ethers.getContractFactory('CometHarnessExtendedAssetList');
-      comet = await CometFactory.deploy({
-        governor: governor.address,
-        pauseGuardian: governor.address,
-        extensionDelegate: extensionDelegate.address,
-        baseToken: USDC.address,
-        baseTokenPriceFeed: priceFeedUSDC.address,
-        supplyKink: exp(0.8, 18),
-        supplyPerYearInterestRateBase: 0n,
-        supplyPerYearInterestRateSlopeLow: exp(0.05, 18),
-        supplyPerYearInterestRateSlopeHigh: exp(2, 18),
-        borrowKink: exp(0.8, 18),
-        borrowPerYearInterestRateBase: 0n,
-        borrowPerYearInterestRateSlopeLow: exp(0.1, 18),
-        borrowPerYearInterestRateSlopeHigh: exp(3, 18),
-        storeFrontPriceFactor: exp(1, 18),
-        trackingIndexScale: exp(1, 15),
-        baseTrackingSupplySpeed: 0n,
-        baseTrackingBorrowSpeed: 0n,
-        baseMinForRewards: exp(1, 6),
-        baseBorrowMin: exp(1, 6),
-        targetReserves: 0n,
-        targetHealthFactor: exp(1.05, 18),
-        assetConfigs: [
-          {
-            asset: COMP.address,
-            priceFeed: priceFeedCOMP.address,
+      const protocol = await makeProtocol({
+        assets: {
+          USDC: { initial: exp(10_000_000, 6), decimals: 6, initialPrice: 1 },
+          COMP: {
+            initial: exp(1_000_000, 18),
             decimals: 18,
-            borrowCollateralFactor: exp(0.80, 18),
-            liquidateCollateralFactor: exp(0.85, 18),
+            initialPrice: 40,
+            borrowCF: exp(0.80, 18),
+            liquidateCF: exp(0.85, 18),
             liquidationFactor: exp(0.9, 18),
             supplyCap: exp(1_000_000, 18),
           },
-          {
-            asset: USDT.address,
-            priceFeed: priceFeedUSDT.address,
+          USDT: {
+            initial: exp(1_000_000, 6),
             decimals: 6,
-            borrowCollateralFactor: exp(0.80, 18),
-            liquidateCollateralFactor: exp(0.85, 18),
+            initialPrice: 1,
+            borrowCF: exp(0.80, 18),
+            liquidateCF: exp(0.85, 18),
             liquidationFactor: exp(0.9, 18),
             supplyCap: exp(1_000_000, 6),
           },
-        ],
+        },
+        baseTrackingBorrowSpeed: 0,
       });
-      await comet.deployed();
-      await comet.initializeStorage();
-
+      ({ cometWithPartialLiquidation: comet, governor } = protocol);
+      ({ USDC, COMP, USDT } = protocol.tokens);
+      ({ COMP: priceFeedCOMP } = protocol.priceFeeds);
+      liquidator = protocol.pauseGuardian;
+      borrower = protocol.users[0];
       snapshotId = await ethers.provider.send('evm_snapshot', []);
     });
 
@@ -1981,9 +1788,9 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
       await comet.connect(governor).supply(USDC.address, exp(2000, 6));
 
       // Borrower supplies:
-      //   COMP (asset 0): 10 × $40 = $400, borrowCF=0.80 → capacity = $320
-      //   USDT (asset 1): 1000 × $1 = $1000, borrowCF=0.80 → capacity = $800
-      //   Total borrow capacity = $1120 → borrow 1100 USDC
+      //   COMP (asset 0): 10 × $40 = $400, borrowCF=0.80 -> capacity = $320
+      //   USDT (asset 1): 1000 × $1 = $1000, borrowCF=0.80 -> capacity = $800
+      //   Total borrow capacity = $1120 -> borrow 1100 USDC
       await COMP.connect(governor).transfer(borrower.address, exp(10, 18));
       await COMP.connect(borrower).approve(comet.address, exp(10, 18));
       await comet.connect(borrower).supply(COMP.address, exp(10, 18));
@@ -1996,16 +1803,16 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
 
       // Drop COMP price from $40 to $25. USDT stays at $1.
       // isLiquidatable (liquidateCF=0.85):
-      //   TCV_liq = 10×25×0.85 + 1000×0.85 = 212.5 + 850 = 1062.5 < 1100 → liquidatable ✓
+      //   TCV_liq = 10×25×0.85 + 1000×0.85 = 212.5 + 850 = 1062.5 < 1100 -> liquidatable 
       //
       // absorbInternal uses borrowCF=0.80, denom = 0.9×1.05 - 0.80 = 0.145:
       //   TCV_initial = 10×25×0.80 + 1000×0.80 = 200 + 800 = 1000
       //
-      //   COMP: rawCOMP = (1100×1.05 - 1000) / 0.145 = 155 / 0.145 ≈ 1069 >> 250 → full seizure ✓
+      //   COMP: rawCOMP = (1100×1.05 - 1000) / 0.145 = 155 / 0.145 ≈ 1069 >> 250 -> full seizure 
       //     seizedValue = 0.9×250 = 225; debtRemaining = 875; TCV_remaining = 800
       //
       //   USDT: numerator = 875×1.05 - 800 = 918.75 - 800 = 118.75 > 0 (no underflow ← key invariant)
-      //     rawUSDT = 118.75 / 0.145 ≈ 819 ≤ 1000 → partial seizure ✓
+      //     rawUSDT = 118.75 / 0.145 ≈ 819 ≤ 1000 -> partial seizure 
       await setPrice(priceFeedCOMP, governor, 25);
       await comet.accrueAccount(borrower.address);
       expect(await comet.isLiquidatable(borrower.address)).to.be.true;
@@ -2043,89 +1850,35 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
     let snapshotId: string;
 
     before(async function() {
-      [governor, liquidator, borrower] = await ethers.getSigners();
-
-      const FaucetFactory = await ethers.getContractFactory('FaucetToken');
-      USDC = await FaucetFactory.deploy(exp(10_000_000, 6), 'USDC', 6, 'USDC');
-      await USDC.deployed();
-      COMP = await FaucetFactory.deploy(exp(1_000_000, 18), 'COMP', 18, 'COMP');
-      await COMP.deployed();
-      WBTC = await FaucetFactory.deploy(exp(1_000, 8), 'WBTC', 8, 'WBTC');
-      await WBTC.deployed();
-
-      const PriceFeedFactory = await ethers.getContractFactory('SimplePriceFeed');
-      const priceFeedUSDC = await PriceFeedFactory.deploy(exp(1, 8), 8);
-      await priceFeedUSDC.deployed();
-      priceFeedCOMP = await PriceFeedFactory.deploy(exp(50, 8), 8);
-      await priceFeedCOMP.deployed();
-      const priceFeedWBTC = await PriceFeedFactory.deploy(exp(30000, 8), 8);
-      await priceFeedWBTC.deployed();
-
-      const AssetListFactoryContract = await ethers.getContractFactory('AssetListFactory');
-      const assetListFactory = await AssetListFactoryContract.deploy();
-      await assetListFactory.deployed();
-
-      const CometExtFactory = await ethers.getContractFactory('CometExtAssetList');
-      const extensionDelegate = await CometExtFactory.deploy(
-        {
-          name32: ethers.utils.formatBytes32String('Compound Comet'),
-          symbol32: ethers.utils.formatBytes32String('cUSDCv3'),
-        },
-        assetListFactory.address
-      );
-      await extensionDelegate.deployed();
-
-      // COMP (asset 0): borrowCF=0.85, liquidateCF=0.9, liquidationFactor=0.95
-      // WBTC (asset 1): borrowCF=0.85, liquidateCF=0.9, liquidationFactor=0.95
-      // targetHF=1.05, denom = LP×targetHF - borrowCF = 0.95×1.05 - 0.85 = 0.1475
-      // Max borrow at COMP $50: (20×50 + 0.1×30000)×0.85 = 4000×0.85 = 3400 USDC
-      const CometFactory = await ethers.getContractFactory('CometHarnessExtendedAssetList');
-      comet = await CometFactory.deploy({
-        governor: governor.address,
-        pauseGuardian: governor.address,
-        extensionDelegate: extensionDelegate.address,
-        baseToken: USDC.address,
-        baseTokenPriceFeed: priceFeedUSDC.address,
-        supplyKink: exp(0.8, 18),
-        supplyPerYearInterestRateBase: 0n,
-        supplyPerYearInterestRateSlopeLow: exp(0.05, 18),
-        supplyPerYearInterestRateSlopeHigh: exp(2, 18),
-        borrowKink: exp(0.8, 18),
-        borrowPerYearInterestRateBase: 0n,
-        borrowPerYearInterestRateSlopeLow: exp(0.1, 18),
-        borrowPerYearInterestRateSlopeHigh: exp(3, 18),
-        storeFrontPriceFactor: exp(1, 18),
-        trackingIndexScale: exp(1, 15),
-        baseTrackingSupplySpeed: 0n,
-        baseTrackingBorrowSpeed: 0n,
-        baseMinForRewards: exp(1, 6),
-        baseBorrowMin: exp(1, 6),
-        targetReserves: 0n,
-        targetHealthFactor: exp(1.05, 18),
-        assetConfigs: [
-          {
-            asset: COMP.address,
-            priceFeed: priceFeedCOMP.address,
+      const protocol = await makeProtocol({
+        assets: {
+          USDC: { initial: exp(10_000_000, 6), decimals: 6, initialPrice: 1 },
+          COMP: {
+            initial: exp(1_000_000, 18),
             decimals: 18,
-            borrowCollateralFactor: exp(0.85, 18),
-            liquidateCollateralFactor: exp(0.9, 18),
+            initialPrice: 50,
+            borrowCF: exp(0.85, 18),
+            liquidateCF: exp(0.9, 18),
             liquidationFactor: exp(0.95, 18),
             supplyCap: exp(1_000_000, 18),
           },
-          {
-            asset: WBTC.address,
-            priceFeed: priceFeedWBTC.address,
+          WBTC: {
+            initial: exp(1_000, 8),
             decimals: 8,
-            borrowCollateralFactor: exp(0.85, 18),
-            liquidateCollateralFactor: exp(0.9, 18),
+            initialPrice: 30000,
+            borrowCF: exp(0.85, 18),
+            liquidateCF: exp(0.9, 18),
             liquidationFactor: exp(0.95, 18),
             supplyCap: exp(1_000, 8),
           },
-        ],
+        },
+        baseTrackingBorrowSpeed: 0,
       });
-      await comet.deployed();
-      await comet.initializeStorage();
-
+      ({ cometWithPartialLiquidation: comet, governor } = protocol);
+      ({ USDC, COMP, WBTC } = protocol.tokens);
+      ({ COMP: priceFeedCOMP } = protocol.priceFeeds);
+      liquidator = protocol.pauseGuardian;
+      borrower = protocol.users[0];
       snapshotId = await ethers.provider.send('evm_snapshot', []);
     });
 
@@ -2140,9 +1893,9 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
       await comet.connect(governor).supply(USDC.address, exp(5000, 6));
 
       // Borrower supplies:
-      //   COMP (asset 0): 20 × $50 = $1000, borrowCF=0.85 → capacity = $850
-      //   WBTC (asset 1): 0.1 × $30000 = $3000, borrowCF=0.85 → capacity = $2550
-      //   Total borrow capacity = $3400 → borrow 3400 USDC
+      //   COMP (asset 0): 20 × $50 = $1000, borrowCF=0.85 -> capacity = $850
+      //   WBTC (asset 1): 0.1 × $30000 = $3000, borrowCF=0.85 -> capacity = $2550
+      //   Total borrow capacity = $3400 -> borrow 3400 USDC
       await COMP.connect(governor).transfer(borrower.address, exp(20, 18));
       await COMP.connect(borrower).approve(comet.address, exp(20, 18));
       await comet.connect(borrower).supply(COMP.address, exp(20, 18));
@@ -2155,18 +1908,18 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
 
       // Drop COMP price from $50 to $35. WBTC stays at $30000.
       // isLiquidatable (liquidateCF=0.9):
-      //   TCV_liq = 20×35×0.9 + 3000×0.9 = 630 + 2700 = 3330 < 3400 → liquidatable ✓
+      //   TCV_liq = 20×35×0.9 + 3000×0.9 = 630 + 2700 = 3330 < 3400 -> liquidatable 
       //
       // absorbInternal uses borrowCF=0.85, denom = 0.95×1.05 - 0.85 = 0.1475:
       //   TCV_initial = 20×35×0.85 + 3000×0.85 = 595 + 2550 = 3145
       //
-      //   COMP: rawCOMP = (3400×1.05 - 3145) / 0.1475 = 425 / 0.1475 ≈ 2881 >> 700 → full seizure ✓
+      //   COMP: rawCOMP = (3400×1.05 - 3145) / 0.1475 = 425 / 0.1475 ≈ 2881 >> 700 -> full seizure 
       //     seizedValue = 0.95×700 = 665; deltaValue = 665
-      //     debtRemaining = 3400 - 665 = 2735 > 0 (no underflow ← key invariant) ✓
+      //     debtRemaining = 3400 - 665 = 2735 > 0 (no underflow ← key invariant) 
       //     TCV_remaining = 3145 - 595 = 2550
       //
-      //   WBTC: numerator = 2735×1.05 - 2550 = 321.75 > 0 (no underflow ✓)
-      //     rawWBTC = 321.75 / 0.1475 ≈ 2181 USD ≤ 3000 → partial seizure ✓
+      //   WBTC: numerator = 2735×1.05 - 2550 = 321.75 > 0 (no underflow )
+      //     rawWBTC = 321.75 / 0.1475 ≈ 2181 USD ≤ 3000 -> partial seizure 
       await setPrice(priceFeedCOMP, governor, 35);
       await comet.accrueAccount(borrower.address);
       expect(await comet.isLiquidatable(borrower.address)).to.be.true;
@@ -2203,90 +1956,37 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
     let priceFeedCOMP: any;
     let snapshotId: string;
 
+    // Identical configuration to Scenario 1: COMP $40, USDT $1, borrowCF=0.80, liquidateCF=0.85, LF=0.9
     before(async function() {
-      [governor, liquidator, borrower] = await ethers.getSigners();
-
-      const FaucetFactory = await ethers.getContractFactory('FaucetToken');
-      USDC = await FaucetFactory.deploy(exp(10_000_000, 6), 'USDC', 6, 'USDC');
-      await USDC.deployed();
-      COMP = await FaucetFactory.deploy(exp(1_000_000, 18), 'COMP', 18, 'COMP');
-      await COMP.deployed();
-      USDT = await FaucetFactory.deploy(exp(1_000_000, 6), 'USDT', 6, 'USDT');
-      await USDT.deployed();
-
-      const PriceFeedFactory = await ethers.getContractFactory('SimplePriceFeed');
-      const priceFeedUSDC = await PriceFeedFactory.deploy(exp(1, 8), 8);
-      await priceFeedUSDC.deployed();
-      priceFeedCOMP = await PriceFeedFactory.deploy(exp(40, 8), 8);
-      await priceFeedCOMP.deployed();
-      const priceFeedUSDT = await PriceFeedFactory.deploy(exp(1, 8), 8);
-      await priceFeedUSDT.deployed();
-
-      const AssetListFactoryContract = await ethers.getContractFactory('AssetListFactory');
-      const assetListFactory = await AssetListFactoryContract.deploy();
-      await assetListFactory.deployed();
-
-      const CometExtFactory = await ethers.getContractFactory('CometExtAssetList');
-      const extensionDelegate = await CometExtFactory.deploy(
-        {
-          name32: ethers.utils.formatBytes32String('Compound Comet'),
-          symbol32: ethers.utils.formatBytes32String('cUSDCv3'),
-        },
-        assetListFactory.address
-      );
-      await extensionDelegate.deployed();
-
-      // Identical configuration to Scenario 1:
-      // COMP (asset 0): borrowCF=0.80, liquidateCF=0.85, liquidationFactor=0.9
-      // USDT (asset 1): borrowCF=0.80, liquidateCF=0.85, liquidationFactor=0.9
-      // targetHF=1.05, denom = 0.9×1.05 - 0.80 = 0.145
-      const CometFactory = await ethers.getContractFactory('CometHarnessExtendedAssetList');
-      comet = await CometFactory.deploy({
-        governor: governor.address,
-        pauseGuardian: governor.address,
-        extensionDelegate: extensionDelegate.address,
-        baseToken: USDC.address,
-        baseTokenPriceFeed: priceFeedUSDC.address,
-        supplyKink: exp(0.8, 18),
-        supplyPerYearInterestRateBase: 0n,
-        supplyPerYearInterestRateSlopeLow: exp(0.05, 18),
-        supplyPerYearInterestRateSlopeHigh: exp(2, 18),
-        borrowKink: exp(0.8, 18),
-        borrowPerYearInterestRateBase: 0n,
-        borrowPerYearInterestRateSlopeLow: exp(0.1, 18),
-        borrowPerYearInterestRateSlopeHigh: exp(3, 18),
-        storeFrontPriceFactor: exp(1, 18),
-        trackingIndexScale: exp(1, 15),
-        baseTrackingSupplySpeed: 0n,
-        baseTrackingBorrowSpeed: 0n,
-        baseMinForRewards: exp(1, 6),
-        baseBorrowMin: exp(1, 6),
-        targetReserves: 0n,
-        targetHealthFactor: exp(1.05, 18),
-        assetConfigs: [
-          {
-            asset: COMP.address,
-            priceFeed: priceFeedCOMP.address,
+      const protocol = await makeProtocol({
+        assets: {
+          USDC: { initial: exp(10_000_000, 6), decimals: 6, initialPrice: 1 },
+          COMP: {
+            initial: exp(1_000_000, 18),
             decimals: 18,
-            borrowCollateralFactor: exp(0.80, 18),
-            liquidateCollateralFactor: exp(0.85, 18),
+            initialPrice: 40,
+            borrowCF: exp(0.80, 18),
+            liquidateCF: exp(0.85, 18),
             liquidationFactor: exp(0.9, 18),
             supplyCap: exp(1_000_000, 18),
           },
-          {
-            asset: USDT.address,
-            priceFeed: priceFeedUSDT.address,
+          USDT: {
+            initial: exp(1_000_000, 6),
             decimals: 6,
-            borrowCollateralFactor: exp(0.80, 18),
-            liquidateCollateralFactor: exp(0.85, 18),
+            initialPrice: 1,
+            borrowCF: exp(0.80, 18),
+            liquidateCF: exp(0.85, 18),
             liquidationFactor: exp(0.9, 18),
             supplyCap: exp(1_000_000, 6),
           },
-        ],
+        },
+        baseTrackingBorrowSpeed: 0,
       });
-      await comet.deployed();
-      await comet.initializeStorage();
-
+      ({ cometWithPartialLiquidation: comet, governor } = protocol);
+      ({ USDC, COMP, USDT } = protocol.tokens);
+      ({ COMP: priceFeedCOMP } = protocol.priceFeeds);
+      liquidator = protocol.pauseGuardian;
+      borrower = protocol.users[0];
       snapshotId = await ethers.provider.send('evm_snapshot', []);
     });
 
@@ -2297,9 +1997,9 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
 
     it('5: stale in-memory TCV is non-trivially larger than actual storage TCV after partial USDT seizure', async function() {
       // Position identical to Scenario 1:
-      //   COMP (asset 0): 10 × $40 = $400, borrowCF=0.80 → capacity $320
-      //   USDT (asset 1): 1000 × $1 = $1000, borrowCF=0.80 → capacity $800
-      //   Borrow: 1100 USDC; drop COMP to $25 → isLiquidatable ✓
+      //   COMP (asset 0): 10 × $40 = $400, borrowCF=0.80 -> capacity $320
+      //   USDT (asset 1): 1000 × $1 = $1000, borrowCF=0.80 -> capacity $800
+      //   Borrow: 1100 USDC; drop COMP to $25 -> isLiquidatable 
       await USDC.connect(governor).approve(comet.address, exp(2000, 6));
       await comet.connect(governor).supply(USDC.address, exp(2000, 6));
 
@@ -2341,7 +2041,7 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
       //   After COMP full seizure:
       //     TCV -= mulFactor(COMP_available_USD, borrowCF)   ← IS updated (currentHF=0 < targetHF)
       //   After USDT partial seizure:
-      //     TCV is NOT updated (currentHF == targetHF, condition `< targetHF` is false → no decrement)
+      //     TCV is NOT updated (currentHF == targetHF, condition `< targetHF` is false -> no decrement)
       //   So stale_TCV = TCV_initial - CF_COMP × COMP_available_USD = USDT_initial × 80
       //   (COMP contribution adds and then subtracts, leaving only USDT_initial × 80)
       const USDT_INITIAL = exp(1000, 6); // 1_000_000_000n
@@ -2365,7 +2065,7 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
   // ── Scenario 6 — worked example: COMP fully seized, ETH partially seized ──
   //
   // Parameters (from docs/partial-liquidation-example.md):
-  //   COMP: borrowCF=0.75, liquidateCF=0.80, liquidationFactor=0.90, price $20 → $11
+  //   COMP: borrowCF=0.75, liquidateCF=0.80, liquidationFactor=0.90, price $20 -> $11
   //   ETH:  borrowCF=0.80, liquidateCF=0.85, liquidationFactor=0.90, price $2000
   //   targetHF = 1.05
   //   Deposit: 100 COMP ($2000) + 0.5 ETH ($1000), borrow: $1800 USDC
@@ -2373,120 +2073,23 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
   // Liquidation math:
   //   TCV_CF = 100×11×0.75 + 0.5×2000×0.80 = 825 + 800 = $1625
   //   Iter 1 COMP: denom=0.90×1.05−0.75=0.195
-  //     rawCOMP = (1800×1.05 − 1625) / 0.195 = 265/0.195 ≈ $1358.97 > $1100 → full seizure
+  //     rawCOMP = (1800×1.05 − 1625) / 0.195 = 265/0.195 ≈ $1358.97 > $1100 -> full seizure
   //     seizedValue = $1100×0.90 = $990; debtRemaining = $810; TCV_CF = $800
   //   Iter 2 ETH: denom=0.90×1.05−0.80=0.145
-  //     rawETH = (810×1.05 − 800) / 0.145 = 50.5/0.145 ≈ $348.28 ≤ $1000 → partial seizure
-  //     seizeAmount ≈ 0.17414 ETH; seizedValue ≈ $313.45; currentHF = targetHF → break
+  //     rawETH = (810×1.05 − 800) / 0.145 = 50.5/0.145 ≈ $348.28 ≤ $1000 -> partial seizure
+  //     seizeAmount ≈ 0.17414 ETH; seizedValue ≈ $313.45; currentHF = targetHF -> break
   //   Final debt ≈ $496.55 USDC; remaining ETH ≈ 0.32586 ETH; HF = 1.05
 
   describe('Scenario 6 — worked example (partial-liquidation-example.md): COMP fully seized, ETH partially seized, targetHF=1.05', function() {
     let governor: SignerWithAddress;
     let liquidator: SignerWithAddress;
     let borrower: SignerWithAddress;
-    let comet: any;
-    // let USDC: any;
-    // let COMP: any;
-    // let WETH: any;
+    let comet: CometInterface;
     let priceFeedCOMP: any;
     let snapshotId: string;
-
-    // before(async function() {
-    //   [governor, liquidator, borrower] = await ethers.getSigners();
-
-    //   const FaucetFactory = await ethers.getContractFactory('FaucetToken');
-    //   USDC = await FaucetFactory.deploy(exp(10_000_000, 6), 'USDC', 6, 'USDC');
-    //   await USDC.deployed();
-    //   COMP = await FaucetFactory.deploy(exp(1_000_000, 18), 'COMP', 18, 'COMP');
-    //   await COMP.deployed();
-    //   WETH = await FaucetFactory.deploy(exp(10_000, 18), 'WETH', 18, 'WETH');
-    //   await WETH.deployed();
-
-    //   const PriceFeedFactory = await ethers.getContractFactory('SimplePriceFeed');
-    //   const priceFeedUSDC = await PriceFeedFactory.deploy(exp(1, 8), 8);
-    //   await priceFeedUSDC.deployed();
-    //   priceFeedCOMP = await PriceFeedFactory.deploy(exp(20, 8), 8);
-    //   await priceFeedCOMP.deployed();
-    //   const priceFeedWETH = await PriceFeedFactory.deploy(exp(2000, 8), 8);
-    //   await priceFeedWETH.deployed();
-
-    //   const AssetListFactoryContract = await ethers.getContractFactory('AssetListFactory');
-    //   const assetListFactory = await AssetListFactoryContract.deploy();
-    //   await assetListFactory.deployed();
-
-    //   const CometExtFactory = await ethers.getContractFactory('CometExtAssetList');
-    //   const extensionDelegate = await CometExtFactory.deploy(
-    //     {
-    //       name32: ethers.utils.formatBytes32String('Compound Comet'),
-    //       symbol32: ethers.utils.formatBytes32String('cUSDCv3'),
-    //     },
-    //     assetListFactory.address
-    //   );
-    //   await extensionDelegate.deployed();
-
-    //   // COMP (asset 0): borrowCF=0.75, liquidateCF=0.80, liquidationFactor=0.90
-    //   //   denom = 0.90×1.05 − 0.75 = 0.195 > 0 ✓
-    //   // WETH (asset 1): borrowCF=0.80, liquidateCF=0.85, liquidationFactor=0.90
-    //   //   denom = 0.90×1.05 − 0.80 = 0.145 > 0 ✓
-    //   const CometFactory = await ethers.getContractFactory('CometHarnessExtendedAssetList');
-    //   comet = await CometFactory.deploy({
-    //     governor: governor.address,
-    //     pauseGuardian: governor.address,
-    //     extensionDelegate: extensionDelegate.address,
-    //     baseToken: USDC.address,
-    //     baseTokenPriceFeed: priceFeedUSDC.address,
-    //     supplyKink: exp(0.8, 18),
-    //     supplyPerYearInterestRateBase: 0n,
-    //     supplyPerYearInterestRateSlopeLow: exp(0.05, 18),
-    //     supplyPerYearInterestRateSlopeHigh: exp(2, 18),
-    //     borrowKink: exp(0.8, 18),
-    //     borrowPerYearInterestRateBase: 0n,
-    //     borrowPerYearInterestRateSlopeLow: exp(0.1, 18),
-    //     borrowPerYearInterestRateSlopeHigh: exp(3, 18),
-    //     storeFrontPriceFactor: exp(1, 18),
-    //     trackingIndexScale: exp(1, 15),
-    //     baseTrackingSupplySpeed: 0n,
-    //     baseTrackingBorrowSpeed: 0n,
-    //     baseMinForRewards: exp(1, 6),
-    //     baseBorrowMin: exp(1, 6),
-    //     targetReserves: 0n,
-    //     targetHealthFactor: exp(1.05, 18),
-    //     assetConfigs: [
-    //       {
-    //         asset: COMP.address,
-    //         priceFeed: priceFeedCOMP.address,
-    //         decimals: 18,
-    //         borrowCollateralFactor: exp(0.75, 18),
-    //         liquidateCollateralFactor: exp(0.80, 18),
-    //         liquidationFactor: exp(0.90, 18),
-    //         supplyCap: exp(1_000_000, 18),
-    //       },
-    //       {
-    //         asset: WETH.address,
-    //         priceFeed: priceFeedWETH.address,
-    //         decimals: 18,
-    //         borrowCollateralFactor: exp(0.80, 18),
-    //         liquidateCollateralFactor: exp(0.85, 18),
-    //         liquidationFactor: exp(0.90, 18),
-    //         supplyCap: exp(10_000, 18),
-    //       },
-    //     ],
-    //   });
-    //   await comet.deployed();
-    //   await comet.initializeStorage();
-
-    //   snapshotId = await ethers.provider.send('evm_snapshot', []);
-    // });
-
-    // let comet: CometInterface;
-    // let tokens: any, priceFeeds: any, governor: SignerWithAddress;
     let priceFeeds: any, tokens: any;
-    let users: SignerWithAddress[];
-    // let snapshotId: string;
 
-     before(async function() {
-      [governor, liquidator, borrower] = await ethers.getSigners();
-
+    before(async function() {
       const protocol = await makeProtocol({
         assets: {
           USDC: { initial: exp(10_000_000, 6), decimals: 6, initialPrice: 1 },
@@ -2511,19 +2114,11 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
         },
         baseTrackingBorrowSpeed: exp(1 / 86400, 15, 18),
       });
-
-      ({ cometWithPartialLiquidation: comet, tokens, priceFeeds, governor, users } = protocol);
+      ({ cometWithPartialLiquidation: comet, tokens, priceFeeds, governor } = protocol);
+      liquidator = protocol.pauseGuardian;
+      borrower = protocol.users[0];
+      priceFeedCOMP = priceFeeds.COMP;
       snapshotId = await ethers.provider.send('evm_snapshot', []);
-
-      const { USDC: priceFeedUSDC, COMP: _priceFeedCOMP, WETH: priceFeedWETH } = priceFeeds;
-
-      await setPrice(priceFeedUSDC, governor, 1);
-      await setPrice(_priceFeedCOMP, governor, 20);
-      await setPrice(priceFeedWETH, governor, 2000);
-
-      priceFeedCOMP = _priceFeedCOMP;
-
-
     });
 
 
@@ -2539,23 +2134,19 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
       await comet.connect(governor).supply(USDC.address, exp(5000, 6));
 
       // Borrower deposits:
-      //   100 COMP × $20 = $2000; borrowCF=0.75 → capacity = $1500
-      //   0.5 WETH × $2000 = $1000; borrowCF=0.80 → capacity = $800
-      //   Total borrow capacity = $2300 → borrow $1800 USDC (below max)
+      //   100 COMP × $20 = $2000; borrowCF=0.75 -> capacity = $1500
+      //   0.5 WETH × $2000 = $1000; borrowCF=0.80 -> capacity = $800
+      //   Total borrow capacity = $2300 -> borrow $1800 USDC (below max)
       await COMP.connect(governor).transfer(borrower.address, exp(100, 18));
       await COMP.connect(borrower).approve(comet.address, exp(100, 18));
       await comet.connect(borrower).supply(COMP.address, exp(100, 18));
 
-      // await ethers.provider.send('evm_mine', []); // ensure block.timestamp increases for price change to take effect
-      
       let userBasic = await comet.userBasic(borrower.address);
       console.log('\x1b[35m%s','After deposit COMP userBasic.assetsIn:', userBasic[3]);
       
       await WETH.connect(governor).transfer(borrower.address, exp(1, 18) / 2n);
       await WETH.connect(borrower).approve(comet.address, exp(1, 18) / 2n);
       await comet.connect(borrower).supply(WETH.address, exp(1, 18) / 2n);
-      
-      // await ethers.provider.send('evm_mine', []); // ensure block.timestamp increases for price change to take effect
       
       userBasic = await comet.userBasic(borrower.address);
       console.log('\x1b[35m%s','After deposit WETH userBasic.assetsIn:', userBasic[3]);
@@ -2564,18 +2155,15 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
 
       // Verify initial state: HF > 1, not liquidatable
       //   CF-weighted = $2300, liquidateCF-weighted = $2450, debt = $1800
-      //   isLiquidatable: $2450 > $1800 → false ✓
+      //   isLiquidatable: $2450 > $1800 -> false 
       expect(await comet.isLiquidatable(borrower.address)).to.be.false;
 
-      // Drop COMP price $20 → $11 (−45%). WETH stays at $2000.
+      // Drop COMP price $20 -> $11 (−45%). WETH stays at $2000.
       // After drop:
-      //   liquidateCF-weighted = 100×11×0.80 + 0.5×2000×0.85 = 880 + 850 = $1730 < $1800 → liquidatable ✓
+      //   liquidateCF-weighted = 100×11×0.80 + 0.5×2000×0.85 = 880 + 850 = $1730 < $1800 -> liquidatable 
       await setPrice(priceFeedCOMP, governor, 11);
       await comet.accrueAccount(borrower.address);
       expect(await comet.isLiquidatable(borrower.address)).to.be.true;
-
-      userBasic = await comet.userBasic(borrower.address);
-      console.log('\x1b[35m%s','Initial userBasic.assetsIn:', userBasic[3]);
 
       await comet.connect(liquidator).absorb(liquidator.address, [borrower.address]);
 
@@ -2587,12 +2175,14 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
       //   seizeAmount ≈ 0.17414 ETH = 174137931030000000 wei
       //   remaining   ≈ 0.32586 ETH = 325862068970000000 wei
       const wethBalance = (await comet.userCollateral(borrower.address, WETH.address)).balance.toBigInt();
+      console.log('\x1b[36m%s','Remaining WETH (ETH):', Number(wethBalance) / 1e18);
       expect(wethBalance).to.be.gt(0n, 'WETH should be only partially seized');
       expect(wethBalance).to.be.lt(exp(1, 18) / 2n, 'WETH remaining must be less than initial 0.5 ETH');
 
       // Remaining debt > 0 (partial liquidation stopped at targetHF, not full)
       //   Expected: ~$496.55 USDC = ~496_550_000 base units (6 decimals)
       const debtAfter = (await comet.borrowBalanceOf(borrower.address)).toBigInt();
+      console.log('\x1b[36m%s','Remaining debt (USDC):', Number(debtAfter) / 1e6);
       expect(debtAfter).to.be.gt(0n, 'Remaining debt should be > 0 after partial seizure');
       expect(debtAfter).to.be.lt(exp(1800, 6), 'Debt must have been partially repaid');
 
@@ -2607,15 +2197,12 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
       //   remaining = 500000000000000000 - 174137931030000000 = 325862068970000000
       expect(wethBalance).to.be.gte(320n * exp(1, 15), 'WETH remaining should be >= 0.320 ETH');
       expect(wethBalance).to.be.lte(340n * exp(1, 15), 'WETH remaining should be <= 0.340 ETH');
-      console.log('\x1b[36m%s','Remaining WETH (ETH):', Number(wethBalance) / 1e18);
-      console.log('\x1b[36m%s','Remaining debt (USDC):', Number(debtAfter) / 1e6);
       // Precision check: verify remaining debt is in the expected range [$490, $510]
       expect(debtAfter).to.be.gte(exp(490, 6), 'Remaining debt should be >= $490');
       expect(debtAfter).to.be.lte(exp(510, 6), 'Remaining debt should be <= $510');
 
       userBasic = await comet.userBasic(borrower.address);
       console.log('\x1b[35m%s','Final userBasic.assetsIn:', userBasic[3]);
-
     });
   });
 });
