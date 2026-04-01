@@ -17,6 +17,13 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
         uint128 supplyCap;
     }
 
+    struct LiquidationData {
+        uint256 seizeAmount;
+        uint256 seizedValue;
+        uint256 totalCollaterizedValue;
+        uint256 currentHF;
+    }
+
     /** Internal constants **/
 
     /// @dev The max number of assets this contract is hardcoded to support

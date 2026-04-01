@@ -8,8 +8,6 @@ import "./IAssetListFactory.sol";
 import "./IAssetListFactoryHolder.sol";
 import "./IAssetList.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @title Compound's Comet Contract
  * @notice An efficient monolithic money market protocol
@@ -111,6 +109,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
     /// @notice The address of the asset list
     address immutable public assetList;
 
+    /// @notice Maximum number of assets supported when using an external asset list
     uint8 internal constant MAX_ASSETS_FOR_ASSET_LIST = 24;
 
     /// @notice The minimum allowed value for targetHealthFactor (1.05 in factor scale)
@@ -131,9 +130,6 @@ contract CometWithExtendedAssetList is CometMainInterface {
         if (config.baseMinForRewards == 0) revert BadMinimum();
         if (IPriceFeed(config.baseTokenPriceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
         if (config.targetHealthFactor < MIN_TARGET_HEALTH_FACTOR) revert BadHealthFactor();
-        for (uint8 i = 0; i < config.assetConfigs.length; i++) {
-            if (mulFactor(config.assetConfigs[i].liquidationFactor, config.targetHealthFactor) <= config.assetConfigs[i].borrowCollateralFactor) revert BadAssetHealthFactor();
-        }
 
         // Copy configuration
         unchecked {
@@ -170,7 +166,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
         // Set asset info
         numAssets = uint8(config.assetConfigs.length);
 
-        assetList = IAssetListFactory(IAssetListFactoryHolder(extensionDelegate).assetListFactory()).createAssetList(config.assetConfigs);
+        assetList = IAssetListFactory(IAssetListFactoryHolder(extensionDelegate).assetListFactory()).createAssetList(config.assetConfigs, targetHealthFactor);
     }
 
     /**
@@ -1085,18 +1081,32 @@ contract CometWithExtendedAssetList is CometMainInterface {
         return liquidity;
     }
 
-    struct LiquidationData {
-        uint256 seizeAmount;
-        uint256 seizedValue;
-        uint256 totalCollaterizedValue;
-        uint256 currentHF;
-    }
-
     /**
      * @dev Transfer user's collateral and debt to the protocol itself.
-     *      When targetHF > 0 (set via extension delegate) performs partial liquidation
-     *      that stops as soon as the account reaches the target health factor.
-     *      When targetHF == 0 falls back to the original full-seizure behaviour.
+     *      Iterates over all collateral assets the account holds and seizes them
+     *      one by one until the account's health factor reaches `targetHealthFactor`.
+     *
+     *      Partial-liquidation logic (applied per asset):
+     *        1. If `liquidationFactor × targetHF > borrowCollateralFactor` the seized
+     *           amount is calculated to bring the account exactly to `targetHF`.
+     *           - If the remaining debt after the partial seizure would be below
+     *             `baseBorrowMin` (dust), the full asset balance is seized instead
+     *             and the loop continues to the next asset.
+     *        2. Otherwise (`liquidationFactor × targetHF ≤ borrowCollateralFactor`)
+     *           seizing the asset cannot improve the health factor, so the full
+     *           balance is seized and the loop continues.
+     *        3. Once an asset seizure brings `currentHF` to `targetHF` the loop
+     *           exits early.
+     *
+     *      After all seizures the account's base-token balance is updated:
+     *        - The USD value of seized collateral (discounted by `liquidationFactor`)
+     *          is converted to base tokens and credited to the account.
+     *        - If a full-liquidation path was taken (no asset was able to reach
+     *          `targetHF`) any residual negative balance is zeroed out so the
+     *          protocol absorbs the remaining bad debt.
+     *
+     * @param absorber The address that called `absorb` and receives liquidator-points credit
+     * @param account  The underwater account whose collateral and debt are being absorbed
      */
     function absorbInternal(address absorber, address account) internal {
         if (!isLiquidatable(account)) revert NotLiquidatable();
@@ -1106,13 +1116,16 @@ contract CometWithExtendedAssetList is CometMainInterface {
         int256 oldBalance = presentValue(oldPrincipal);
         uint256 basePrice = getPrice(baseTokenPriceFeed);
 
-        uint256 deltaValue;
+        uint256 deltaValue; // Accumulated liqFactor-discounted USD value of all collateral seized so far
         uint256 targetHF = targetHealthFactor;
 
-        // --- Partial liquidation path (targetHealthFactor always > 0, validated in constructor) ---
+        // Note: targetHealthFactor is always ≥ MIN_TARGET_HEALTH_FACTOR (enforced in constructor),
+        //       so the seizure formula below is always well-defined.
+        // debt is negative (USD) when the account has a borrow; used to compute debtRemaining per asset
         int debt = signedMulPrice(presentValue(oldPrincipal), basePrice, uint64(baseScale));
 
         LiquidationData memory liquidationData;
+        // BorrowCF-weighted collateral USD value; decremented as fully-seized assets leave the portfolio
         liquidationData.totalCollaterizedValue = _getLiquidity(account, false);
         AssetInfo memory assetInfo;
 
@@ -1123,15 +1136,21 @@ contract CometWithExtendedAssetList is CometMainInterface {
                 uint256 fullBalance = userCollateral[account][assetInfo.asset].balance;
                 uint256 availableUSD = mulPrice(fullBalance, price, assetInfo.scale);
 
+                // Marginal HF-improvement rate: how much HF rises per USD of this asset seized
+                // denom = LF × targetHF - CF  (positive only when seizing improves HF enough to reach targetHF)
                 uint256 denom = mulFactor(assetInfo.liquidationFactor, targetHF);
                 if (denom > assetInfo.borrowCollateralFactor) {
                     denom -= assetInfo.borrowCollateralFactor;
+                    // Remaining USD debt not yet offset by collateral seized in earlier loop iterations
                     uint256 debtRemaining = uint256(-debt) - deltaValue;
+                    // USD collateral to seize so that the account lands exactly at targetHF:
+                    //   rawCollateralUSD = (debtRemaining × targetHF - totalCollaterizedValue) / denom
                     uint256 rawCollateralUSD = (mulFactor(debtRemaining, targetHF) - liquidationData.totalCollaterizedValue)
                         * FACTOR_SCALE / denom;
 
                         if (rawCollateralUSD <= availableUSD) {
-                            // Check that remaining debt after partial won't be below baseBorrowMin (dust position)
+                            // Note: remaining debt after a partial seizure must stay ≥ baseBorrowMin;
+                            //       if it would fall below, treat as a dust position and seize fully.
                             uint256 debtReduction = mulFactor(rawCollateralUSD, assetInfo.liquidationFactor);
                             uint256 debtAfterPartial = debtRemaining - debtReduction;
                             uint256 baseDebtAfterPartial = divPrice(debtAfterPartial, basePrice, uint64(baseScale));
@@ -1162,6 +1181,9 @@ contract CometWithExtendedAssetList is CometMainInterface {
 
                 deltaValue += liquidationData.seizedValue;
                 if (liquidationData.currentHF < targetHF) {
+                    // Note: asset was fully seized — remove its CF contribution from the running collateral
+                    //       tally so the next iteration's rawCollateralUSD formula reflects the correct
+                    //       remaining collateral value.
                     liquidationData.totalCollaterizedValue -= mulFactor(availableUSD, assetInfo.borrowCollateralFactor);
                 }
 
@@ -1175,22 +1197,26 @@ contract CometWithExtendedAssetList is CometMainInterface {
             unchecked { ++i; }
         }
 
+        // Credit the account with seized collateral value converted back to base tokens
         int256 newBalance = oldBalance + signed256(divPrice(deltaValue, basePrice, uint64(baseScale)));
-        // Keep negative balance only when partial seizure succeeded (user still has debt at targetHF)
+        // Partial seizure succeeded: account retains remaining debt at targetHF — preserve negative balance.
+        // Full seizure (no asset brought HF to targetHF): zero out any residual shortfall as bad debt
+        // absorbed by the protocol.
         if (newBalance < 0 && liquidationData.currentHF < targetHF) {
             newBalance = 0;
         }
 
         int104 newPrincipal = principalValue(newBalance);
-        // Sync assetsIn/_reserved bits updated by updateAssetsIn during the loop
-        // before updateBasePrincipal writes accountUser back to storage.
+        // Note: assetsIn/_reserved bits were mutated by updateAssetsIn during the loop;
+        //       re-read them from storage before updateBasePrincipal writes accountUser back.
         accountUser.assetsIn = userBasic[account].assetsIn;
         accountUser._reserved = userBasic[account]._reserved;
         updateBasePrincipal(account, accountUser, newPrincipal);
+        // Split the principal change into repaid borrow and new supply for global index accounting
         (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(oldPrincipal, newPrincipal);
         totalSupplyBase += supplyAmount;
         totalBorrowBase -= repayAmount;
-        uint256 basePaidOut = unsigned256(newBalance - oldBalance);
+        uint256 basePaidOut = unsigned256(newBalance - oldBalance); // Base tokens effectively paid out to the account
         uint256 valueOfBasePaidOut = mulPrice(basePaidOut, basePrice, uint64(baseScale));
         
         emit AbsorbDebt(absorber, account, basePaidOut, valueOfBasePaidOut);
