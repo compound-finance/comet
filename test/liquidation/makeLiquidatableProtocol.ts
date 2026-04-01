@@ -80,12 +80,13 @@ export async function makeProtocol() {
     baseMinForRewards: exp(1, 6),
     baseBorrowMin: exp(1, 6),
     targetReserves: exp(5_000_000, 6),
+    targetHealthFactor: exp(1.05, 18),
     assetConfigs: [
       {
         asset: COMP,
         priceFeed: COMP_USDC_PRICE_FEED,
         decimals: 18,
-        borrowCollateralFactor: 999999999999999999n,
+        borrowCollateralFactor: exp(0.93, 18),
         liquidateCollateralFactor: exp(1, 18),
         liquidationFactor: exp(0.9, 18),
         supplyCap: exp(1000000, 18)
@@ -94,7 +95,7 @@ export async function makeProtocol() {
         asset: WBTC,
         priceFeed: WBTC_USDC_PRICE_FEED,
         decimals: 8,
-        borrowCollateralFactor: 999999999999999999n,
+        borrowCollateralFactor: exp(0.93, 18),
         liquidateCollateralFactor: exp(1, 18),
         liquidationFactor: exp(0.9, 18),
         supplyCap: exp(1000, 8)
@@ -103,7 +104,7 @@ export async function makeProtocol() {
         asset: WETH9,
         priceFeed: ETH_USDC_PRICE_FEED,
         decimals: 18,
-        borrowCollateralFactor: 999999999999999999n,
+        borrowCollateralFactor: exp(0.93, 18),
         liquidateCollateralFactor: exp(1, 18),
         liquidationFactor: exp(0.9, 18),
         supplyCap: exp(1000000, 18)
@@ -112,7 +113,7 @@ export async function makeProtocol() {
         asset: LINK,
         priceFeed: LINK_USDC_PRICE_FEED,
         decimals: 18,
-        borrowCollateralFactor: 999999999999999999n,
+        borrowCollateralFactor: exp(0.93, 18),
         liquidateCollateralFactor: exp(1, 18),
         liquidationFactor: exp(0.9, 18),
         supplyCap: exp(1000000, 18)
@@ -121,7 +122,7 @@ export async function makeProtocol() {
         asset: UNI,
         priceFeed: UNI_USDC_PRICE_FEED,
         decimals: 18,
-        borrowCollateralFactor: 999999999999999999n,
+        borrowCollateralFactor: exp(0.93, 18),
         liquidateCollateralFactor: exp(1, 18),
         liquidationFactor: exp(0.9, 18),
         supplyCap: exp(1000000, 18)
