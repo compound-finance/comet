@@ -1136,48 +1136,45 @@ contract CometWithExtendedAssetList is CometMainInterface {
                 uint256 fullBalance = userCollateral[account][assetInfo.asset].balance;
                 uint256 availableUSD = mulPrice(fullBalance, price, assetInfo.scale);
 
-                // Marginal HF-improvement rate: how much HF rises per USD of this asset seized
-                // denom = LF × targetHF - CF  (positive only when seizing improves HF enough to reach targetHF)
-                uint256 denom = mulFactor(assetInfo.liquidationFactor, targetHF);
-                if (denom > assetInfo.borrowCollateralFactor) {
-                    denom -= assetInfo.borrowCollateralFactor;
-                    // Remaining USD debt not yet offset by collateral seized in earlier loop iterations
-                    uint256 debtRemaining = uint256(-debt) - deltaValue;
-                    // USD collateral to seize so that the account lands exactly at targetHF:
-                    //   rawCollateralUSD = (debtRemaining × targetHF - totalCollaterizedValue) / denom
-                    uint256 rawCollateralUSD = (mulFactor(debtRemaining, targetHF) - liquidationData.totalCollaterizedValue)
-                        * FACTOR_SCALE / denom;
+                // Gap-closure rate: how much (debtRemaining × targetHF − totalCollaterizedValue) shrinks
+                // per 1 USD of this asset seized — derived from the targetHF equation:
+                //   (collateral − x·CF) = targetHF × (debt − x·LF)  =>  denom = LF·targetHF − CF
+                // Safety: denom > 0 is guaranteed by the AssetList constructor check
+                //   `LF * targetHF / FACTOR_SCALE > CF`  (AssetList.sol line 146),
+                // so this subtraction never underflows.
+                uint256 denom = mulFactor(assetInfo.liquidationFactor, targetHF) - assetInfo.borrowCollateralFactor;
 
-                        if (rawCollateralUSD <= availableUSD) {
-                            // Note: remaining debt after a partial seizure must stay ≥ baseBorrowMin;
-                            //       if it would fall below, treat as a dust position and seize fully.
-                            uint256 debtReduction = mulFactor(rawCollateralUSD, assetInfo.liquidationFactor);
-                            uint256 debtAfterPartial = debtRemaining - debtReduction;
-                            uint256 baseDebtAfterPartial = divPrice(debtAfterPartial, basePrice, uint64(baseScale));
+                // Remaining USD debt not yet offset by collateral seized in earlier loop iterations
+                uint256 debtRemaining = uint256(-debt) - deltaValue;
+                // USD collateral to seize so that the account lands exactly at targetHF:
+                //   rawCollateralUSD = (debtRemaining × targetHF - totalCollaterizedValue) / denom
+                uint256 rawCollateralUSD = (mulFactor(debtRemaining, targetHF) - liquidationData.totalCollaterizedValue)
+                    * FACTOR_SCALE / denom;
 
-                            if (baseDebtAfterPartial >= baseBorrowMin) {
-                                // Partial seizure: exactly reaches targetHF
-                                liquidationData.seizeAmount = divPrice(rawCollateralUSD, price, assetInfo.scale);
-                                liquidationData.seizedValue = debtReduction;
-                                liquidationData.currentHF = targetHF;
-                            } else {
-                                // Remaining debt would be a dust position — fall through to full liquidation
-                                liquidationData.seizeAmount = fullBalance;
-                                liquidationData.seizedValue = mulFactor(availableUSD, assetInfo.liquidationFactor);
-                                liquidationData.currentHF = 0;
-                            }
-                        } else {
-                            // Asset insufficient — seize fully, continue to next
-                            liquidationData.seizeAmount = fullBalance;
-                            liquidationData.seizedValue = mulFactor(availableUSD, assetInfo.liquidationFactor);
-                            liquidationData.currentHF = 0;
-                        }
+                if (rawCollateralUSD <= availableUSD) {
+                    // Note: remaining debt after a partial seizure must stay ≥ baseBorrowMin;
+                    //       if it would fall below, treat as a dust position and seize fully.
+                    uint256 debtReduction = mulFactor(rawCollateralUSD, assetInfo.liquidationFactor);
+                    uint256 debtAfterPartial = debtRemaining - debtReduction;
+                    uint256 baseDebtAfterPartial = divPrice(debtAfterPartial, basePrice, uint64(baseScale));
+
+                    if (baseDebtAfterPartial >= baseBorrowMin) {
+                        // Partial seizure: exactly reaches targetHF
+                        liquidationData.seizeAmount = divPrice(rawCollateralUSD, price, assetInfo.scale);
+                        liquidationData.seizedValue = debtReduction;
+                        liquidationData.currentHF = targetHF;
                     } else {
-                        // LP × targetHF ≤ CF: seizing cannot improve HF — seize fully
+                        // Remaining debt would be a dust position — fall through to full liquidation
                         liquidationData.seizeAmount = fullBalance;
                         liquidationData.seizedValue = mulFactor(availableUSD, assetInfo.liquidationFactor);
                         liquidationData.currentHF = 0;
                     }
+                } else {
+                    // Asset insufficient — seize fully, continue to next
+                    liquidationData.seizeAmount = fullBalance;
+                    liquidationData.seizedValue = mulFactor(availableUSD, assetInfo.liquidationFactor);
+                    liquidationData.currentHF = 0;
+                }
 
                 deltaValue += liquidationData.seizedValue;
                 if (liquidationData.currentHF < targetHF) {
