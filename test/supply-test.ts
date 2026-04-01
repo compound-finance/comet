@@ -700,6 +700,7 @@ describe('supply', function () {
     describe('supply collateral: happy path', function () {
       const ALICE_COLLATERAL_AMOUNT: bigint = exp(5, 17); //0.5 of token
       const ALICE_ANOTHER_COLLATERAL_AMOUNT: bigint = exp(1, 17);
+      const SKIP_TIME: number = 60 * 60; // 1 hr
       let aliceCollateralBalanceBefore: BigNumber;
       let totalSupplyBefore: BigNumber;
       let alicePrincipalBefore: BigNumber;
@@ -708,8 +709,21 @@ describe('supply', function () {
       let cometSupplyIndexBefore: BigNumber;
       let cometSupplyRateBefore: BigNumber;
       let aliceDisplayBalanceBefore: BigNumber;
+      let supplyTimestamp: BigNumber;
+      let cometBorrowIndexBefore: BigNumber;
+      let trackingSupplyIndexBefore: BigNumber;
+      let trackingBorrowIndexBefore: BigNumber;
+      let aliceBaseTrackingIndexBefore: BigNumber;
+      let aliceBaseTrackingAccruedBefore: BigNumber;
+      let baseTrackingSupplySpeedVal: BigNumber;
+      let trackingIndexScaleVal: BigNumber;
+      let borrowRateBefore: BigNumber;
+      let utilizationBefore: BigNumber;
 
       before(async function () {
+        // Accrue state before supply
+        await comet.accrueAccount(ethers.constants.AddressZero);
+
         const totals = await comet.totalsBasic();
         aliceCollateralBalanceBefore = await collateral.balanceOf(alice.address);
 
@@ -721,8 +735,19 @@ describe('supply', function () {
 
         cometUpdatedTimeBefore = totals.lastAccrualTime;
 
+        cometBorrowIndexBefore = totals.baseBorrowIndex;
+        trackingSupplyIndexBefore = totals.trackingSupplyIndex;
+        trackingBorrowIndexBefore = totals.trackingBorrowIndex;
+        utilizationBefore = await comet.getUtilization();
+        borrowRateBefore = await comet.getBorrowRate(utilizationBefore);
+        baseTrackingSupplySpeedVal = await comet.baseTrackingSupplySpeed();
+        trackingIndexScaleVal = await comet.trackingIndexScale();
+        const aliceBasic = await comet.userBasic(alice.address);
+        aliceBaseTrackingIndexBefore = aliceBasic.baseTrackingIndex;
+        aliceBaseTrackingAccruedBefore = aliceBasic.baseTrackingAccrued;
+
         // wait for a while to have impact from accrual
-        await ethers.provider.send('evm_increaseTime', [60 * 60]); // 1 hr
+        await ethers.provider.send('evm_increaseTime', [SKIP_TIME]); // 1 hr
         await ethers.provider.send('evm_mine', []);
       });
 
@@ -782,9 +807,12 @@ describe('supply', function () {
 
       it('should accrue state during collateral supply', async () => {
         const lastUpdated = (await comet.totalsBasic()).lastAccrualTime;
+        supplyTimestamp = BigNumber.from(
+          (await ethers.provider.getBlock((await supplyTx.wait()).blockNumber)).timestamp
+        );
 
-        expect(lastUpdated).to.be.greaterThan(cometUpdatedTimeBefore);
-        expect(lastUpdated).to.equal((await ethers.provider.getBlock('latest')).timestamp);
+        expect(lastUpdated - cometUpdatedTimeBefore).to.be.approximately(SKIP_TIME, 2); // 2 seconds tolerance
+        expect(lastUpdated).to.equal(supplyTimestamp);
       });
 
       it('should not change alice principal after accrual (no collateral effect on principal)', async () => {
@@ -792,8 +820,7 @@ describe('supply', function () {
       });
 
       it('should have correct display of alice principal', async () => {
-        const curTime = (await ethers.provider.getBlock('latest')).timestamp;
-        const timeElapsed = curTime - cometUpdatedTimeBefore;
+        const timeElapsed = supplyTimestamp.sub(cometUpdatedTimeBefore);
         const accruedIndex = cometSupplyIndexBefore.add(cometSupplyIndexBefore.mul(cometSupplyRateBefore).mul(timeElapsed).div(exp(1, 18)));
 
         // healthcheck than current index is re-calculated correctly
@@ -820,6 +847,80 @@ describe('supply', function () {
 
         // check the invariant that lender's balance can only grow
         expect(newSupply).to.be.equal(totalSupplyBefore);
+      });
+
+      it('trackingSupplyIndex grows correctly during collateral supply accrual', async () => {
+        // accrueInternal() updates trackingSupplyIndex when totalSupplyBase >= baseMinForRewards:
+        //   trackingSupplyIndex += divBaseWei(baseTrackingSupplySpeed * timeElapsed, totalSupplyBase)
+        //                        = baseTrackingSupplySpeed * timeElapsed * baseScale / totalSupplyBase
+        // baseScale = 1e6 for USDC; trackingSupplyIndex is independent of the interest rate
+        // Example: speed=1e15, elapsed~3600, totalSupplyBase~3e15 (3e9 USDC principal)
+        // → delta = 1e15 * 3600 * 1e6 / 3e15 = 1200
+        const timeElapsed = supplyTimestamp.sub(cometUpdatedTimeBefore);
+        const baseScale = exp(1, 6);
+        const expectedTrackingSupplyIndex = trackingSupplyIndexBefore.add(
+          baseTrackingSupplySpeedVal.mul(timeElapsed).mul(baseScale).div(totalSupplyBefore)
+        );
+        expect((await comet.totalsBasic()).trackingSupplyIndex).to.equal(expectedTrackingSupplyIndex);
+      });
+
+      it('trackingBorrowIndex is unchanged when totalBorrowBase is zero', async () => {
+        // sanity check that totalBorrowBase < baseMinForRewards
+        expect((await comet.totalsBasic()).totalBorrowBase).to.be.lessThan(await comet.baseMinForRewards());
+
+        // accrueInternal() only updates trackingBorrowIndex if totalBorrowBase >= baseMinForRewards
+        // With no active borrows, totalBorrowBase = 0 and the condition is not satisfied
+        expect((await comet.totalsBasic()).trackingBorrowIndex).to.equal(trackingBorrowIndexBefore);
+      });
+
+      it('baseSupplyIndex accrues correctly during collateral supply', async () => {
+        // baseSupplyIndex += mulFactor(baseSupplyIndex, supplyRate * timeElapsed)
+        //                  = baseSupplyIndex + baseSupplyIndex * supplyRate * timeElapsed / 1e18
+        // With utilization = 0 (no borrows), supplyRate = 0 and the index is unchanged
+        const timeElapsed = supplyTimestamp.sub(cometUpdatedTimeBefore);
+        const expectedBaseSupplyIndex = cometSupplyIndexBefore.add(
+          cometSupplyIndexBefore.mul(cometSupplyRateBefore).mul(timeElapsed).div(exp(1, 18))
+        );
+        expect((await comet.totalsBasic()).baseSupplyIndex).to.equal(expectedBaseSupplyIndex);
+      });
+
+      it('baseBorrowIndex accrues correctly during collateral supply', async () => {
+        // baseBorrowIndex += mulFactor(baseBorrowIndex, borrowRate * timeElapsed)
+        //                  = baseBorrowIndex + baseBorrowIndex * borrowRate * timeElapsed / 1e18
+        // With no borrows, getBorrowRate returns 0 and the borrow index is unchanged
+        const timeElapsed = supplyTimestamp.sub(cometUpdatedTimeBefore);
+        const expectedBaseBorrowIndex = cometBorrowIndexBefore.add(
+          cometBorrowIndexBefore.mul(borrowRateBefore).mul(timeElapsed).div(exp(1, 18))
+        );
+        expect((await comet.totalsBasic()).baseBorrowIndex).to.equal(expectedBaseBorrowIndex);
+      });
+
+      it('alice baseTrackingAccrued increases via supply tracking during collateral supply', async () => {
+        // accrueAccountInternal(alice) calls updateBasePrincipal, accumulating rewards since her last sync.
+        // alice.principal >= 0 so supply tracking applies:
+        //   indexDelta = trackingSupplyIndex_new - alice.baseTrackingIndex_before
+        //   baseTrackingAccrued += principal * indexDelta / trackingIndexScale / accrualDescaleFactor
+        // accrualDescaleFactor = baseScale / BASE_ACCRUAL_SCALE = 1e6 / 1e6 = 1 for USDC
+        // trackingIndexScale = 1e15 (default)
+        const timeElapsed = supplyTimestamp.sub(cometUpdatedTimeBefore);
+        const baseScale = exp(1, 6);
+        const trackingSupplyIndexNew = trackingSupplyIndexBefore.add(
+          baseTrackingSupplySpeedVal.mul(timeElapsed).mul(baseScale).div(totalSupplyBefore)
+        );
+        // indexDelta spans from alice's last synced tracking index to the new global index
+        const indexDelta = trackingSupplyIndexNew.sub(aliceBaseTrackingIndexBefore);
+        // accrualDescaleFactor = 1 for USDC (baseScale / BASE_ACCRUAL_SCALE = 1e6 / 1e6)
+        const expectedAccrued = aliceBaseTrackingAccruedBefore.add(
+          alicePrincipalBefore.mul(indexDelta).div(trackingIndexScaleVal)
+        );
+        expect((await comet.userBasic(alice.address)).baseTrackingAccrued).to.equal(expectedAccrued);
+      });
+
+      it('utilization is zero after collateral supply when there are no borrows', async () => {
+        // Supplying collateral does not change totalSupplyBase or totalBorrowBase (principals unchanged)
+        // With totalBorrowBase = 0, getUtilization() returns 0
+        expect(await comet.getUtilization()).to.equal(0);
+        expect(await comet.getUtilization()).to.equal(utilizationBefore);
       });
 
       it('should allow deposit more of the same collateral', async () => {
@@ -859,6 +960,184 @@ describe('supply', function () {
 
         expect((await comet.userCollateral(alice.address, collateral.address)).balance).to.equal(aliceBalanceBefore);
         expect((await comet.totalsCollateral(collateral.address)).totalSupplyAsset).to.equal(totalCollateralSupplyBefore.add(ALICE_ANOTHER_COLLATERAL_AMOUNT));
+      });
+    });
+
+    // Tests that supplyCollateral correctly accrues indices when the recipient holds a net borrow
+    // position (negative base principal). This complements the zero-borrow describe above by
+    // showing indices that were flat there (baseSupplyIndex, baseBorrowIndex, trackingBorrowIndex)
+    // now grow, and alice's baseTrackingAccrued accrues via borrow tracking (not supply tracking).
+    describe('supply collateral: accrual with active borrow (non-zero utilization)', function () {
+      const SKIP_TIME = 3600; // 1 hour
+      // 400 USDC borrow — alice's collateral (1 COMP + 0.1 WETH) supports up to ~$475 of borrows
+      const ALICE_BORROW_AMOUNT: bigint = exp(400, 6);
+      const ALICE_COLLATERAL_SUPPLY: bigint = exp(1, 18); // 1 COMP
+
+      let baseSupplyIndexBefore: BigNumber;
+      let baseBorrowIndexBefore: BigNumber;
+      let trackingSupplyIndexBefore: BigNumber;
+      let trackingBorrowIndexBefore: BigNumber;
+      let totalSupplyBaseBefore: BigNumber;
+      let totalBorrowBaseBefore: BigNumber;
+      let lastAccrualTimeBefore: number;
+      let alicePrincipalBefore: BigNumber;
+      let aliceBaseTrackingIndexBefore: BigNumber;
+      let aliceBaseTrackingAccruedBefore: BigNumber;
+      let baseTrackingSupplySpeedVal: BigNumber;
+      let baseTrackingBorrowSpeedVal: BigNumber;
+      let trackingIndexScaleVal: BigNumber;
+      let supplyRateBefore: BigNumber;
+      let borrowRateBefore: BigNumber;
+      let utilizationBefore: BigNumber;
+      let supplyCollateralTx: ContractTransaction;
+      let supplyTimestamp: number;
+
+      // As this is additional edge case block, we take snapshot to restore state after it
+      let snapshot: SnapshotRestorer;
+
+      before(async function () {
+        snapshot = await takeSnapshot();
+        // Alice withdraws her entire base supply balance plus ALICE_BORROW_AMOUNT in a single call.
+        // This transitions alice from a net supplier to a net borrower (negative principal),
+        // which makes totalBorrowBase > 0 and creates non-zero utilization and rates.
+        // Her existing collateral (1 COMP + 0.1 WETH ≈ $475) covers the $400 USDC net borrow.
+        const aliceDisplayBalance = await comet.balanceOf(alice.address);
+        await comet.connect(alice).withdraw(baseToken.address, aliceDisplayBalance.add(ALICE_BORROW_AMOUNT));
+
+        // Capture global indices and alice state right before the time advance
+        const totals = await comet.totalsBasic();
+        baseSupplyIndexBefore = totals.baseSupplyIndex;
+        baseBorrowIndexBefore = totals.baseBorrowIndex;
+        trackingSupplyIndexBefore = totals.trackingSupplyIndex;
+        trackingBorrowIndexBefore = totals.trackingBorrowIndex;
+        totalSupplyBaseBefore = totals.totalSupplyBase;
+        totalBorrowBaseBefore = totals.totalBorrowBase;
+        lastAccrualTimeBefore = totals.lastAccrualTime;
+
+        utilizationBefore = await comet.getUtilization();
+        supplyRateBefore = await comet.getSupplyRate(utilizationBefore);
+        borrowRateBefore = await comet.getBorrowRate(utilizationBefore);
+
+        baseTrackingSupplySpeedVal = await comet.baseTrackingSupplySpeed();
+        baseTrackingBorrowSpeedVal = await comet.baseTrackingBorrowSpeed();
+        trackingIndexScaleVal = await comet.trackingIndexScale();
+
+        // alice.principal is now negative; baseTrackingIndex was set to trackingBorrowIndex during withdrawal
+        const aliceBasic = await comet.userBasic(alice.address);
+        alicePrincipalBefore = aliceBasic.principal;
+        aliceBaseTrackingIndexBefore = aliceBasic.baseTrackingIndex;
+        aliceBaseTrackingAccruedBefore = aliceBasic.baseTrackingAccrued;
+
+        await collateral.connect(alice).approve(comet.address, ALICE_COLLATERAL_SUPPLY);
+      });
+
+      it('health check: alice has a negative base principal (net borrower)', () => {
+        expect(alicePrincipalBefore).to.be.lessThan(0);
+      });
+
+      it('health check: totalBorrowBase exceeds baseMinForRewards', async () => {
+        const baseMinForRewards = await comet.baseMinForRewards();
+        expect(totalBorrowBaseBefore).to.be.greaterThan(baseMinForRewards);
+      });
+
+      it('health check: utilization is greater than zero', () => {
+        expect(utilizationBefore).to.be.greaterThan(0);
+      });
+
+      it('1 hour passes', async () => {
+        await ethers.provider.send('evm_increaseTime', [SKIP_TIME]);
+        await ethers.provider.send('evm_mine', []);
+      });
+
+      it('alice supplies COMP collateral, triggering accrueAccountInternal', async () => {
+        supplyCollateralTx = await comet.connect(alice).supply(collateral.address, ALICE_COLLATERAL_SUPPLY);
+        await expect(supplyCollateralTx).to.not.be.reverted;
+        supplyTimestamp = (await ethers.provider.getBlock((await supplyCollateralTx.wait()).blockNumber)).timestamp;
+      });
+
+      it('baseSupplyIndex grows when supply rate is non-zero', async () => {
+        // baseSupplyIndex += mulFactor(baseSupplyIndex, supplyRate * timeElapsed)
+        //                  = baseSupplyIndex + baseSupplyIndex * supplyRate * timeElapsed / 1e18
+        // supplyRate > 0 because utilization > 0 (alice's 400 USDC borrow)
+        // Unlike the zero-borrow case above, this index now actually grows
+        const timeElapsed = BigNumber.from(supplyTimestamp - lastAccrualTimeBefore);
+        const expectedIndex = baseSupplyIndexBefore.add(
+          baseSupplyIndexBefore.mul(supplyRateBefore).mul(timeElapsed).div(exp(1, 18))
+        );
+        expect((await comet.totalsBasic()).baseSupplyIndex).to.equal(expectedIndex);
+      });
+
+      it('baseBorrowIndex grows when borrow rate is non-zero', async () => {
+        // baseBorrowIndex += mulFactor(baseBorrowIndex, borrowRate * timeElapsed)
+        //                  = baseBorrowIndex + baseBorrowIndex * borrowRate * timeElapsed / 1e18
+        // borrowRate > 0 because totalBorrowBase > 0 and utilization > 0
+        const timeElapsed = BigNumber.from(supplyTimestamp - lastAccrualTimeBefore);
+        const expectedIndex = baseBorrowIndexBefore.add(
+          baseBorrowIndexBefore.mul(borrowRateBefore).mul(timeElapsed).div(exp(1, 18))
+        );
+        expect((await comet.totalsBasic()).baseBorrowIndex).to.equal(expectedIndex);
+      });
+
+      it('trackingBorrowIndex grows when totalBorrowBase exceeds baseMinForRewards', async () => {
+        // trackingBorrowIndex += divBaseWei(baseTrackingBorrowSpeed * timeElapsed, totalBorrowBase)
+        //                      = baseTrackingBorrowSpeed * timeElapsed * baseScale / totalBorrowBase
+        const timeElapsed = BigNumber.from(supplyTimestamp - lastAccrualTimeBefore);
+        const baseScale = exp(1, 6);
+        const expectedIndex = trackingBorrowIndexBefore.add(
+          baseTrackingBorrowSpeedVal.mul(timeElapsed).mul(baseScale).div(totalBorrowBaseBefore)
+        );
+        expect((await comet.totalsBasic()).trackingBorrowIndex).to.equal(expectedIndex);
+      });
+
+      it('trackingSupplyIndex also grows when totalSupplyBase exceeds baseMinForRewards', async () => {
+        // trackingSupplyIndex += divBaseWei(baseTrackingSupplySpeed * timeElapsed, totalSupplyBase)
+        //                      = baseTrackingSupplySpeed * timeElapsed * baseScale / totalSupplyBase
+        const timeElapsed = BigNumber.from(supplyTimestamp - lastAccrualTimeBefore);
+        const baseScale = exp(1, 6);
+        const expectedIndex = trackingSupplyIndexBefore.add(
+          baseTrackingSupplySpeedVal.mul(timeElapsed).mul(baseScale).div(totalSupplyBaseBefore)
+        );
+        expect((await comet.totalsBasic()).trackingSupplyIndex).to.equal(expectedIndex);
+      });
+
+      it('alice baseTrackingAccrued accumulates borrow rewards via trackingBorrowIndex', async () => {
+        // alice.principal < 0 (net borrower), so updateBasePrincipal uses borrow tracking:
+        //   indexDelta = trackingBorrowIndex_new - alice.baseTrackingIndex_before
+        //   baseTrackingAccrued += |principal| * indexDelta / trackingIndexScale / accrualDescaleFactor
+        // alice.baseTrackingIndex was set to trackingBorrowIndex at withdrawal time (same block as capture),
+        // so indexDelta = trackingBorrowIndex_new - trackingBorrowIndexBefore
+        // accrualDescaleFactor = baseScale / BASE_ACCRUAL_SCALE = 1e6 / 1e6 = 1 for USDC
+        const timeElapsed = BigNumber.from(supplyTimestamp - lastAccrualTimeBefore);
+        const baseScale = exp(1, 6);
+        const trackingBorrowIndexNew = trackingBorrowIndexBefore.add(
+          baseTrackingBorrowSpeedVal.mul(timeElapsed).mul(baseScale).div(totalBorrowBaseBefore)
+        );
+        // indexDelta spans from alice's last synced borrow tracking index to the new global value
+        const indexDelta = trackingBorrowIndexNew.sub(aliceBaseTrackingIndexBefore);
+        // accrualDescaleFactor = 1 for USDC (baseScale / BASE_ACCRUAL_SCALE = 1e6 / 1e6)
+        const expectedAccrued = aliceBaseTrackingAccruedBefore.add(
+          alicePrincipalBefore.abs().mul(indexDelta).div(trackingIndexScaleVal)
+        );
+        expect((await comet.userBasic(alice.address)).baseTrackingAccrued).to.equal(expectedAccrued);
+      });
+
+      it('utilization is greater than zero after collateral supply accrual', async () => {
+        // Active borrow (alice's 400 USDC net position) keeps utilization above zero.
+        // Supplying collateral does not change totalSupplyBase or totalBorrowBase principals.
+        expect(await comet.getUtilization()).to.be.greaterThan(0);
+      });
+
+      it('utilization after supply collateral matches exact calculation from accrued indices', async () => {
+        // getUtilization() = presentValue(borrow) * FACTOR_SCALE / presentValue(supply)
+        // = totalBorrowBase * baseBorrowIndex_new / 1e15 * 1e18 / (totalSupplyBase * baseSupplyIndex_new / 1e15)
+        const totals = await comet.totalsBasic();
+        const totalBorrowPresent = totals.totalBorrowBase.mul(totals.baseBorrowIndex).div(exp(1, 15));
+        const totalSupplyPresent = totals.totalSupplyBase.mul(totals.baseSupplyIndex).div(exp(1, 15));
+        const expectedUtilization = totalBorrowPresent.mul(exp(1, 18)).div(totalSupplyPresent);
+        expect(await comet.getUtilization()).to.equal(expectedUtilization);
+
+        // restore state
+        await snapshot.restore();
       });
     });
   });

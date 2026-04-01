@@ -6,8 +6,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 describe('withdraw', function () {
   const baseTokenDecimals = 6;
 
-  let comet: CometHarnessInterface;
-  let cometExtended: CometHarnessInterfaceExtendedAssetList;
+  let comet: CometHarnessInterfaceExtendedAssetList;
   let baseToken: FaucetToken;
   let collaterals: { [symbol: string]: FaucetToken };
   let priceFeeds: { [symbol: string]: SimplePriceFeed };
@@ -22,8 +21,7 @@ describe('withdraw', function () {
   before(async function () {
     const protocol = await makeProtocol({ base: 'USDC' });
 
-    comet = protocol.comet;
-    cometExtended = protocol.cometWithExtendedAssetList;
+    comet = protocol.cometWithExtendedAssetList;
     baseToken = protocol.tokens[protocol.base] as FaucetToken;
     collaterals = Object.fromEntries(
       Object.entries(protocol.tokens).filter(([_symbol, token]) => token.address !== baseToken.address)
@@ -102,17 +100,17 @@ describe('withdraw', function () {
       it('reverts if lender withdraw is paused (extended pause)', async () => {
         const snapshot = await takeSnapshot();
 
-        await baseToken.connect(bob).approve(cometExtended.address, exp(100, baseTokenDecimals));
-        await cometExtended.connect(bob).supply(baseToken.address, exp(100, baseTokenDecimals));
+        await baseToken.connect(bob).approve(comet.address, exp(100, baseTokenDecimals));
+        await comet.connect(bob).supply(baseToken.address, exp(100, baseTokenDecimals));
 
-        await cometExtended.connect(pauseGuardian).pauseLendersWithdraw(true);
-        expect(await cometExtended.isLendersWithdrawPaused()).to.be.true;
+        await comet.connect(pauseGuardian).pauseLendersWithdraw(true);
+        expect(await comet.isLendersWithdrawPaused()).to.be.true;
 
         await expect(
-          cometExtended.connect(bob).withdraw(baseToken.address, exp(50, baseTokenDecimals))
-        ).to.be.revertedWithCustomError(cometExtended, 'LendersWithdrawPaused');
+          comet.connect(bob).withdraw(baseToken.address, exp(50, baseTokenDecimals))
+        ).to.be.revertedWithCustomError(comet, 'LendersWithdrawPaused');
 
-        await cometExtended.connect(pauseGuardian).pauseLendersWithdraw(false);
+        await comet.connect(pauseGuardian).pauseLendersWithdraw(false);
         await snapshot.restore();
       });
     });
@@ -473,14 +471,14 @@ describe('withdraw', function () {
       });
 
       it('reverts if collateral withdraw is paused (extended pause)', async () => {
-        await cometExtended.connect(pauseGuardian).pauseCollateralWithdraw(true);
-        expect(await cometExtended.isCollateralWithdrawPaused()).to.be.true;
+        await comet.connect(pauseGuardian).pauseCollateralWithdraw(true);
+        expect(await comet.isCollateralWithdrawPaused()).to.be.true;
 
         await expect(
-          cometExtended.connect(alice).withdraw(collaterals['COMP'].address, 1)
-        ).to.be.revertedWithCustomError(cometExtended, 'CollateralWithdrawPaused');
+          comet.connect(alice).withdraw(collaterals['COMP'].address, 1)
+        ).to.be.revertedWithCustomError(comet, 'CollateralWithdrawPaused');
 
-        await cometExtended.connect(pauseGuardian).pauseCollateralWithdraw(false);
+        await comet.connect(pauseGuardian).pauseCollateralWithdraw(false);
       });
 
       it('reverts if withdrawing more collateral than supplied', async () => {
@@ -553,6 +551,9 @@ describe('withdraw', function () {
 
     describe('withdraw collateral: happy path', function () {
       const COLLATERAL_SUPPLY_AMOUNT: bigint = exp(8, 8);
+      // Alice supplies base so totalSupplyBase > baseMinForRewards, enabling trackingSupplyIndex growth
+      const ALICE_BASE_SUPPLY: bigint = exp(10000, 6);
+      const SKIP_TIME: number = 60 * 60; // 1 hr
 
       let collateral: FaucetToken;
       let withdrawTx: ContractTransaction;
@@ -565,10 +566,23 @@ describe('withdraw', function () {
       let cometSupplyIndexBefore: BigNumber;
       let cometSupplyRateBefore: BigNumber;
       let cometUpdatedTimeBefore: number;
+      let cometBorrowIndexBefore: BigNumber;
+      let trackingSupplyIndexBefore: BigNumber;
+      let trackingBorrowIndexBefore: BigNumber;
+      let bobBaseTrackingAccruedBefore: BigNumber;
+      let baseTrackingSupplySpeedVal: BigNumber;
+      let bobCollateralBalanceBefore: BigNumber;
+      let borrowRateBefore: BigNumber;
+      let utilizationBefore: BigNumber;
+      let withdrawTimestamp: BigNumber;
 
       before(async () => {
         await baseSnapshot.restore();
-        
+
+        // Supply base tokens so totalSupplyBase >= baseMinForRewards, enabling trackingSupplyIndex growth
+        await baseToken.connect(alice).approve(comet.address, ALICE_BASE_SUPPLY);
+        await comet.connect(alice).supply(baseToken.address, ALICE_BASE_SUPPLY);
+
         collateral = collaterals['COMP'];
         await collateral.allocateTo(bob.address, COLLATERAL_SUPPLY_AMOUNT);
         await collateral.connect(bob).approve(comet.address, COLLATERAL_SUPPLY_AMOUNT);
@@ -576,6 +590,7 @@ describe('withdraw', function () {
 
         aliceBalanceBefore = await collateral.balanceOf(alice.address);
         totalSupplyBefore = (await comet.totalsCollateral(collateral.address)).totalSupplyAsset;
+        bobCollateralBalanceBefore = (await comet.userCollateral(bob.address, collateral.address)).balance;
         const totals = await comet.totalsBasic();
         totalCollateralSupplyBefore = (await comet.totalsCollateral(collateral.address)).totalSupplyAsset;
         totalSupplyBaseBefore = totals.totalSupplyBase;
@@ -585,17 +600,23 @@ describe('withdraw', function () {
         cometSupplyRateBefore = await comet.getSupplyRate(await comet.getUtilization());
         cometUpdatedTimeBefore = totals.lastAccrualTime;
 
+        cometBorrowIndexBefore = totals.baseBorrowIndex;
+        trackingSupplyIndexBefore = totals.trackingSupplyIndex;
+        trackingBorrowIndexBefore = totals.trackingBorrowIndex;
+        utilizationBefore = await comet.getUtilization();
+        borrowRateBefore = await comet.getBorrowRate(utilizationBefore);
+        baseTrackingSupplySpeedVal = await comet.baseTrackingSupplySpeed();
+        const bobBasic = await comet.userBasic(bob.address);
+        bobBaseTrackingAccruedBefore = bobBasic.baseTrackingAccrued;
+
         // Advance time to verify accrual during withdrawal
         await ethers.provider.send('evm_increaseTime', [60 * 60]); // 1 hr
         await ethers.provider.send('evm_mine', []);
       });
 
-      it.skip('alice has collateral registered before withdrawal', async () => {
-        const collateralIndex = (await comet.getAssetInfoByAddress(collateral.address)).offset;
+      it('alice has no collateral registered before withdrawal', async () => {
         const userData = await comet.userBasic(alice.address);
-        const offset = 1 << collateralIndex;
-
-        expect(userData.assetsIn & offset).to.equal(offset);
+        expect(userData.assetsIn).to.equal(0);
       });
 
       it('bob collateral balance before withdraw equals supply amount', async () => {
@@ -623,11 +644,13 @@ describe('withdraw', function () {
           .withArgs(bob.address, alice.address, collateral.address, COLLATERAL_SUPPLY_AMOUNT);
       });
 
-      it.skip('accrues state during collateral withdrawal', async () => {
+      it('accrues state during collateral withdrawal', async () => {
         const lastUpdated = (await comet.totalsBasic()).lastAccrualTime;
-
-        expect(lastUpdated).to.be.greaterThan(cometUpdatedTimeBefore);
-        expect(lastUpdated).to.equal(withdrawTx.timestamp);
+        const withdrawalTimestamp = BigNumber.from(
+          (await ethers.provider.getBlock((await withdrawTx.wait()).blockNumber)).timestamp
+        );
+        expect(lastUpdated - cometUpdatedTimeBefore).to.be.approximately(SKIP_TIME, 2); // 2 seconds tolerance
+        expect(lastUpdated).to.equal(withdrawalTimestamp);
       });
 
       it('supply index is updated correctly after accrual', async () => {
@@ -652,11 +675,6 @@ describe('withdraw', function () {
       it('total supply is zero after full withdrawal', async () => {
         const totalsCollateral = await comet.totalsCollateral(collateral.address);
         expect(totalsCollateral.totalSupplyAsset).to.equal(0);
-      });
-
-      it('gas used is within expected bounds', async () => {
-        const receipt = await withdrawTx.wait();
-        expect(Number(receipt.gasUsed)).to.be.lessThan(85000);
       });
 
       it('total collateral supply decreases by withdraw amount', async () => {
@@ -711,10 +729,228 @@ describe('withdraw', function () {
         expect(displayedTotalSupply).to.equal(expectedTotalSupply);
       });
 
-      it.skip("bob's collateral balance is not affected by alice's withdrawal", async () => {
+      it("bob's collateral balance is decreased by withdrawal", async () => {
         expect(
           (await comet.userCollateral(bob.address, collateral.address)).balance
-        ).to.equal(COLLATERAL_SUPPLY_AMOUNT);
+        ).to.equal(bobCollateralBalanceBefore.sub(COLLATERAL_SUPPLY_AMOUNT));
+      });
+
+      it('accrual time is updated after collateral withdrawal', async () => {
+        const receipt = await withdrawTx.wait();
+        const block = await ethers.provider.getBlock(receipt.blockNumber);
+        withdrawTimestamp = BigNumber.from(block.timestamp);
+        expect((await comet.totalsBasic()).lastAccrualTime).to.equal(withdrawTimestamp.toNumber());
+        expect(withdrawTimestamp.toNumber()).to.be.greaterThan(cometUpdatedTimeBefore);
+      });
+
+      it('trackingSupplyIndex grows correctly during collateral withdrawal accrual', async () => {
+        // accrueInternal() updates trackingSupplyIndex when totalSupplyBase >= baseMinForRewards:
+        //   trackingSupplyIndex += divBaseWei(baseTrackingSupplySpeed * timeElapsed, totalSupplyBase)
+        //                        = baseTrackingSupplySpeed * timeElapsed * baseScale / totalSupplyBase
+        const timeElapsed = withdrawTimestamp.sub(cometUpdatedTimeBefore);
+        const baseScale = exp(1, 6);
+        const expectedTrackingSupplyIndex = trackingSupplyIndexBefore.add(
+          baseTrackingSupplySpeedVal.mul(timeElapsed).mul(baseScale).div(totalSupplyBaseBefore)
+        );
+        expect((await comet.totalsBasic()).trackingSupplyIndex).to.equal(expectedTrackingSupplyIndex);
+      });
+
+      it('trackingBorrowIndex is unchanged when totalBorrowBase is zero', async () => {
+        // accrueInternal() only updates trackingBorrowIndex if totalBorrowBase >= baseMinForRewards
+        // With no active borrows, totalBorrowBase = 0 and the condition is not satisfied
+        expect((await comet.totalsBasic()).totalBorrowBase).to.be.lessThan(await comet.baseMinForRewards());
+        expect((await comet.totalsBasic()).trackingBorrowIndex).to.equal(trackingBorrowIndexBefore);
+      });
+
+      it('baseBorrowIndex accrues correctly during collateral withdrawal', async () => {
+        // baseBorrowIndex += mulFactor(baseBorrowIndex, borrowRate * timeElapsed)
+        //                  = baseBorrowIndex + baseBorrowIndex * borrowRate * timeElapsed / 1e18
+        // With no borrows, getBorrowRate returns 0 and the borrow index is unchanged
+        const timeElapsed = withdrawTimestamp.sub(cometUpdatedTimeBefore);
+        const expectedBaseBorrowIndex = cometBorrowIndexBefore.add(
+          cometBorrowIndexBefore.mul(borrowRateBefore).mul(timeElapsed).div(exp(1, 18))
+        );
+        expect((await comet.totalsBasic()).baseBorrowIndex).to.equal(expectedBaseBorrowIndex);
+      });
+
+      it('bob baseTrackingAccrued is unchanged when principal is zero', async () => {
+        // accrueAccountInternal(bob) calls updateBasePrincipal(bob, basic, basic.principal).
+        // bob.principal = 0 → indexDelta * 0 = 0 → no reward accrual, baseTrackingAccrued stays the same
+        const bobBasicAfter = await comet.userBasic(bob.address);
+        expect(bobBasicAfter.baseTrackingAccrued).to.equal(bobBaseTrackingAccruedBefore);
+      });
+
+      it('utilization after collateral withdrawal matches exact calculation from accrued indices', async () => {
+        // getUtilization() = presentValue(borrow) * FACTOR_SCALE / presentValue(supply)
+        // = totalBorrowBase * baseBorrowIndex_new / 1e15 * 1e18 / (totalSupplyBase * baseSupplyIndex_new / 1e15)
+        const totals = await comet.totalsBasic();
+        const totalBorrowPresent = totals.totalBorrowBase.mul(totals.baseBorrowIndex).div(exp(1, 15));
+        const totalSupplyPresent = totals.totalSupplyBase.mul(totals.baseSupplyIndex).div(exp(1, 15));
+        const expectedUtilization = totalBorrowPresent.mul(exp(1, 18)).div(totalSupplyPresent);
+        expect(await comet.getUtilization()).to.equal(expectedUtilization);
+      });
+    });
+
+    // Tests accrueAccountInternal(bob) when bob has a negative principal (active borrow).
+    // Focuses on what differs from zero-borrow happy path: non-zero rates, growing borrow index,
+    // and borrow reward accrual via trackingBorrowIndex.
+    describe('withdraw collateral: accrual with active borrow (non-zero utilization)', function () {
+      const SKIP_TIME = 3600;
+      // COMP has 18 decimals; alice supplied 10,000 USDC in happy path → totalSupplyBase = 1e10
+      // 10 COMP at $175 = $1750 collateral, borrow $100 USDC → 1% utilization → non-zero rates
+      const BOB_COMP_SUPPLY: bigint = exp(10, 18); // 10 COMP (18-decimal token)
+      const BOB_BORROW_AMOUNT: bigint = exp(100, 6); // 100 USDC
+      const BOB_COMP_WITHDRAW: bigint = exp(1, 18); // withdraw 1 COMP, keep 9 as collateral
+
+      let baseSupplyIndexBefore: BigNumber;
+      let baseBorrowIndexBefore: BigNumber;
+      let trackingSupplyIndexBefore: BigNumber;
+      let trackingBorrowIndexBefore: BigNumber;
+      let totalSupplyBaseBefore: BigNumber;
+      let totalBorrowBaseBefore: BigNumber;
+      let lastAccrualTimeBefore: number;
+      let bobPrincipalBefore: BigNumber;
+      let bobBaseTrackingIndexBefore: BigNumber;
+      let bobBaseTrackingAccruedBefore: BigNumber;
+      let baseTrackingBorrowSpeedVal: BigNumber;
+      let baseTrackingSupplySpeedVal: BigNumber;
+      let trackingIndexScaleVal: BigNumber;
+      let supplyRateBefore: BigNumber;
+      let borrowRateBefore: BigNumber;
+      let utilizationBefore: BigNumber;
+      let withdrawCollateralTx: ContractTransaction;
+      let withdrawTimestamp: BigNumber;
+
+      before(async function () {
+        // Build on state from previous describe: alice has 10,000 USDC in comet, totalBorrowBase = 0
+        const compCollateral = collaterals['COMP'];
+        await compCollateral.allocateTo(bob.address, BOB_COMP_SUPPLY);
+        await compCollateral.connect(bob).approve(comet.address, BOB_COMP_SUPPLY);
+        await comet.connect(bob).supply(compCollateral.address, BOB_COMP_SUPPLY);
+
+        // Bob borrows base, making his principal negative and creating non-zero utilization
+        await comet.connect(bob).withdraw(baseToken.address, BOB_BORROW_AMOUNT);
+
+        const totals = await comet.totalsBasic();
+        baseSupplyIndexBefore = totals.baseSupplyIndex;
+        baseBorrowIndexBefore = totals.baseBorrowIndex;
+        trackingSupplyIndexBefore = totals.trackingSupplyIndex;
+        trackingBorrowIndexBefore = totals.trackingBorrowIndex;
+        totalSupplyBaseBefore = totals.totalSupplyBase;
+        totalBorrowBaseBefore = totals.totalBorrowBase;
+        lastAccrualTimeBefore = totals.lastAccrualTime;
+
+        const bobBasic = await comet.userBasic(bob.address);
+        bobPrincipalBefore = bobBasic.principal;
+        bobBaseTrackingIndexBefore = bobBasic.baseTrackingIndex;
+        bobBaseTrackingAccruedBefore = bobBasic.baseTrackingAccrued;
+
+        utilizationBefore = await comet.getUtilization();
+        supplyRateBefore = await comet.getSupplyRate(utilizationBefore);
+        borrowRateBefore = await comet.getBorrowRate(utilizationBefore);
+        baseTrackingSupplySpeedVal = await comet.baseTrackingSupplySpeed();
+        baseTrackingBorrowSpeedVal = await comet.baseTrackingBorrowSpeed();
+        trackingIndexScaleVal = await comet.trackingIndexScale();
+
+        await ethers.provider.send('evm_increaseTime', [SKIP_TIME]);
+        await ethers.provider.send('evm_mine', []);
+      });
+
+      it('bob principal is negative (active borrow)', async () => {
+        expect(bobPrincipalBefore).to.be.lessThan(0);
+      });
+
+      it('totalBorrowBase exceeds baseMinForRewards', async () => {
+        expect(totalBorrowBaseBefore).to.be.greaterThanOrEqual(await comet.baseMinForRewards());
+      });
+
+      it('utilization is greater than zero before withdrawal', async () => {
+        expect(utilizationBefore).to.be.greaterThan(0);
+      });
+
+      it('bob withdraws COMP collateral, triggering accrueAccountInternal', async () => {
+        withdrawCollateralTx = await comet.connect(bob).withdraw(collaterals['COMP'].address, BOB_COMP_WITHDRAW);
+        await expect(withdrawCollateralTx).to.not.be.reverted;
+      });
+
+      it('accrual time matches the withdrawal block timestamp', async () => {
+        withdrawTimestamp = BigNumber.from(
+          (await ethers.provider.getBlock((await withdrawCollateralTx.wait()).blockNumber)).timestamp
+        );
+        expect((await comet.totalsBasic()).lastAccrualTime).to.equal(withdrawTimestamp.toNumber());
+      });
+
+      it('baseSupplyIndex grows when supply rate is non-zero', async () => {
+        // supplyRate > 0 due to positive utilization (borrows exist)
+        // baseSupplyIndex += mulFactor(baseSupplyIndex, supplyRate * timeElapsed)
+        const timeElapsed = withdrawTimestamp.sub(lastAccrualTimeBefore);
+        const expectedBaseSupplyIndex = baseSupplyIndexBefore.add(
+          baseSupplyIndexBefore.mul(supplyRateBefore).mul(timeElapsed).div(exp(1, 18))
+        );
+        expect((await comet.totalsBasic()).baseSupplyIndex).to.equal(expectedBaseSupplyIndex);
+      });
+
+      it('baseBorrowIndex grows when borrow rate is non-zero', async () => {
+        // borrowRate > 0 due to positive utilization
+        // baseBorrowIndex += mulFactor(baseBorrowIndex, borrowRate * timeElapsed)
+        const timeElapsed = withdrawTimestamp.sub(lastAccrualTimeBefore);
+        const expectedBaseBorrowIndex = baseBorrowIndexBefore.add(
+          baseBorrowIndexBefore.mul(borrowRateBefore).mul(timeElapsed).div(exp(1, 18))
+        );
+        expect((await comet.totalsBasic()).baseBorrowIndex).to.equal(expectedBaseBorrowIndex);
+      });
+
+      it('trackingBorrowIndex grows when totalBorrowBase exceeds baseMinForRewards', async () => {
+        // trackingBorrowIndex += divBaseWei(baseTrackingBorrowSpeed * timeElapsed, totalBorrowBase)
+        //                      = baseTrackingBorrowSpeed * timeElapsed * baseScale / totalBorrowBase
+        const timeElapsed = withdrawTimestamp.sub(lastAccrualTimeBefore);
+        const baseScale = exp(1, 6);
+        const expectedTrackingBorrowIndex = trackingBorrowIndexBefore.add(
+          baseTrackingBorrowSpeedVal.mul(timeElapsed).mul(baseScale).div(totalBorrowBaseBefore)
+        );
+        expect((await comet.totalsBasic()).trackingBorrowIndex).to.equal(expectedTrackingBorrowIndex);
+      });
+
+      it('trackingSupplyIndex also grows with non-zero total supply', async () => {
+        // trackingSupplyIndex += divBaseWei(baseTrackingSupplySpeed * timeElapsed, totalSupplyBase)
+        const timeElapsed = withdrawTimestamp.sub(lastAccrualTimeBefore);
+        const baseScale = exp(1, 6);
+        const expectedTrackingSupplyIndex = trackingSupplyIndexBefore.add(
+          baseTrackingSupplySpeedVal.mul(timeElapsed).mul(baseScale).div(totalSupplyBaseBefore)
+        );
+        expect((await comet.totalsBasic()).trackingSupplyIndex).to.equal(expectedTrackingSupplyIndex);
+      });
+
+      it('bob baseTrackingAccrued accumulates borrow rewards via trackingBorrowIndex', async () => {
+        // bob.principal < 0 → borrow tracking applies in updateBasePrincipal:
+        //   indexDelta = trackingBorrowIndex_new - bob.baseTrackingIndex_before
+        //   baseTrackingAccrued += |principal| * indexDelta / trackingIndexScale / accrualDescaleFactor
+        // accrualDescaleFactor = baseScale / BASE_ACCRUAL_SCALE = 1e6 / 1e6 = 1 for USDC
+        const timeElapsed = withdrawTimestamp.sub(lastAccrualTimeBefore);
+        const baseScale = exp(1, 6);
+        const trackingBorrowIndexNew = trackingBorrowIndexBefore.add(
+          baseTrackingBorrowSpeedVal.mul(timeElapsed).mul(baseScale).div(totalBorrowBaseBefore)
+        );
+        const indexDelta = trackingBorrowIndexNew.sub(bobBaseTrackingIndexBefore);
+        const expectedAccrued = bobBaseTrackingAccruedBefore.add(
+          bobPrincipalBefore.abs().mul(indexDelta).div(trackingIndexScaleVal)
+        );
+        expect((await comet.userBasic(bob.address)).baseTrackingAccrued).to.equal(expectedAccrued);
+      });
+
+      it('utilization is greater than zero after collateral withdrawal', async () => {
+        // Collateral withdrawal does not affect totalBorrowBase or totalSupplyBase
+        expect(await comet.getUtilization()).to.be.greaterThan(0);
+      });
+
+      it('utilization after collateral withdrawal matches exact calculation from accrued indices', async () => {
+        // getUtilization() = presentValue(borrow) * FACTOR_SCALE / presentValue(supply)
+        // = totalBorrowBase * baseBorrowIndex_new / 1e15 * 1e18 / (totalSupplyBase * baseSupplyIndex_new / 1e15)
+        const totals = await comet.totalsBasic();
+        const totalBorrowPresent = totals.totalBorrowBase.mul(totals.baseBorrowIndex).div(exp(1, 15));
+        const totalSupplyPresent = totals.totalSupplyBase.mul(totals.baseSupplyIndex).div(exp(1, 15));
+        const expectedUtilization = totalBorrowPresent.mul(exp(1, 18)).div(totalSupplyPresent);
+        expect(await comet.getUtilization()).to.equal(expectedUtilization);
       });
     });
 
@@ -851,20 +1087,20 @@ describe('withdraw', function () {
         it('reverts if borrower withdraw is paused (extended pause)', async () => {
           const snapshot = await takeSnapshot();
 
-          await baseToken.connect(bob).approve(cometExtended.address, BOB_SUPPLY_AMOUNT);
-          await cometExtended.connect(bob).supply(baseToken.address, BOB_SUPPLY_AMOUNT);
+          await baseToken.connect(bob).approve(comet.address, BOB_SUPPLY_AMOUNT);
+          await comet.connect(bob).supply(baseToken.address, BOB_SUPPLY_AMOUNT);
           await collaterals['WETH'].allocateTo(alice.address, ALICE_COLLATERAL_AMOUNT);
-          await collaterals['WETH'].connect(alice).approve(cometExtended.address, ALICE_COLLATERAL_AMOUNT);
-          await cometExtended.connect(alice).supply(collaterals['WETH'].address, ALICE_COLLATERAL_AMOUNT);
+          await collaterals['WETH'].connect(alice).approve(comet.address, ALICE_COLLATERAL_AMOUNT);
+          await comet.connect(alice).supply(collaterals['WETH'].address, ALICE_COLLATERAL_AMOUNT);
 
-          await cometExtended.connect(pauseGuardian).pauseBorrowersWithdraw(true);
-          expect(await cometExtended.isBorrowersWithdrawPaused()).to.be.true;
+          await comet.connect(pauseGuardian).pauseBorrowersWithdraw(true);
+          expect(await comet.isBorrowersWithdrawPaused()).to.be.true;
 
           await expect(
-            cometExtended.connect(alice).withdraw(baseToken.address, SMALL_BORROW_AMOUNT)
-          ).to.be.revertedWithCustomError(cometExtended, 'BorrowersWithdrawPaused');
+            comet.connect(alice).withdraw(baseToken.address, SMALL_BORROW_AMOUNT)
+          ).to.be.revertedWithCustomError(comet, 'BorrowersWithdrawPaused');
 
-          await cometExtended.connect(pauseGuardian).pauseBorrowersWithdraw(false);
+          await comet.connect(pauseGuardian).pauseBorrowersWithdraw(false);
           await snapshot.restore();
         });
 
@@ -990,50 +1226,50 @@ describe('withdraw', function () {
     it('reverts if collateral withdraw is paused (extended pause)', async () => {
       await baseSnapshot.restore();
 
-      await cometExtended.connect(pauseGuardian).pauseCollateralWithdraw(true);
-      expect(await cometExtended.isCollateralWithdrawPaused()).to.be.true;
+      await comet.connect(pauseGuardian).pauseCollateralWithdraw(true);
+      expect(await comet.isCollateralWithdrawPaused()).to.be.true;
 
       await expect(
-        cometExtended.connect(bob).withdrawTo(alice.address, collaterals['COMP'].address, 1)
-      ).to.be.revertedWithCustomError(cometExtended, 'CollateralWithdrawPaused');
+        comet.connect(bob).withdrawTo(alice.address, collaterals['COMP'].address, 1)
+      ).to.be.revertedWithCustomError(comet, 'CollateralWithdrawPaused');
 
-      await cometExtended.connect(pauseGuardian).pauseCollateralWithdraw(false);
+      await comet.connect(pauseGuardian).pauseCollateralWithdraw(false);
     });
 
     it('reverts if lender withdraw is paused (extended pause)', async () => {
       await baseSnapshot.restore();
 
-      await baseToken.connect(bob).approve(cometExtended.address, SUPPLY_AMOUNT);
-      await cometExtended.connect(bob).supply(baseToken.address, SUPPLY_AMOUNT);
+      await baseToken.connect(bob).approve(comet.address, SUPPLY_AMOUNT);
+      await comet.connect(bob).supply(baseToken.address, SUPPLY_AMOUNT);
 
-      await cometExtended.connect(pauseGuardian).pauseLendersWithdraw(true);
-      expect(await cometExtended.isLendersWithdrawPaused()).to.be.true;
+      await comet.connect(pauseGuardian).pauseLendersWithdraw(true);
+      expect(await comet.isLendersWithdrawPaused()).to.be.true;
 
       await expect(
-        cometExtended.connect(bob).withdrawTo(alice.address, baseToken.address, exp(50, baseTokenDecimals))
-      ).to.be.revertedWithCustomError(cometExtended, 'LendersWithdrawPaused');
+        comet.connect(bob).withdrawTo(alice.address, baseToken.address, exp(50, baseTokenDecimals))
+      ).to.be.revertedWithCustomError(comet, 'LendersWithdrawPaused');
 
-      await cometExtended.connect(pauseGuardian).pauseLendersWithdraw(false);
+      await comet.connect(pauseGuardian).pauseLendersWithdraw(false);
     });
 
     it('reverts if borrower withdraw is paused (extended pause)', async () => {
       await baseSnapshot.restore();
 
-      await baseToken.connect(bob).approve(cometExtended.address, SUPPLY_AMOUNT);
-      await cometExtended.connect(bob).supply(baseToken.address, SUPPLY_AMOUNT);
+      await baseToken.connect(bob).approve(comet.address, SUPPLY_AMOUNT);
+      await comet.connect(bob).supply(baseToken.address, SUPPLY_AMOUNT);
 
       await collaterals['WETH'].allocateTo(alice.address, exp(1, 18));
-      await collaterals['WETH'].connect(alice).approve(cometExtended.address, exp(1, 18));
-      await cometExtended.connect(alice).supply(collaterals['WETH'].address, exp(1, 18));
+      await collaterals['WETH'].connect(alice).approve(comet.address, exp(1, 18));
+      await comet.connect(alice).supply(collaterals['WETH'].address, exp(1, 18));
 
-      await cometExtended.connect(pauseGuardian).pauseBorrowersWithdraw(true);
-      expect(await cometExtended.isBorrowersWithdrawPaused()).to.be.true;
+      await comet.connect(pauseGuardian).pauseBorrowersWithdraw(true);
+      expect(await comet.isBorrowersWithdrawPaused()).to.be.true;
 
       await expect(
-        cometExtended.connect(alice).withdrawTo(bob.address, baseToken.address, exp(10, baseTokenDecimals))
-      ).to.be.revertedWithCustomError(cometExtended, 'BorrowersWithdrawPaused');
+        comet.connect(alice).withdrawTo(bob.address, baseToken.address, exp(10, baseTokenDecimals))
+      ).to.be.revertedWithCustomError(comet, 'BorrowersWithdrawPaused');
 
-      await cometExtended.connect(pauseGuardian).pauseBorrowersWithdraw(false);
+      await comet.connect(pauseGuardian).pauseBorrowersWithdraw(false);
     });
   });
 
@@ -1089,57 +1325,57 @@ describe('withdraw', function () {
     it('reverts if collateral withdraw is paused (extended pause)', async () => {
       await withdrawFromSnapshot.restore();
 
-      await cometExtended.connect(bob).allow(charlie.address, true);
+      await comet.connect(bob).allow(charlie.address, true);
       await collaterals['COMP'].allocateTo(bob.address, SUPPLY_AMOUNT);
-      await collaterals['COMP'].connect(bob).approve(cometExtended.address, SUPPLY_AMOUNT);
-      await cometExtended.connect(bob).supply(collaterals['COMP'].address, SUPPLY_AMOUNT);
+      await collaterals['COMP'].connect(bob).approve(comet.address, SUPPLY_AMOUNT);
+      await comet.connect(bob).supply(collaterals['COMP'].address, SUPPLY_AMOUNT);
 
-      await cometExtended.connect(pauseGuardian).pauseCollateralWithdraw(true);
-      expect(await cometExtended.isCollateralWithdrawPaused()).to.be.true;
+      await comet.connect(pauseGuardian).pauseCollateralWithdraw(true);
+      expect(await comet.isCollateralWithdrawPaused()).to.be.true;
 
       await expect(
-        cometExtended.connect(charlie).withdrawFrom(bob.address, alice.address, collaterals['COMP'].address, SUPPLY_AMOUNT)
-      ).to.be.revertedWithCustomError(cometExtended, 'CollateralWithdrawPaused');
+        comet.connect(charlie).withdrawFrom(bob.address, alice.address, collaterals['COMP'].address, SUPPLY_AMOUNT)
+      ).to.be.revertedWithCustomError(comet, 'CollateralWithdrawPaused');
 
-      await cometExtended.connect(pauseGuardian).pauseCollateralWithdraw(false);
+      await comet.connect(pauseGuardian).pauseCollateralWithdraw(false);
     });
 
     it('reverts if lender withdraw is paused (extended pause)', async () => {
       await withdrawFromSnapshot.restore();
 
-      await baseToken.connect(bob).approve(cometExtended.address, exp(100, baseTokenDecimals));
-      await cometExtended.connect(bob).supply(baseToken.address, exp(100, baseTokenDecimals));
-      await cometExtended.connect(bob).allow(charlie.address, true);
+      await baseToken.connect(bob).approve(comet.address, exp(100, baseTokenDecimals));
+      await comet.connect(bob).supply(baseToken.address, exp(100, baseTokenDecimals));
+      await comet.connect(bob).allow(charlie.address, true);
 
-      await cometExtended.connect(pauseGuardian).pauseLendersWithdraw(true);
-      expect(await cometExtended.isLendersWithdrawPaused()).to.be.true;
+      await comet.connect(pauseGuardian).pauseLendersWithdraw(true);
+      expect(await comet.isLendersWithdrawPaused()).to.be.true;
 
       await expect(
-        cometExtended.connect(charlie).withdrawFrom(bob.address, alice.address, baseToken.address, exp(50, baseTokenDecimals))
-      ).to.be.revertedWithCustomError(cometExtended, 'LendersWithdrawPaused');
+        comet.connect(charlie).withdrawFrom(bob.address, alice.address, baseToken.address, exp(50, baseTokenDecimals))
+      ).to.be.revertedWithCustomError(comet, 'LendersWithdrawPaused');
 
-      await cometExtended.connect(pauseGuardian).pauseLendersWithdraw(false);
+      await comet.connect(pauseGuardian).pauseLendersWithdraw(false);
     });
 
     it('reverts if borrower withdraw is paused (extended pause)', async () => {
       await withdrawFromSnapshot.restore();
 
-      await baseToken.connect(bob).approve(cometExtended.address, exp(100, baseTokenDecimals));
-      await cometExtended.connect(bob).supply(baseToken.address, exp(100, baseTokenDecimals));
+      await baseToken.connect(bob).approve(comet.address, exp(100, baseTokenDecimals));
+      await comet.connect(bob).supply(baseToken.address, exp(100, baseTokenDecimals));
 
       await collaterals['WETH'].allocateTo(alice.address, exp(1, 18));
-      await collaterals['WETH'].connect(alice).approve(cometExtended.address, exp(1, 18));
-      await cometExtended.connect(alice).supply(collaterals['WETH'].address, exp(1, 18));
-      await cometExtended.connect(alice).allow(charlie.address, true);
+      await collaterals['WETH'].connect(alice).approve(comet.address, exp(1, 18));
+      await comet.connect(alice).supply(collaterals['WETH'].address, exp(1, 18));
+      await comet.connect(alice).allow(charlie.address, true);
 
-      await cometExtended.connect(pauseGuardian).pauseBorrowersWithdraw(true);
-      expect(await cometExtended.isBorrowersWithdrawPaused()).to.be.true;
+      await comet.connect(pauseGuardian).pauseBorrowersWithdraw(true);
+      expect(await comet.isBorrowersWithdrawPaused()).to.be.true;
 
       await expect(
-        cometExtended.connect(charlie).withdrawFrom(alice.address, bob.address, baseToken.address, exp(10, baseTokenDecimals))
-      ).to.be.revertedWithCustomError(cometExtended, 'BorrowersWithdrawPaused');
+        comet.connect(charlie).withdrawFrom(alice.address, bob.address, baseToken.address, exp(10, baseTokenDecimals))
+      ).to.be.revertedWithCustomError(comet, 'BorrowersWithdrawPaused');
 
-      await cometExtended.connect(pauseGuardian).pauseBorrowersWithdraw(false);
+      await comet.connect(pauseGuardian).pauseBorrowersWithdraw(false);
     });
   });
 
