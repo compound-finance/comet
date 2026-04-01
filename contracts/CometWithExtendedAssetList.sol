@@ -1130,23 +1130,35 @@ contract CometWithExtendedAssetList is CometMainInterface {
                     uint256 rawCollateralUSD = (mulFactor(debtRemaining, targetHF) - liquidationData.totalCollaterizedValue)
                         * FACTOR_SCALE / denom;
 
-                    if (rawCollateralUSD <= availableUSD) {
-                        // Partial seizure: exactly reaches targetHF
-                        liquidationData.seizeAmount = divPrice(rawCollateralUSD, price, assetInfo.scale);
-                        liquidationData.seizedValue = mulFactor(rawCollateralUSD, assetInfo.liquidationFactor);
-                        liquidationData.currentHF = targetHF;
+                        if (rawCollateralUSD <= availableUSD) {
+                            // Check that remaining debt after partial won't be below baseBorrowMin (dust position)
+                            uint256 debtReduction = mulFactor(rawCollateralUSD, assetInfo.liquidationFactor);
+                            uint256 debtAfterPartial = debtRemaining - debtReduction;
+                            uint256 baseDebtAfterPartial = divPrice(debtAfterPartial, basePrice, uint64(baseScale));
+
+                            if (baseDebtAfterPartial >= baseBorrowMin) {
+                                // Partial seizure: exactly reaches targetHF
+                                liquidationData.seizeAmount = divPrice(rawCollateralUSD, price, assetInfo.scale);
+                                liquidationData.seizedValue = debtReduction;
+                                liquidationData.currentHF = targetHF;
+                            } else {
+                                // Remaining debt would be a dust position — fall through to full liquidation
+                                liquidationData.seizeAmount = fullBalance;
+                                liquidationData.seizedValue = mulFactor(availableUSD, assetInfo.liquidationFactor);
+                                liquidationData.currentHF = 0;
+                            }
+                        } else {
+                            // Asset insufficient — seize fully, continue to next
+                            liquidationData.seizeAmount = fullBalance;
+                            liquidationData.seizedValue = mulFactor(availableUSD, assetInfo.liquidationFactor);
+                            liquidationData.currentHF = 0;
+                        }
                     } else {
-                        // Asset insufficient — seize fully, continue to next
+                        // LP × targetHF ≤ CF: seizing cannot improve HF — seize fully
                         liquidationData.seizeAmount = fullBalance;
                         liquidationData.seizedValue = mulFactor(availableUSD, assetInfo.liquidationFactor);
                         liquidationData.currentHF = 0;
                     }
-                } else {
-                    // LP × targetHF ≤ CF: seizing cannot improve HF — seize fully
-                    liquidationData.seizeAmount = fullBalance;
-                    liquidationData.seizedValue = mulFactor(availableUSD, assetInfo.liquidationFactor);
-                    liquidationData.currentHF = 0;
-                }
 
                 deltaValue += liquidationData.seizedValue;
                 if (liquidationData.currentHF < targetHF) {

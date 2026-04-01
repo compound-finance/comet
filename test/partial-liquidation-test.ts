@@ -1006,6 +1006,341 @@ describe('CometWithExtendedAssetList - Partial Liquidation', function() {
       expect(finalDebt.toBigInt()).to.equal(0n, 'Debt should be zeroed by reserves after full liquidation');
       expect(await comet.isLiquidatable(borrower.address)).to.be.false;
     });
+
+  });
+
+  // ── baseBorrowMin guard ──
+  // Test 1 (large position): debtAfterPartial ≈ $20.41 > $5 ->  guard does not fire ->  partial.
+  // Test 2 (small position): debtAfterPartial ≈ $1.43  < $5 ->  guard fires ->  full-seizure fallback.
+  // Test 3 (boundary ==): debtAfterPartial == $5 exactly ->  guard does not fire -> partial.
+  // Test 4 (boundary - 1 unit): debtAfterPartial == $4.999999 (bbm - 1) ->  guard fires ->  full-seizure fallback.
+  // Test 5 (baseBorrowMin = 0): guard never fires regardless of residual debt; own inline protocol.
+
+  describe('baseBorrowMin guard', function() {
+    let comet: CometInterface;
+    let tokens: any, priceFeeds: any, governor: SignerWithAddress;
+    let supplier: SignerWithAddress, borrower: SignerWithAddress, liquidator: SignerWithAddress;
+    let snapshotId: string;
+
+    before(async function() {
+      const protocol = await makeProtocol({
+        baseBorrowMin: exp(5, 6), // $5 USDC
+        assets: {
+          USDC: { initial: exp(1_000_000, 6), decimals: 6, initialPrice: 1 },
+          COMP: {
+            initial: exp(1_000_000, 18),
+            decimals: 18,
+            initialPrice: 1,
+            borrowCF: exp(0.8, 18),
+            liquidateCF: exp(0.85, 18),
+            liquidationFactor: exp(0.9, 18),
+            supplyCap: exp(1e6, 18),
+          },
+        },
+        baseTrackingBorrowSpeed: 0,
+      });
+      ({ cometWithPartialLiquidation: comet, tokens, priceFeeds, governor } = protocol);
+      [supplier, borrower, liquidator] = protocol.users;
+
+      await tokens.USDC.connect(governor).transfer(supplier.address, exp(1_000_000, 6));
+      await tokens.USDC.connect(supplier).approve(comet.address, exp(1_000_000, 6));
+      await comet.connect(supplier).supply(tokens.USDC.address, exp(1_000_000, 6));
+
+      snapshotId = await ethers.provider.send('evm_snapshot', []);
+    });
+
+    beforeEach(async function() {
+      await ethers.provider.send('evm_revert', [snapshotId]);
+      snapshotId = await ethers.provider.send('evm_snapshot', []);
+    });
+
+    it('partial liquidation proceeds when remaining debt stays above baseBorrowMin', async function () {
+      // 100 COMP - $1, borrow $80 -> drop to $0.93 ->  liquidatable
+      // debtAfterPartial ≈ $20.41 > baseBorrowMin $5 ->  guard does not fire ->  partial
+      const { COMP } = tokens;
+      const { COMP: priceFeedCOMP } = priceFeeds;
+
+      const compAmount = exp(100, 18);
+      await COMP.connect(governor).transfer(borrower.address, compAmount);
+      await COMP.connect(borrower).approve(comet.address, compAmount);
+      await comet.connect(borrower).supply(COMP.address, compAmount);
+      await comet.connect(borrower).withdraw(tokens.USDC.address, exp(80, 6));
+
+      await setPrice(priceFeedCOMP, governor, 0.93);
+      await comet.accrueAccount(borrower.address);
+      expect(await comet.isLiquidatable(borrower.address)).to.be.true;
+
+      await comet.connect(liquidator).absorb(liquidator.address, [borrower.address]);
+
+      const remainingCOMP = (await comet.userCollateral(borrower.address, COMP.address)).balance;
+      expect(remainingCOMP.toBigInt()).to.be.gt(0n, 'Partial liquidation: some COMP must remain');
+
+      const remainingDebt = await comet.borrowBalanceOf(borrower.address);
+      const baseBorrowMin = await comet.baseBorrowMin();
+      expect(remainingDebt.toBigInt()).to.be.gte(baseBorrowMin.toBigInt(), 'Remaining debt must be >= baseBorrowMin');
+
+      expect(await comet.isLiquidatable(borrower.address)).to.be.false;
+    });
+
+    it('falls back to full asset seizure when partial would leave dust debt', async function () {
+      // 7 COMP - $1, borrow max (~$5.6) ->  drop to $0.93 ->  liquidatable
+      // debtAfterPartial ≈ $1.43 < baseBorrowMin $5 ->  guard fires ->  full-seizure fallback
+      const { COMP } = tokens;
+      const { COMP: priceFeedCOMP } = priceFeeds;
+
+      const compAmount = exp(7, 18);
+      await COMP.connect(governor).transfer(borrower.address, compAmount);
+      await COMP.connect(borrower).approve(comet.address, compAmount);
+      await comet.connect(borrower).supply(COMP.address, compAmount);
+      const borrowAmount = await borrowCapacityForAsset(comet, borrower, 0);
+      await comet.connect(borrower).withdraw(tokens.USDC.address, borrowAmount);
+
+      await setPrice(priceFeedCOMP, governor, 0.93);
+      await comet.accrueAccount(borrower.address);
+      expect(await comet.isLiquidatable(borrower.address)).to.be.true;
+
+      // Pre-absorb: verify the baseBorrowMin guard is what forces the fallback
+      const FACTOR_SCALE = BigInt(exp(1, 18));
+      const priceScale = BigInt(exp(1, 8));
+      const compScale = BigInt(exp(1, 18));
+      const baseScale = BigInt(exp(1, 6));
+      const targetHF= BigInt(exp(1.05, 18));
+      const LP = BigInt(exp(0.9, 18));
+      const CF = BigInt(exp(0.8, 18));
+      const compPrice = BigInt(exp(0.93, 8));
+      const basePrice = BigInt(exp(1, 8));
+
+      const debtUSD = borrowAmount.toBigInt() * priceScale / baseScale;
+      const tcv = compAmount * compPrice * CF / compScale / FACTOR_SCALE;
+      const denom = LP * targetHF / FACTOR_SCALE - CF;
+      const rawCollateralUSD = (debtUSD * targetHF / FACTOR_SCALE - tcv) * FACTOR_SCALE / denom;
+      const availableUSD = compAmount * compPrice / compScale;
+
+      // Partial condition is met (rawCollateralUSD <= availableUSD)
+      expect(rawCollateralUSD).to.be.lte(availableUSD, 'rawCollateralUSD must be <= availableUSD');
+
+      // debtAfterPartial < baseBorrowMin ->  guard fires
+      const debtReduction = rawCollateralUSD * LP / FACTOR_SCALE;
+      const debtAfterPartialUSD = debtUSD - debtReduction;
+      const baseDebtAfterPartial = debtAfterPartialUSD * baseScale / basePrice;
+      const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
+      expect(baseDebtAfterPartial).to.be.lt(baseBorrowMin, 'debtAfterPartial must be < baseBorrowMin to trigger full-liquidation fallback');
+
+      await comet.connect(liquidator).absorb(liquidator.address, [borrower.address]);
+
+      const finalCOMP = (await comet.userCollateral(borrower.address, COMP.address)).balance;
+      expect(finalCOMP.toBigInt()).to.equal(0n, 'All COMP must be seized (full liquidation fallback)');
+
+      const finalDebt = await comet.borrowBalanceOf(borrower.address);
+      expect(finalDebt.toBigInt()).to.equal(0n, 'Debt must be zeroed after full liquidation');
+
+      expect(await comet.isLiquidatable(borrower.address)).to.be.false;
+    });
+
+    it('partial proceeds when debtAfterPartial exactly equals baseBorrowMin', async function () {
+      // 20 COMP - $1, borrow $15.833750 ->  drop to $0.93 ->  liquidatable
+      // All intermediate divisions are exact (no truncation), so
+      // baseDebtAfterPartial == baseBorrowMin == $5 precisely ->  guard condition >= is satisfied ->  partial
+      const { COMP } = tokens;
+      const { COMP: priceFeedCOMP } = priceFeeds;
+
+      const compAmount = exp(20, 18);
+      await COMP.connect(governor).transfer(borrower.address, compAmount);
+      await COMP.connect(borrower).approve(comet.address, compAmount);
+      await comet.connect(borrower).supply(COMP.address, compAmount);
+      await comet.connect(borrower).withdraw(tokens.USDC.address, exp(15.83375, 6)); // $15.833750 exactly
+
+      await setPrice(priceFeedCOMP, governor, 0.93);
+      await comet.accrueAccount(borrower.address);
+      expect(await comet.isLiquidatable(borrower.address)).to.be.true;
+
+      // Pre-absorb: verify baseDebtAfterPartial == baseBorrowMin exactly (boundary condition for >=)
+      const FACTOR_SCALE = BigInt(exp(1, 18));
+      const compScale = BigInt(exp(1, 18));
+      const baseScale = BigInt(exp(1, 6));
+      const targetHF = BigInt(exp(1.05, 18));
+      const LP = BigInt(exp(0.9, 18));
+      const CF = BigInt(exp(0.8, 18));
+      const compPrice = BigInt(exp(0.93, 8));
+      const basePrice = BigInt(exp(1, 8));
+      const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
+
+      const debtRemaining = exp(15.83375, 6) * basePrice / baseScale;        // 1_583_375_000
+      const availableUSD = compAmount * compPrice / compScale;               // 1_860_000_000
+      const tcv = availableUSD * CF / FACTOR_SCALE;                          // 1_488_000_000
+      const denom = LP * targetHF / FACTOR_SCALE - CF;                       // 145_000_000_000_000_000
+      const numerator = debtRemaining * targetHF / FACTOR_SCALE - tcv        // 174_543_750
+      const rawCollateralUSD = numerator * FACTOR_SCALE / denom;             // 1_203_750_000
+      const debtReduction = rawCollateralUSD * LP / FACTOR_SCALE;            // 1_083_375_000
+      const debtAfterPartial = debtRemaining - debtReduction;                // 500_000_000
+      const baseDebtAfterPartial = debtAfterPartial * baseScale / basePrice; // 5_000_000
+
+      expect(rawCollateralUSD).to.be.lte(availableUSD, 'partial condition: rawCollateralUSD must not exceed availableUSD');
+      expect(baseDebtAfterPartial).to.equal(baseBorrowMin, 'baseDebtAfterPartial must equal baseBorrowMin exactly (boundary)');
+
+      await comet.connect(liquidator).absorb(liquidator.address, [borrower.address]);
+
+      const remainingCOMP = (await comet.userCollateral(borrower.address, COMP.address)).balance;
+      expect(remainingCOMP.toBigInt()).to.be.gt(0n, 'Some COMP must remain: partial liquidation occurred');
+
+      const remainingDebt = await comet.borrowBalanceOf(borrower.address);
+      expect(remainingDebt.toBigInt()).to.equal(baseBorrowMin, 'Remaining debt must equal baseBorrowMin exactly');
+
+      expect(await comet.isLiquidatable(borrower.address)).to.be.false;
+    });
+
+    it('full-seizure fallback when debtAfterPartial is one unit below baseBorrowMin', async function () {
+      // 20 COMP - $1, borrow $15.833750 ->  drop to price 92999999 (one price unit below 93000000 used in the boundary test above)
+      // baseDebtAfterPartial = 4999999 = baseBorrowMin - 1 ->  guard fires ->  full-seizure fallback
+      // setPrice helper has 6-decimal float precision; price is set directly via setRoundData
+      const { COMP } = tokens;
+      const { COMP: priceFeedCOMP } = priceFeeds;
+
+      const compAmount = exp(20, 18);
+      await COMP.connect(governor).transfer(borrower.address, compAmount);
+      await COMP.connect(borrower).approve(comet.address, compAmount);
+      await comet.connect(borrower).supply(COMP.address, compAmount);
+      await comet.connect(borrower).withdraw(tokens.USDC.address, exp(15.83375, 6)); // identical to 1.1
+
+      const rd = await priceFeedCOMP.latestRoundData();
+      await priceFeedCOMP.connect(governor).setRoundData(rd[0], exp(0.92999999, 8, 8), rd[2], rd[3], rd[4]);
+      await comet.accrueAccount(borrower.address);
+      expect(await comet.isLiquidatable(borrower.address)).to.be.true;
+
+      // Pre-absorb: verify baseDebtAfterPartial == baseBorrowMin - 1 exactly (guard fires because < not >=)
+      const FACTOR_SCALE = BigInt(exp(1, 18));
+      const compScale = BigInt(exp(1, 18));
+      const baseScale = BigInt(exp(1, 6));
+      const targetHF = BigInt(exp(1.05, 18));
+      const LP = BigInt(exp(0.9, 18));
+      const CF = BigInt(exp(0.8, 18));
+      const compPrice = exp(0.92999999, 8, 8); // 92_999_999 — one unit below 93_000_000
+      const basePrice = BigInt(exp(1, 8));
+      const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
+
+      const debtRemaining = exp(15.83375, 6) * basePrice / baseScale;        // 1_583_375_000
+      const availableUSD = compAmount * compPrice / compScale;               // 1_859_999_980
+      const tcv = availableUSD * CF / FACTOR_SCALE;                          // 1_487_999_984
+      const denom = LP * targetHF / FACTOR_SCALE - CF;                       // 145_000_000_000_000_000
+      const numerator = debtRemaining * targetHF / FACTOR_SCALE - tcv;       // 174_543_766
+      const rawCollateralUSD = numerator * FACTOR_SCALE / denom;             // 1_203_750_110
+      const debtReduction = rawCollateralUSD * LP / FACTOR_SCALE;            // 1_083_375_099
+      const debtAfterPartial = debtRemaining - debtReduction;                // 499_999_901
+      const baseDebtAfterPartial = debtAfterPartial * baseScale / basePrice; // 4_999_999
+
+      expect(rawCollateralUSD).to.be.lte(availableUSD, 'partial condition would be met (rawCollateralUSD <= availableUSD)');
+      expect(baseDebtAfterPartial).to.equal(baseBorrowMin - 1n, 'baseDebtAfterPartial must be exactly one unit below baseBorrowMin');
+
+      await comet.connect(liquidator).absorb(liquidator.address, [borrower.address]);
+
+      const finalCOMP = (await comet.userCollateral(borrower.address, COMP.address)).balance;
+      expect(finalCOMP.toBigInt()).to.equal(0n, 'All COMP must be seized: full-seizure fallback triggered');
+
+      const finalDebt = await comet.borrowBalanceOf(borrower.address);
+      expect(finalDebt.toBigInt()).to.equal(0n, 'Debt must be zeroed after full-seizure fallback');
+
+      expect(await comet.isLiquidatable(borrower.address)).to.be.false;
+    });
+
+    it('baseBorrowMin = 0: guard never fires, partial always proceeds even with tiny remaining debt', async function () {
+      // With baseBorrowMin=0 the guard condition "baseDebtAfterPartial >= baseBorrowMin"
+      // becomes "baseDebtAfterPartial >= 0", which is always true for a uint.
+      // Uses parameters that would trigger the guard when baseBorrowMin=$5 (see the sibling test
+      // "falls back to full asset seizure when partial would leave dust debt" in describe('baseBorrowMin guard')):
+      //   7 COMP - $1, borrow $5.60, COMP drops to $0.93 ->  debtAfterPartial ≈ $1.43 < $5 ->  guard would fire.
+      //   With baseBorrowMin=0 the guard does NOT fire and partial succeeds: finalDebt>0, finalCOMP>0.
+      //
+      // Verified arithmetic (basePrice=100_000_000, baseScale=1_000_000, FACTOR_SCALE=1e18, targetHF=1.05e18):
+      //   debtPriceAdj = 5_600_000 * 100 = 560_000_000
+      //   compPrice = 93_000_000; availableUSD = 7e18*93M/1e18 = 651_000_000
+      //   TCV = 651_000_000 * 0.8 = 520_800_000
+      //   denom = 0.9*1.05 - 0.8 = 0.145e18
+      //   rawCollateralUSD = (560M*1.05 - 520.8M) / 0.145 = 67.2M/0.145 = 463_448_275
+      //   rawCollateralUSD=463M ≤ availableUSD=651M ->  PARTIAL PATH
+      //   debtReduction = 463_448_275 * 0.9 = 417_103_447
+      //   debtAfterPartial = 560M - 417.1M = 142_896_553
+      //   baseDebtAfterPartial = 142_896_553 / 100 = 1_428_965
+      //   baseBorrowMin=0 ->  1_428_965 ≥ 0 ->  GUARD DOES NOT FIRE ->  partial proceeds
+      //   seizeAmount = 463_448_275 * 1e18 / 93_000_000 ≈ 4.984 COMP; remaining ≈ 2.016 COMP
+      //   newBalance = -5_600_000 + divPrice(417_103_447,100M,1M) = -5_600_000 + 4_171_034 = -1_428_966
+      //   currentHF=targetHF ->  newBalance stays negative ->  finalDebt=1_428_966 ≈ $1.43 > 0
+      //
+      // Own protocol created inline to avoid EVM snapshot conflicts with the outer beforeEach.
+      const protocol5 = await makeProtocol({
+        baseBorrowMin: 0,
+        assets: {
+          USDC: { initial: exp(1_000_000, 6), decimals: 6, initialPrice: 1 },
+          COMP: {
+            initial: exp(1_000_000, 18),
+            decimals: 18,
+            initialPrice: 1,
+            borrowCF: exp(0.8, 18),
+            liquidateCF: exp(0.85, 18),
+            liquidationFactor: exp(0.9, 18),
+            supplyCap: exp(1e6, 18),
+          },
+        },
+        baseTrackingBorrowSpeed: 0,
+      });
+
+      const { cometWithPartialLiquidation: comet, tokens: tokens, priceFeeds: priceFeeds, governor: governor } = protocol5;
+      const [supplier, borrower, liquidator] = protocol5.users;
+
+      await tokens.USDC.connect(governor).transfer(supplier.address, exp(1_000_000, 6));
+      await tokens.USDC.connect(supplier).approve(comet.address, exp(1_000_000, 6));
+      await comet.connect(supplier).supply(tokens.USDC.address, exp(1_000_000, 6));
+
+      // 7 COMP - $1: borrowCF capacity = 7*1*0.8 = $5.60 = 5_600_000 USDC
+      const compAmount = exp(7, 18);
+      await tokens.COMP.connect(governor).transfer(borrower.address, compAmount);
+      await tokens.COMP.connect(borrower).approve(comet.address, compAmount);
+      await comet.connect(borrower).supply(tokens.COMP.address, compAmount);
+
+      // Borrow exactly at capacity: $5.60 (baseBorrowMin=0 so any positive amount is valid)
+      const borrowAmount = 5_600_000n;
+      await comet.connect(borrower).withdraw(tokens.USDC.address, borrowAmount);
+
+      // Drop COMP to $0.93: liquidateCF value = 7*0.93*0.85 = $5.5335 < $5.60 ->  liquidatable
+      await setPrice(priceFeeds.COMP, governor, 0.93);
+
+      expect(await comet.isLiquidatable(borrower.address)).to.be.true;
+
+      // Pre-absorb: verify the guard condition with baseBorrowMin=0
+      const FACTOR_SCALE = exp(1, 18);
+      const targetHF = exp(1.05, 18);
+      const basePrice = (await comet.getPrice(await comet.baseTokenPriceFeed())).toBigInt();
+      const baseScale = exp(1, 6);
+      const compPrice = (await comet.getPrice(priceFeeds.COMP.address)).toBigInt();
+
+      const availableUSD = compAmount * compPrice / exp(1, 18);
+      const tcv = availableUSD * exp(0.8, 18) / FACTOR_SCALE;
+      const debtPriceAdj = borrowAmount * basePrice / baseScale;
+      const denom = exp(0.9, 18) * targetHF / FACTOR_SCALE - exp(0.8, 18);
+      const rawCollateralUSD = (debtPriceAdj * targetHF / FACTOR_SCALE - tcv) * FACTOR_SCALE / denom;
+
+      // rawCollateralUSD ≤ availableUSD ->  partial path; guard fires with baseBorrowMin=$5 but NOT with baseBorrowMin=0
+      expect(rawCollateralUSD).to.be.lte(availableUSD, 'rawCollateralUSD ≤ availableUSD: partial path');
+
+      const debtReduction = rawCollateralUSD * exp(0.9, 18) / FACTOR_SCALE;
+      const debtAfterPartial = debtPriceAdj - debtReduction;
+      const baseDebtAfterPartial = debtAfterPartial * baseScale / basePrice;
+
+      // Would fire the guard if baseBorrowMin were $5, but baseBorrowMin=0 means guard never fires
+      expect(baseDebtAfterPartial).to.be.lt(exp(5, 6), 'baseDebtAfterPartial < $5 (would trigger guard if baseBorrowMin=$5)');
+      expect(baseDebtAfterPartial).to.be.gte(0n, 'baseDebtAfterPartial ≥ baseBorrowMin=0: guard does not fire');
+
+      await comet.connect(liquidator).absorb(liquidator.address, [borrower.address]);
+
+      // Partial seizure: some COMP remains, some debt remains
+      const finalCOMP = (await comet.userCollateral(borrower.address, tokens.COMP.address)).balance;
+      expect(finalCOMP.toBigInt()).to.be.gt(0n, 'COMP must be partially seized (some remains)');
+      expect(finalCOMP.toBigInt()).to.be.lt(compAmount, 'COMP balance must have decreased');
+
+      const finalDebt = await comet.borrowBalanceOf(borrower.address);
+      expect(finalDebt.toBigInt()).to.be.gt(0n, 'Debt must remain (partial, not full liquidation)');
+
+      expect(await comet.isLiquidatable(borrower.address)).to.be.false;
+    });
   });
 
   // ── Scenario 4a/4b — targetHealthFactor constructor validation (Fix 6 regression) ──
