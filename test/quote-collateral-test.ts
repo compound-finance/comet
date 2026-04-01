@@ -16,6 +16,7 @@ describe('quoteCollateral', function () {
           initial: 1e7,
           decimals: 18,
           initialPrice: 200,
+          borrowCF: exp(0.62, 18),
           liquidationFactor: exp(0.6, 18),
         },
       }
@@ -51,6 +52,7 @@ describe('quoteCollateral', function () {
         COMP: {
           initial: 1e7,
           decimals: 18,
+          borrowCF: exp(0.8, 18),
           initialPrice: 200,
         },
       }
@@ -79,6 +81,7 @@ describe('quoteCollateral', function () {
           initial: 1e7,
           decimals: 18,
           initialPrice: 200,
+          borrowCF: exp(0.62, 18),
           liquidationFactor: exp(0.6, 18),
         },
       }
@@ -117,6 +120,7 @@ describe('quoteCollateral', function () {
           initial: 1e7,
           decimals: 18,
           initialPrice: 9,
+          borrowCF: exp(0.8, 18),
           liquidationFactor: exp(0.8, 18),
         },
       }
@@ -148,6 +152,7 @@ describe('quoteCollateral', function () {
           initial: 1e7,
           decimals: 18,
           initialPrice: 200,
+          borrowCF: exp(0.7, 18),
           liquidationFactor: exp(0.75, 18),
         },
       }

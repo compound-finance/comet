@@ -325,7 +325,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     baseMinForRewards,
     baseBorrowMin,
     targetReserves,
-    targetHealthFactor: 0n,
+    targetHealthFactor: exp(1.05, 18),
     assetConfigs: Object.entries(assets).reduce((acc, [symbol, config], _i) => {
       if (symbol != base && _i <= 12) {
         acc.push({
@@ -477,7 +477,7 @@ export async function getConfigurationForConfigurator(
     baseMinForRewards,
     baseBorrowMin,
     targetReserves,
-    targetHealthFactor: 0n,
+    targetHealthFactor: exp(1.05, 18),
     assetConfigs: Object.entries(assets).reduce((acc, [symbol, config], _i) => {
       if (symbol != base) {
         acc.push({
