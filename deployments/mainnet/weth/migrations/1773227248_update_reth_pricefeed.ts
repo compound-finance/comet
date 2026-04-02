@@ -79,11 +79,16 @@ Due to the deprecation of the RETH / ETH Chainlink Oracle, the rETH price feed m
 
 Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1097) and [forum discussion for CAPO](https://www.comp.xyz/t/woof-correlated-assets-price-oracle-capo/6245).
 
+### New price feed audit
+
+New CAPO price feed for rETH has been audited by [Certora](https://www.certora.com/reports/compound-reth-capo) and no issues were found.
+
 ## Proposal Actions
 
 The first action updates the rETH price feed to the new CAPO contract.
 
 The second action deploys and upgrades Comet to a new version.`;
+
     const txn = await deploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
