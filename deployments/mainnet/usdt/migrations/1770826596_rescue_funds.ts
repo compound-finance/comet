@@ -37,13 +37,13 @@ export default migration('1770826596_rescue_funds', {
 
 ## Proposal summary
 
-This proposal returns accidentally sended funds to a cUSDTv3 on Mainnet. Funds will be sent back to the user.
+This proposal returns accidentally sent funds to a cUSDTv3 on Mainnet. Funds will be sent back to the user.
 
-Further detailed information can be found on the corresponding [forum discussion](https://www.comp.xyz/t/woof-correlated-assets-price-oracle-capo/6245).
+Further detailed information can be found on the corresponding [forum discussion](https://www.comp.xyz/t/compound-s-policy-on-accidental-erc-20-transfersto-comet-compound-v3-contracts/7577).
 
 Accidental transfer tx hash: 0x92b03289ad09323ec897e106442096f3fc07f4c9cee4e02add7ee2b672d865e3
 Amount sent: 19_958.414155
-User address: 0x34074a8706e952a02f8a3def416bab745b54a3ed 
+User address: 0x34074a8706e952a02f8a3def416bab745b54a3ed
 
 ## Proposal actions
 
@@ -63,8 +63,8 @@ The first action withdraws accidentally sent funds from a comet and transfers th
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return true;
+  async enacted(): Promise<boolean> {
+    return false;
   },
 
   async verify(deploymentManager: DeploymentManager) {
