@@ -1,3 +1,4 @@
+import { Contract } from 'ethers';
 import { DeploymentManager, migration } from '../../../../plugins/deployment_manager';
 import { proposal, exp } from '../../../../src/deploy';
 
@@ -74,9 +75,9 @@ export default migration('1773227248_update_reth_pricefeed', {
 
 This proposal updates the rETH price feed in the Compound III WETH market on Ethereum.
 
-Due to the deprecation of the RETH / ETH Chainlink Oracle, the rETH price feed must be replaced with a new CAPO price feed that fetches the rETH / ETH exchange rate directly from the rETH contract. The new price feed retains the same CAPO parameters as the previous price feed.
+Due to the deprecation of the RETH / ETH Chainlink Oracle, the rETH price feed must be replaced with a new CAPO price feed that fetches the rETH / ETH exchange rate directly from the rETH contract. The new price feed retains the same CAPO parameters as the previous one.
 
-Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1097).
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1097) and [forum discussion for CAPO](https://www.comp.xyz/t/woof-correlated-assets-price-oracle-capo/6245).
 
 ## Proposal Actions
 
@@ -115,5 +116,15 @@ The second action deploys and upgrades Comet to a new version.`;
     expect(oldRETHPriceFeed).to.not.equal(newRETHPriceFeed);
     expect(await comet.getPrice(newRETHPriceFeed)).to.be.closeTo(await comet.getPrice(oldRETHPriceFeed), exp(0.01, 8));  
 
+    const rETHPriceFeed = (await comet.getAssetInfoByAddress(rETH.address)).priceFeed;
+    expect(rETHPriceFeed).to.equal(newRETHPriceFeed);
+
+    const newPriceFeedContract = new Contract(
+      newRETHPriceFeed,
+      ['function maxYearlyRatioGrowthPercent() view returns (uint32)'],
+      await deploymentManager.getSigner()
+    );
+
+    expect(await newPriceFeedContract.maxYearlyRatioGrowthPercent()).to.equal(290);
   },
 });
