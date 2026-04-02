@@ -43,6 +43,8 @@ scenario(
       world.deploymentManager.hre.ethers.provider
     );
     const rewardScale = exp(1, await rewardToken.decimals());
+    await context.sourceTokens(exp(100, await rewardToken.decimals()), rewardTokenAddress, rewards.address);
+
 
     await baseAsset.approve(albert, comet.address);
     await albert.safeSupplyAsset({ asset: baseAssetAddress, amount: 100n * baseScale });
@@ -106,6 +108,7 @@ scenario(
       world.deploymentManager.hre.ethers.provider
     );
     const rewardScale = exp(1, await rewardToken.decimals());
+    await context.sourceTokens(exp(100, await rewardToken.decimals()), rewardTokenAddress, rewards.address);
 
     await albert.allow(betty, true); // Albert allows Betty to manage his account
     await baseAsset.approve(albert, comet.address);
@@ -173,6 +176,7 @@ scenario(
     const { rescaleFactor } = await context.getRewardConfig();
     const rewardToken = await context.getRewardToken();
     const rewardScale = exp(1, await rewardToken.decimals());
+    await context.sourceTokens(exp(100, await rewardToken.decimals()), rewardToken.address, rewards.address);
 
     await collateralAsset.approve(albert, comet.address);
     await albert.safeSupplyAsset({ asset: collateralAssetAddress, amount: toSupply });
