@@ -172,8 +172,8 @@ The first action updates WETH, ARB, WBTC and USDC price feeds to the SVR impleme
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(): Promise<boolean> {
-    return false;
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {
