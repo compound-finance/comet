@@ -1,5 +1,5 @@
 import { CometProxyAdmin, CometWithExtendedAssetList, Configurator, FaucetToken, NonStandardFaucetFeeToken, PriceFeedWithRevert, PriceFeedWithRevert__factory } from 'build/types';
-import { expect, exp, makeProtocol, makeConfigurator, ethers, updateAssetLiquidateCollateralFactor, getLiquidityWithLiquidateCF, MAX_ASSETS, takeSnapshot, SnapshotRestorer } from './helpers';
+import { expect, exp, makeProtocol, makeConfigurator, ethers, updateAssetLiquidateCollateralFactor, getLiquidityWithLiquidateCF, MAX_ASSETS, takeSnapshot, SnapshotRestorer, updateAssetBorrowCollateralFactor } from './helpers';
 import { BigNumber } from 'ethers';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 
@@ -219,7 +219,7 @@ describe('isLiquidatable', function () {
           },
         ])
       );
-      const protocol = await makeConfigurator({ assets: { USDC: { decimals: 6, initialPrice: 1 }, ...collaterals }});
+      const protocol = await makeConfigurator({ assets: { USDC: { decimals: 6, initialPrice: 1 }, ...collaterals } });
 
       configurator = protocol.configurator;
       configuratorProxyAddress = protocol.configuratorProxy.address;
@@ -270,6 +270,8 @@ describe('isLiquidatable', function () {
 
       // With positive liquidateCF and ample collateral, not liquidatable
       expect(await comet.isLiquidatable(alice.address)).to.be.false;
+
+      await updateAssetBorrowCollateralFactor(configurator, proxyAdmin, cometProxyAddress, collateralToken.address, 0n);
     });
 
     it('liquidity calculation includes collateral with positive liquidateCF', async () => {
@@ -297,7 +299,7 @@ describe('isLiquidatable', function () {
     });
 
     it('liquidateCF can be restored back', async function () {
-      await updateAssetLiquidateCollateralFactor(configurator, proxyAdmin, cometProxyAddress, collateralToken.address, (liquidateCF), governor);
+      await updateAssetLiquidateCollateralFactor(configurator, proxyAdmin, cometProxyAddress, collateralToken.address, liquidateCF, governor);
     });
 
     it('liquidateCF is restored back after upgrade', async function () {
@@ -338,6 +340,7 @@ describe('isLiquidatable', function () {
       // Zero liquidateCF for three assets: ASSET1, ASSET3, ASSET4
       const zeroLcfSymbols = ['ASSET1', 'ASSET3', 'ASSET4'];
       for (const sym of zeroLcfSymbols) {
+        await updateAssetBorrowCollateralFactor(configurator, proxyAdmin, cometProxyAddress, tokens[sym].address, 0n);
         await updateAssetLiquidateCollateralFactor(configurator, proxyAdmin, comet.address, tokens[sym].address, 0n, governor);
       }
 
@@ -378,6 +381,8 @@ describe('isLiquidatable', function () {
 
         // Initially not liquidatable with positive liquidateCF
         expect(await comet.isLiquidatable(alice.address)).to.be.false;
+
+        await updateAssetBorrowCollateralFactor(configurator, proxyAdmin, cometProxyAddress, targetToken.address, 0n);
 
         // Zero liquidateCF for target asset (last one)
         await updateAssetLiquidateCollateralFactor(configurator, proxyAdmin, comet.address, targetToken.address, 0n, governor);
@@ -450,9 +455,7 @@ describe('isLiquidatable', function () {
         });
 
         it('isLiquidatable reverts when collateral price feed reverts', async () => {
-          await expect(
-            comet.isLiquidatable(alice.address)
-          ).to.be.revertedWithCustomError(priceFeedWithRevert, 'Reverted');
+          await expect(comet.isLiquidatable(alice.address)).to.be.revertedWithCustomError(priceFeedWithRevert, 'Reverted');
         });
 
         it('governance restores the normal collateral price feed', async () => {
