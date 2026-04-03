@@ -1057,8 +1057,10 @@ contract CometWithExtendedAssetList is CometMainInterface {
         liquidatorPoints[absorber] = points;
     }
 
-    /// @dev CF-weighted (borrowCF) sum of collateral USD value for the account.
-    ///      Used by partial liquidation to initialise totalCollaterizedValue.
+    /// @dev Collateral-factor-weighted sum of collateral USD value for the account.
+    ///      When `liquidation=false` uses borrowCollateralFactor (used by absorbInternal to
+    ///      initialise totalCollateralizedValue for the partial-liquidation formula).
+    ///      When `liquidation=true` uses liquidateCollateralFactor (used by isLiquidatable).
     function _getLiquidity(address account, bool liquidation) internal view returns (uint256) {
         uint16 assetsIn = userBasic[account].assetsIn;
         uint8 _reserved = userBasic[account]._reserved;
@@ -1087,14 +1089,14 @@ contract CometWithExtendedAssetList is CometMainInterface {
      *      one by one until the account's health factor reaches `targetHealthFactor`.
      *
      *      Partial-liquidation logic (applied per asset):
-     *        1. If `liquidationFactor × targetHF > borrowCollateralFactor` the seized
+     *        1. For each asset `denom = liquidationFactor × targetHF − borrowCollateralFactor`
+     *           is always > 0 (guaranteed by the AssetList constructor invariant). The seized
      *           amount is calculated to bring the account exactly to `targetHF`.
      *           - If the remaining debt after the partial seizure would be below
      *             `baseBorrowMin` (dust), the full asset balance is seized instead
      *             and the loop continues to the next asset.
-     *        2. Otherwise (`liquidationFactor × targetHF ≤ borrowCollateralFactor`)
-     *           seizing the asset cannot improve the health factor, so the full
-     *           balance is seized and the loop continues.
+     *        2. If the asset balance is insufficient to reach `targetHF` in a single seizure,
+     *           the full balance is seized and the loop continues to the next asset.
      *        3. Once an asset seizure brings `currentHF` to `targetHF` the loop
      *           exits early.
      *
