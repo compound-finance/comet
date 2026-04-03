@@ -95,6 +95,7 @@ export type ProtocolOpts = {
   baseMinForRewards?: Numeric;
   baseBorrowMin?: Numeric;
   targetReserves?: Numeric;
+  targetHealthFactor?: Numeric;
   baseTokenBalance?: Numeric;
   marketAdminPermissionCheckerContract?: MarketAdminPermissionChecker;
 };
@@ -325,7 +326,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     baseMinForRewards,
     baseBorrowMin,
     targetReserves,
-    targetHealthFactor: exp(1.05, 18),
+    targetHealthFactor: dfn(opts.targetHealthFactor, exp(1.05, 18)),
     assetConfigs: Object.entries(assets).reduce((acc, [symbol, config], _i) => {
       if (symbol != base && _i <= 12) {
         acc.push({
@@ -370,10 +371,9 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   const cometWithExtendedAssetList = await CometFactoryWithExtendedAssetList.deploy(config);
   await cometWithExtendedAssetList.deployed();
 
-  // Deploy a second CometHarnessExtendedAssetList instance with targetHealthFactor = 1.05 for partial liquidation
+  // Deploy a second CometHarnessExtendedAssetList instance with configurable targetHealthFactor (default 1.05) for partial liquidation
   const configPartialLiquidation = {
     ...config,
-    targetHealthFactor: exp(1.05, 18),
   };
 
   const CometFactoryWithExtendedAssetListForPartial = (await ethers.getContractFactory('CometHarnessExtendedAssetList')) as CometHarnessExtendedAssetList__factory;
