@@ -8,8 +8,6 @@ import "./IAssetListFactory.sol";
 import "./IAssetListFactoryHolder.sol";
 import "./IAssetList.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @title Compound's Comet Contract
  * @notice An efficient monolithic money market protocol
@@ -975,11 +973,6 @@ contract CometWithExtendedAssetList is CometMainInterface {
 
         (uint104 withdrawAmount, uint104 borrowAmount) = withdrawAndBorrowAmount(srcPrincipal, srcPrincipalNew);
         (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstPrincipal, dstPrincipalNew);
-
-        // console.log(withdrawAmount);
-        // console.log(borrowAmount);
-        // console.log(repayAmount);
-        // console.log(supplyAmount);
 
         // Note: Instead of `total += addAmount - subAmount` to avoid underflow errors.
         totalSupplyBase = totalSupplyBase + supplyAmount - withdrawAmount;
