@@ -426,10 +426,10 @@ contract CometWithExtendedAssetList is CometMainInterface {
         uint256[] memory assetPrices
     ) {
         int104 principal = userBasic[account].principal;
-        assetPrices = new uint256[](numAssets);
 
         if (principal >= 0) return (false, basePrice, assetPrices);
-    
+
+        assetPrices = new uint256[](numAssets);
         uint16 assetsIn = userBasic[account].assetsIn;
         uint8 _reserved = userBasic[account]._reserved;
         basePrice = getPrice(baseTokenPriceFeed);
