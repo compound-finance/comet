@@ -135,7 +135,7 @@ contract Comet is CometMainInterface {
         // Sanity checks
         uint8 decimals_ = IERC20NonStandard(config.baseToken).decimals();
         if (decimals_ > MAX_BASE_DECIMALS) revert BadDecimals();
-        if (config.storeFrontPriceFactor > FACTOR_SCALE) revert BadDiscount();
+        if (config.storeFrontPriceFactor >= FACTOR_SCALE) revert BadDiscount();
         if (config.assetConfigs.length > MAX_ASSETS) revert TooManyAssets();
         if (config.baseMinForRewards == 0) revert BadMinimum();
         if (IPriceFeed(config.baseTokenPriceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
@@ -1278,6 +1278,7 @@ contract Comet is CometMainInterface {
         // discount = storeFrontPriceFactor * (1e18 - liquidationFactor)
         uint256 discountFactor = mulFactor(storeFrontPriceFactor, FACTOR_SCALE - assetInfo.liquidationFactor);
         uint256 assetPriceDiscounted = mulFactor(assetPrice, FACTOR_SCALE - discountFactor);
+        if (assetPriceDiscounted == 0) revert BadPrice();
         uint256 basePrice = getPrice(baseTokenPriceFeed);
         // # of collateral assets
         // = (TotalValueOfBaseAmount / DiscountedPriceOfCollateralAsset) * assetScale
