@@ -166,7 +166,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
         // Set asset info
         numAssets = uint8(config.assetConfigs.length);
 
-        assetList = IAssetListFactory(IAssetListFactoryHolder(extensionDelegate).assetListFactory()).createAssetList(config.assetConfigs, targetHealthFactor);
+        assetList = IAssetListFactory(IAssetListFactoryHolder(extensionDelegate).assetListFactory()).createAssetList(config.assetConfigs);
     }
 
     /**

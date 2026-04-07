@@ -12,7 +12,6 @@ abstract contract CometMainInterface is CometCore {
     error Absurd();
     error AlreadyInitialized();
     error BadAsset();
-    error BadAssetHealthFactor();
     error BadDecimals();
     error BadDiscount();
     error BadHealthFactor();

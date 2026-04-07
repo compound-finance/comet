@@ -72,34 +72,34 @@ contract AssetList {
     /// @notice The number of assets this contract actually supports
     uint8 public immutable numAssets;
     
-    constructor(CometConfiguration.AssetConfig[] memory assetConfigs, uint targetHealthFactor) {
+    constructor(CometConfiguration.AssetConfig[] memory assetConfigs) {
         uint8 _numAssets = uint8(assetConfigs.length);
         numAssets = _numAssets;
         
-        (asset00_a, asset00_b) = getPackedAssetInternal(assetConfigs, 0, targetHealthFactor);
-        (asset01_a, asset01_b) = getPackedAssetInternal(assetConfigs, 1, targetHealthFactor);
-        (asset02_a, asset02_b) = getPackedAssetInternal(assetConfigs, 2, targetHealthFactor);
-        (asset03_a, asset03_b) = getPackedAssetInternal(assetConfigs, 3, targetHealthFactor);
-        (asset04_a, asset04_b) = getPackedAssetInternal(assetConfigs, 4, targetHealthFactor);
-        (asset05_a, asset05_b) = getPackedAssetInternal(assetConfigs, 5, targetHealthFactor);
-        (asset06_a, asset06_b) = getPackedAssetInternal(assetConfigs, 6, targetHealthFactor);
-        (asset07_a, asset07_b) = getPackedAssetInternal(assetConfigs, 7, targetHealthFactor);
-        (asset08_a, asset08_b) = getPackedAssetInternal(assetConfigs, 8, targetHealthFactor);
-        (asset09_a, asset09_b) = getPackedAssetInternal(assetConfigs, 9, targetHealthFactor);
-        (asset10_a, asset10_b) = getPackedAssetInternal(assetConfigs, 10, targetHealthFactor);
-        (asset11_a, asset11_b) = getPackedAssetInternal(assetConfigs, 11, targetHealthFactor);
-        (asset12_a, asset12_b) = getPackedAssetInternal(assetConfigs, 12, targetHealthFactor);
-        (asset13_a, asset13_b) = getPackedAssetInternal(assetConfigs, 13, targetHealthFactor);
-        (asset14_a, asset14_b) = getPackedAssetInternal(assetConfigs, 14, targetHealthFactor);
-        (asset15_a, asset15_b) = getPackedAssetInternal(assetConfigs, 15, targetHealthFactor);
-        (asset16_a, asset16_b) = getPackedAssetInternal(assetConfigs, 16, targetHealthFactor);
-        (asset17_a, asset17_b) = getPackedAssetInternal(assetConfigs, 17, targetHealthFactor);
-        (asset18_a, asset18_b) = getPackedAssetInternal(assetConfigs, 18, targetHealthFactor);
-        (asset19_a, asset19_b) = getPackedAssetInternal(assetConfigs, 19, targetHealthFactor);
-        (asset20_a, asset20_b) = getPackedAssetInternal(assetConfigs, 20, targetHealthFactor);
-        (asset21_a, asset21_b) = getPackedAssetInternal(assetConfigs, 21, targetHealthFactor);
-        (asset22_a, asset22_b) = getPackedAssetInternal(assetConfigs, 22, targetHealthFactor);
-        (asset23_a, asset23_b) = getPackedAssetInternal(assetConfigs, 23, targetHealthFactor);
+        (asset00_a, asset00_b) = getPackedAssetInternal(assetConfigs, 0);
+        (asset01_a, asset01_b) = getPackedAssetInternal(assetConfigs, 1);
+        (asset02_a, asset02_b) = getPackedAssetInternal(assetConfigs, 2);
+        (asset03_a, asset03_b) = getPackedAssetInternal(assetConfigs, 3);
+        (asset04_a, asset04_b) = getPackedAssetInternal(assetConfigs, 4);
+        (asset05_a, asset05_b) = getPackedAssetInternal(assetConfigs, 5);
+        (asset06_a, asset06_b) = getPackedAssetInternal(assetConfigs, 6);
+        (asset07_a, asset07_b) = getPackedAssetInternal(assetConfigs, 7);
+        (asset08_a, asset08_b) = getPackedAssetInternal(assetConfigs, 8);
+        (asset09_a, asset09_b) = getPackedAssetInternal(assetConfigs, 9);
+        (asset10_a, asset10_b) = getPackedAssetInternal(assetConfigs, 10);
+        (asset11_a, asset11_b) = getPackedAssetInternal(assetConfigs, 11);
+        (asset12_a, asset12_b) = getPackedAssetInternal(assetConfigs, 12);
+        (asset13_a, asset13_b) = getPackedAssetInternal(assetConfigs, 13);
+        (asset14_a, asset14_b) = getPackedAssetInternal(assetConfigs, 14);
+        (asset15_a, asset15_b) = getPackedAssetInternal(assetConfigs, 15);
+        (asset16_a, asset16_b) = getPackedAssetInternal(assetConfigs, 16);
+        (asset17_a, asset17_b) = getPackedAssetInternal(assetConfigs, 17);
+        (asset18_a, asset18_b) = getPackedAssetInternal(assetConfigs, 18);
+        (asset19_a, asset19_b) = getPackedAssetInternal(assetConfigs, 19);
+        (asset20_a, asset20_b) = getPackedAssetInternal(assetConfigs, 20);
+        (asset21_a, asset21_b) = getPackedAssetInternal(assetConfigs, 21);
+        (asset22_a, asset22_b) = getPackedAssetInternal(assetConfigs, 22);
+        (asset23_a, asset23_b) = getPackedAssetInternal(assetConfigs, 23);
     }
 
     /**
@@ -113,10 +113,9 @@ contract AssetList {
      *      and the supply cap in the next 64 bits
      * @param assetConfigs The asset configurations
      * @param i The index of the asset info to get
-     * @param targetHealthFactor The target health factor for the asset list, used for validation
      * @return The packed asset info
      */
-    function getPackedAssetInternal(CometConfiguration.AssetConfig[] memory assetConfigs, uint i, uint targetHealthFactor) internal view returns (uint256, uint256) {
+    function getPackedAssetInternal(CometConfiguration.AssetConfig[] memory assetConfigs, uint i) internal view returns (uint256, uint256) {
         CometConfiguration.AssetConfig memory assetConfig;
         if (i < assetConfigs.length) {
             assembly {
@@ -141,9 +140,7 @@ contract AssetList {
         // Ensure collateral factors are within range
         if (assetConfig.borrowCollateralFactor >= assetConfig.liquidateCollateralFactor) revert CometMainInterface.BorrowCFTooLarge();
         if (assetConfig.liquidateCollateralFactor > MAX_COLLATERAL_FACTOR) revert CometMainInterface.LiquidateCFTooLarge();
-
-        // Ensure target health factor is valid relative to collateral factors
-        if ((assetConfig.liquidationFactor * targetHealthFactor / FACTOR_SCALE) <= assetConfig.borrowCollateralFactor) revert CometMainInterface.BadAssetHealthFactor();
+        if (assetConfig.liquidateCollateralFactor > assetConfig.liquidationFactor) revert CometMainInterface.LiquidateCFTooLarge();
 
         unchecked {
             // Keep 4 decimals for each factor

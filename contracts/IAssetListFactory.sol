@@ -10,8 +10,7 @@ interface IAssetListFactory {
     /**
      * @notice Create a new asset list
      * @param assetConfigs The asset configurations
-     * @param targetHealthFactor The target health factor for the asset list, used for validation
      * @return assetList The address of the new asset list
      */
-    function createAssetList(CometCore.AssetConfig[] memory assetConfigs, uint targetHealthFactor) external returns (address assetList);
+    function createAssetList(CometCore.AssetConfig[] memory assetConfigs) external returns (address assetList);
 }
