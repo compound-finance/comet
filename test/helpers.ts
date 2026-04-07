@@ -230,6 +230,7 @@ export const ZERO = factor(0);
 export const ZERO_ADDRESS = ethers.constants.AddressZero;
 export const DEFAULT_PRICEFEED_DECIMALS = 8;
 export const MAX_ASSETS = 24;
+export const MAX_SUPPORTED_UTILIZATION = exp(2, 18);
 
 export async function getBlock(n?: number, ethers_ = ethers): Promise<Block> {
   const blockNumber = n == undefined ? await ethers_.provider.getBlockNumber() : n;

@@ -985,9 +985,17 @@ contract CometWithExtendedAssetList is CometMainInterface {
             if (isBorrowersTransferPaused()) revert BorrowersTransferPaused();
             if (uint256(-srcBalance) < baseBorrowMin) revert BorrowTooSmall();
             if (!isBorrowCollateralized(src)) revert NotCollateralized();
-            /// @dev safeguard against the over-utilization leading to illiquidity and reserves exhaustion
-            /// At this point totals are updated and it is a borrow case, so we can check resulting utilization
-            if (getUtilization() > MAX_SUPPORTED_UTILIZATION) revert ExceedsSupportedUtilization();
+
+            /// @dev Guard against utilization being pushed above the supported ceiling via a borrow-side transferBase.
+            /// When the source account is in a borrow position, the supply credited to the destination is new
+            /// liquidity that the destination can immediately withdraw. To capture this worst case, utilization is
+            /// evaluated against total supply *excluding* the destination's newly credited amount — i.e. the supply
+            /// that would remain if the destination withdrew right away. This prevents a pattern where a borrower
+            /// transfers base to a fresh account that then withdraws, draining pool liquidity and pushing
+            /// utilization beyond MAX_SUPPORTED_UTILIZATION.
+            uint256 totalSupplyWithoutDst = presentValueSupply(baseSupplyIndex, totalSupplyBase - supplyAmount);
+            uint256 presentTotalBorrow = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
+            if (totalSupplyWithoutDst > 0 && presentTotalBorrow * FACTOR_SCALE / totalSupplyWithoutDst > MAX_SUPPORTED_UTILIZATION) revert ExceedsSupportedUtilization();
         } else {
             if (isLendersTransferPaused()) revert LendersTransferPaused();
         }
@@ -1000,6 +1008,8 @@ contract CometWithExtendedAssetList is CometMainInterface {
             emit Transfer(address(0), dst, presentValueSupply(baseSupplyIndex, supplyAmount));
         }
     }
+
+    receive() external payable {}
 
     /**
      * @dev Transfer an amount of collateral asset from src to dst
@@ -1091,16 +1101,15 @@ contract CometWithExtendedAssetList is CometMainInterface {
         totalSupplyBase -= withdrawAmount;
         totalBorrowBase += borrowAmount;
 
-        /// @dev safeguard against the over-utilization leading to illiquidity and reserves exhaustion
-        /// At this point totals are updated and it is a borrow case, so we can check resulting utilization
-        if (getUtilization() > MAX_SUPPORTED_UTILIZATION) revert ExceedsSupportedUtilization();
-
         updateBasePrincipal(src, srcUser, srcPrincipalNew);
 
         if (srcBalance < 0) {
             if (isBorrowersWithdrawPaused()) revert BorrowersWithdrawPaused();
             if (uint256(-srcBalance) < baseBorrowMin) revert BorrowTooSmall();
             if (!isBorrowCollateralized(src)) revert NotCollateralized();
+            /// @dev safeguard against the over-utilization leading to illiquidity and reserves exhaustion
+            /// At this point totals are updated and it is a borrow case, so we can check resulting utilization
+            if (getUtilization() > MAX_SUPPORTED_UTILIZATION) revert ExceedsSupportedUtilization();
         } else {
             if (isLendersWithdrawPaused()) revert LendersWithdrawPaused();
         }
