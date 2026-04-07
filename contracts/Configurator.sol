@@ -300,10 +300,6 @@ contract Configurator is ConfiguratorStorage {
 
     /** Other helpers **/
 
-    function targetHealthFactors(address cometProxy) external view returns (uint64) {
-        return configuratorParams[cometProxy].targetHealthFactor;
-    }
-
     /**
      * @dev Determine index of asset that matches given address
      */
