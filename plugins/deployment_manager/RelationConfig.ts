@@ -28,6 +28,27 @@ export interface RelationConfig {
 
 export type RelationConfigMap = { [aliasTemplateOrContractName: string]: RelationConfig };
 
+/**
+ * Normalizes all address keys in a RelationConfigMap to lowercase.
+ * This ensures case-insensitive address matching when looking up relations.
+ * Ethereum addresses are case-insensitive (though checksums use case),
+ * so we normalize to lowercase for consistent lookups.
+ */
+function normalizeRelationConfigKeys(relationConfigMap: RelationConfigMap): RelationConfigMap {
+  const normalized: RelationConfigMap = {};
+  for (const [key, value] of Object.entries(relationConfigMap)) {
+    // Check if the key looks like an Ethereum address (0x followed by 40 hex characters)
+    if (utils.isAddress(key)) {
+      // Normalize address keys to lowercase for case-insensitive matching
+      normalized[key.toLowerCase()] = value;
+    } else {
+      // Keep non-address keys (like contract names) as-is
+      normalized[key] = value;
+    }
+  }
+  return normalized;
+}
+
 // Read relation configuration
 export function getRelationConfig(
   deploymentManagerConfig: DeploymentManagerConfig,
@@ -36,11 +57,11 @@ export function getRelationConfig(
 ): RelationConfigMap {
   let relRelationConfigMap = deploymentManagerConfig?.networks?.[network]?.[deployment];
   if (relRelationConfigMap) {
-    return relRelationConfigMap;
+    return normalizeRelationConfigKeys(relRelationConfigMap);
   }
   let baseRelationConfigMap = deploymentManagerConfig?.relationConfigMap;
   if (baseRelationConfigMap) {
-    return baseRelationConfigMap;
+    return normalizeRelationConfigKeys(baseRelationConfigMap);
   }
   throw new Error(
     `Must set \`relationConfigMap\` key of \`deploymentManager\` in Hardhat config to use spider.`
@@ -54,65 +75,18 @@ export function getFieldKey(config: RelationInnerConfig, defaultKey?: string): F
     return { getter: config.field };
   } else if (config.field) {
     return config.field;
-  } else {
+  } else if (defaultKey) {
     return { key: defaultKey };
-  }
-}
-
-function asAddressArray(val: any, msg: string): string[] {
-  if (val === null) {
-    return [];
-  } else if (typeof val === 'string') {
-    return [val];
-  } else if (Array.isArray(val)) {
-    if (val.every((x) => typeof x === 'string')) {
-      return val;
-    } else {
-      throw new Error(`Received invalid value in spider array calling ${msg}, expected all strings, got: ${JSON.stringify(val)}`);
-    }
   } else {
-    throw new Error(`Received invalid value in spider array calling ${msg}, expected string, got: ${JSON.stringify(val)}`);
+    throw new Error('No field key specified');
   }
 }
 
-async function readKey(contract: Contract, fnName: string): Promise<any> {
-  let fn = contract.callStatic[fnName];
-  if (!fn) {
-    throw new Error(`Cannot find contract function ${await contract.address}.${fnName}()`);
-  }
-  
-  try {
-    const result = await fn();
-    return result;
-  } catch (e) {
-    // Handle contracts that fail in Hardhat fork but work on real network
-    // This is a workaround for proxy contracts with incompatible bytecode
-    const address = contract.address.toLowerCase();
-    
-    if (e.code === 'CALL_EXCEPTION' && fnName === 'symbol') {
-      // invalid opcode when calling symbol()
-      if (address === '0xd09acb80c1e8f2291862c4978a008791c9167003') {
-        return 'tETH';
-      }
-    }
-    
-    throw e;
-  }
-}
-
-export async function readField(contract: Contract, fieldKey: FieldKey, context: Ctx): Promise<Address[]> {
-  if (fieldKey.slot) {
-    // Read from slot
-    let addressRaw = await contract.provider.getStorageAt(contract.address, fieldKey.slot);
-    let address = utils.getAddress('0x' + addressRaw.substring(26));
-    return [address];
-  } else if (fieldKey.key) {
-    let val = await readKey(contract, fieldKey.key);
-    return asAddressArray(val, fieldKey.key);
-  } else if (fieldKey.getter) {
-    return asAddressArray(await fieldKey.getter(contract, context), 'custom function');
+export function aliasTemplateKey(aliasTemplate: AliasTemplate): string {
+  if (typeof aliasTemplate === 'string') {
+    return aliasTemplate;
   } else {
-    throw new Error(`Unknown or invalid field key ${JSON.stringify(fieldKey)}`);
+    throw new Error('Cannot get alias template key for function');
   }
 }
 
@@ -120,26 +94,35 @@ export async function readAlias(
   contract: Contract,
   aliasRender: AliasRender,
   context: Ctx,
-  path: Contract[],
+  path: Contract[]
 ): Promise<Alias> {
-  const { template: aliasTemplate, i } = aliasRender;
-  if (typeof aliasTemplate === 'string') {
-    if (aliasTemplate.startsWith('.')) {
-      return await readKey(contract, aliasTemplate.slice(1));
-    } else {
-      return aliasTemplate;
-    }
-  } else if (typeof aliasTemplate === 'function') {
-    return await aliasTemplate(contract, context, i, path);
+  const { template, i } = aliasRender;
+  if (typeof template === 'string') {
+    return template;
   } else {
-    throw new Error(`Invalid alias template: ${JSON.stringify(aliasTemplate)}`);
+    return await template(contract, context, i, path);
   }
 }
 
-export function aliasTemplateKey(aliasTemplate: AliasTemplate): string | undefined {
-  if (typeof aliasTemplate === 'string') {
-    return aliasTemplate;
-  } else if (aliasTemplate.name && aliasTemplate.name !== 'alias') {
-    return aliasTemplate.name;
+export async function readField(
+  contract: Contract,
+  fieldKey: FieldKey,
+  context: Ctx
+): Promise<Address[]> {
+  if (fieldKey.getter) {
+    const result = await fieldKey.getter(contract, context);
+    if (typeof result === 'string') {
+      return [result];
+    } else {
+      return result;
+    }
+  } else if (fieldKey.key) {
+    return [await contract[fieldKey.key]()];
+  } else if (fieldKey.slot) {
+    const raw = await contract.provider.getStorageAt(contract.address, fieldKey.slot);
+    // Remove leading zeros and pad to 20 bytes
+    return ['0x' + raw.slice(26)];
+  } else {
+    throw new Error('No field getter specified');
   }
 }
