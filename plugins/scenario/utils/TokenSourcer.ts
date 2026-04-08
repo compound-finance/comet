@@ -93,10 +93,26 @@ async function removeTokens(
 
 const mintableByBridgeConfig = {
   unichain: [
-    '0x927b51f251480a681271180da4de28d44ec4afb8',
-    '0x8f187aa05619a017077f5308904739877ce9ea21',
-    '0x949d3A70722731d3bA8E0ca4061E12387c659E75',
-    '0xdf78e4F0A8279942ca68046476919A90f2288656'
+    {
+      asset: '0x927b51f251480a681271180da4de28d44ec4afb8',
+      minter: '0x4200000000000000000000000000000000000010',
+    },
+    {
+      asset: '0x8f187aa05619a017077f5308904739877ce9ea21',
+      minter: '0x4200000000000000000000000000000000000010',
+    },
+    {
+      asset: '0x949d3A70722731d3bA8E0ca4061E12387c659E75',
+      minter: '0x4200000000000000000000000000000000000010',
+    },
+    {
+      asset: '0xdf78e4F0A8279942ca68046476919A90f2288656',
+      minter: '0x4200000000000000000000000000000000000010',
+    },
+    {
+      asset: '0xc02fE7317D4eb8753a02c35fe019786854A92001',
+      minter: '0x1A513e9B6434a12C7bB5B9AF3B21963308DEE372',
+    },
   ],
 };
 
@@ -123,15 +139,23 @@ async function addTokens(
   block = block ?? (await ethers.provider.getBlockNumber());
   let tokenContract = new ethers.Contract(asset, erc20, ethers.provider);
   let filter = tokenContract.filters.Transfer();
-  if (mintableByBridgeConfig[dm.network] && mintableByBridgeConfig[dm.network].map((addr: string) => addr.toLowerCase()).includes(asset.toLowerCase())) {
+  if (mintableByBridgeConfig[dm.network] && mintableByBridgeConfig[dm.network].map((obj: { asset: string, minter: string }) => obj.asset.toLowerCase()).includes(asset.toLowerCase())) {
+    const minter = mintableByBridgeConfig[dm.network].find((obj: { asset: string, minter: string }) => obj.asset.toLowerCase() === asset.toLowerCase())!.minter;
     await dm.hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
-      params: ['0x4200000000000000000000000000000000000010'],
+      params: [minter],
     });
     await dm.hre.network.provider.send('hardhat_setBalance',
-      ['0x4200000000000000000000000000000000000010', '0x1000000000000000']);
+      [minter, '0x1000000000000000']);
     
-    const signer = await dm.getSigner('0x4200000000000000000000000000000000000010');
+    const signer = await dm.getSigner(minter);
+    if(dm.network === 'unichain' && tokenContract.address.toLowerCase() === '0xc02fE7317D4eb8753a02c35fe019786854A92001'.toLowerCase()) {
+      const wstETHContract = new ethers.Contract(tokenContract.address, [
+        'function bridgeMint(address account_, uint256 amount_) external',
+      ], signer);
+      await wstETHContract.bridgeMint(address, amount); // wstETH
+      return;
+    }
     await tokenContract.connect(signer).mint(address, amount);
     return;
   }
