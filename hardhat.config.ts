@@ -198,7 +198,7 @@ export const networkConfigs: NetworkConfig[] = [
   {
     network: 'scroll',
     chainId: 534352,
-    url: 'https://rpc.scroll.io',
+    url: 'https://scroll.drpc.org',
   },
 ];
 
