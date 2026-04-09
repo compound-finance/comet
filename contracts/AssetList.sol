@@ -139,8 +139,10 @@ contract AssetList {
 
         // Ensure collateral factors are within range
         if (assetConfig.borrowCollateralFactor >= assetConfig.liquidateCollateralFactor) revert CometMainInterface.BorrowCFTooLarge();
-        if (assetConfig.liquidateCollateralFactor > MAX_COLLATERAL_FACTOR) revert CometMainInterface.LiquidateCFTooLarge();
-        if (assetConfig.liquidateCollateralFactor > assetConfig.liquidationFactor) revert CometMainInterface.LiquidateCFTooLarge();
+        if (
+            assetConfig.liquidateCollateralFactor > MAX_COLLATERAL_FACTOR &&
+            assetConfig.liquidateCollateralFactor >= assetConfig.liquidationFactor
+        ) revert CometMainInterface.LiquidateCFTooLarge();
 
         unchecked {
             // Keep 4 decimals for each factor
