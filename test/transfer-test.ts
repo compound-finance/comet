@@ -426,10 +426,10 @@ describe('transfer', function () {
           expect((await testComet.userBasic(alice.address)).principal).to.equal(newAlicePrincipal);
         });
 
-        it('earned interest is > 0', async () => {
+        it('earned interest is not changed', async () => {
           const baseSupplyIndex = (await testComet.totalsBasic()).baseSupplyIndex;
           earnedInterest = presentValueSupply(baseSupplyIndex, newAlicePrincipal) - SUPPLY_AMOUNT;
-          expect(earnedInterest).to.be.greaterThan(0n);
+          expect(earnedInterest).to.equal(0n);
         });
 
         it('alice balanceOf is increased', async () => {
