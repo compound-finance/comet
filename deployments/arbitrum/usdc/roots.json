@@ -4,5 +4,6 @@
     "rewards": "0x88730d254A2f7e6AC8388c3198aFd694bA9f7fae",
     "bridgeReceiver": "0x42480C37B249e33aABaf4c22B20235656bd38068",
     "bulker": "0xbdE8F31D2DdDA895264e27DD990faB3DC87b372d",
-    "CCTPMessageTransmitter": "0xC30362313FBBA5cf9163F0bb16a0e01f01A896ca"
+    "CCTPTokenMessenger": "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d",
+    "CCTPMessageTransmitter": "0x81D40F21F12A8F0E3252Bccb954D722d4c464B64"
 }
