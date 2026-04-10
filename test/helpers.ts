@@ -45,7 +45,12 @@ import {
 import { BigNumber } from 'ethers';
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
 import { TotalsBasicStructOutput, TotalsCollateralStructOutput } from '../build/types/CometHarness';
+
+// Snapshot
 export { takeSnapshot, SnapshotRestorer } from './helpers/snapshot';
+
+// Network helpers
+export * from './helpers/network-helpers';
 
 export { Comet, ethers, expect, hre };
 
@@ -178,6 +183,62 @@ export function mulPrice(n: bigint, price: bigint | BigNumber, fromScale: bigint
   return n * toBigInt(price) / toBigInt(fromScale);
 }
 
+export function mulFactor(n: bigint, factor: bigint):bigint {
+  return n * factor / factorScale;
+}
+
+export function divPrice(n: bigint, price: bigint, toScale: bigint): bigint {
+  return n * toScale / price;
+}
+
+const BASE_INDEX_SCALE = 10n ** 15n;
+
+export function presentValueSupply(baseSupplyIndex: bigint | BigNumber, principalValue: bigint | BigNumber): bigint {
+  const principal = toBigInt(principalValue);
+  const index = toBigInt(baseSupplyIndex);
+  return principal * index / BASE_INDEX_SCALE;
+}
+
+function presentValueBorrow(baseBorrowIndex: bigint | BigNumber, principalValue: bigint | BigNumber): bigint {
+  const principal = toBigInt(principalValue);
+  const index = toBigInt(baseBorrowIndex);
+  return principal * index / BigInt(BASE_INDEX_SCALE);
+}
+
+export function presentValue(
+  principalValue: bigint | BigNumber,
+  baseSupplyIndex: bigint | BigNumber,
+  baseBorrowIndex: bigint | BigNumber
+): bigint {
+  const principal = toBigInt(principalValue);
+  if (principal >= 0n) {
+    return presentValueSupply(baseSupplyIndex, principal);
+  } else {
+    return -presentValueBorrow(baseBorrowIndex, -principal);
+  }
+}
+
+function principalValueSupply(baseSupplyIndex: bigint, presentValue: bigint): bigint {
+  return (presentValue * BigInt(BASE_INDEX_SCALE)) / baseSupplyIndex;
+}
+
+function principalValueBorrow(baseBorrowIndex: bigint, presentValue: bigint): bigint {
+  return (presentValue * BigInt(BASE_INDEX_SCALE) + baseBorrowIndex - 1n) / baseBorrowIndex;
+}
+
+export async function principalValue(
+  presentValue: bigint | BigNumber,
+  baseSupplyIndex: bigint | BigNumber,
+  baseBorrowIndex: bigint | BigNumber
+): Promise<bigint> {
+  const pv = toBigInt(presentValue);
+  if (pv >= 0n) {
+    return principalValueSupply(toBigInt(baseSupplyIndex), pv);
+  } else {
+    return -principalValueBorrow(toBigInt(baseBorrowIndex), -pv);
+  }
+}
+
 function toBigInt(f: bigint | BigNumber): bigint {
   if (typeof f === 'bigint') {
     return f;
@@ -224,6 +285,8 @@ export const ONE = factorScale;
 export const ZERO = factor(0);
 export const ZERO_ADDRESS = ethers.constants.AddressZero;
 export const DEFAULT_PRICEFEED_DECIMALS = 8;
+export const MAX_ASSETS = 24;
+export const MAX_SUPPORTED_UTILIZATION = exp(2, 18);
 
 export async function getBlock(n?: number, ethers_ = ethers): Promise<Block> {
   const blockNumber = n == undefined ? await ethers_.provider.getBlockNumber() : n;
@@ -764,4 +827,24 @@ function convertToBigInt(arr) {
 
 export function getGasUsed(tx: TransactionResponseExt): bigint {
   return tx.receipt.gasUsed.mul(tx.receipt.effectiveGasPrice).toBigInt();
+}
+
+/*//////////////////////////////////////////////////////////////
+                          FORK SETUP
+//////////////////////////////////////////////////////////////*/
+
+export async function setupFork(blockNumber?: number, jsonRpcUrl?: string) {
+  const mainnetConfig = hre.config.networks.mainnet as any;
+
+  await hre.network.provider.request({
+    method: 'hardhat_reset',
+    params: [
+      {
+        forking: {
+          jsonRpcUrl: jsonRpcUrl ?? mainnetConfig.url,
+          blockNumber: blockNumber ?? undefined,
+        },
+      },
+    ],
+  });
 }
