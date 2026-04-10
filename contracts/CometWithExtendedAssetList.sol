@@ -288,13 +288,24 @@ contract CometWithExtendedAssetList is CometMainInterface {
     }
 
     /**
-     * @notice Accrue interest and rewards for an account
-     **/
-    function accrueAccount(address account) override external {
+     * @dev Accrue interest and rewards for an account
+     * @param account The account to accrue interest and rewards for
+     * @dev Function is internal to allow accrual for account inside supplying, transferring and borrowing collateral functions
+     */
+    function accrueAccountInternal(address account) internal {
         accrueInternal();
 
         UserBasic memory basic = userBasic[account];
         updateBasePrincipal(account, basic, basic.principal);
+    }
+
+    /**
+     * @notice Accrue interest and rewards for an account
+     * @param account The account to accrue interest and rewards for
+     * @dev This function is splitted to allow accrueAccountInternal to be called from other functions
+     **/
+    function accrueAccount(address account) override external {
+        accrueAccountInternal(account);
     }
 
     /**
@@ -843,7 +854,6 @@ contract CometWithExtendedAssetList is CometMainInterface {
      */
     function supplyBase(address from, address dst, uint256 amount) internal {
         amount = doTransferIn(baseToken, from, amount);
-
         accrueInternal();
 
         UserBasic memory dstUser = userBasic[dst];
@@ -873,6 +883,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
         uint8 offset = assetInfo.offset;
 
         if (isCollateralAssetSupplyPaused(offset)) revert CollateralAssetSupplyPaused(offset);
+        accrueAccountInternal(dst);
 
         amount = safe128(doTransferIn(asset, from, amount));
 
@@ -985,6 +996,17 @@ contract CometWithExtendedAssetList is CometMainInterface {
             if (isBorrowersTransferPaused()) revert BorrowersTransferPaused();
             if (uint256(-srcBalance) < baseBorrowMin) revert BorrowTooSmall();
             if (!isBorrowCollateralized(src)) revert NotCollateralized();
+
+            /// @dev Guard against utilization being pushed above the supported ceiling via a borrow-side transferBase.
+            /// When the source account is in a borrow position, the supply credited to the destination is new
+            /// liquidity that the destination can immediately withdraw. To capture this worst case, utilization is
+            /// evaluated against total supply *excluding* the destination's newly credited amount — i.e. the supply
+            /// that would remain if the destination withdrew right away. This prevents a pattern where a borrower
+            /// transfers base to a fresh account that then withdraws, draining pool liquidity and pushing
+            /// utilization beyond MAX_SUPPORTED_UTILIZATION.
+            uint256 totalSupplyWithoutDst = presentValueSupply(baseSupplyIndex, totalSupplyBase - supplyAmount);
+            uint256 presentTotalBorrow = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
+            if (totalSupplyWithoutDst > 0 && presentTotalBorrow * FACTOR_SCALE / totalSupplyWithoutDst > MAX_SUPPORTED_UTILIZATION) revert ExceedsSupportedUtilization();
         } else {
             if (isLendersTransferPaused()) revert LendersTransferPaused();
         }
@@ -997,6 +1019,8 @@ contract CometWithExtendedAssetList is CometMainInterface {
             emit Transfer(address(0), dst, presentValueSupply(baseSupplyIndex, supplyAmount));
         }
     }
+
+    receive() external payable {}
 
     /**
      * @dev Transfer an amount of collateral asset from src to dst
@@ -1014,10 +1038,11 @@ contract CometWithExtendedAssetList is CometMainInterface {
         uint8 offset = assetInfo.offset;
 
         if (isCollateralAssetTransferPaused(offset)) revert CollateralAssetTransferPaused(offset);
+        accrueAccountInternal(src);
+        accrueAccountInternal(dst);
         updateAssetsIn(src, assetInfo, srcCollateral, srcCollateralNew);
         updateAssetsIn(dst, assetInfo, dstCollateral, dstCollateralNew);
 
-        // Note: no accrue interest, BorrowCF < LiquidationCF covers small changes
         if (!isBorrowCollateralized(src)) revert NotCollateralized();
 
         emit TransferCollateral(src, dst, asset, amount);
@@ -1114,6 +1139,8 @@ contract CometWithExtendedAssetList is CometMainInterface {
      * @dev Withdraw an amount of collateral asset from src to `to`
      */
     function withdrawCollateral(address src, address to, address asset, uint128 amount) internal {
+        accrueAccountInternal(src);
+        
         uint128 srcCollateral = userCollateral[src][asset].balance;
         uint128 srcCollateralNew = srcCollateral - amount;
 
@@ -1126,7 +1153,6 @@ contract CometWithExtendedAssetList is CometMainInterface {
 
         updateAssetsIn(src, assetInfo, srcCollateral, srcCollateralNew);
 
-        // Note: no accrue interest, BorrowCF < LiquidationCF covers small changes
         if (!isBorrowCollateralized(src)) revert NotCollateralized();
 
         doTransferOut(asset, to, amount);
