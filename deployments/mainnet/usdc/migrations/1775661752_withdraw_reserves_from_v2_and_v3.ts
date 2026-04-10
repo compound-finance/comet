@@ -323,7 +323,59 @@ export default migration('1775661752_withdraw_reserves_from_v2_and_v3', {
       ETH: BigNumber.from(await deploymentManager.hre.ethers.provider.getBalance(recipient)),
     };
 
-    const description = `DESCRIPTION`;
+    const description = `# Withdraw reserves from V2 and V3 markets on Mainnet 
+
+## Proposal summary
+
+Recipient address: ${recipient}
+
+
+## Proposal actions
+
+The first proposal action reduces the reserves of the cWBTCv2 market by 139 WBTC and transfers the withdrawn amount to timelock.
+
+The second proposal action transfers 139 WBTC from the timelock to the recipient.
+
+The third proposal action reduces the reserves of the cUSDCv2 market by 5,772,174 USDC and transfers the withdrawn amount to timelock.
+
+The fourth proposal action transfers 5,772,174 USDC from the timelock to the recipient.
+
+The fifth proposal action reduces the reserves of the cETHv2 market by 813 ETH and transfers the withdrawn amount to timelock.
+
+The sixth proposal action transfers 813 ETH from the timelock to the recipient.
+
+The seventh proposal action reduces the reserves of the cUSDTv2 market by 1,233,614 USDT and transfers the withdrawn amount to timelock.
+
+The eighth proposal action transfers 1,233,614 USDT from the timelock to the recipient.
+
+The ninth proposal action reduces the reserves of the cBATv2 market by 2,475,186 BAT and transfers the withdrawn amount to timelock.
+
+The tenth proposal action transfers 2,475,186 BAT from the timelock to the recipient.
+
+The eleventh proposal action reduces the reserves of the cUNIv2 market by 66,056 UNI and transfers the withdrawn amount to timelock.
+
+The twelfth proposal action transfers 66,056 UNI from the timelock to the recipient.
+
+The thirteenth proposal action reduces the reserves of the cTUSDv2 market by 168,050 TUSD and transfers the withdrawn amount to timelock.
+
+The fourteenth proposal action transfers 168,050 TUSD from the timelock to the recipient.
+
+The fifteenth proposal action reduces the reserves of the cLINKv2 market by 7,874 LINK and transfers the withdrawn amount to timelock.
+
+The sixteenth proposal action transfers 7,874 LINK from the timelock to the recipient.
+
+The seventeenth proposal action reduces the reserves of the cAAVEv2 market by 265 AAVE and transfers the withdrawn amount to timelock.
+
+The eighteenth proposal action transfers 265 AAVE from the timelock to the recipient.
+
+The nineteenth proposal action reduces the reserves of the cCOMPv2 market by 664 COMP and transfers the withdrawn amount to timelock.
+
+The twentieth proposal action transfers 664 COMP from the timelock to the recipient.
+
+The twenty-first proposal action withdraws 6,175,604 USDC from the cUSDCv3 market and sends it directly to the recipient.
+
+The twenty-second proposal action withdraws 0.14 WBTC from the cWBTCv3 market and sends it directly to the recipient.
+`;
     const txn = await deploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
