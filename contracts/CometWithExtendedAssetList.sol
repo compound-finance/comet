@@ -1058,19 +1058,19 @@ contract CometWithExtendedAssetList is CometMainInterface {
 
         int256 debt = signedMulPrice(oldBalance, basePrice, uint64(baseScale));
         // Total liqFactor-discounted USD value of account collateral available for liquidation.
-        uint256 totalCollaterizedValue = _getLiquidity(account, false);
+        uint256 totalCollateralizedValue = _getLiquidity(account, false);
         // Accumulates liqFactor-discounted USD value of collateral seized across loop iterations.
-        uint256 deltaValue;
+        uint256 totalSeizedValue;
 
         AssetInfo memory assetInfo;
 
         uint256 price;
-        uint256 collateralBalance;
+        uint256 collateralAmount;
         uint256 collateralValue;
 
-        uint256 debtRemaining;
-        uint256 debtReduction;
-        uint256 baseDebtAfterPartial;
+        uint256 debtRemainingAmount;
+        uint256 debtRemainingValue;
+        uint256 debtReductionValue;
 
         uint256 wantedCollateralValue;
         uint256 seizeAmount;
@@ -1085,10 +1085,10 @@ contract CometWithExtendedAssetList is CometMainInterface {
 
                 assetInfo = getAssetInfo(i);
                 price = getPrice(assetInfo.priceFeed);
-                collateralBalance = userCollateral[account][assetInfo.asset].balance;
-                collateralValue = mulPrice(collateralBalance, price, assetInfo.scale);
+                collateralAmount = userCollateral[account][assetInfo.asset].balance;
+                collateralValue = mulPrice(collateralAmount, price, assetInfo.scale);
 
-                debtRemaining = uint256(-debt) - deltaValue;
+                debtRemainingValue = uint256(-debt) - totalSeizedValue;
                 // Calculate the collateral value to seize in order to restore the account to targetHealthFactor.
                 //
                 // Definitions:
@@ -1110,7 +1110,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
                 //
                 // The denominator (targetHF * LF - LCF) is always positive since:
                 //   LF * targetHF > LF > LCF > BCF (enforced in Configurator)
-                wantedCollateralValue = (mulFactor(debtRemaining, targetHealthFactor) - totalCollaterizedValue)
+                wantedCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue)
                     * FACTOR_SCALE / (mulFactor(assetInfo.liquidationFactor, targetHealthFactor) - assetInfo.borrowCollateralFactor);
 
                 // So, we want to seize a collateral of value calculated above.
@@ -1119,12 +1119,12 @@ contract CometWithExtendedAssetList is CometMainInterface {
                 // if user has less collateral value than we want - we seize what we can
                 // and move to the next cycle step to the next collateral
                 if (wantedCollateralValue <= collateralValue) {
-                    debtReduction = mulFactor(wantedCollateralValue, assetInfo.liquidationFactor);
-                    baseDebtAfterPartial = divPrice((debtRemaining - debtReduction), basePrice, uint64(baseScale));
+                    debtReductionValue = mulFactor(wantedCollateralValue, assetInfo.liquidationFactor);
+                    debtRemainingAmount = divPrice((debtRemainingValue - debtReductionValue), basePrice, uint64(baseScale));
 
-                    if (baseDebtAfterPartial >= baseBorrowMin) {
+                    if (debtRemainingAmount >= baseBorrowMin) {
                         seizeAmount = divPrice(wantedCollateralValue, price, assetInfo.scale);
-                        seizedValue = debtReduction;
+                        seizedValue = debtReductionValue;
                         // Sufficient collateral seized and remaining debt meets minimum borrow requirement — account is healthy, stop seizing.
                         isHealthy = true;
 
@@ -1132,45 +1132,45 @@ contract CometWithExtendedAssetList is CometMainInterface {
                     // If the current collateral is sufficient to fully repay the debt, close it entirely.
                     // Otherwise, seize all available collateral and continue to the next asset.
                     } else {
-                        // Recalculating wantedCollateralValue with debtRemaining for the full closure of the debt
+                        // Recalculating wantedCollateralValue with debtRemainingValue for the full closure of the debt
                         wantedCollateralValue = 
-                            (debtRemaining * FACTOR_SCALE + assetInfo.liquidationFactor - 1)
+                            (debtRemainingValue * FACTOR_SCALE + assetInfo.liquidationFactor - 1)
                             / assetInfo.liquidationFactor;
 
                         if (wantedCollateralValue <= collateralValue) {
                             seizeAmount = divPrice(wantedCollateralValue, price, assetInfo.scale);
-                            seizedValue = debtRemaining;
+                            seizedValue = debtRemainingValue;
                             // Full debt covered by seized collateral — account is healthy, stop seizing.
                             isHealthy = true;
                         } else {
                             // Collateral is insufficient to cover the required debt portion — seize all and continue to the next asset.
-                            seizeAmount = collateralBalance;
+                            seizeAmount = collateralAmount;
                             seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor);
                         }
                     }  
                 } else {
                     // Collateral is insufficient to cover the required debt portion — seize all and continue to the next asset.
-                    seizeAmount = collateralBalance;
+                    seizeAmount = collateralAmount;
                     seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor);
                 }
                 // Accumulate seized collateral value for the next iteration
-                deltaValue += seizedValue;
+                totalSeizedValue += seizedValue;
 
                 emit AbsorbCollateral(absorber, account, assetInfo.asset, seizeAmount, seizedValue);
                 userCollateral[account][assetInfo.asset].balance -= uint128(seizeAmount);
                 totalsCollateral[assetInfo.asset].totalSupplyAsset -= uint128(seizeAmount);
-                updateAssetsIn(account, assetInfo, uint128(collateralBalance), userCollateral[account][assetInfo.asset].balance);
+                updateAssetsIn(account, assetInfo, uint128(collateralAmount), userCollateral[account][assetInfo.asset].balance);
                 // If account is still unhealthy, deduct seized collateral from remaining liquidity and continue.
                 // Otherwise, stop seizing.
                 if (!isHealthy) {
-                    totalCollaterizedValue -= mulFactor(collateralValue, assetInfo.borrowCollateralFactor);
+                    totalCollateralizedValue -= mulFactor(collateralValue, assetInfo.borrowCollateralFactor);
                 } else break;
             }
             unchecked { ++i; }
         }
 
         // Credit the account with seized collateral value converted back to base tokens
-        int256 newBalance = oldBalance + signed256(divPrice(deltaValue, basePrice, uint64(baseScale)));
+        int256 newBalance = oldBalance + signed256(divPrice(totalSeizedValue, basePrice, uint64(baseScale)));
         // Partial seizure succeeded: account retains remaining debt at targetHF — preserve negative balance.
         // Full seizure (no asset brought HF to targetHF): zero out any residual shortfall as bad debt
         // absorbed by the protocol.
