@@ -91,7 +91,7 @@ contract Comet is CometMainInterface {
     /// @notice The minimum base token reserves which must be held before collateral is hodled
     uint public override immutable targetReserves;
 
-    /// @notice The target health factor for partial liquidation (0 = full liquidation)
+    /// @notice The target health factor for partial liquidation
     uint public override immutable targetHealthFactor;
 
     /// @notice The number of decimals for wrapped base token
