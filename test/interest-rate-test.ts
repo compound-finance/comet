@@ -35,7 +35,7 @@ describe('interest calculation', function () {
 
   const interestRateParams = {
     supplyKink: exp(0.8, 18),
-    supplyInterestRateBase: exp(0, 18),
+    supplyInterestRateBase: exp(0.001, 18),
     supplyInterestRateSlopeLow: exp(0.04, 18),
     supplyInterestRateSlopeHigh: exp(0.4, 18),
     borrowKink: exp(0.8, 18),
@@ -183,12 +183,112 @@ describe('interest calculation', function () {
         );
       });
     });
+ 
+    describe('supplies with no borrows and no reserves', function () {
+      let prevSupplyIndex: BigNumber;
+      let snapshot: SnapshotRestorer;
 
-    describe('supplies with no borrows', function () {
+      before(async function () {
+        // wait some time
+        await ethers.provider.send('evm_increaseTime', [AVERAGE_WAIT_TIME]); // 1 hr
+        await ethers.provider.send('evm_mine', []);
+
+        snapshot = await takeSnapshot();
+      });
+
+      this.afterAll(async () => await snapshot.restore());
+
+      it('first supply to the market with no borrows accrues the state (user action in test)', async () => {
+        await baseToken.connect(alice).approve(comet.address, SUPPLY_AMOUNT);
+        await comet.connect(alice).supply(baseToken.address, SUPPLY_AMOUNT);
+
+        const curUpdatedTime: number = (await comet.totalsBasic()).lastAccrualTime;
+        expect(curUpdatedTime).to.equal((await ethers.provider.getBlock('latest')).timestamp);
+        expect(curUpdatedTime).to.be.greaterThan(lastUpdatedTime);
+
+        aliceDepositTimestamp = curUpdatedTime;
+        lastUpdatedTime = curUpdatedTime;
+      });
+
+      it('but does not change supply indexe (as accrue is performed before supply state changes)', async () => {
+        expect((await comet.totalsBasic()).baseSupplyIndex).to.equal(exp(1, 15));
+      });
+
+      it('and does not change borrow index (as no borrows performed)', async () => {
+        expect((await comet.totalsBasic()).baseBorrowIndex).to.equal(exp(1, 15));
+      });
+
+      it('supplies to the market does not spike utilization if there are no borrows', async () => {
+        expect(await comet.getUtilization()).to.equal(0);
+      });
+
+      it('supply rate equals 0 for supplies with no borrows', async () => {
+        expect(await comet.getSupplyRate(0)).to.equal(0);
+      });
+
+      it('borrow rate equals 0 (no borrows)', async () => {
+        expect(await comet.getBorrowRate(0)).to.equal(0);
+      });
+
+      it('wait some time and get previous state', async () => {
+        prevSupplyIndex = (await comet.totalsBasic()).baseSupplyIndex;
+
+        // wait some time
+        await ethers.provider.send('evm_increaseTime', [AVERAGE_WAIT_TIME]); // 1 hr
+        await ethers.provider.send('evm_mine', []);
+      });
+
+      it('accrue after some time updates state of the market (accrue action in test)', async () => {
+        await comet.accrueAccount(ethers.constants.AddressZero);
+
+        const curUpdatedTime: number = (await comet.totalsBasic()).lastAccrualTime;
+        expect(curUpdatedTime).to.equal((await ethers.provider.getBlock('latest')).timestamp);
+        expect(curUpdatedTime).to.be.greaterThan(lastUpdatedTime);
+      });
+
+      it('supply index does not change without reserves on the market', async () => {
+        const index = (await comet.totalsBasic()).baseSupplyIndex;
+        expect(index).to.equal(prevSupplyIndex);
+      });
+
+      it('utilization is not growing', async () => {
+        expect(await comet.getUtilization()).to.equal(0);
+      });
+
+      it('borrow index is not growing without borrows on the market', async () => {
+        expect((await comet.totalsBasic()).baseBorrowIndex).to.equal(exp(1, 15));
+      });
+
+      it('supply rate is not growing without borrows on the market', async () => {
+        expect(await comet.getSupplyRate(0)).to.equal(0);
+      });
+
+      it('borrow rate equals 0 (no borrows)', async () => {
+        expect(await comet.getBorrowRate(0)).to.equal(0);
+      });
+
+      it('alice lend displayed principle (balanceOf) is not growing without reserves on the market', async () => {
+        // healthcheck than current index is re-calculated correctly
+        const index = (await comet.totalsBasic()).baseSupplyIndex;
+        expect(index).to.equal(prevSupplyIndex);
+
+        const principal = (await comet.userBasic(alice.address)).principal;
+        const expectedBalance = principal.mul(prevSupplyIndex).div(exp(1, 15));
+
+        const balance = await comet.balanceOf(alice.address);
+        // 1 wei difference is possible
+        expect(balance).to.be.approximately(expectedBalance, 1);
+      });
+    });
+
+    describe('supplies with no borrows and reserves', function () {
       let timeElapsed: number;
       let prevSupplyIndex: BigNumber;
 
       before(async function () {
+        /// allocate reserves to the market
+        await baseToken.allocateTo(comet.address, exp(5000, baseDecimals));
+
         // wait some time
         await ethers.provider.send('evm_increaseTime', [AVERAGE_WAIT_TIME]); // 1 hr
         await ethers.provider.send('evm_mine', []);
@@ -1738,6 +1838,150 @@ describe('interest calculation', function () {
   });
 
   describe('edge cases', function () {
+    describe('supply interest will not exceed reserves in case of no borrows for new market', function () {
+      let testComet: CometHarnessInterfaceExtendedAssetList;
+      const SUPPLY_AMOUNT: BigNumber = BigNumber.from(exp(1000000, baseDecimals)); // 1mln$
+      const BORROW_AMOUNT: BigNumber = BigNumber.from(exp(2000, baseDecimals)); // 2k$
+      const COLLATERAL_VALUE: BigNumber = BigNumber.from(exp(90000, baseDecimals)); // 80k$
+      const INITIAL_RESERVES: BigNumber = BigNumber.from(exp(5, baseDecimals)); // 5$
+      let COLLATERAL_AMOUNT: BigNumber; // will be calculated from the price at later testcase
+      let expectedTimeElapsed: BigNumber;
+
+      let baseToken: FaucetToken;
+      let collateral: FaucetToken;
+
+      before(async function () {
+        const protocol = await makeProtocol(interestRateParams);
+        testComet = protocol.cometWithExtendedAssetList;
+        baseToken = protocol.tokens['USDC'] as FaucetToken;
+        collateral = protocol.tokens['COMP'] as FaucetToken;
+
+        await baseToken.allocateTo(alice.address, SUPPLY_AMOUNT);
+        await baseToken.connect(alice).approve(testComet.address, SUPPLY_AMOUNT);
+        await testComet.connect(alice).supply(baseToken.address, SUPPLY_AMOUNT);
+
+        await baseToken.allocateTo(bob.address, SUPPLY_AMOUNT);
+        await baseToken.connect(bob).approve(testComet.address, SUPPLY_AMOUNT);
+        await testComet.connect(bob).supply(baseToken.address, SUPPLY_AMOUNT);
+
+        await baseToken.allocateTo(testComet.address, INITIAL_RESERVES);
+
+        const colPrice = (await protocol.priceFeeds['COMP'].latestRoundData())[1];
+        const colPriceInBase = colPrice.mul(exp(1, baseDecimals)).div(exp(1, DEFAULT_PRICEFEED_DECIMALS)); // as base is USDC its price is 1
+        COLLATERAL_AMOUNT = BigNumber.from(COLLATERAL_VALUE).mul(exp(1, 18)).div(colPriceInBase);
+
+        await collateral.allocateTo(charlie.address, COLLATERAL_AMOUNT);
+        await collateral.connect(charlie).approve(testComet.address, COLLATERAL_AMOUNT);
+        await testComet.connect(charlie).supply(collateral.address, COLLATERAL_AMOUNT);
+      });
+
+      it('comet balance is a sum of seed reserves and 2 deposits', async () => {
+        const curBalance = await baseToken.balanceOf(testComet.address);
+
+        expect(curBalance).to.equal(INITIAL_RESERVES.add(SUPPLY_AMOUNT).add(SUPPLY_AMOUNT));
+      });
+
+      it('supply rate corresponds to the base rate', async () => {
+        // cur utilization is 0, as there is no borrows
+        const curSupplyRate = await testComet.getSupplyRate(0);
+        expect(curSupplyRate).to.equal(baseSupplyRate);
+      });
+
+      it('get expected time elapsed on which reserves spend will happen', async () => {
+        // since we deposited just once, we can use the initial principal
+        // if more deposits are performed, it will only speed things up, so we can rely on 1 deposit only
+        const alicePrincipal = (await testComet.userBasic(alice.address)).principal;
+
+        // the balance we want to achieve is deposit + half of reserve (for 2 users)
+        const expectedBalance = INITIAL_RESERVES.div(2).add(SUPPLY_AMOUNT);
+
+        // get the expected supply index
+        // presentValue = principal * supplyIndex / 1e15
+        // => expected index = presentValue * 1e15 / principal
+        const expectedSupplyIndex = expectedBalance.mul(exp(1, 15)).div(alicePrincipal);
+
+        // since utilization = 0, lenders will get only baseRate of interest
+        const expectedSupplyRate = baseSupplyRate;
+
+        // since we started from the initial deposit, the initial index is 1
+        const prevSupplyIndex = BigNumber.from(exp(1, 15));
+
+        // get the time elapsed until the required balance
+        // accrued index = supply index + supply index * supply rate * time elapsed
+        // => time elapsed = (accrued index - supply index) / (supply index * supply rate)
+        expectedTimeElapsed = expectedSupplyIndex.sub(prevSupplyIndex).div(prevSupplyIndex.mul(expectedSupplyRate).div(exp(1, 18)));
+      });
+
+      it('accrue market right after the expected time elapsed', async () => {
+        await ethers.provider.send('evm_increaseTime', [expectedTimeElapsed.toNumber()]);
+        await ethers.provider.send('evm_mine', []);
+
+        await testComet.accrueAccount(ethers.constants.AddressZero);
+      });
+
+      it('supply rate is growing as total supply grows', async () => {
+        expect(await baseToken.balanceOf(testComet.address)).to.be.approximately(await testComet.totalSupply(), 1);
+        expect(await testComet.getSupplyRate(0)).to.equal(baseSupplyRate);
+      });
+
+      it('supply index becomes equal to max possible index', async () => {
+        const baseBalance = await baseToken.balanceOf(testComet.address);
+        const maxIndex = baseBalance.mul(exp(1, 15)).div((await testComet.totalsBasic()).totalSupplyBase);
+        expect((await testComet.totalsBasic()).baseSupplyIndex).to.equal(maxIndex);
+      });
+
+      it('accrue market does not change the supply index', async () => {
+        const prevIndex = (await testComet.totalsBasic()).baseSupplyIndex;
+
+        await ethers.provider.send('evm_increaseTime', [60]);
+        await ethers.provider.send('evm_mine', []);
+
+        await testComet.accrueAccount(ethers.constants.AddressZero);
+
+        const curIndex = (await testComet.totalsBasic()).baseSupplyIndex;
+
+        expect(curIndex).to.equal(prevIndex);
+      });
+
+      it('charlie borrows some asset and activates the supply rate again', async () => {
+        await testComet.connect(charlie).withdraw(baseToken.address, BORROW_AMOUNT);
+
+        const curUtilization = await testComet.getUtilization();
+        expect(curUtilization).to.be.greaterThan(0);
+      });
+
+      it('supply rate equals the expected supply rate', async () => {
+        const curUtilization = await testComet.getUtilization();
+
+        let expectedSupplyRate = baseSupplyRate;
+        expectedSupplyRate = expectedSupplyRate.add(supplyLowSlope.mul(curUtilization).div(exp(1, 18)));
+
+        expect(await testComet.getSupplyRate(curUtilization)).to.equal(expectedSupplyRate);
+      });
+
+      it('accrue market increases index as expected', async () => {
+        const prevSupplyIndex = (await testComet.totalsBasic()).baseSupplyIndex;
+        const prevUtilization = await testComet.getUtilization();
+        const lastAccrualTime = (await testComet.totalsBasic()).lastAccrualTime;
+
+        await ethers.provider.send('evm_increaseTime', [60]);
+        await ethers.provider.send('evm_mine', []);
+
+        await testComet.accrueAccount(ethers.constants.AddressZero);
+
+        const timeElapsed = (await testComet.totalsBasic()).lastAccrualTime - lastAccrualTime;
+
+        let expectedSupplyRate = baseSupplyRate;
+        expectedSupplyRate = expectedSupplyRate.add(supplyLowSlope.mul(prevUtilization).div(exp(1, 18)));
+
+        const accruedIndex = prevSupplyIndex.add(prevSupplyIndex.mul(expectedSupplyRate).mul(timeElapsed).div(exp(1, 18)));
+
+        // healthcheck than current index is re-calculated correctly
+        const index = (await testComet.totalsBasic()).baseSupplyIndex;
+        expect(index).to.equal(accruedIndex);
+      });
+    });
+
     describe('utilization cannot be inflated for empty market', function () {
       let testComet: CometHarnessInterfaceExtendedAssetList;
       let baseToken: FaucetToken;
