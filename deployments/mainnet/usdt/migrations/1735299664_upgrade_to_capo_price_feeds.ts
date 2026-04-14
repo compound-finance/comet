@@ -1,14 +1,9 @@
 import { expect } from 'chai';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
-import { proposal } from '../../../../src/deploy';
-import { Numeric } from '../../../../test/helpers';
+import { proposal, exp } from '../../../../src/deploy';
 import { IWstETH, IRateProvider, AggregatorV3Interface } from '../../../../build/types';
 import { constants } from 'ethers';
-
-export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
-  return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
-}
 
 const WETH_ADDRESS = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 const ETH_USD_SVR_PRICE_FEED = '0xc0053f3FBcCD593758258334Dfce24C2A9A673aD';
@@ -307,7 +302,7 @@ The ninth action deploys and upgrades Comet to a new version.
   },
 
   async enacted(): Promise<boolean> {
-    return false;
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {
