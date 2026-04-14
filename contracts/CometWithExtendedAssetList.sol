@@ -462,41 +462,46 @@ contract CometWithExtendedAssetList is CometMainInterface {
      * @return Whether the account is minimally collateralized enough to not be liquidated
      */
     function isLiquidatable(address account) override public view returns (bool) {
+        (bool liquidatable, ,) = isLiquidatableInternal(account);
+        return liquidatable;
+    }
+
+    function isLiquidatableInternal(address account) internal view returns (
+        bool liquidatable,
+        uint256 basePrice,
+        uint256[] memory assetPrices
+    ) {
         int104 principal = userBasic[account].principal;
 
-        if (principal >= 0) {
-            return false;
-        }
+        if (principal >= 0) return (false, basePrice, assetPrices);
 
+        assetPrices = new uint256[](numAssets);
         uint16 assetsIn = userBasic[account].assetsIn;
         uint8 _reserved = userBasic[account]._reserved;
+        basePrice = getPrice(baseTokenPriceFeed);
         int liquidity = signedMulPrice(
             presentValue(principal),
-            getPrice(baseTokenPriceFeed),
+            basePrice,
             uint64(baseScale)
         );
 
         for (uint8 i = 0; i < numAssets; ) {
             if (isInAsset(assetsIn, i, _reserved)) {
-                if (liquidity >= 0) {
-                    return false;
-                }
+                if (liquidity >= 0) return (false, basePrice, assetPrices);
 
                 AssetInfo memory asset = getAssetInfo(i);
+                assetPrices[i] = getPrice(asset.priceFeed);
                 uint newAmount = mulPrice(
                     userCollateral[account][asset.asset].balance,
-                    getPrice(asset.priceFeed),
+                    assetPrices[i],
                     asset.scale
                 );
-                liquidity += signed256(mulFactor(
-                    newAmount,
-                    asset.liquidateCollateralFactor
-                ));
+                liquidity += signed256(mulFactor(newAmount, asset.liquidateCollateralFactor));
             }
             unchecked { i++; }
         }
 
-        return liquidity < 0;
+        return (liquidity < 0, basePrice, assetPrices);
     }
 
     /**
@@ -1218,7 +1223,8 @@ contract CometWithExtendedAssetList is CometMainInterface {
      * @dev Transfer user's collateral and debt to the protocol itself.
      */
     function absorbInternal(address absorber, address account) internal {
-        if (!isLiquidatable(account)) revert NotLiquidatable();
+        (bool liquidatable, uint256 basePrice, uint256[] memory assetPrices) = isLiquidatableInternal(account);
+        if (!liquidatable) revert NotLiquidatable();
 
         UserBasic memory accountUser = userBasic[account];
         int104 oldPrincipal = accountUser.principal;
@@ -1226,7 +1232,6 @@ contract CometWithExtendedAssetList is CometMainInterface {
         uint16 assetsIn = accountUser.assetsIn;
         uint8 _reserved = accountUser._reserved;
 
-        uint256 basePrice = getPrice(baseTokenPriceFeed);
         uint256 deltaValue = 0;
 
         for (uint8 i = 0; i < numAssets; ) {
@@ -1237,7 +1242,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
                 userCollateral[account][asset].balance = 0;
                 totalsCollateral[asset].totalSupplyAsset -= seizeAmount;
 
-                uint256 value = mulPrice(seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale);
+                uint256 value = mulPrice(seizeAmount, assetPrices[i], assetInfo.scale);
                 deltaValue += mulFactor(value, assetInfo.liquidationFactor);
 
                 emit AbsorbCollateral(absorber, account, asset, seizeAmount, value);
