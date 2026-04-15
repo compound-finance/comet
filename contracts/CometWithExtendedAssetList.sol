@@ -1047,7 +1047,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
     }
 
     /**
-     * @notice Takes one collateral asset from an underwater borrower — enough to bring their health
+     * @notice Takes one collateral asset from an underwater borrower - enough to bring their health
      *      factor back to `targetHealthFactor`, or everything they have if that's not enough.
      *      When the leftover debt after a partial seizure would be too small to borrow again
      *      (below `baseBorrowMin`), we close the whole remaining obligation instead of leaving
@@ -1061,7 +1061,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
      *      obligation at once, so we don't leave an unrepayable sliver behind.
      *      Storage writes (collateral balance, protocol totals, assetsIn bits) all happen here.
      *      The caller must update `totalCollateralizedValue` between iterations itself.
-     * @param absorber Address that initiated `absorb` — forwarded to events
+     * @param absorber Address that initiated `absorb` - forwarded to events
      * @param account The borrower being liquidated
      * @param basePrice Current USD price of the base token, for converting debt to amounts
      * @param assetInfo Descriptor of the collateral asset being processed this round
@@ -1069,7 +1069,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
      * @param totalCollateralizedValue  Running sum of borrowCollateralFactor-weighted USD values for
      *      the collateral assets not yet processed; the caller subtracts each asset's contribution
      *      after this function returns
-     * @param liquidationState Shared state threaded across all collateral iterations —
+     * @param liquidationState Shared state threaded across all collateral iterations -
      *      tracks remaining debt, whether we hit targetHF, and whether we've switched
      *      to full-closure mode
      * @return Updated liquidation state after this asset, and the USD value of this asset's full
@@ -1092,52 +1092,58 @@ contract CometWithExtendedAssetList is CometMainInterface {
 
         uint256 seizeAmount;
         uint256 seizedValue;
-        // targetHealthFactor lives in storage and would be re-read several times — cache it once.
+        // targetHealthFactor lives in storage and would be re-read several times - cache it once.
         uint256 targetHF = targetHealthFactor;
 
-        // We skip this block when a prior asset already ran out of collateral while we were
-        // in full-closure mode. At that point the remaining debt is tiny, and the targetHF formula
-        // would revert with an underflow: (debtRemainingValue * targetHF) < totalCollateralizedValue,
-        // so the subtraction panics in Solidity 0.8+. We go straight to full-closure below.
+        // We skip this block once we've committed to full-debt-closure mode.
+        // Running the targetHF formula here would be wrong: our goal is no longer to restore
+        // the account to targetHF but to eliminate the entire remaining debt. Phase 2 below
+        // handles that directly.
+        // Skipping also prevents a potential underflow: if the remaining collateral is large
+        // relative to the remaining debt, (debtRemainingValue * targetHF) can be smaller than
+        // totalCollateralizedValue, causing the subtraction to panic.
         if (!liquidationState.isFullDebtClosure) {
             // Calculate the collateral value to seize in order to restore the account to targetHealthFactor.
             //
             // Definitions:
-            //  HF   = health factor = totalCollateralValue / debt
-            //  LF   = liquidationFactor (penalty discount applied to seized collateral)
-            //  LCF  = liquidateCollateralFactor
-            //  BCF  = borrowCollateralFactor
+            //   HF   = health factor = totalCollateralValue / debt
+            //   LF   = liquidationFactor (penalty discount applied to seized collateral)
+            //   BCF  = borrowCollateralFactor
+            //
+            // totalCollateralizedValue is the BCF-weighted sum of all collateral.
+            // When we seize collateral of dollar value S from this asset, its BCF-weighted
+            // contribution drops by S * BCF, and the debt drops by S * LF.
             //
             // Expected HF after seizing collateral of value S:
-            //  HF_new = (totalCollateralValue - S * LCF) / (debt - S * LF)
+            //   HF_new = (totalCollateralValue - S * BCF) / (debt - S * LF)
             //
             // We want HF_new = targetHealthFactor, so:
-            //  targetHF * (debt - S * LF) = totalCollateralValue - S * LCF
-            //  targetHF * debt - targetHF * S * LF = totalCollateralValue - S * LCF
-            //  S * LCF - S * targetHF * LF = totalCollateralValue - targetHF * debt
-            //  S * (LCF - targetHF * LF) = totalCollateralValue - targetHF * debt
+            //   targetHF * (debt - S * LF) = totalCollateralValue - S * BCF
+            //   targetHF * debt - targetHF * S * LF = totalCollateralValue - S * BCF
+            //   S * BCF - S * targetHF * LF = totalCollateralValue - targetHF * debt
+            //   S * (BCF - targetHF * LF) = totalCollateralValue - targetHF * debt
             //
-            //  S = (targetHF * debt - totalCollateralValue) / (targetHF * LF - LCF)
+            //   S = (targetHF * debt - totalCollateralValue) / (targetHF * LF - BCF)
             //
-            // The denominator (targetHF * LF - LCF) is always positive since:
-            //  LF * targetHF > LF > LCF > BCF (enforced in Configurator)
+            // The denominator (targetHF * LF - BCF) is always positive since:
+            //   LF * targetHF > LF > BCF (enforced in Configurator)
             wantedCollateralValue = (mulFactor(liquidationState.debtRemainingValue, targetHF) - totalCollateralizedValue)
                 * FACTOR_SCALE / (mulFactor(assetInfo.liquidationFactor, targetHF) - assetInfo.borrowCollateralFactor);
 
             // So, we want to seize a collateral of value calculated above.
             // Further choice is simple:
             // if user has more collateral than we want, we seize only calculated value
-            // if user has less collateral value than we want — we seize what we can
+            // if user has less collateral value than we want - we seize what we can
             // and move on to the next asset
             if (wantedCollateralValue <= collateralValue) {
                 seizeAmount = divPrice(wantedCollateralValue, price, assetInfo.scale);
                 seizedValue = mulFactor(wantedCollateralValue, assetInfo.liquidationFactor);
-                // We found enough to hit targetHF — tentatively mark the account as healthy.
-                // The dust check below may still override this if the leftover debt would be
-                // below baseBorrowMin (in that case we'd rather just close the whole thing).
+                // We have seized enough collateral to reach targetHF - tentatively mark the account as healthy.
+                // The dust check below may still override this if the remaining debt would be
+                // below baseBorrowMin (in that case we should attempt to fully cover the debt).                
                 liquidationState.isHealthy = true;
             } else {
-                // Not enough here — take everything and let the loop move to the next asset.
+                // Since there is not enough collateral to reach targetHF - take everything and let the loop move to the next asset.
                 seizeAmount = collateralAmount;
                 seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor);
             }
@@ -1153,7 +1159,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
         //  (seizeAmount < collateralAmount), so we close the full remaining debt to avoid dust.
         // 2. isFullDebtClosure mode: a prior asset exhausted its collateral without covering all remaining
         //  debt. seizedValue=0 (default), so totalDebtToClose = debtRemainingValue (the full
-        //  remaining debt) — the correct amount to close.
+        //  remaining debt) - the correct amount to close.
         uint256 debtRemainingAmount = divPrice(liquidationState.debtRemainingValue, basePrice, uint64(baseScale));
 
         if (liquidationState.isFullDebtClosure || (debtRemainingAmount <= baseBorrowMin && seizeAmount < collateralAmount)) {
@@ -1166,19 +1172,33 @@ contract CometWithExtendedAssetList is CometMainInterface {
                 / assetInfo.liquidationFactor;
 
             if (wantedCollateralValue <= collateralValue) {
-                // This asset can cover everything — overwrite the earlier partial seizure amounts
+                // This asset can cover everything - overwrite the earlier partial seizure amounts
                 // with the full-closure figures.
                 seizeAmount = divPrice(wantedCollateralValue, price, assetInfo.scale);
                 seizedValue = totalDebtToClose;
+                // isHealthy is reserved for the partial-liquidation outcome where the borrower
+                // still carries some debt but has been restored to targetHF and is no longer
+                // liquidatable. Here we have gone further - the debt is wiped out entirely, so
+                // the concept of a health factor no longer applies (zero debt means HF = infinity).
+                // We exit the loop via debtRemainingValue == 0, not via isHealthy.
                 liquidationState.isHealthy = false;
+                // All debt has been erased. Setting this to zero is the signal the caller uses
+                // to stop iterating - there is nothing left to close.
                 liquidationState.debtRemainingValue = 0;
             } else {
-                // Still not enough collateral — seize everything and carry the uncovered debt
+                // Still not enough collateral - seize everything and carry the uncovered debt
                 // into the next asset, which will also enter full-closure mode directly.
                 seizeAmount = collateralAmount;
-                liquidationState.debtRemainingValue = totalDebtToClose - mulFactor(collateralValue, assetInfo.liquidationFactor);
                 seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor);
+                // The portion of debt that this asset's full collateral could not cover.
+                // Passed forward so the next asset knows exactly how much still needs to be closed.
+                liquidationState.debtRemainingValue = totalDebtToClose - mulFactor(collateralValue, assetInfo.liquidationFactor);
+                // Same reasoning as the branch above: we are eliminating debt, not restoring the
+                // account to a target health factor, so isHealthy is not the right signal here.
                 liquidationState.isHealthy = false;
+                // Tell every subsequent iteration to skip the targetHF calculation and go straight
+                // to full closure. We are no longer trying to bring the borrower to a specific
+                // health factor - we are just closing whatever debt is left, asset by asset.
                 liquidationState.isFullDebtClosure = true;
             }
         }
@@ -1199,7 +1219,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
      *      When a partial seizure would leave the remaining debt below `baseBorrowMin`, the function
      *      switches to full-debt-closure mode for that asset onward to prevent unrepayable dust.
      *      After the loop, any negative balance on an account that didn't reach targetHF is zeroed
-     *      out — that's the bad-debt write-off path.
+     *      out - that's the bad-debt write-off path.
      * @param absorber Address that triggered the `absorb` call, forwarded to emitted events
      * @param account The underwater borrower whose collateral and debt are being liquidated
      */
@@ -1209,7 +1229,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
         UserBasic memory accountUser = userBasic[account];
         int256 oldBalance = presentValue(accountUser.principal);
         uint256 basePrice = getPrice(baseTokenPriceFeed);
-        // baseScale lives in storage and would be re-read several times — cache it once.
+        // baseScale lives in storage and would be re-read several times - cache it once.
         uint64 _baseScale = uint64(baseScale);
         uint256 debt = uint256(-signedMulPrice(oldBalance, basePrice, _baseScale));
 
@@ -1225,13 +1245,16 @@ contract CometWithExtendedAssetList is CometMainInterface {
         uint256 collateralValue;
 
         AssetInfo memory assetInfo;
-        // numAssets lives in storage and would be re-read on every iteration — cache it once.
+        // numAssets lives in storage and would be re-read on every iteration - cache it once.
         uint8 _numAssets = numAssets;
 
         for (uint8 i; i < _numAssets;) {
             if (isInAsset(accountUser.assetsIn, i, accountUser._reserved)) {
-
                 assetInfo = getAssetInfo(i);
+                // For each collateral asset the borrower holds, load its descriptor and attempt
+                // to seize enough to cover the remaining debt according to the current liquidation
+                // mode. _absorbCollateral decides how much to seize and returns the updated
+                // liquidation state.
                 (liquidationState, collateralValue) = _absorbCollateral(
                     absorber,
                     account,
@@ -1241,10 +1264,9 @@ contract CometWithExtendedAssetList is CometMainInterface {
                     totalCollateralizedValue,
                     liquidationState
                 );
-
-                // Either we restored the account to targetHF or cleared the debt entirely — done.
+                // We exit the loop in the case where we have restored the account to targetHF or
+                // fully repaid the debt - collateral seizure is complete.                
                 if (liquidationState.isHealthy || liquidationState.debtRemainingValue == 0) break;
-
                 // Remove this asset from the running collateral total before the next iteration,
                 // so the targetHF formula doesn't count collateral we've already processed.
                 totalCollateralizedValue -= mulFactor(collateralValue, assetInfo.borrowCollateralFactor);
@@ -1256,14 +1278,14 @@ contract CometWithExtendedAssetList is CometMainInterface {
         int256 newBalance = oldBalance + signed256(divPrice((debt - liquidationState.debtRemainingValue), basePrice, _baseScale));
 
         // If the account is still underwater after we've exhausted every asset, the residual
-        // is unrecoverable — zero it out so the protocol absorbs the loss rather than leaving
+        // is unrecoverable - zero it out so the protocol absorbs the loss rather than leaving
         // the borrower stuck with debt they can never repay.
         if (newBalance < 0 && !liquidationState.isHealthy) {
             newBalance = 0;
         }
 
         int104 newPrincipal = principalValue(newBalance);
-        // Capture oldPrincipal now — updateBasePrincipal will overwrite accountUser.principal.
+        // Capture oldPrincipal now - updateBasePrincipal will overwrite accountUser.principal.
         int104 oldPrincipal = accountUser.principal;
         // updateAssetsIn mutated assetsIn/_reserved in storage during the loop above.
         // Pull the fresh bits from storage before we write accountUser back, otherwise
