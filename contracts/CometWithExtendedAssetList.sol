@@ -1052,8 +1052,6 @@ contract CometWithExtendedAssetList is CometMainInterface {
         }
     }
 
-    receive() external payable {}
-
     /**
      * @dev Transfer an amount of collateral asset from src to dst
      */
