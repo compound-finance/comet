@@ -586,7 +586,16 @@ contract CometWithExtendedAssetList is CometMainInterface {
     }
 
     /**
-     * @dev Write updated principal to store and tracking participation
+     * @dev Updates the base principal for an account and writes the result to storage.
+     *
+     * NOTE: This function modifies the `basic` struct in-place via memory reference.
+     * After this call, `basic.principal`, `basic.baseTrackingIndex`,
+     * and `basic.baseTrackingAccrued` will reflect the updated values.
+     * Save any fields you need BEFORE calling this function:
+     *
+     *   int104 oldPrincipal = basic.principal;
+     *   updateBasePrincipal(account, basic, newPrincipal);
+     *   // use oldPrincipal here, not basic.principal
      */
     function updateBasePrincipal(address account, UserBasic memory basic, int104 principalNew) internal {
         int104 principal = basic.principal;
@@ -1038,160 +1047,238 @@ contract CometWithExtendedAssetList is CometMainInterface {
     }
 
     /**
-    * @notice Seizes collateral assets one by one until the account reaches targetHealthFactor
-    *         or all debt is fully repaid. Any unrecoverable shortfall is written off
-    *         as bad debt absorbed by the protocol
-    * @dev Iterates over account collateral assets in index order. For each asset,
-    *      computes the collateral value needed to restore targetHealthFactor.
-    *      If remaining debt after partial seizure falls below baseBorrowMin,
-    *      attempts full debt closure instead. Bad debt is zeroed out and absorbed by the protocol
-    * @param absorber The address that called `absorb` and receives liquidator-points credit
-    * @param account  The underwater account whose collateral and debt are being absorbed
-    */
+     * @notice Takes one collateral asset from an underwater borrower — enough to bring their health
+     *      factor back to `targetHealthFactor`, or everything they have if that's not enough.
+     *      When the leftover debt after a partial seizure would be too small to borrow again
+     *      (below `baseBorrowMin`), we close the whole remaining obligation instead of leaving
+     *      an unrepayable dust balance.
+     * @dev The function runs in two stages:
+     *      First, it solves for the collateral amount S that restores the account exactly to
+     *      `targetHealthFactor` and takes min(S, available). This is the normal partial-seizure path.
+     *      Second, if the remaining debt after the first stage would fall below `baseBorrowMin`,
+     *      or a previous collateral asset already ran out without covering all debt
+     *      (`isFullDebtClosure`), it rounds up the needed collateral to close the entire remaining
+     *      obligation at once, so we don't leave an unrepayable sliver behind.
+     *      Storage writes (collateral balance, protocol totals, assetsIn bits) all happen here.
+     *      The caller must update `totalCollateralizedValue` between iterations itself.
+     * @param absorber Address that initiated `absorb` — forwarded to events
+     * @param account The borrower being liquidated
+     * @param basePrice Current USD price of the base token, for converting debt to amounts
+     * @param assetInfo Descriptor of the collateral asset being processed this round
+     * @param accountUser In-memory snapshot of the borrower's accounting record
+     * @param totalCollateralizedValue  Running sum of borrowCollateralFactor-weighted USD values for
+     *      the collateral assets not yet processed; the caller subtracts each asset's contribution
+     *      after this function returns
+     * @param liquidationState Shared state threaded across all collateral iterations —
+     *      tracks remaining debt, whether we hit targetHF, and whether we've switched
+     *      to full-closure mode
+     * @return Updated liquidation state after this asset, and the USD value of this asset's full
+     *      collateral position before any seizure (caller uses it to shrink `totalCollateralizedValue`)
+     */
+    function _absorbCollateral(
+        address absorber,
+        address account,
+        uint256 basePrice,
+        AssetInfo memory assetInfo,
+        UserBasic memory accountUser,
+        uint256 totalCollateralizedValue,
+        LiquidationState memory liquidationState
+    ) internal returns (LiquidationState memory, uint256) {
+
+        uint256 price = getPrice(assetInfo.priceFeed);
+        uint256 collateralAmount = userCollateral[account][assetInfo.asset].balance;
+        uint256 collateralValue = mulPrice(collateralAmount, price, assetInfo.scale);
+        uint256 wantedCollateralValue;
+
+        uint256 seizeAmount;
+        uint256 seizedValue;
+        // targetHealthFactor lives in storage and would be re-read several times — cache it once.
+        uint256 targetHF = targetHealthFactor;
+
+        // We skip this block when a prior asset already ran out of collateral while we were
+        // in full-closure mode. At that point the remaining debt is tiny, and the targetHF formula
+        // would revert with an underflow: (debtRemainingValue * targetHF) < totalCollateralizedValue,
+        // so the subtraction panics in Solidity 0.8+. We go straight to full-closure below.
+        if (!liquidationState.isFullDebtClosure) {
+            // Calculate the collateral value to seize in order to restore the account to targetHealthFactor.
+            //
+            // Definitions:
+            //  HF   = health factor = totalCollateralValue / debt
+            //  LF   = liquidationFactor (penalty discount applied to seized collateral)
+            //  LCF  = liquidateCollateralFactor
+            //  BCF  = borrowCollateralFactor
+            //
+            // Expected HF after seizing collateral of value S:
+            //  HF_new = (totalCollateralValue - S * LCF) / (debt - S * LF)
+            //
+            // We want HF_new = targetHealthFactor, so:
+            //  targetHF * (debt - S * LF) = totalCollateralValue - S * LCF
+            //  targetHF * debt - targetHF * S * LF = totalCollateralValue - S * LCF
+            //  S * LCF - S * targetHF * LF = totalCollateralValue - targetHF * debt
+            //  S * (LCF - targetHF * LF) = totalCollateralValue - targetHF * debt
+            //
+            //  S = (targetHF * debt - totalCollateralValue) / (targetHF * LF - LCF)
+            //
+            // The denominator (targetHF * LF - LCF) is always positive since:
+            //  LF * targetHF > LF > LCF > BCF (enforced in Configurator)
+            wantedCollateralValue = (mulFactor(liquidationState.debtRemainingValue, targetHF) - totalCollateralizedValue)
+                * FACTOR_SCALE / (mulFactor(assetInfo.liquidationFactor, targetHF) - assetInfo.borrowCollateralFactor);
+
+            // So, we want to seize a collateral of value calculated above.
+            // Further choice is simple:
+            // if user has more collateral than we want, we seize only calculated value
+            // if user has less collateral value than we want — we seize what we can
+            // and move on to the next asset
+            if (wantedCollateralValue <= collateralValue) {
+                seizeAmount = divPrice(wantedCollateralValue, price, assetInfo.scale);
+                seizedValue = mulFactor(wantedCollateralValue, assetInfo.liquidationFactor);
+                // We found enough to hit targetHF — tentatively mark the account as healthy.
+                // The dust check below may still override this if the leftover debt would be
+                // below baseBorrowMin (in that case we'd rather just close the whole thing).
+                liquidationState.isHealthy = true;
+            } else {
+                // Not enough here — take everything and let the loop move to the next asset.
+                seizeAmount = collateralAmount;
+                seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor);
+            }
+
+            // Reduce the remaining debt by what this seizure actually covers.
+            // seizedValue is already discounted by liquidationFactor, so it's the true
+            // debt-repayment equivalent of the collateral we just took.
+            liquidationState.debtRemainingValue -= seizedValue;
+        }
+
+        // Full debt closure check. Triggers in two cases:
+        // 1. Normal path: remaining debt just fell below baseBorrowMin with a partial seizure
+        //  (seizeAmount < collateralAmount), so we close the full remaining debt to avoid dust.
+        // 2. isFullDebtClosure mode: a prior asset exhausted its collateral without covering all remaining
+        //  debt. seizedValue=0 (default), so totalDebtToClose = debtRemainingValue (the full
+        //  remaining debt) — the correct amount to close.
+        uint256 debtRemainingAmount = divPrice(liquidationState.debtRemainingValue, basePrice, uint64(baseScale));
+
+        if (liquidationState.isFullDebtClosure || (debtRemainingAmount <= baseBorrowMin && seizeAmount < collateralAmount)) {
+            // Add seizedValue back to recover the pre-Phase-1-subtraction total and run one
+            // ceiling division on the combined amount. Splitting it into two steps would
+            // accumulate rounding error (truncation in mulFactor followed by a separate ceil).
+            // In isFullDebtClosure mode seizedValue=0, so totalDebtToClose = debtRemainingValue.
+            uint256 totalDebtToClose = liquidationState.debtRemainingValue + seizedValue;
+            wantedCollateralValue = (totalDebtToClose * FACTOR_SCALE + assetInfo.liquidationFactor - 1)
+                / assetInfo.liquidationFactor;
+
+            if (wantedCollateralValue <= collateralValue) {
+                // This asset can cover everything — overwrite the earlier partial seizure amounts
+                // with the full-closure figures.
+                seizeAmount = divPrice(wantedCollateralValue, price, assetInfo.scale);
+                seizedValue = totalDebtToClose;
+                liquidationState.isHealthy = false;
+                liquidationState.debtRemainingValue = 0;
+            } else {
+                // Still not enough collateral — seize everything and carry the uncovered debt
+                // into the next asset, which will also enter full-closure mode directly.
+                seizeAmount = collateralAmount;
+                liquidationState.debtRemainingValue = totalDebtToClose - mulFactor(collateralValue, assetInfo.liquidationFactor);
+                seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor);
+                liquidationState.isHealthy = false;
+                liquidationState.isFullDebtClosure = true;
+            }
+        }
+
+        emit AbsorbCollateral(absorber, account, assetInfo.asset, seizeAmount, seizedValue);
+        userCollateral[account][assetInfo.asset].balance -= uint128(seizeAmount);
+        totalsCollateral[assetInfo.asset].totalSupplyAsset -= uint128(seizeAmount);
+        updateAssetsIn(account, assetInfo, uint128(collateralAmount), userCollateral[account][assetInfo.asset].balance);
+
+        return (liquidationState, collateralValue);
+    }
+
+    /**
+     * @notice Goes through the borrower's collateral assets one by one, seizing enough to bring
+     *      the account back to `targetHealthFactor`. If the full collateral run still leaves a
+     *      shortfall, that residual debt is written off as bad debt and absorbed by the protocol.
+     * @dev Calls `_absorbCollateral` for each collateral asset the borrower holds, in index order.
+     *      When a partial seizure would leave the remaining debt below `baseBorrowMin`, the function
+     *      switches to full-debt-closure mode for that asset onward to prevent unrepayable dust.
+     *      After the loop, any negative balance on an account that didn't reach targetHF is zeroed
+     *      out — that's the bad-debt write-off path.
+     * @param absorber Address that triggered the `absorb` call, forwarded to emitted events
+     * @param account The underwater borrower whose collateral and debt are being liquidated
+     */
     function absorbInternal(address absorber, address account) internal {
         if (!isLiquidatable(account)) revert NotLiquidatable();
 
         UserBasic memory accountUser = userBasic[account];
         int256 oldBalance = presentValue(accountUser.principal);
         uint256 basePrice = getPrice(baseTokenPriceFeed);
+        // baseScale lives in storage and would be re-read several times — cache it once.
+        uint64 _baseScale = uint64(baseScale);
+        uint256 debt = uint256(-signedMulPrice(oldBalance, basePrice, _baseScale));
 
-        uint256 debt = uint256(-signedMulPrice(oldBalance, basePrice, uint64(baseScale)));
-        // Total liqFactor-discounted USD value of account collateral available for liquidation.
+        LiquidationState memory liquidationState = LiquidationState({
+            debtRemainingValue: debt,
+            isHealthy: false,
+            isFullDebtClosure: false
+        });
+
+        // Total borrowCollateralFactor-weighted USD value of the borrower's collateral,
+        // used as the baseline for the targetHF formula in the first iteration.
         uint256 totalCollateralizedValue = _getLiquidity(account, false);
-
-        AssetInfo memory assetInfo;
-
-        uint256 price;
-        uint256 collateralAmount;
         uint256 collateralValue;
 
-        uint256 debtRemainingAmount;
-        uint256 debtBeforeSeizure;
-        uint256 debtRemainingValue = debt;
-
-        uint256 wantedCollateralValue;
-        uint256 seizeAmount;
-        uint256 seizedValue;
-        // True once seized collateral covers the target health factor threshold or fully repays the debt.
-        bool isHealthy;
-        // Cache numAssets as it is read on every iteration, more than any other storage variable in this loop.
+        AssetInfo memory assetInfo;
+        // numAssets lives in storage and would be re-read on every iteration — cache it once.
         uint8 _numAssets = numAssets;
 
         for (uint8 i; i < _numAssets;) {
             if (isInAsset(accountUser.assetsIn, i, accountUser._reserved)) {
 
                 assetInfo = getAssetInfo(i);
-                price = getPrice(assetInfo.priceFeed);
-                collateralAmount = userCollateral[account][assetInfo.asset].balance;
-                collateralValue = mulPrice(collateralAmount, price, assetInfo.scale);
+                (liquidationState, collateralValue) = _absorbCollateral(
+                    absorber,
+                    account,
+                    basePrice,
+                    assetInfo,
+                    accountUser,
+                    totalCollateralizedValue,
+                    liquidationState
+                );
 
-                // Calculate the collateral value to seize in order to restore the account to targetHealthFactor.
-                //
-                // Definitions:
-                //   HF   = health factor = totalCollateralValue / debt
-                //   LF   = liquidationFactor (penalty discount applied to seized collateral)
-                //   LCF  = liquidateCollateralFactor
-                //   BCF  = borrowCollateralFactor
-                //
-                // Expected HF after seizing collateral of value S:
-                //   HF_new = (totalCollateralValue - S * LCF) / (debt - S * LF)
-                //
-                // We want HF_new = targetHealthFactor, so:
-                //   targetHF * (debt - S * LF) = totalCollateralValue - S * LCF
-                //   targetHF * debt - targetHF * S * LF = totalCollateralValue - S * LCF
-                //   S * LCF - S * targetHF * LF = totalCollateralValue - targetHF * debt
-                //   S * (LCF - targetHF * LF) = totalCollateralValue - targetHF * debt
-                //
-                //   S = (targetHF * debt - totalCollateralValue) / (targetHF * LF - LCF)
-                //
-                // The denominator (targetHF * LF - LCF) is always positive since:
-                //   LF * targetHF > LF > LCF > BCF (enforced in Configurator)
-                wantedCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue)
-                    * FACTOR_SCALE / (mulFactor(assetInfo.liquidationFactor, targetHealthFactor) - assetInfo.borrowCollateralFactor);
+                // Either we restored the account to targetHF or cleared the debt entirely — done.
+                if (liquidationState.isHealthy || liquidationState.debtRemainingValue == 0) break;
 
-                // So, we want to seize a collateral of value calculated above.
-                //Further choice is simple:
-                // if user has more collateral than we want, we seize only calculated value
-                // if user has less collateral value than we want - we seize what we can
-                // and move to the next cycle step to the next collateral
-                if (wantedCollateralValue <= collateralValue) {
-                    seizeAmount = divPrice(wantedCollateralValue, price, assetInfo.scale);
-                    seizedValue = mulFactor(wantedCollateralValue, assetInfo.liquidationFactor);
-                    // Sufficient collateral seized and remaining debt meets minimum borrow requirement — account is healthy, stop seizing.
-                    isHealthy = true; 
-                } else {
-                    // Collateral is insufficient to cover the required debt portion — seize all and continue to the next asset.
-                    seizeAmount = collateralAmount;
-                    seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor);
-                }
-
-                // Accumulate seized collateral value for the next iteration
-                debtRemainingValue -= seizedValue;
-                debtRemainingAmount = divPrice(debtRemainingValue, basePrice, uint64(baseScale));
-
-                if (debtRemainingAmount <= baseBorrowMin && seizeAmount < collateralAmount) {
-                    // Remaining debt after seizure is below the minimum borrow threshold.
-                    // Restore the pre-seizure debt to compute a single ceiling division on the full amount,
-                    // avoiding a two-step rounding cascade (truncation in mulFactor + ceil on the remainder).
-                    debtBeforeSeizure = debtRemainingValue + seizedValue;
-                    wantedCollateralValue =
-                        (debtBeforeSeizure * FACTOR_SCALE + assetInfo.liquidationFactor - 1)
-                        / assetInfo.liquidationFactor;
-
-                    if (wantedCollateralValue <= collateralValue) {
-                        // Collateral covers the full remaining debt — replace the earlier partial amounts.
-                        seizeAmount = divPrice(wantedCollateralValue, price, assetInfo.scale);
-                        seizedValue = debtBeforeSeizure;
-                        debtRemainingValue = 0;
-                    } else {
-                        // Collateral is insufficient for full closure — seize all and continue to the next asset.
-                        seizeAmount = collateralAmount;
-                        seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor);
-                        debtRemainingValue = debtBeforeSeizure - seizedValue;
-                        isHealthy = false;
-                    }
-
-                }
-
-                emit AbsorbCollateral(absorber, account, assetInfo.asset, seizeAmount, seizedValue);
-                userCollateral[account][assetInfo.asset].balance -= uint128(seizeAmount);
-                totalsCollateral[assetInfo.asset].totalSupplyAsset -= uint128(seizeAmount);
-                updateAssetsIn(account, assetInfo, uint128(collateralAmount), userCollateral[account][assetInfo.asset].balance);
-                if (debtRemainingValue == 0) break;
-                // If account is still unhealthy, deduct seized collateral from remaining liquidity and continue.
-                // Otherwise, stop seizing.
-                if (!isHealthy) {
-                    totalCollateralizedValue -= mulFactor(collateralValue, assetInfo.borrowCollateralFactor);
-                } else break;
+                // Remove this asset from the running collateral total before the next iteration,
+                // so the targetHF formula doesn't count collateral we've already processed.
+                totalCollateralizedValue -= mulFactor(collateralValue, assetInfo.borrowCollateralFactor);
             }
+
             unchecked { ++i; }
         }
 
-        // Credit the account with seized collateral value converted back to base tokens
-        // int256 newBalance = oldBalance + signed256(divPrice(totalSeizedValue, basePrice, uint64(baseScale)));
-        int256 newBalance = oldBalance + signed256(divPrice((debt - debtRemainingValue), basePrice, uint64(baseScale)));
-        // Partial seizure succeeded: account retains remaining debt at targetHF — preserve negative balance.
-        // Full seizure (no asset brought HF to targetHF): zero out any residual shortfall as bad debt
-        // absorbed by the protocol.
-        if (newBalance < 0 && !isHealthy) {
+        int256 newBalance = oldBalance + signed256(divPrice((debt - liquidationState.debtRemainingValue), basePrice, _baseScale));
+
+        // If the account is still underwater after we've exhausted every asset, the residual
+        // is unrecoverable — zero it out so the protocol absorbs the loss rather than leaving
+        // the borrower stuck with debt they can never repay.
+        if (newBalance < 0 && !liquidationState.isHealthy) {
             newBalance = 0;
         }
 
         int104 newPrincipal = principalValue(newBalance);
-        // Note: assetsIn/_reserved bits were mutated by updateAssetsIn during the loop;
-        //       re-read them from storage before updateBasePrincipal writes accountUser back.
+        // Capture oldPrincipal now — updateBasePrincipal will overwrite accountUser.principal.
+        int104 oldPrincipal = accountUser.principal;
+        // updateAssetsIn mutated assetsIn/_reserved in storage during the loop above.
+        // Pull the fresh bits from storage before we write accountUser back, otherwise
+        // we'd overwrite those changes.
         accountUser.assetsIn = userBasic[account].assetsIn;
         accountUser._reserved = userBasic[account]._reserved;
         updateBasePrincipal(account, accountUser, newPrincipal);
-        // Split the principal change into repaid borrow and new supply for global index accounting
-        (uint104 repayAmount,) = repayAndSupplyAmount(accountUser.principal, newPrincipal);
+        // Separate the principal delta into its repay component for global borrow index tracking.
+        (uint104 repayAmount,) = repayAndSupplyAmount(oldPrincipal, newPrincipal);
         totalBorrowBase -= repayAmount;
-        uint256 basePaidOut = unsigned256(newBalance - oldBalance); // Base tokens effectively paid out to the account
-        uint256 valueOfBasePaidOut = mulPrice(basePaidOut, basePrice, uint64(baseScale));
-        
+        uint256 basePaidOut = unsigned256(newBalance - oldBalance); // Base-token units of debt cleared by this liquidation
+        uint256 valueOfBasePaidOut = mulPrice(basePaidOut, basePrice, _baseScale);
+
         emit AbsorbDebt(absorber, account, basePaidOut, valueOfBasePaidOut);
     }
-
 
 
     /**
