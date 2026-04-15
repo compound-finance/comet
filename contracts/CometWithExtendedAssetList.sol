@@ -587,15 +587,6 @@ contract CometWithExtendedAssetList is CometMainInterface {
 
     /**
      * @dev Updates the base principal for an account and writes the result to storage.
-     *
-     * NOTE: This function modifies the `basic` struct in-place via memory reference.
-     * After this call, `basic.principal`, `basic.baseTrackingIndex`,
-     * and `basic.baseTrackingAccrued` will reflect the updated values.
-     * Save any fields you need BEFORE calling this function:
-     *
-     *   int104 oldPrincipal = basic.principal;
-     *   updateBasePrincipal(account, basic, newPrincipal);
-     *   // use oldPrincipal here, not basic.principal
      */
     function updateBasePrincipal(address account, UserBasic memory basic, int104 principalNew) internal {
         int104 principal = basic.principal;
@@ -1019,8 +1010,6 @@ contract CometWithExtendedAssetList is CometMainInterface {
     /**
     * @param account The address of the account
     * @param liquidation Whether to use liquidation factors or borrow factors in the calculation
-    * When `liquidation=false` uses borrowCollateralFactor (used by absorbInternal and isBorrowCollateralized).
-    * When `liquidation=true` uses liquidateCollateralFactor (used by isLiquidatable).
     * @return The collateral-factor-weighted sum of collateral USD value for the account
     */
     function _getLiquidity(address account, bool liquidation) internal view returns (uint256) {
@@ -1065,7 +1054,6 @@ contract CometWithExtendedAssetList is CometMainInterface {
      * @param account The borrower being liquidated
      * @param basePrice Current USD price of the base token, for converting debt to amounts
      * @param assetInfo Descriptor of the collateral asset being processed this round
-     * @param accountUser In-memory snapshot of the borrower's accounting record
      * @param totalCollateralizedValue  Running sum of borrowCollateralFactor-weighted USD values for
      *      the collateral assets not yet processed; the caller subtracts each asset's contribution
      *      after this function returns
@@ -1080,7 +1068,6 @@ contract CometWithExtendedAssetList is CometMainInterface {
         address account,
         uint256 basePrice,
         AssetInfo memory assetInfo,
-        UserBasic memory accountUser,
         uint256 totalCollateralizedValue,
         LiquidationState memory liquidationState
     ) internal returns (LiquidationState memory, uint256) {
@@ -1260,7 +1247,6 @@ contract CometWithExtendedAssetList is CometMainInterface {
                     account,
                     basePrice,
                     assetInfo,
-                    accountUser,
                     totalCollateralizedValue,
                     liquidationState
                 );
