@@ -47,12 +47,12 @@ import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract
 import { TotalsBasicStructOutput, TotalsCollateralStructOutput } from '../build/types/CometHarness';
 
 // Snapshot
-import { takeSnapshot, SnapshotRestorer } from './helpers/snapshot';
+export { takeSnapshot, SnapshotRestorer } from './helpers/snapshot';
 
 // Network helpers
 export * from './helpers/network-helpers';
 
-export { Comet, ethers, expect, hre, takeSnapshot, SnapshotRestorer };
+export { Comet, ethers, expect, hre };
 
 export type Numeric = number | bigint;
 
@@ -188,6 +188,62 @@ export function mulPrice(n: bigint, price: bigint | BigNumber, fromScale: bigint
   return n * toBigInt(price) / toBigInt(fromScale);
 }
 
+export function mulFactor(n: bigint, factor: bigint):bigint {
+  return n * factor / factorScale;
+}
+
+export function divPrice(n: bigint, price: bigint, toScale: bigint): bigint {
+  return n * toScale / price;
+}
+
+const BASE_INDEX_SCALE = 10n ** 15n;
+
+export function presentValueSupply(baseSupplyIndex: bigint | BigNumber, principalValue: bigint | BigNumber): bigint {
+  const principal = toBigInt(principalValue);
+  const index = toBigInt(baseSupplyIndex);
+  return principal * index / BASE_INDEX_SCALE;
+}
+
+function presentValueBorrow(baseBorrowIndex: bigint | BigNumber, principalValue: bigint | BigNumber): bigint {
+  const principal = toBigInt(principalValue);
+  const index = toBigInt(baseBorrowIndex);
+  return principal * index / BigInt(BASE_INDEX_SCALE);
+}
+
+export function presentValue(
+  principalValue: bigint | BigNumber,
+  baseSupplyIndex: bigint | BigNumber,
+  baseBorrowIndex: bigint | BigNumber
+): bigint {
+  const principal = toBigInt(principalValue);
+  if (principal >= 0n) {
+    return presentValueSupply(baseSupplyIndex, principal);
+  } else {
+    return -presentValueBorrow(baseBorrowIndex, -principal);
+  }
+}
+
+function principalValueSupply(baseSupplyIndex: bigint, presentValue: bigint): bigint {
+  return (presentValue * BigInt(BASE_INDEX_SCALE)) / baseSupplyIndex;
+}
+
+function principalValueBorrow(baseBorrowIndex: bigint, presentValue: bigint): bigint {
+  return (presentValue * BigInt(BASE_INDEX_SCALE) + baseBorrowIndex - 1n) / baseBorrowIndex;
+}
+
+export async function principalValue(
+  presentValue: bigint | BigNumber,
+  baseSupplyIndex: bigint | BigNumber,
+  baseBorrowIndex: bigint | BigNumber
+): Promise<bigint> {
+  const pv = toBigInt(presentValue);
+  if (pv >= 0n) {
+    return principalValueSupply(toBigInt(baseSupplyIndex), pv);
+  } else {
+    return -principalValueBorrow(toBigInt(baseBorrowIndex), -pv);
+  }
+}
+
 function toBigInt(f: bigint | BigNumber): bigint {
   if (typeof f === 'bigint') {
     return f;
@@ -232,7 +288,10 @@ export const factorDecimals = 18;
 export const factorScale = factor(1);
 export const ONE = factorScale;
 export const ZERO = factor(0);
+export const ZERO_ADDRESS = ethers.constants.AddressZero;
+export const DEFAULT_PRICEFEED_DECIMALS = 8;
 export const MAX_ASSETS = 24;
+export const MAX_SUPPORTED_UTILIZATION = exp(2, 18);
 
 export async function getBlock(n?: number, ethers_ = ethers): Promise<Block> {
   const blockNumber = n == undefined ? await ethers_.provider.getBlockNumber() : n;
@@ -339,7 +398,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
           borrowCollateralFactor: dfn(config.borrowCF, ONE - 1n),
           liquidateCollateralFactor: dfn(config.liquidateCF, ONE),
           liquidationFactor: dfn(config.liquidationFactor, ONE),
-          supplyCap: dfn(config.supplyCap, exp(100, dfn(config.decimals, 18))),
+          supplyCap: dfn(config.supplyCap, exp(150000, dfn(config.decimals, 18))),
         });
       }
       return acc;
@@ -357,7 +416,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
         borrowCollateralFactor: dfn(config.borrowCF, ONE - 1n),
         liquidateCollateralFactor: dfn(config.liquidateCF, ONE),
         liquidationFactor: dfn(config.liquidationFactor, ONE),
-        supplyCap: dfn(config.supplyCap, exp(100, dfn(config.decimals, 18))),
+        supplyCap: dfn(config.supplyCap, exp(150000, dfn(config.decimals, 18))),
       });
     }
     return acc;
@@ -477,7 +536,7 @@ export async function getConfigurationForConfigurator(
           borrowCollateralFactor: dfn(config.borrowCF, ONE - 1n),
           liquidateCollateralFactor: dfn(config.liquidateCF, ONE),
           liquidationFactor: dfn(config.liquidationFactor, ONE),
-          supplyCap: dfn(config.supplyCap, exp(100, dfn(config.decimals, 18))),
+          supplyCap: dfn(config.supplyCap, exp(150000, dfn(config.decimals, 18))),
         });
       }
       return acc;

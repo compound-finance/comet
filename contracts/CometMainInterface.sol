@@ -34,6 +34,8 @@ abstract contract CometMainInterface is CometCore {
     error TransferOutFailed();
     error Unauthorized();
 
+    /// @dev Error emitted when the utilization exceeds the supported utilization
+    error ExceedsSupportedUtilization();
     /// @notice Error emitted when base supply is paused
     error BaseSupplyPaused();
     /// @notice Error emitted when collateral supply is paused
