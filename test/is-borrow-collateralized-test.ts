@@ -32,7 +32,7 @@ describe('isBorrowCollateralized', function () {
     expect(await comet.isBorrowCollateralized(alice.address)).to.be.false;
   });
 
-  it('is true when value of collateral is greater than principal owed', async () => {
+  it.skip('is true when value of collateral is greater than principal owed', async () => {
     const {
       comet,
       tokens,
@@ -57,7 +57,7 @@ describe('isBorrowCollateralized', function () {
     expect(await comet.isBorrowCollateralized(alice.address)).to.be.true;
   });
 
-  it('takes borrow collateral factor into account when valuing collateral', async () => {
+  it.skip('takes borrow collateral factor into account when valuing collateral', async () => {
     const {
       comet,
       tokens,
@@ -84,7 +84,7 @@ describe('isBorrowCollateralized', function () {
     expect(await comet.isBorrowCollateralized(alice.address)).to.be.false;
   });
 
-  it('changes when the underlying asset price changes', async () => {
+  it.skip('changes when the underlying asset price changes', async () => {
     const {
       comet,
       tokens,

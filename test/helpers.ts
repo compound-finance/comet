@@ -333,9 +333,9 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
           asset: tokens[symbol].address,
           priceFeed: priceFeeds[symbol].address,
           decimals: dfn(assets[symbol].decimals, 18),
-          borrowCollateralFactor: dfn(config.borrowCF, ONE - 1n),
-          liquidateCollateralFactor: dfn(config.liquidateCF, ONE),
-          liquidationFactor: dfn(config.liquidationFactor, ONE),
+          borrowCollateralFactor: dfn(config.borrowCF, exp(0.8, 18)),
+          liquidateCollateralFactor: dfn(config.liquidateCF, exp(0.85, 18)),
+          liquidationFactor: dfn(config.liquidationFactor, exp(0.9, 18)),
           supplyCap: dfn(config.supplyCap, exp(100, dfn(config.decimals, 18))),
         });
       }
@@ -351,9 +351,9 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
         asset: tokens[symbol].address,
         priceFeed: priceFeeds[symbol].address,
         decimals: dfn(assets[symbol].decimals, 18),
-        borrowCollateralFactor: dfn(config.borrowCF, ONE - 1n),
-        liquidateCollateralFactor: dfn(config.liquidateCF, ONE),
-        liquidationFactor: dfn(config.liquidationFactor, ONE),
+        borrowCollateralFactor: dfn(config.borrowCF, exp(0.8, 18)),
+        liquidateCollateralFactor: dfn(config.liquidateCF, exp(0.85, 18)),
+        liquidationFactor: dfn(config.liquidationFactor, exp(0.9, 18)),
         supplyCap: dfn(config.supplyCap, exp(100, dfn(config.decimals, 18))),
       });
     }
@@ -484,9 +484,9 @@ export async function getConfigurationForConfigurator(
           asset: tokens[symbol].address,
           priceFeed: priceFeeds[symbol].address,
           decimals: dfn(assets[symbol].decimals, 18),
-          borrowCollateralFactor: dfn(config.borrowCF, ONE - 1n),
-          liquidateCollateralFactor: dfn(config.liquidateCF, ONE),
-          liquidationFactor: dfn(config.liquidationFactor, ONE),
+          borrowCollateralFactor: dfn(config.borrowCF, exp(0.8, 18)),
+          liquidateCollateralFactor: dfn(config.liquidateCF, exp(0.85, 18)),
+          liquidationFactor: dfn(config.liquidationFactor, exp(0.9, 18)),
           supplyCap: dfn(config.supplyCap, exp(100, dfn(config.decimals, 18))),
         });
       }

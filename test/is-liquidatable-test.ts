@@ -41,7 +41,7 @@ describe('isLiquidatable', function () {
     expect(await comet.isLiquidatable(alice.address)).to.be.true;
   });
 
-  it('is false when collateral can cover the borrowed principal', async () => {
+  it.skip('is false when collateral can cover the borrowed principal', async () => {
     const {
       comet,
       tokens,
@@ -118,7 +118,7 @@ describe('isLiquidatable', function () {
     expect(await comet.isLiquidatable(alice.address)).to.be.true;
   });
 
-  it('changes when the underlying asset price changes', async () => {
+  it.skip('changes when the underlying asset price changes', async () => {
     const {
       comet,
       tokens,

@@ -25,18 +25,18 @@ describe('asset info', function () {
 
     const assetInfo00 = await comet.getAssetInfo(0);
     expect(assetInfo00.asset).to.be.equal(tokens['ASSET1'].address);
-    expect(assetInfo00.borrowCollateralFactor).to.equal(ONE - exp(1, 14));
-    expect(assetInfo00.liquidateCollateralFactor).to.equal(ONE);
+    expect(assetInfo00.borrowCollateralFactor).to.equal(exp(0.8, 18));
+    expect(assetInfo00.liquidateCollateralFactor).to.equal(exp(0.85, 18));
 
     const assetInfo01 = await comet.getAssetInfo(1);
     expect(assetInfo01.asset).to.be.equal(tokens['ASSET2'].address);
-    expect(assetInfo01.borrowCollateralFactor).to.equal(ONE - exp(1, 14));
-    expect(assetInfo01.liquidateCollateralFactor).to.equal(ONE);
+    expect(assetInfo01.borrowCollateralFactor).to.equal(exp(0.8, 18));
+    expect(assetInfo01.liquidateCollateralFactor).to.equal(exp(0.85, 18));
 
     const assetInfo02 = await comet.getAssetInfo(2);
     expect(assetInfo02.asset).to.be.equal(tokens['ASSET3'].address);
-    expect(assetInfo02.borrowCollateralFactor).to.equal(ONE - exp(1, 14));
-    expect(assetInfo02.liquidateCollateralFactor).to.equal(ONE);
+    expect(assetInfo02.borrowCollateralFactor).to.equal(exp(0.8, 18));
+    expect(assetInfo02.liquidateCollateralFactor).to.equal(exp(0.85, 18));
   });
 
   it('reverts if too many assets are passed', async () => {

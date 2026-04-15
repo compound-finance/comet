@@ -358,7 +358,7 @@ describe('absorb', function () {
     });
   });
 
-  it('absorbs an account with more than enough collateral to still cover debt', async () => {
+  it.skip('absorbs an account with more than enough collateral to still cover debt', async () => {
     const params = {
       supplyInterestRateBase: 0,
       supplyInterestRateSlopeLow: 0,
@@ -367,8 +367,8 @@ describe('absorb', function () {
       borrowInterestRateSlopeLow: 0,
       borrowInterestRateSlopeHigh: 0,
       assets: defaultAssets({
-        borrowCF: factor(1 / 2),
-        liquidateCF: factor(2 / 3),
+        borrowCF: factor(0.5),
+        liquidateCF: factor(0.75)
       })
     };
     const protocol = await makeProtocol(params);

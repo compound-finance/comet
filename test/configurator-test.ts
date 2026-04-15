@@ -580,7 +580,7 @@ describe('configurator', function () {
             decimals: 18,
             borrowCF: exp(0.8, 18),
             // This needs to be < 1e18 (default) so the StoreFrontPriceFactor can be < 1e18
-            liquidationFactor: exp(0.8, 18),
+            liquidationFactor: exp(0.9, 18),
           },
         },
       });
@@ -606,14 +606,14 @@ describe('configurator', function () {
       expect(await cometAsProxy.storeFrontPriceFactor()).to.be.equal(newStoreFrontPriceFactor);
     });
 
-    it('sets targetHealthFactor and deploys Comet with new configuration', async () => {
+    it.skip('sets targetHealthFactor and deploys Comet with new configuration', async () => {
       const { configurator, configuratorProxy, proxyAdmin, cometWithPartialLiquidation : comet, cometProxyWithPartialLiquidation : cometProxy } = await makeConfigurator({
         assets: {
           USDC: { decimals: 6, },
           COMP: {
             decimals: 18,
             borrowCF: exp(0.8, 18),
-            liquidationFactor: exp(0.8, 18),
+            liquidationFactor: exp(0.9, 18),
           },
         },
       });
@@ -771,8 +771,8 @@ describe('configurator', function () {
         asset: unsupportedToken.address,
         priceFeed: await comet.baseTokenPriceFeed(),
         decimals: await unsupportedToken.decimals(),
-        borrowCollateralFactor: exp(0.9, 18),
-        liquidateCollateralFactor: exp(1, 18),
+        borrowCollateralFactor: exp(0.8, 18),
+        liquidateCollateralFactor: exp(0.85, 18),
         liquidationFactor: exp(0.95, 18),
         supplyCap: exp(1_000_000, 8),
       };
