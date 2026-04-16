@@ -232,6 +232,18 @@ export async function relayArbitrumMessage(
           await signer.getAddress()
         );
       } else {
+        // Mock ArbSys precompile (0x64) — Arbitrum precompiles don't exist in Hardhat's EVM,
+        // but the L2 gateways call ArbSys.sendTxToL1 internally during outboundTransfer.
+        // Bytecode 0x60206000f3 disassembles to: PUSH1 0x20 | PUSH1 0x00 | RETURN
+        // which returns 32 zero bytes from uninitialized memory for any call.
+        await bridgeDeploymentManager.hre.network.provider.request({
+          method: 'hardhat_setCode',
+          params: [
+            '0x0000000000000000000000000000000000000064',
+            '0x60206000f3',
+          ],
+        });
+
         await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
       }
       openBridgedProposals.push({

@@ -127,15 +127,10 @@ export default migration('1775822198_withdraw_reserves', {
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
         [
-          withdrawConfig.cUSDCv3.address,
-          withdrawConfig.cUSDCev3.address,
-          withdrawConfig.cWETHv3.address,
-          withdrawConfig.cUSDCv3.assetL2,
-          CCTPTokenMessenger.address,
-          withdrawConfig.cUSDCev3.assetL2,
-          USDCE_GATEWAY,
-          withdrawConfig.cWETHv3.assetL2,
-          WETH_GATEWAY
+          withdrawConfig.cUSDCv3.address, withdrawConfig.cUSDCev3.address, withdrawConfig.cWETHv3.address,
+          withdrawConfig.cUSDCv3.assetL2, CCTPTokenMessenger.address,
+          withdrawConfig.cUSDCev3.assetL2, USDCE_GATEWAY,
+          withdrawConfig.cWETHv3.assetL2, WETH_GATEWAY
         ],
         [
           0, 0, 0,
@@ -150,15 +145,10 @@ export default migration('1775822198_withdraw_reserves', {
           'approve(address,uint256)', 'outboundTransfer(address,address,uint256,bytes)',
         ],
         [
-          withdrawUSDCCalldata,
-          withdrawUSDTCalldata,
-          withdrawETHCalldata,
-          approveUSDCCalldata,
-          depositForBurnUSDCCalldata,
-          approveUSDCECalldata,
-          outboundTransferUSDCECalldata,
-          approveWETHCalldata,
-          outboundTransferWETHCalldata
+          withdrawUSDCCalldata, withdrawUSDTCalldata, withdrawETHCalldata,
+          approveUSDCCalldata, depositForBurnUSDCCalldata,
+          approveUSDCECalldata, outboundTransferUSDCECalldata,
+          approveWETHCalldata, outboundTransferWETHCalldata
         ]
       ]
     );
@@ -185,15 +175,15 @@ export default migration('1775822198_withdraw_reserves', {
           refundAddress,                                    // address excessFeeRefundAddress,
           refundAddress,                                    // address callValueRefundAddress,
           createRetryableTicketGasParams.gasLimit,          // uint256 gasLimit,
-          createRetryableTicketGasParams.maxFeePerGas,      // uint256 maxFeePerGas,
+          createRetryableTicketGasParams.maxFeePerGas*2,    // uint256 maxFeePerGas,
           l2ProposalData,                                   // bytes calldata data
         ],
-        value: createRetryableTicketGasParams.deposit
+        value: createRetryableTicketGasParams.deposit.mul(2),
       },
     ];
 
     const USDC = await getErc20FromAddress(govDeploymentManager, withdrawConfig.cUSDCv3.assetL1);
-    
+
     balancesBefore = {
       USDC: await USDC.balanceOf(recipient),
       ETH: BigNumber.from(await govDeploymentManager.hre.ethers.provider.getBalance(recipient)),
