@@ -672,6 +672,99 @@ scenario.skip(
   }
 );
 
+/**
+ * @title Withdraw Scenario - isBorrowCollateralized with borrowCollateralFactor = 0
+ * @notice Test suite for isBorrowCollateralized behavior when borrowCollateralFactor is set to 0
+ *
+ * @dev This test suite was written after the USDM incident, when a token price feed was removed from Chainlink.
+ * The incident revealed that when a price feed becomes unavailable, the protocol cannot calculate the USD value
+ * of collateral (e.g., during absorption when trying to getPrice() for a delisted asset).
+ *
+ * @dev The solution was to set the asset's borrowCollateralFactor to 0 for delisted collateral. For isBorrowCollateralized,
+ * when borrowCollateralFactor = 0, the contract skips that asset in the liquidity calculation (see CometWithExtendedAssetList.sol
+ * lines 402-405), effectively excluding it from contributing to the user's collateralization. This prevents the protocol
+ * from calling getPrice() on unavailable price feeds.
+ *
+ * @dev This scenario tests isBorrowCollateralized behavior in two phases:
+ * 1. Normal operation: Verifies that positions with positive borrowCF are properly collateralized and can borrow
+ * 2. Delisted asset: Sets borrowCF to 0 and verifies that the collateral is excluded from liquidity calculations,
+ *    causing positions to become undercollateralized and preventing further borrowing when their only collateral asset is delisted
+ *
+ * @dev Unlike isLiquidatable which uses liquidateCollateralFactor, this function determines whether a user can initiate
+ * new borrows, making it critical for preventing new positions from being opened with unpriceable collateral.
+ *
+ * @dev The scenario runs for all valid assets (up to MAX_ASSETS) and only on Comet deployments that use
+ * the extended asset list feature (CometExtAssetList), as the borrowCollateralFactor = 0 behavior is specific
+ * to that implementation. The base Comet contract does not have this check and will attempt to call getPrice()
+ * even when borrowCF=0, which would cause a revert if the price feed is unavailable. The test filters deployments
+ * using the usesAssetList() utility function to ensure compatibility, and excludes assets that are already delisted.
+ */
+for (let i = 0; i < MAX_ASSETS; i++) {
+  scenario(
+    `Comet#isBorrowCollateralized > skips liquidity of asset ${i} with borrowCF=0`,
+    {
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, getConfigForScenario(ctx, i).supplyCollateral) && await usesAssetList(ctx) && !(await isAssetDelisted(ctx, i)) && await supportsExtendedPause(ctx),
+      tokenBalances: async (ctx: CometContext) => (
+        {
+          albert: { $base: '== 0' },
+          $comet: { $base: getConfigForScenario(ctx, i).withdrawBase },
+        }
+      ),
+    },
+    async ({ comet, configurator, proxyAdmin, actors }, context) => {
+      const { albert, admin } = actors;
+      const { asset, borrowCollateralFactor, priceFeed, scale: scaleBN } = await comet.getAssetInfo(i);
+      const collateralAsset = context.getAssetByAddress(asset);
+      const collateralScale = scaleBN.toBigInt();
+      
+      // Get price feeds and scales
+      const basePrice = (await comet.getPrice(await comet.baseTokenPriceFeed())).toBigInt();
+      const collateralPrice = (await comet.getPrice(priceFeed)).toBigInt();
+      const baseScale = (await comet.baseScale()).toBigInt();
+      const factorScale = (await comet.factorScale()).toBigInt();
+      
+      // Target borrow amount (in base units, not wei)
+      const targetBorrowBase = BigInt(getConfigForScenario(context, i).withdrawBase);
+      const targetBorrowBaseWei = targetBorrowBase * baseScale;
+      
+      // Calculate required collateral amount
+      // Formula from CometBalanceConstraint.ts:
+      const collateralWeiPerUnitBase = (collateralScale * basePrice) / collateralPrice;
+      let collateralNeeded = (collateralWeiPerUnitBase * targetBorrowBaseWei) / baseScale;
+      collateralNeeded = (collateralNeeded * factorScale) / borrowCollateralFactor.toBigInt();
+      collateralNeeded = (collateralNeeded * 11n) / 10n; // add fudge factor to ensure collateralization
+      
+      // Set up balances dynamically
+      // 1. Source collateral tokens for albert
+      await context.sourceTokens(collateralNeeded, collateralAsset, albert);
+      
+      // 2. Approve and supply collateral
+      await collateralAsset.approve(albert, comet.address);
+      await albert.safeSupplyAsset({ asset: collateralAsset.address, amount: collateralNeeded });
+      
+      // 3. Borrow base (this will make albert have negative base balance)
+      const baseTokenAddress = await comet.baseToken();
+      await albert.withdrawAsset({ asset: baseTokenAddress, amount: targetBorrowBaseWei });
+      
+      // Verify initial state: position should be collateralized
+      expect(await comet.isBorrowCollateralized(albert.address)).to.be.true;
+
+      // Zero borrowCF for target asset via governance
+      await context.setNextBaseFeeToZero();
+      await configurator.connect(admin.signer).updateAssetBorrowCollateralFactor(comet.address, asset, 0n, { gasPrice: 0 });
+      await context.setNextBaseFeeToZero();
+      await proxyAdmin.connect(admin.signer).deployAndUpgradeTo(configurator.address, comet.address, { gasPrice: 0 });
+
+      // Verify borrowCF is 0
+      const assetInfo = await comet.getAssetInfoByAddress(asset);
+      expect(assetInfo.borrowCollateralFactor).to.equal(0);
+
+      // After zeroing the only supplied asset's borrowCF, position should be undercollateralized
+      expect(await comet.isBorrowCollateralized(albert.address)).to.equal(false);
+    }
+  );
+}
+
 scenario(
   'Comet#withdraw reverts when collateral asset withdraw is paused and allows to withdraw when unpaused',
   {
