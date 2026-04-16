@@ -133,6 +133,7 @@ const withdrawConfigV3 = {
 };
 
 const recipient = '0x9825413dd3875E01B34451A7A7e066b2225a234E';
+const newVaultOwner = '0x9825413dd3875E01B34451A7A7e066b2225a234E';
 
 const OPTIMISM_BRIDGE_RECEIVER = '0xC3a73A70d1577CD5B02da0bA91C0Afc8fA434DAF';
 const OPTIMISM_TIMELOCK = '0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07';
@@ -189,7 +190,7 @@ export default migration('1775661752_withdraw_reserves', {
       [
         withdrawConfigV3.optimism.cUSDCv3.assetL2, // _localToken
         withdrawConfigV3.optimism.cUSDCv3.assetL1, // _remoteToken
-        OPTIMISM_TIMELOCK, // _to
+        recipient, // _to
         exp(withdrawConfigV3.optimism.cUSDCv3.amount, withdrawConfigV3.optimism.cUSDCv3.decimals), // _amount
         200000, // _minGasLimit
         '0x', // _data
@@ -211,7 +212,7 @@ export default migration('1775661752_withdraw_reserves', {
       [
         withdrawConfigV3.optimism.cUSDTv3.assetL2, // _localToken
         withdrawConfigV3.optimism.cUSDTv3.assetL1, // _remoteToken
-        OPTIMISM_TIMELOCK, // _to
+        recipient, // _to
         exp(withdrawConfigV3.optimism.cUSDTv3.amount, withdrawConfigV3.optimism.cUSDTv3.decimals), // _amount
         200000, // _minGasLimit
         '0x', // _data
@@ -268,7 +269,7 @@ export default migration('1775661752_withdraw_reserves', {
       [
         withdrawConfigV3.base.cUSDbCv3.assetL2, // _localToken
         withdrawConfigV3.base.cUSDbCv3.assetL1, // _remoteToken
-        BASE_TIMELOCK, // _to
+        recipient, // _to
         exp(withdrawConfigV3.base.cUSDbCv3.amount, withdrawConfigV3.base.cUSDbCv3.decimals), // _amount
         200000, // _minGasLimit
         '0x', // _data
@@ -305,7 +306,7 @@ export default migration('1775661752_withdraw_reserves', {
       [ARBITRUM_TIMELOCK, exp(withdrawConfigV3.arbitrum.cUSDCv3.amount, withdrawConfigV3.arbitrum.cUSDCv3.decimals)]
     );
 
-    const withdrawUsdtArbitrumCalldata = utils.defaultAbiCoder.encode(
+    const withdrawUsdceArbitrumCalldata = utils.defaultAbiCoder.encode(
       ['address', 'uint256'],
       [ARBITRUM_TIMELOCK, exp(withdrawConfigV3.arbitrum.cUSDCev3.amount, withdrawConfigV3.arbitrum.cUSDCev3.decimals)]
     );
@@ -385,7 +386,7 @@ export default migration('1775661752_withdraw_reserves', {
           'approve(address,uint256)', 'outboundTransfer(address,address,uint256,bytes)',
         ],
         [
-          withdrawUsdcArbitrumCalldata, withdrawUsdtArbitrumCalldata, withdrawEthArbitrumCalldata,
+          withdrawUsdcArbitrumCalldata, withdrawUsdceArbitrumCalldata, withdrawEthArbitrumCalldata,
           approveUsdcArbitrumCalldata, depositForBurnUsdcArbitrumCalldata,
           approveUsdceArbitrumCalldata, outboundTransferUsdceArbitrumCalldata,
           approveWethArbitrumCalldata, outboundTransferWethArbitrumCalldata
@@ -409,7 +410,7 @@ export default migration('1775661752_withdraw_reserves', {
     // Vaults
     const transferOwnershipCalldata = utils.defaultAbiCoder.encode(
       ['address'],
-      [recipient]
+      [newVaultOwner]
     );
 
     const avantgardeVault = new Contract(
@@ -422,7 +423,7 @@ export default migration('1775661752_withdraw_reserves', {
     const swapOwnerCalldata = avantgardeVault.interface.encodeFunctionData(
       'swapOwner',
       // [address(0x1), timelock.address, recipient]
-      [utils.getAddress(utils.hexZeroPad('0x01', 20)), timelock.address, recipient]
+      [utils.getAddress(utils.hexZeroPad('0x01', 20)), timelock.address, newVaultOwner]
     );
 
     const mainnetActions = [
@@ -820,7 +821,7 @@ The twenty-seventh proposal action transfers the ownership of the Avantgarde vau
       await deploymentManager.getSigner()
     );
     const pendingVaultOwner = await aeraVault.pendingOwner();
-    expect(pendingVaultOwner).to.equal(recipient);
+    expect(pendingVaultOwner).to.equal(newVaultOwner);
 
     const avantgardeVault = new Contract(
       AVANTGARDE_VAULT,
@@ -828,7 +829,7 @@ The twenty-seventh proposal action transfers the ownership of the Avantgarde vau
       await deploymentManager.getSigner()
     );
     const vaultOwner2 = await avantgardeVault.getOwners();
-    expect(vaultOwner2).to.deep.equal([recipient]);
+    expect(vaultOwner2).to.deep.equal([newVaultOwner]);
 
     expect(balancesAfter.WBTC.sub(balancesBefore.WBTC)).to.equal(exp(withdrawConfigV2.cWBTC2.amount, withdrawConfigV2.cWBTC2.decimals) + exp(withdrawConfigV3.mainnet.cWBTCv3.amount, withdrawConfigV3.mainnet.cWBTCv3.decimals));
     expect(balancesAfter.USDC.sub(balancesBefore.USDC)).to.equal(

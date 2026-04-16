@@ -56,7 +56,7 @@ export default migration('1775838618_withdraw_reserves', {
       [
         withdrawConfig.cUSDbCv3.assetL2, // _localToken
         withdrawConfig.cUSDbCv3.assetL1, // _remoteToken
-        l2Timelock.address, // _to
+        recipient, // _to
         exp(withdrawConfig.cUSDbCv3.amount, withdrawConfig.cUSDbCv3.decimals), // _amount
         200000, // _minGasLimit
         '0x', // _data
