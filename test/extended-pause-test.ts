@@ -40,6 +40,8 @@ import { ContractTransaction } from 'ethers';
  * - Each pause flag blocks exactly its intended flow and does not affect unrelated flows:
  *   - Base vs collateral supply; lenders vs borrowers withdraw/transfer; global vs per‑asset flags.
  * - Per‑asset flags override behavior for a single collateral by index without impacting others.
+ * - Unpausing per-asset collateral supply/transfer requires the collateral to be active;
+ *   unpause attempts on deactivated collateral revert with `CollateralIsDeactivated`.
  * - Boundary conditions: `isValidAssetIndex` enforced; invalid indices revert with `InvalidAssetIndex`.
  * - Coexistence with legacy pause flags: both layers are respected (extended flags are additional gates).
  * - Events are emitted for each toggle action from `CometExt` methods.
@@ -794,6 +796,18 @@ describe('extended pause functionality', function () {
               .pauseCollateralAssetSupply(await comet.numAssets(), true)
           ).to.be.revertedWithCustomError(cometExt, 'InvalidAssetIndex');
         });
+
+        it('reverts when unpausing a deactivated collateral asset', async function () {
+          // Deactivate the collateral asset
+          await cometExt.connect(pauseGuardian).deactivateCollateral(assetIndex);
+
+          await expect(
+            cometExt.connect(pauseGuardian).pauseCollateralAssetSupply(assetIndex, false)
+          ).to.be.revertedWithCustomError(cometExt, 'CollateralIsDeactivated');
+
+          // Activate the collateral asset
+          await cometExt.connect(governor).activateCollateral(assetIndex);
+        });
       });
     });
   });
@@ -1197,6 +1211,15 @@ describe('extended pause functionality', function () {
               .connect(governor)
               .pauseCollateralAssetTransfer(await comet.numAssets(), true)
           ).to.be.revertedWithCustomError(cometExt, 'InvalidAssetIndex');
+        });
+
+        it('reverts when unpausing a deactivated collateral asset', async function () {
+          // Deactivate the collateral asset
+          await cometExt.connect(pauseGuardian).deactivateCollateral(assetIndex);
+
+          await expect(
+            cometExt.connect(pauseGuardian).pauseCollateralAssetTransfer(assetIndex, false)
+          ).to.be.revertedWithCustomError(cometExt, 'CollateralIsDeactivated');
         });
       });
     });

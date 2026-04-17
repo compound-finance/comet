@@ -37,6 +37,24 @@ abstract contract CometExtInterface is CometCore {
      * @dev Error thrown when the asset index is invalid
      */
     error InvalidAssetIndex();
+    /**
+     * @dev Error thrown when the caller is not the pause guardian
+     */
+    error OnlyPauseGuardian();
+    /**
+     * @dev Error thrown when the caller is not the governor
+     */
+    error OnlyGovernor();
+    /**
+     * @dev Error thrown when the collateral asset is already deactivated
+     * @param assetIndex The index of the collateral asset
+     */
+    error CollateralIsDeactivated(uint24 assetIndex);
+    /**
+     * @dev Error thrown when the collateral asset is already activated
+     * @param assetIndex The index of the collateral asset
+     */
+    error CollateralIsActivated(uint24 assetIndex);
 
     function allow(address manager, bool isAllowed) virtual external;
     function allowBySig(address owner, address manager, bool isAllowed, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s) virtual external;
@@ -102,6 +120,16 @@ abstract contract CometExtInterface is CometCore {
      * @param paused Whether to pause (`true`) or unpause (`false`) transfer actions for the specified collateral asset.
      */
     function pauseCollateralAssetTransfer(uint24 assetIndex, bool paused) virtual external;
+    /**
+     * @notice Deactivates a collateral asset.
+     * @param assetIndex The index of the collateral asset to deactivate.
+     */
+    function deactivateCollateral(uint24 assetIndex) virtual external;
+    /**
+     * @notice Activates a collateral asset.
+     * @param assetIndex The index of the collateral asset to activate.
+     */
+    function activateCollateral(uint24 assetIndex) virtual external;
 
     function collateralBalanceOf(address account, address asset) virtual external view returns (uint128);
     function baseTrackingAccrued(address account) virtual external view returns (uint64);
@@ -207,4 +235,14 @@ abstract contract CometExtInterface is CometCore {
      * @param collateralAssetTransferPaused Whether transfers for this collateral asset are now paused
      */
     event CollateralAssetTransferPauseAction(uint24 assetIndex, bool collateralAssetTransferPaused);
+    /**
+     * @notice Emitted when a collateral asset is deactivated
+     * @param assetIndex The index of the collateral asset that was deactivated
+     */
+    event CollateralDeactivated(uint24 assetIndex);
+    /**
+     * @notice Emitted when a collateral asset is activated
+     * @param assetIndex The index of the collateral asset that was activated
+     */
+    event CollateralActivated(uint24 assetIndex);
 }

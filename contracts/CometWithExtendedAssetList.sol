@@ -443,6 +443,17 @@ contract CometWithExtendedAssetList is CometMainInterface {
 
                 asset = getAssetInfo(i);
 
+                // Block ALL borrow-side actions when the borrower still holds deactivated collateral.
+                // This revert is intentionally broad: it prevents borrowing, withdrawing other
+                // collateral, and transferring — even if the remaining active collateral would
+                // pass the collateralization check on its own. The purpose is to force the
+                // borrower to withdraw the deactivated collateral FIRST before doing anything
+                // else (see the deactivation lifecycle comment on isCollateralDeactivated).
+                //
+                // If the borrower cannot withdraw the deactivated collateral without becoming
+                // under-collateralized, they are stuck and must wait for liquidation.
+                if (isCollateralDeactivated(asset.offset)) revert TokenIsDeactivated(asset.asset);
+
                 // Skip assets with borrowCollateralFactor == 0 — they provide no
                 // borrowing power, so mulFactor(value, 0) would add nothing to liquidity.
                 // More critically, this avoids calling getPrice() for their price feed:
@@ -475,6 +486,16 @@ contract CometWithExtendedAssetList is CometMainInterface {
      * @notice Check whether an account has enough collateral to not be liquidated
      * @param account The address to check
      * @return Whether the account is minimally collateralized enough to not be liquidated
+     *
+     * @dev Intentionally does NOT check isCollateralDeactivated. Unlike isBorrowCollateralized,
+     *      which reverts on deactivated collateral to block borrower actions, this function
+     *      must always return a result so that liquidation remains possible. A stuck borrower
+     *      who cannot withdraw deactivated collateral (see withdrawCollateral) relies on
+     *      liquidation as their only exit path. If isLiquidatable reverted on deactivated
+     *      collateral, the borrower would be permanently frozen with no way out.
+     *
+     *      When liquidateCollateralFactor is 0 for the deactivated asset, it contributes
+     *      nothing to the liquidity calculation, making the account easier to liquidate.
      */
     function isLiquidatable(address account) override public view returns (bool) {
         (bool liquidatable, ,) = isLiquidatableInternal(account);
@@ -708,6 +729,38 @@ contract CometWithExtendedAssetList is CometMainInterface {
      */
     function isCollateralTransferPaused() public view returns (bool) {
         return (extendedPauseFlags & (uint24(1) << PAUSE_COLLATERALS_TRANSFER_OFFSET)) != 0;
+    }
+
+    /**
+     * @notice Check if a collateral asset is deactivated
+     * @param assetIndex The index of the asset
+     * @return Whether the collateral asset is deactivated
+     *
+     * Deactivation is an emergency action only. It can be called and executed
+     * immediately by the pause guardian via `deactivateCollateral`.
+     * When executed, the asset's bit is set in `deactivatedCollaterals`, and
+     * supply and transfer for that collateral are paused.
+     *
+     * ─── Impact on borrowers holding deactivated collateral ─────────────────────
+     *
+     * If a borrower still has debt and still holds deactivated collateral, borrow-side
+     * actions are blocked because `isBorrowCollateralized` reverts with
+     * `TokenIsDeactivated` when that asset is encountered in `assetsIn`.
+     *
+     * The borrower then has two options:
+     *
+     *   1. Repay debt until principal is > 0 (i.e. no borrow position). This avoids
+     *      collateral liquidity checks in `isBorrowCollateralized`, allowing the borrower
+     *      to withdraw the deactivated collateral.
+     *
+     *   2. Wait for liquidation (`absorbInternal`), where collateral is seized and debt
+     *      is absorbed according to the protocol's liquidation rules.
+     *
+     * If a user is not a borrower (no debt / principal >= 0), they can withdraw
+     * deactivated collateral without these borrow-side restrictions.
+     */
+    function isCollateralDeactivated(uint24 assetIndex) public view returns (bool) {
+        return (deactivatedCollaterals & (uint24(1) << assetIndex)) != 0;
     }
 
     /**
@@ -1198,6 +1251,19 @@ contract CometWithExtendedAssetList is CometMainInterface {
 
     /**
      * @dev Withdraw an amount of collateral asset from src to `to`
+     *
+     * Note on deactivated collateral:
+     *   This is the path a borrower must use to remove deactivated collateral from their
+     *   account before they can resume normal operations (see deactivation lifecycle on
+     *   isCollateralDeactivated). If the borrower withdraws ALL of the deactivated asset,
+     *   updateAssetsIn clears its bit from `assetsIn`, so the subsequent
+     *   isBorrowCollateralized call no longer encounters the deactivated asset.
+     *
+     *   However, if removing the deactivated collateral leaves the borrower under-
+     *   collateralized (remaining active collateral is insufficient for the borrow),
+     *   isBorrowCollateralized reverts with NotCollateralized — the borrower is stuck.
+     *   In this case the borrower has no choice but to wait for liquidation, which will
+     *   seize all collateral (including deactivated) and absorb the debt.
      */
     function withdrawCollateral(address src, address to, address asset, uint128 amount) internal {
         accrueAccountInternal(src);
@@ -1250,6 +1316,20 @@ contract CometWithExtendedAssetList is CometMainInterface {
 
     /**
      * @dev Transfer user's collateral and debt to the protocol itself.
+     *
+     * Note on deactivated collateral:
+     *   All collateral is seized — including deactivated assets. The tokens are moved from
+     *   the user's balance to the protocol's reserves (balance zeroed, totals reduced).
+     *
+     *   For deactivated assets whose liquidationFactor has been set to 0:
+     *     - mulFactor(value, 0) == 0, so the asset's value does NOT offset the borrower's debt.
+     *     - The borrower receives less base-asset cashback than they would if the collateral
+     *       were still active, because only active collateral contributes to deltaValue.
+     *
+     *   After absorption, the protocol (Comet) holds the seized deactivated collateral tokens.
+     *   Governance can later handle them (e.g. via withdrawReserves or a future re-listing).
+     *   The borrower's assetsIn is reset to 0, debt is absorbed, and any residual value from
+     *   active collateral is credited as a positive base balance (cashback).
      */
     function absorbInternal(address absorber, address account) internal {
         (bool liquidatable, uint256 basePrice, uint256[] memory assetPrices) = isLiquidatableInternal(account);

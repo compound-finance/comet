@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { setupFork, impersonateAccount, setBalance} from '../helpers';
+import { setupFork, impersonateAccount, setBalance, SnapshotRestorer, takeSnapshot} from '../helpers';
 import {
   CometExtAssetList__factory,
   CometFactoryWithExtendedAssetList__factory,
@@ -10,7 +10,7 @@ import {
   CometExtAssetList,
 } from 'build/types';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
-import { BigNumber } from 'ethers';
+import { BigNumber, ContractTransaction } from 'ethers';
 import { TotalsBasicStructOutput } from 'build/types/CometExtAssetList';
 
 describe('extended pause upgrade test', function () {
@@ -30,6 +30,7 @@ describe('extended pause upgrade test', function () {
 
   // Signers
   let governor: SignerWithAddress;
+  let pauseGuardian: SignerWithAddress;
 
   // Variables
   let assetListFactoryAddress: string;
@@ -58,6 +59,12 @@ describe('extended pause upgrade test', function () {
 
   // Totals basic snapshot
   let totalsBasicBefore: TotalsBasicStructOutput;
+
+  // Upgrade transaction
+  let upgradeTx: ContractTransaction;
+
+  // Snapshot
+  let snapshot: SnapshotRestorer;
 
   before(async function () {
     // Setup mainnet fork
@@ -167,10 +174,19 @@ describe('extended pause upgrade test', function () {
 
     // Totals basic snapshot
     totalsBasicBefore = await cometExt.totalsBasic();
+
+    // Impersonate governor
+    await impersonateAccount(pauseGuardianBefore);
+    pauseGuardian = await ethers.getSigner(pauseGuardianBefore);
+    await setBalance(pauseGuardianBefore, ethers.utils.parseEther('10000'));
+
+    upgradeTx = await proxyAdmin.connect(governor).upgrade(COMET_ADDRESS, newImpl);
+
+    snapshot = await takeSnapshot();
   });
 
   it('should upgrade proxy to new implementation by governor', async function () {
-    await proxyAdmin.connect(governor).upgrade(COMET_ADDRESS, newImpl);
+    await upgradeTx.wait();
   });
 
   it('should update comet and comet extension delegate implementations', async function () {
@@ -223,5 +239,41 @@ describe('extended pause upgrade test', function () {
     expect(await comet.isBorrowersTransferPaused()).to.be.true;
     expect(await comet.isCollateralTransferPaused()).to.be.true;
     expect(await comet.isCollateralAssetTransferPaused(0)).to.be.true;
+
+    await snapshot.restore();
+  });
+
+  it('should allow to call deactivateCollateral function by pause guardian', async function () {
+    await cometExt.connect(pauseGuardian).deactivateCollateral(0);
+  });
+
+  it('should set collateral as deactivated in comet', async function () {
+    expect(await comet.isCollateralDeactivated(0)).to.be.true;
+  });
+
+  it('should update deactivated collaterals flag in comet storage', async function () {
+    expect(await comet.deactivatedCollaterals()).to.equal(1);
+  });
+
+  it('should update pause flags for deactivated collateral', async function () {
+    expect(await comet.isCollateralAssetSupplyPaused(0)).to.be.true;
+    expect(await comet.isCollateralAssetTransferPaused(0)).to.be.true;
+  });
+
+  it('should allow to call activateCollateral function by governor', async function () {
+    await cometExt.connect(governor).activateCollateral(0);
+  });
+
+  it('should set collateral as activated in comet', async function () {
+    expect(await comet.isCollateralDeactivated(0)).to.be.false;
+  });
+
+  it('should update deactivated collaterals flag in comet storage', async function () {
+    expect(await comet.deactivatedCollaterals()).to.equal(0);
+  });
+
+  it('should update pause flags for activated collateral', async function () {
+    expect(await comet.isCollateralAssetSupplyPaused(0)).to.be.false;
+    expect(await comet.isCollateralAssetTransferPaused(0)).to.be.false;
   });
 });

@@ -97,4 +97,10 @@ contract CometStorage {
      * @dev Each bit represents a pause flag for an asset index
      */
     uint24 public collateralsTransferPauseFlags;
+
+    /**
+     * @notice The deactivated collaterals flags represented as a bitmap
+     * @dev Each bit represents whether a collateral asset is deactivated
+     */
+    uint24 public deactivatedCollaterals;
 }

@@ -1,7 +1,8 @@
-import { ethers, event, expect, exp, makeProtocol, portfolio, ReentryAttack, setTotalsBasic, wait, fastForward, defaultAssets, ZERO_ADDRESS, takeSnapshot, SnapshotRestorer } from './helpers';
+import { ethers, event, expect, exp, makeProtocol, portfolio, ReentryAttack, setTotalsBasic, wait, fastForward, defaultAssets, ZERO_ADDRESS, takeSnapshot, SnapshotRestorer, UserCollateral, MAX_ASSETS } from './helpers';
 import { EvilToken, EvilToken__factory, NonStandardFaucetFeeToken__factory, NonStandardFaucetFeeToken, CometHarnessInterface, FaucetToken, CometExtAssetList, CometHarnessInterfaceExtendedAssetList } from '../build/types';
 import { BigNumber, ContractTransaction } from 'ethers';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
+import { TotalsCollateralStruct } from 'build/types/CometHarness';
 
 // Note: isolated supply functionality, withdraw and repay are tested in separate testsets
 describe('supply', function () {
@@ -18,7 +19,29 @@ describe('supply', function () {
   // Accounts
   let alice: SignerWithAddress;
   let bob: SignerWithAddress;
+  let dave: SignerWithAddress;
   let pauseGuardian: SignerWithAddress;
+  let governor: SignerWithAddress;
+
+  /*//////////////////////////////////////////////////////////////
+                       24 COLLATERALS COMET SETUP
+  //////////////////////////////////////////////////////////////*/
+  // Contracts
+  let cometWith24Collaterals: CometHarnessInterfaceExtendedAssetList;
+  let tokensWith24Collaterals: { [symbol: string]: FaucetToken } = {};
+  // Constants
+  const collateralTokenSupplyAmount = BigInt(8e8);
+  // Storage
+  let deactivatedCollateralIndex: number;
+  let totalsCollateralBefore: TotalsCollateralStruct;
+  let bobUserCollateralBefore: UserCollateral;
+  let aliceUserCollateralBefore: UserCollateral;
+  // Tokens
+  let collateralToken: FaucetToken;
+  let deactivateCollateralTx: ContractTransaction;
+  let activateCollateralTx: ContractTransaction;
+
+  let snapshot: SnapshotRestorer;
 
   before(async function () {
     const protocol = await makeProtocol({base: 'USDC'});
@@ -30,12 +53,40 @@ describe('supply', function () {
     );
     pauseGuardian = protocol.pauseGuardian;
     unsupportedToken = protocol.unsupportedToken;
-
-    alice = protocol.users[0];
-    bob = protocol.users[1];
+    governor = protocol.governor;
+    [alice, bob, dave] = protocol.users;
 
     await baseToken.allocateTo(alice.address, exp(1e10, baseTokenDecimals));
     await baseToken.allocateTo(bob.address, exp(1e10, baseTokenDecimals));
+
+    /*//////////////////////////////////////////////////////////////
+                       24 COLLATERALS COMET SETUP
+    //////////////////////////////////////////////////////////////*/
+
+    const collaterals24Assets = Object.fromEntries(
+      Array.from({ length: MAX_ASSETS }, (_, j) => [`ASSET${j}`, {
+        initialPrice: 100,
+        decimals: 18,
+      }])
+    );
+    const protocolWith24Collaterals = await makeProtocol({
+      assets: { USDC: {initialPrice: 1, decimals: 6 }, ...collaterals24Assets, },
+    });
+    cometWith24Collaterals = protocolWith24Collaterals.cometWithExtendedAssetList;
+    for (const asset in protocolWith24Collaterals.tokens) {
+      if (asset === 'USDC') continue;
+      tokensWith24Collaterals[asset] = protocolWith24Collaterals.tokens[asset] as FaucetToken;
+    }
+
+    collateralToken = collaterals['COMP'] as FaucetToken;
+
+    const collateralAssetInfo = await comet.getAssetInfoByAddress(collateralToken.address);
+    deactivatedCollateralIndex = collateralAssetInfo.offset;
+    totalsCollateralBefore = await comet.totalsCollateral(collateralToken.address);
+    bobUserCollateralBefore = await comet.userCollateral(bob.address, collateralToken.address);
+    aliceUserCollateralBefore = await comet.userCollateral(alice.address, collateralToken.address);
+
+    snapshot = await takeSnapshot();
   });
 
   describe('supply base asset', function () {
@@ -97,12 +148,6 @@ describe('supply', function () {
         await comet.connect(pauseGuardian).pauseBaseSupply(false);
       });
 
-      // Note: we skip this test for now, because this feature is not implemented in the comet contract yet
-      // This is different from Sandbox behavior - original Comet allows 0 supply
-      it.skip('reverts for 0 base asset supply', async () => {
-        await expect(comet.connect(alice).supply(baseToken.address, 0)).to.be.revertedWithCustomError(comet, 'ZeroAmount');
-      });
-
       it('reverts for not enough base asset balance', async () => {
         const balanceBefore = await baseToken.balanceOf(alice.address);
 
@@ -116,11 +161,6 @@ describe('supply', function () {
 
         await unsupportedToken.connect(alice).approve(comet.address, exp(1, 18));
         await expect(comet.connect(alice).supply(unsupportedToken.address, 1)).to.be.revertedWithCustomError(comet, 'BadAsset');
-      });
-
-      // Note: this feature is not implemented in the comet contract yet
-      it.skip('revert if asset = 0', async () => {
-        await expect(comet.connect(alice).supply(ZERO_ADDRESS, 1)).to.be.revertedWithCustomError(comet, 'ZeroAddress');
       });
     });
 
@@ -676,11 +716,6 @@ describe('supply', function () {
         await collateral.connect(alice).approve(comet.address, 0);
       });
 
-      // Note: this logic is not implemented in the comet contract yet
-      it.skip('reverts for 0 collateral amount', async () => {
-        await expect(comet.connect(alice).supply(collateral.address, 0)).to.be.revertedWithCustomError(comet, 'ZeroAmount');
-      });
-
       it('reverts if supplying collateral exceeds the supply cap', async () => {
         const collateralIndex = (await comet.getAssetInfoByAddress(collateral.address)).offset;
         const supplyCap = (await comet.getAssetInfo(collateralIndex)).supplyCap;
@@ -1184,30 +1219,6 @@ describe('supply', function () {
     });
 
     describe('supplyTo', function () {
-      // Note: tests assume, that supplyTo() is a clone of supply(), thus only key cases are checked
-      // Note: this logic is not implemented in the comet contract yet
-      it.skip('reverts for dst = 0', async () => {
-        await baseToken.connect(alice).approve(comet.address, 1);
-        await expect(comet.connect(alice).supplyTo(ethers.constants.AddressZero, baseToken.address, 1)).to.be.revertedWithCustomError(
-          comet,
-          'ZeroAddress'
-        );
-      });
-
-      // Note: this logic is not implemented in the comet contract yet
-      it.skip('reverts for asset = 0', async () => {
-        await baseToken.connect(alice).approve(comet.address, 1);
-        await expect(comet.connect(alice).supplyTo(bob.address, ethers.constants.AddressZero, 1)).to.be.revertedWithCustomError(
-          comet,
-          'ZeroAddress'
-        );
-      });
-
-      // Note: this logic is not implemented in the comet contract yet
-      it.skip('reverts for amount = 0', async () => {
-        await expect(comet.connect(alice).supplyTo(bob.address, baseToken.address, 0)).to.be.revertedWithCustomError(comet, 'ZeroAmount');
-      });
-
       it('reverts for asset other than base of collateral', async () => {
         await unsupportedToken.allocateTo(alice.address, exp(1, 18));
         await unsupportedToken.connect(alice).approve(comet.address, exp(1, 18));
@@ -1335,39 +1346,7 @@ describe('supply', function () {
 
         await snapshot.restore();
       });
-
-      // Note: this logic is not implemented in the comet contract yet
-      it.skip('reverts for from = 0', async () => {
-        await baseToken.connect(alice).approve(comet.address, 1);
-        await expect(
-          comet.connect(alice).supplyFrom(ethers.constants.AddressZero, alice.address, baseToken.address, 1)
-        ).to.be.revertedWithCustomError(comet, 'ZeroAddress');
-      });
-
-      // Note: this logic is not implemented in the comet contract yet
-      it.skip('reverts for dst = 0', async () => {
-        await baseToken.connect(alice).approve(comet.address, 1);
-        await expect(
-          comet.connect(alice).supplyFrom(alice.address, ethers.constants.AddressZero, baseToken.address, 1)
-        ).to.be.revertedWithCustomError(comet, 'ZeroAddress');
-      });
-
-      // Note: this logic is not implemented in the comet contract yet
-      it.skip('reverts for asset = 0', async () => {
-        await baseToken.connect(alice).approve(comet.address, 1);
-        await expect(
-          comet.connect(alice).supplyFrom(alice.address, bob.address, ethers.constants.AddressZero, 1)
-        ).to.be.revertedWithCustomError(comet, 'ZeroAddress');
-      });
-
-      // Note: this logic is not implemented in the comet contract yet
-      it.skip('reverts for amount = 0', async () => {
-        await expect(comet.connect(alice).supplyFrom(alice.address, bob.address, baseToken.address, 0)).to.be.revertedWithCustomError(
-          comet,
-          'ZeroAmount'
-        );
-      });
-
+ 
       it('reverts for asset other than base of collateral', async () => {
         await unsupportedToken.allocateTo(alice.address, exp(1, 18));
         await unsupportedToken.connect(alice).approve(comet.address, exp(1, 18));
@@ -1489,68 +1468,37 @@ describe('supply', function () {
   });
 
   describe('supply 24 collaterals', function () {
-    const MAX_ASSETS = 24;
     const SUPPLY_COLLATERAL_AMOUNT: bigint = exp(1, 18);
-    let comet: CometHarnessInterfaceExtendedAssetList;
-    let collaterals: { [symbol: string]: FaucetToken } = {};
-    let alice: SignerWithAddress;
-    let dave: SignerWithAddress;
     let supplyTxs: ContractTransaction[] = [];
     let alicePrincipalBefore: BigNumber;
     let davePrincipalBefore: BigNumber;
 
-    let snapshot: SnapshotRestorer;
-
     before(async () => {
-      // Setup protocol with MAX_ASSETS collaterals
-      const cometCollaterals = Object.fromEntries(
-        Array.from({ length: MAX_ASSETS }, (_, j) => [`ASSET${j}`, {
-          decimals: 18,
-          initialPrice: 1,
-        }])
-      );
-      const protocol = await makeProtocol({
-        base: 'USDC',
-        assets: { 
-          USDC: {decimals: 6, initialPrice: 1},
-          ...cometCollaterals },
-      });
-
-      comet = protocol.cometWithExtendedAssetList;
-      baseToken = protocol.tokens[protocol.base] as FaucetToken;
-      for (const asset in protocol.tokens) {
-        if (asset === 'USDC') continue;
-        collaterals[asset] = protocol.tokens[asset] as FaucetToken;
-      }
-
-      [alice, dave] = protocol.users;
-
-      alicePrincipalBefore = (await comet.userBasic(alice.address)).principal;
-      davePrincipalBefore = (await comet.userBasic(dave.address)).principal;
+      alicePrincipalBefore = (await cometWith24Collaterals.userBasic(alice.address)).principal;
+      davePrincipalBefore = (await cometWith24Collaterals.userBasic(dave.address)).principal;
     });
 
     describe('pause can be set for each collateral', function () {
       it('should allow to pause each collateral supply', async () => {
         for (let i = 0; i < MAX_ASSETS; i++) {
-          await comet.connect(pauseGuardian).pauseCollateralAssetSupply(i, true);
-          expect(await comet.isCollateralAssetSupplyPaused(i)).to.be.true;
+          await cometWith24Collaterals.connect(pauseGuardian).pauseCollateralAssetSupply(i, true);
+          expect(await cometWith24Collaterals.isCollateralAssetSupplyPaused(i)).to.be.true;
         }
       });
 
       it('should revert if specific collateral supply is paused', async () => {
         for (let i = 0; i < MAX_ASSETS; i++) {
-          await collaterals[`ASSET${i}`].allocateTo(alice.address, SUPPLY_COLLATERAL_AMOUNT);
-          await collaterals[`ASSET${i}`].connect(alice).approve(comet.address, SUPPLY_COLLATERAL_AMOUNT);
-          await expect(comet.connect(alice).supply(collaterals[`ASSET${i}`].address, SUPPLY_COLLATERAL_AMOUNT)).to.be.revertedWithCustomError(comet, 'CollateralAssetSupplyPaused').withArgs(i);
+          await tokensWith24Collaterals[`ASSET${i}`].allocateTo(alice.address, SUPPLY_COLLATERAL_AMOUNT);
+          await tokensWith24Collaterals[`ASSET${i}`].connect(alice).approve(cometWith24Collaterals.address, SUPPLY_COLLATERAL_AMOUNT);
+          await expect(cometWith24Collaterals.connect(alice).supply(tokensWith24Collaterals[`ASSET${i}`].address, SUPPLY_COLLATERAL_AMOUNT)).to.be.revertedWithCustomError(cometWith24Collaterals, 'CollateralAssetSupplyPaused').withArgs(i);
         }
       });
 
       it('should allow to unpause each collateral supply', async () => {
         for (let i = 0; i < MAX_ASSETS; i++) {
-          await comet.connect(pauseGuardian).pauseCollateralAssetSupply(i, false);
-          expect(await comet.isCollateralAssetSupplyPaused(i)).to.be.false;
+          await cometWith24Collaterals.connect(pauseGuardian).pauseCollateralAssetSupply(i, false);
+          expect(await cometWith24Collaterals.isCollateralAssetSupplyPaused(i)).to.be.false;
         }
-        snapshot = await takeSnapshot();
       });
     });
 
@@ -1558,10 +1506,10 @@ describe('supply', function () {
       this.afterAll(async () => snapshot.restore());
 
       it(`each collateral supply is successful`, async () => {
-        for (const asset of Object.values(collaterals)) {
+        for (const asset of Object.values(tokensWith24Collaterals)) {
           await asset.allocateTo(alice.address, SUPPLY_COLLATERAL_AMOUNT);
-          await asset.connect(alice).approve(comet.address, SUPPLY_COLLATERAL_AMOUNT);
-          const supplyTx = await comet.connect(alice).supply(asset.address, SUPPLY_COLLATERAL_AMOUNT);
+          await asset.connect(alice).approve(cometWith24Collaterals.address, SUPPLY_COLLATERAL_AMOUNT);
+          const supplyTx = await cometWith24Collaterals.connect(alice).supply(asset.address, SUPPLY_COLLATERAL_AMOUNT);
           expect(supplyTx).to.not.be.reverted;
           supplyTxs.push(supplyTx);
         }
@@ -1570,59 +1518,59 @@ describe('supply', function () {
       it(`SupplyCollateral event is emitted for each collateral`, async () => {
         for (let i = 0; i < supplyTxs.length; i++) {
           await expect(supplyTxs[i])
-            .to.emit(comet, 'SupplyCollateral')
-            .withArgs(alice.address, alice.address, Object.values(collaterals)[i].address, SUPPLY_COLLATERAL_AMOUNT);
+            .to.emit(cometWith24Collaterals, 'SupplyCollateral')
+            .withArgs(alice.address, alice.address, Object.values(tokensWith24Collaterals)[i].address, SUPPLY_COLLATERAL_AMOUNT);
         }
         // reset supplyTxs
         supplyTxs = [];
       });
 
       it(`each collateral balance is equal to supplied amount`, async () => {
-        for (const asset of Object.values(collaterals)) {
-          expect(await comet.collateralBalanceOf(alice.address, asset.address)).to.be.equal(SUPPLY_COLLATERAL_AMOUNT);
+        for (const asset of Object.values(tokensWith24Collaterals)) {
+          expect(await cometWith24Collaterals.collateralBalanceOf(alice.address, asset.address)).to.be.equal(SUPPLY_COLLATERAL_AMOUNT);
         }
       });
 
       it('alice asset list contains all collaterals', async () => {
-        const assetList = await comet.getAssetList(alice.address);
-        for (const asset of Object.values(collaterals)) {
+        const assetList = await cometWith24Collaterals.getAssetList(alice.address);
+        for (const asset of Object.values(tokensWith24Collaterals)) {
           expect(assetList).to.include(asset.address);
         }
       });
 
       it('each collateral comet total supplied collateral amount is equal to alice supplied amount', async () => {
-        for (const asset of Object.values(collaterals)) {
-          expect((await comet.totalsCollateral(asset.address)).totalSupplyAsset).to.be.equal(SUPPLY_COLLATERAL_AMOUNT);
+        for (const asset of Object.values(tokensWith24Collaterals)) {
+          expect((await cometWith24Collaterals.totalsCollateral(asset.address)).totalSupplyAsset).to.be.equal(SUPPLY_COLLATERAL_AMOUNT);
         }
       });
 
       it('alice principal is not changed', async () => {
-        expect((await comet.userBasic(alice.address)).principal).to.be.equal(alicePrincipalBefore);
+        expect((await cometWith24Collaterals.userBasic(alice.address)).principal).to.be.equal(alicePrincipalBefore);
       });
     });
 
     describe('supplyTo', function () {
       before(async () => {
-        await comet.connect(dave).allow(alice.address, true);
+        await cometWith24Collaterals.connect(dave).allow(alice.address, true);
       });
 
       this.afterAll(async () => snapshot.restore());
 
       it(`each collateral supplyTo is successful`, async () => {
-        for (const asset of Object.values(collaterals)) {
+        for (const asset of Object.values(tokensWith24Collaterals)) {
           await asset.allocateTo(alice.address, SUPPLY_COLLATERAL_AMOUNT);
-          await asset.connect(alice).approve(comet.address, SUPPLY_COLLATERAL_AMOUNT);
-          const supplyToTx = await comet.connect(alice).supplyTo(dave.address, asset.address, SUPPLY_COLLATERAL_AMOUNT);
+          await asset.connect(alice).approve(cometWith24Collaterals.address, SUPPLY_COLLATERAL_AMOUNT);
+          const supplyToTx = await cometWith24Collaterals.connect(alice).supplyTo(dave.address, asset.address, SUPPLY_COLLATERAL_AMOUNT);
           expect(supplyToTx).to.not.be.reverted;
           supplyTxs.push(supplyToTx);
         }
       });
 
       it(`SupplyCollateral event is emitted for each collateral`, async () => {
-        const assets = Object.values(collaterals);
+        const assets = Object.values(tokensWith24Collaterals);
         for (let i = 0; i < assets.length; i++) {
           await expect(supplyTxs[i])
-            .to.emit(comet, 'SupplyCollateral')
+            .to.emit(cometWith24Collaterals, 'SupplyCollateral')
             .withArgs(alice.address, dave.address, assets[i].address, SUPPLY_COLLATERAL_AMOUNT);
         }
         // reset supplyTxs
@@ -1630,76 +1578,76 @@ describe('supply', function () {
       });
 
       it(`each collateral balance for dave is equal to supplied amount`, async () => {
-        for (const asset of Object.values(collaterals)) {
-          expect(await comet.collateralBalanceOf(dave.address, asset.address)).to.be.equal(SUPPLY_COLLATERAL_AMOUNT);
+        for (const asset of Object.values(tokensWith24Collaterals)) {
+          expect(await cometWith24Collaterals.collateralBalanceOf(dave.address, asset.address)).to.be.equal(SUPPLY_COLLATERAL_AMOUNT);
         }
       });
 
       it('dave asset list contains all collaterals', async () => {
-        const assetList = await comet.getAssetList(dave.address);
-        for (const asset of Object.values(collaterals)) {
+        const assetList = await cometWith24Collaterals.getAssetList(dave.address);
+        for (const asset of Object.values(tokensWith24Collaterals)) {
           expect(assetList).to.include(asset.address);
         }
       });
 
       it('each collateral comet total supplied collateral amount is equal to alice supplied amount', async () => {
-        for (const asset of Object.values(collaterals)) {
-          expect((await comet.totalsCollateral(asset.address)).totalSupplyAsset).to.be.equal(SUPPLY_COLLATERAL_AMOUNT);
+        for (const asset of Object.values(tokensWith24Collaterals)) {
+          expect((await cometWith24Collaterals.totalsCollateral(asset.address)).totalSupplyAsset).to.be.equal(SUPPLY_COLLATERAL_AMOUNT);
         }
       }); 
 
       it('dave principal is not changed', async () => {
-        expect((await comet.userBasic(dave.address)).principal).to.be.equal(davePrincipalBefore);
+        expect((await cometWith24Collaterals.userBasic(dave.address)).principal).to.be.equal(davePrincipalBefore);
       });
     });
 
     describe('supplyFrom', function () {
       before(async () => {
-        await comet.connect(alice).allow(dave.address, true);
+        await cometWith24Collaterals.connect(alice).allow(dave.address, true);
       });
 
       this.afterAll(async () => snapshot.restore());
 
       it(`each collateral supplyFrom is successful`, async () => {
-        for (const asset of Object.values(collaterals)) {
+        for (const asset of Object.values(tokensWith24Collaterals)) {
           await asset.allocateTo(alice.address, SUPPLY_COLLATERAL_AMOUNT);
-          await asset.connect(alice).approve(comet.address, SUPPLY_COLLATERAL_AMOUNT);
-          const supplyFromTx = await comet.connect(dave).supplyFrom(alice.address, alice.address, asset.address, SUPPLY_COLLATERAL_AMOUNT);
+          await asset.connect(alice).approve(cometWith24Collaterals.address, SUPPLY_COLLATERAL_AMOUNT);
+          const supplyFromTx = await cometWith24Collaterals.connect(dave).supplyFrom(alice.address, alice.address, asset.address, SUPPLY_COLLATERAL_AMOUNT);
           expect(supplyFromTx).to.not.be.reverted;
           supplyTxs.push(supplyFromTx);
         }
       });
 
       it(`SupplyCollateral event is emitted for each collateral`, async () => {
-        const assets = Object.values(collaterals);
+        const assets = Object.values(tokensWith24Collaterals);
         for (let i = 0; i < assets.length; i++) {
           await expect(supplyTxs[i])
-            .to.emit(comet, 'SupplyCollateral')
+            .to.emit(cometWith24Collaterals, 'SupplyCollateral')
             .withArgs(alice.address, alice.address, assets[i].address, SUPPLY_COLLATERAL_AMOUNT);
         }
       });
 
       it(`each collateral balance for alice is equal to supplied amount`, async () => {
-        for (const asset of Object.values(collaterals)) {
-          expect(await comet.collateralBalanceOf(alice.address, asset.address)).to.be.equal(SUPPLY_COLLATERAL_AMOUNT);
+        for (const asset of Object.values(tokensWith24Collaterals)) {
+          expect(await cometWith24Collaterals.collateralBalanceOf(alice.address, asset.address)).to.be.equal(SUPPLY_COLLATERAL_AMOUNT);
         }
       });
 
       it('alice asset list contains all collaterals', async () => {
-        const assetList = await comet.getAssetList(alice.address);
-        for (const asset of Object.values(collaterals)) {
+        const assetList = await cometWith24Collaterals.getAssetList(alice.address);
+        for (const asset of Object.values(tokensWith24Collaterals)) {
           expect(assetList).to.include(asset.address);
         }
       });
 
       it('each collateral comet total supplied collateral amount is equal to alice supplied amount', async () => {
-        for (const asset of Object.values(collaterals)) {
-          expect((await comet.totalsCollateral(asset.address)).totalSupplyAsset).to.be.equal(SUPPLY_COLLATERAL_AMOUNT);
+        for (const asset of Object.values(tokensWith24Collaterals)) {
+          expect((await cometWith24Collaterals.totalsCollateral(asset.address)).totalSupplyAsset).to.be.equal(SUPPLY_COLLATERAL_AMOUNT);
         }
       }); 
 
       it('alice principal is not changed', async () => {
-        expect((await comet.userBasic(alice.address)).principal).to.be.equal(alicePrincipalBefore);
+        expect((await cometWith24Collaterals.userBasic(alice.address)).principal).to.be.equal(alicePrincipalBefore);
       });
     });
   });
@@ -1900,6 +1848,255 @@ describe('supply', function () {
         comet.connect(alice).supplyTo(bob.address, EVIL.address, 75e6)
       ).to.be.revertedWithCustomError(comet, 'ReentrantCallBlocked');
     });
+  });
+
+  /*//////////////////////////////////////////////////////////////
+                     DEACTIVATE COLLATERAL FEATURE
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+    * @notice Supply path behavior when collateral is deactivated and reactivated.
+    * @dev
+    *  While a collateral is deactivated by the `pauseGuardian`, `supply` of that
+    *  asset reverts with `CollateralAssetSupplyPaused(index)`. After the `governor`
+    *  reactivates it, `supply` succeeds and updates `totalsCollateral` and
+    *  `userCollateral` accordingly. The MAX_ASSETS loop asserts the same
+    *  deactivate-revert / reactivate-succeed behavior for every asset index in a
+    *  full `cometWith24Collaterals` configuration.
+    *
+    *  Context: in the wUSDM / deUSD incident scenario, deactivation must block any
+    *  new supply of the affected collateral until governance reactivates it.
+    */
+  describe('deactivated token supply flow', function () {
+    it('allows pause guardian to deactivate a token', async function () {
+      await expect(comet.connect(pauseGuardian).deactivateCollateral(deactivatedCollateralIndex)).to.not.be.reverted;
+    });
+
+    it('supply call reverts', async function () {
+      await expect(
+        comet.connect(bob).supply(collateralToken.address, collateralTokenSupplyAmount)
+      ).to.be.revertedWithCustomError(comet, 'CollateralAssetSupplyPaused').withArgs(deactivatedCollateralIndex);
+    });
+
+    it('allows governor to activate a token', async function () {
+      await expect(comet.connect(governor).activateCollateral(deactivatedCollateralIndex)).to.not.be.reverted;
+    });
+
+    it('allows to supply activated collateral', async function () {
+      await collateralToken.allocateTo(bob.address, collateralTokenSupplyAmount);
+      await collateralToken.connect(bob).approve(comet.address, collateralTokenSupplyAmount);
+      await expect(comet.connect(bob).supply(collateralToken.address, collateralTokenSupplyAmount)).to.not.be.reverted;
+    });
+
+    it('updates total supply asset amount in comet', async function () {
+      const expectedTotalSupplyAsset = BigNumber.from(totalsCollateralBefore.totalSupplyAsset).add(collateralTokenSupplyAmount);
+      expect((await comet.totalsCollateral(collateralToken.address)).totalSupplyAsset).to.be.equal(expectedTotalSupplyAsset);
+    });
+
+    it('updates user collateral in comet', async function () {
+      const expectedBobUserCollateral = BigNumber.from(bobUserCollateralBefore.balance).add(collateralTokenSupplyAmount);
+      expect((await comet.userCollateral(bob.address, collateralToken.address)).balance).to.be.equal(expectedBobUserCollateral);
+    });
+
+    for(let i = 1; i <= MAX_ASSETS; i++) {
+      const assetIndex = i - 1;
+
+      it(`reverts on deactivated collateral supply with index ${i}`, async function () {
+        await cometWith24Collaterals.connect(pauseGuardian).deactivateCollateral(assetIndex);
+
+        const supplyToken = tokensWith24Collaterals[`ASSET${assetIndex}`];
+        await supplyToken.allocateTo(bob.address, collateralTokenSupplyAmount);
+        await supplyToken.connect(bob).approve(cometWith24Collaterals.address, collateralTokenSupplyAmount);
+
+        await expect(
+          cometWith24Collaterals.connect(bob).supply(supplyToken.address, collateralTokenSupplyAmount)
+        ).to.be.revertedWithCustomError(cometWith24Collaterals, 'CollateralAssetSupplyPaused').withArgs(assetIndex);
+      });
+
+      it(`allows to supplyTo re-activated collateral with index ${i}`, async function () {
+        await cometWith24Collaterals.connect(governor).activateCollateral(assetIndex);
+
+        const supplyToken = tokensWith24Collaterals[`ASSET${assetIndex}`];
+
+        await expect(
+          cometWith24Collaterals.connect(bob).supply(supplyToken.address, collateralTokenSupplyAmount)
+        ).to.not.be.reverted;
+
+        expect((await cometWith24Collaterals.userCollateral(bob.address, supplyToken.address)).balance).to.be.equal(collateralTokenSupplyAmount);
+      });
+    }
+  });
+
+  describe('deactivated token supplyTo flow', function () {
+    it('allows pause guardian to deactivate a token', async function () {
+      await snapshot.restore();
+
+      deactivateCollateralTx = await comet.connect(pauseGuardian).deactivateCollateral(deactivatedCollateralIndex);
+      await expect(deactivateCollateralTx).to.not.be.reverted;
+    });
+
+    it('emits CollateralAssetSupplyPauseAction event with true argument', async function () {
+      expect(deactivateCollateralTx).to.emit(comet, 'CollateralAssetSupplyPauseAction').withArgs(deactivatedCollateralIndex, true);
+    });
+
+    it('emits CollateralDeactivated event', async function () {
+      expect(deactivateCollateralTx).to.emit(comet, 'CollateralDeactivated').withArgs(deactivatedCollateralIndex);
+    });
+
+    it('sets collateral as deactivated in comet', async function () {
+      expect(await comet.isCollateralDeactivated(deactivatedCollateralIndex)).to.be.true;
+    });
+
+    it('updates collateral supply pause flag in comet storage', async function () {
+      expect(await comet.isCollateralAssetSupplyPaused(deactivatedCollateralIndex)).to.be.true;
+    });
+
+    it('supplyTo call reverts', async function () {
+      await expect(
+        comet.connect(bob).supplyTo(alice.address, collateralToken.address, collateralTokenSupplyAmount)
+      ).to.be.revertedWithCustomError(comet, 'CollateralAssetSupplyPaused').withArgs(deactivatedCollateralIndex);
+    });
+
+    it('allows governor to activate a token', async function () {
+      activateCollateralTx = await comet.connect(governor).activateCollateral(deactivatedCollateralIndex);
+      await expect(activateCollateralTx).to.not.be.reverted;
+    });
+
+    it('emits CollateralAssetSupplyPauseAction event with false argument', async function () {
+      expect(activateCollateralTx).to.emit(comet, 'CollateralAssetSupplyPauseAction').withArgs(deactivatedCollateralIndex, false);
+    });
+
+    it('emits CollateralActivated event', async function () {
+      expect(activateCollateralTx).to.emit(comet, 'CollateralActivated').withArgs(deactivatedCollateralIndex);
+    });
+
+    it('sets collateral as activated in comet', async function () {
+      expect(await comet.isCollateralDeactivated(deactivatedCollateralIndex)).to.be.false;
+    });
+
+    it('updates collateral supply pause flag in comet storage', async function () {
+      expect(await comet.isCollateralAssetSupplyPaused(deactivatedCollateralIndex)).to.be.false;
+    });
+
+    it('allows to supplyTo activated collateral', async function () {
+      await collateralToken.allocateTo(bob.address, collateralTokenSupplyAmount);
+      await collateralToken.connect(bob).approve(comet.address, collateralTokenSupplyAmount);
+      await expect(
+        comet.connect(bob).supplyTo(alice.address, collateralToken.address, collateralTokenSupplyAmount)
+      ).to.not.be.reverted;
+    });
+
+    it('updates total supply asset amount in comet', async function () {
+      const expectedTotalSupplyAsset = BigNumber.from(totalsCollateralBefore.totalSupplyAsset).add(collateralTokenSupplyAmount);
+      expect((await comet.totalsCollateral(collateralToken.address)).totalSupplyAsset).to.be.equal(expectedTotalSupplyAsset);
+    });
+
+    it('updates user collateral in comet', async function () {
+      const expectedAliceUserCollateral = BigNumber.from(aliceUserCollateralBefore.balance).add(collateralTokenSupplyAmount);
+      expect((await comet.userCollateral(alice.address, collateralToken.address)).balance).to.be.equal(expectedAliceUserCollateral);
+    });
+
+    it('updates user collateral in comet', async function () {
+      expect((await comet.userCollateral(bob.address, collateralToken.address)).balance).to.be.equal(bobUserCollateralBefore.balance);
+    });
+
+    for(let i = 1; i <= MAX_ASSETS; i++) {
+      const assetIndex = i - 1;
+
+      it(`reverts on deactivated collateral supplyTo with index ${i}`, async function () {
+        await cometWith24Collaterals.connect(pauseGuardian).deactivateCollateral(assetIndex);
+
+        const supplyToken = tokensWith24Collaterals[`ASSET${assetIndex}`];
+        await supplyToken.allocateTo(bob.address, collateralTokenSupplyAmount);
+        await supplyToken.connect(bob).approve(cometWith24Collaterals.address, collateralTokenSupplyAmount);
+
+        await expect(
+          cometWith24Collaterals.connect(bob).supplyTo(alice.address, supplyToken.address, collateralTokenSupplyAmount)
+        ).to.be.revertedWithCustomError(cometWith24Collaterals, 'CollateralAssetSupplyPaused').withArgs(assetIndex);
+      });
+
+      it(`allows to supplyTo re-activated collateral with index ${i}`, async function () {
+        await cometWith24Collaterals.connect(governor).activateCollateral(assetIndex);
+
+        const supplyToken = tokensWith24Collaterals[`ASSET${assetIndex}`];
+
+        await expect(
+          cometWith24Collaterals.connect(bob).supplyTo(alice.address, supplyToken.address, collateralTokenSupplyAmount)
+        ).to.not.be.reverted;
+
+        expect((await cometWith24Collaterals.userCollateral(bob.address, supplyToken.address)).balance).to.be.equal(bobUserCollateralBefore.balance);
+      });
+    }
+  });
+
+  describe('deactivated token supplyFrom flow', function () {
+    it('allows pause guardian to deactivate a token', async function () {
+      await snapshot.restore();
+
+      await expect(comet.connect(pauseGuardian).deactivateCollateral(deactivatedCollateralIndex)).to.not.be.reverted;
+    });
+
+    it('supplyFrom call reverts', async function () {
+      await comet.connect(bob).allow(alice.address, true);
+      await expect(
+        comet.connect(alice).supplyFrom(bob.address, alice.address, collateralToken.address, collateralTokenSupplyAmount)
+      ).to.be.revertedWithCustomError(comet, 'CollateralAssetSupplyPaused').withArgs(deactivatedCollateralIndex);
+    });
+
+    it('allows governor to activate a token', async function () {
+      await expect(comet.connect(governor).activateCollateral(deactivatedCollateralIndex)).to.not.be.reverted;
+    });
+
+    it('allows to supplyFrom activated collateral', async function () {
+      await collateralToken.allocateTo(bob.address, collateralTokenSupplyAmount);
+      await collateralToken.connect(bob).approve(comet.address, collateralTokenSupplyAmount);
+      await expect(
+        comet.connect(alice).supplyFrom(bob.address, alice.address, collateralToken.address, collateralTokenSupplyAmount)
+      ).to.not.be.reverted;
+    });
+
+    it('updates total supply asset amount in comet', async function () {
+      const expectedTotalSupplyAsset = BigNumber.from(totalsCollateralBefore.totalSupplyAsset).add(collateralTokenSupplyAmount);
+      expect((await comet.totalsCollateral(collateralToken.address)).totalSupplyAsset).to.be.equal(expectedTotalSupplyAsset);
+    });
+
+    it('updates user collateral in comet', async function () {
+      const expectedAliceUserCollateral = BigNumber.from(aliceUserCollateralBefore.balance).add(collateralTokenSupplyAmount);
+      expect((await comet.userCollateral(alice.address, collateralToken.address)).balance).to.be.equal(expectedAliceUserCollateral);
+    });
+
+    it('updates user collateral in comet', async function () {
+      expect((await comet.userCollateral(bob.address, collateralToken.address)).balance).to.be.equal(bobUserCollateralBefore.balance);
+    });
+
+    for(let i = 1; i <= MAX_ASSETS; i++) {
+      const assetIndex = i - 1;
+
+      it(`reverts on deactivated collateral supplyFrom with index ${i}`, async function () {
+        await cometWith24Collaterals.connect(pauseGuardian).deactivateCollateral(assetIndex);
+
+        const supplyToken = tokensWith24Collaterals[`ASSET${assetIndex}`];
+        await supplyToken.allocateTo(bob.address, collateralTokenSupplyAmount);
+        await supplyToken.connect(bob).approve(cometWith24Collaterals.address, collateralTokenSupplyAmount);
+        await cometWith24Collaterals.connect(bob).allow(alice.address, true);
+
+        await expect(
+          cometWith24Collaterals.connect(alice).supplyFrom(bob.address, alice.address, supplyToken.address, collateralTokenSupplyAmount)
+        ).to.be.revertedWithCustomError(cometWith24Collaterals, 'CollateralAssetSupplyPaused').withArgs(assetIndex);
+      });
+
+      it(`allows to supplyFrom re-activated collateral with index ${i}`, async function () {
+        await cometWith24Collaterals.connect(governor).activateCollateral(assetIndex);
+
+        const supplyToken = tokensWith24Collaterals[`ASSET${assetIndex}`];
+
+        await expect(
+          cometWith24Collaterals.connect(alice).supplyFrom(bob.address, alice.address, supplyToken.address, collateralTokenSupplyAmount)
+        ).to.not.be.reverted;
+
+        expect((await cometWith24Collaterals.userCollateral(alice.address, supplyToken.address)).balance).to.be.equal(collateralTokenSupplyAmount);
+      });
+    }
   });
 });
 
