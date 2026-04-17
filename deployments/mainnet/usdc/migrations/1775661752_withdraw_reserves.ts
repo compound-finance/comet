@@ -78,7 +78,7 @@ const withdrawConfigV3 = {
     },
     cWBTCv3: {
       address: '0xe85Dc543813B8c2CFEaAc371517b925a166a9293',
-      amount: 0.14,
+      amount: 0.078,
       decimals: 8,
     }
   },
@@ -126,7 +126,7 @@ const withdrawConfigV3 = {
       address: '0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486',
       assetL1: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
       assetL2: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
-      amount: 32.03,
+      amount: 34.76,
       decimals: 18,
     },
   }
@@ -324,7 +324,7 @@ export default migration('1775661752_withdraw_reserves', {
     const depositForBurnUsdcArbitrumCalldata = utils.defaultAbiCoder.encode(
       ['uint256', 'uint32', 'bytes32', 'address', 'bytes32', 'uint256', 'uint32'],
       [
-        exp(withdrawConfigV3.arbitrum.cUSDCv3.amount, 6), // amount
+        exp(withdrawConfigV3.arbitrum.cUSDCv3.amount, withdrawConfigV3.arbitrum.cUSDCv3.decimals), // amount
         0, // destinationDomain (Ethereum Mainnet)
         utils.hexZeroPad(recipient, 32), // mintRecipient
         withdrawConfigV3.arbitrum.cUSDCv3.assetL2, // burnToken
@@ -700,79 +700,20 @@ export default migration('1775661752_withdraw_reserves', {
       ETH: BigNumber.from(await deploymentManager.hre.ethers.provider.getBalance(recipient)),
     };
 
-    const description = `# Withdraw reserves from V2 and V3 markets on Mainnet 
+    const description = `# Establishment of Treasury Management Program and Treasury Management Committee
 
-## Proposal summary
+This proposal establishes the Compound Treasury Management Program (TMP) and deploys the on-chain infrastructure required to consolidate and manage protocol treasury assets under the oversight of a newly constituted Treasury Management Committee (TMC).
 
-Recipient address: ${recipient}
+Upon execution, this proposal:
 
+1. Withdraws deprecated V2 reserves (~$18.95M) to Treasury Escrow.
+2. Transfers Aera vault ownership (~$28.21M) from the Governor Timelock to Treasury Timelock.
+3. Transfers Avantgarde vault ownership (~$3.8M) from the Governor Timelock to Treasury Timelock.
+4. Withdraws V3 surplus reserves (~$6.94M) above the reserve floor to Treasury Escrow.
 
-## Proposal actions
+All withdrawals from Treasury Escrow are subject to a 2-day cooldown before execution, a 7-day expiration window, and Safeguard cancellation rights. The Treasury Timelock enforces a 2-day minimum delay on governance-level operations. Both contracts have been audited by ChainSecurity and Certora.
 
-The first proposal action reduces the reserves of the cWBTCv2 market by 139 WBTC and transfers the withdrawn amount to timelock.
-
-The second proposal action transfers 139 WBTC from the timelock to the recipient.
-
-The third proposal action reduces the reserves of the cUSDCv2 market by 5,772,174 USDC and transfers the withdrawn amount to timelock.
-
-The fourth proposal action transfers 5,772,174 USDC from the timelock to the recipient.
-
-The fifth proposal action reduces the reserves of the cETHv2 market by 813 ETH and transfers the withdrawn amount to timelock.
-
-The sixth proposal action transfers 813 ETH from the timelock to the recipient.
-
-The seventh proposal action reduces the reserves of the cUSDTv2 market by 1,233,614 USDT and transfers the withdrawn amount to timelock.
-
-The eighth proposal action transfers 1,233,614 USDT from the timelock to the recipient.
-
-The ninth proposal action reduces the reserves of the cBATv2 market by 2,475,186 BAT and transfers the withdrawn amount to timelock.
-
-The tenth proposal action transfers 2,475,186 BAT from the timelock to the recipient.
-
-The eleventh proposal action reduces the reserves of the cUNIv2 market by 66,056 UNI and transfers the withdrawn amount to timelock.
-
-The twelfth proposal action transfers 66,056 UNI from the timelock to the recipient.
-
-The thirteenth proposal action reduces the reserves of the cTUSDv2 market by 168,050 TUSD and transfers the withdrawn amount to timelock.
-
-The fourteenth proposal action transfers 168,050 TUSD from the timelock to the recipient.
-
-The fifteenth proposal action reduces the reserves of the cLINKv2 market by 7,874 LINK and transfers the withdrawn amount to timelock.
-
-The sixteenth proposal action transfers 7,874 LINK from the timelock to the recipient.
-
-The seventeenth proposal action reduces the reserves of the cAAVEv2 market by 265 AAVE and transfers the withdrawn amount to timelock.
-
-The eighteenth proposal action transfers 265 AAVE from the timelock to the recipient.
-
-The nineteenth proposal action reduces the reserves of the cCOMPv2 market by 664 COMP and transfers the withdrawn amount to timelock.
-
-The twentieth proposal action transfers 664 COMP from the timelock to the recipient.
-
-The twenty-first proposal action withdraws 6,175,604 USDC from the cUSDCv3 market and sends it directly to the recipient.
-
-The twenty-second proposal action withdraws 0.14 WBTC from the cWBTCv3 market and sends it directly to the recipient.
-
-The twenty-third proposal action sends a message to the Optimism bridgeReceiver to execute a proposal on L2, which will:
-- Withdraw 258,077 USDC from the cUSDCv3 market on Optimism
-- Withdraw 10,242 USDT from the cUSDTv3 market on Optimism
-- Send the withdrawn USDC and USDT to the L2 timelock, which will then send the withdrawn tokens from L2 to L1 using the native Optimism bridge.
-
-The twenty-fourth proposal action sends a message to the Base bridgeReceiver to execute a proposal on L2, which will:
-- Withdraw 120,512 USDbC from the cUSDbCv3 market on Base
-- Send the withdrawn USDbC to the L2 timelock, which will then send the withdrawn tokens from L2 to L1 using the native Base bridge.
-
-The twenty-fifth proposal action sends a message to the Arbitrum bridgeReceiver to execute a proposal on L2, which will:
-- Withdraw 43,556 USDC from the cUSDCv3 market on Arbitrum
-- Withdraw 257,235 USDC from the cUSDCev3 market on Arbitrum
-- Withdraw 32.03 ETH from the cWETHv3 market on Arbitrum
-- Send the withdrawn assets to the L2 timelock, which will then:
-  - Call the CCTP Token Messenger to transfer the withdrawn USDC from L2 to L1
-  - Call the Arbitrum L1 gateways to transfer the withdrawn USDCe and WETH from L2 to L1.
-
-The twenty-sixth proposal action transfers the ownership of the Aera vault to the ${recipient}.
-
-The twenty-seventh proposal action transfers the ownership of the Avantgarde vault to the ${recipient}.
+Full proposal details, fund source methodology, on-chain controls, and TMC composition: [Establishment of Treasury Management Program and Treasury Management Committee](https://www.comp.xyz/t/establishment-of-treasury-management-program-and-treasury-management-committee/7710).
 `;
     const txn = await deploymentManager.retry(async () =>
       trace(
