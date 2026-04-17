@@ -376,6 +376,9 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       expect(await comet.isLiquidatable(albert.address)).to.be.false;
       
       // Set liquidateCF to 0 (CometWithExtendedAssetList allows this even if borrowCF > 0)
+      // LiquidateCF can be set to 0, when borrowCF is zero, thus we need to set borrowCF to 0 first
+      await context.setNextBaseFeeToZero();
+      await configurator.connect(admin.signer).updateAssetBorrowCollateralFactor(comet.address, asset, 0n, { gasPrice: 0 });
       await context.setNextBaseFeeToZero();
       await configurator.connect(admin.signer).updateAssetLiquidateCollateralFactor(comet.address, asset, 0n, { gasPrice: 0 });
       await context.setNextBaseFeeToZero();
