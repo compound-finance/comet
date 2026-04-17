@@ -24,12 +24,12 @@ const withdrawConfig = {
     address: '0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486',
     assetL1: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
     assetL2: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
-    amount: 32.03,
+    amount: 34.76,
     decimals: 18,
   },
 };
 
-const recipient = '0x9825413dd3875E01B34451A7A7e066b2225a234E';
+const recipient = '0xDcB34b56842F853A69E86De5A0c22c49d97C130C';
 
 const USDCE_GATEWAY = '0x096760F208390250649E3e8763348E783AEF5562';
 const WETH_GATEWAY = '0x6c411aD3E74De3E7Bd422b94A27770f5B86C623B';
@@ -183,10 +183,11 @@ export default migration('1775822198_withdraw_reserves', {
     ];
 
     const USDC = await getErc20FromAddress(govDeploymentManager, withdrawConfig.cUSDCv3.assetL1);
+    const WETH = await getErc20FromAddress(govDeploymentManager, withdrawConfig.cWETHv3.assetL1);
 
     balancesBefore = {
       USDC: await USDC.balanceOf(recipient),
-      ETH: BigNumber.from(await govDeploymentManager.hre.ethers.provider.getBalance(recipient)),
+      WETH: await WETH.balanceOf(recipient),
     };
 
     const description = `# Withdraw reserves from cUSDCv3, cUSDCev3, and cWETHv3 markets on Arbitrum 
@@ -200,7 +201,7 @@ Recipient address: ${recipient}
 The first proposal action sends a message to the Arbitrum bridgeReceiver to execute a proposal on L2, which will:
 - Withdraw 43,556 USDC from the cUSDCv3 market on Arbitrum
 - Withdraw 257,235 USDC from the cUSDCev3 market on Arbitrum
-- Withdraw 32.03 ETH from the cWETHv3 market on Arbitrum
+- Withdraw 34.76 ETH from the cWETHv3 market on Arbitrum
 - Send the withdrawn assets to the L2 timelock, which will then:
   - Call the CCTP Token Messenger to transfer the withdrawn USDC from L2 to L1
   - Call the Arbitrum L1 gateways to transfer the withdrawn USDCe and WETH from L2 to L1.
@@ -224,13 +225,14 @@ The first proposal action sends a message to the Arbitrum bridgeReceiver to exec
 
   async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager) {
     const USDC = await getErc20FromAddress(govDeploymentManager, withdrawConfig.cUSDCv3.assetL1);
+    const WETH = await getErc20FromAddress(govDeploymentManager, withdrawConfig.cWETHv3.assetL1);
 
     const balancesAfter = {
       USDC: await USDC.balanceOf(recipient),
-      ETH: BigNumber.from(await govDeploymentManager.hre.ethers.provider.getBalance(recipient)),
+      WETH: await WETH.balanceOf(recipient),
     };
 
     expect(balancesAfter.USDC.sub(balancesBefore.USDC)).to.equal(exp(withdrawConfig.cUSDCv3.amount, withdrawConfig.cUSDCv3.decimals) + exp(withdrawConfig.cUSDCev3.amount, withdrawConfig.cUSDCev3.decimals));
-    expect(balancesAfter.ETH.sub(balancesBefore.ETH)).to.equal(exp(withdrawConfig.cWETHv3.amount, withdrawConfig.cWETHv3.decimals));
+    expect(balancesAfter.WETH.sub(balancesBefore.WETH)).to.equal(exp(withdrawConfig.cWETHv3.amount, withdrawConfig.cWETHv3.decimals));
   },
 });

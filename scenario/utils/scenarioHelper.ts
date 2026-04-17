@@ -127,6 +127,8 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
     config.transferAsset = 500000;
     config.transferAsset1 = 500000;
     config.transferBase = 100;
+    config.rewardsBase = 100;
+    config.withdrawBase = 100;
     if(i == 8) { // tBTC
       config.supplyCollateral = 2;
       config.transferCollateral = 2;

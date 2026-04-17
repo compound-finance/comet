@@ -1,6 +1,6 @@
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import relayPolygonMessage from './relayPolygonMessage';
-import { relayArbitrumMessage, relayArbitrumCCTPMint } from './relayArbitrumMessage';
+import { relayArbitrumMessage, relayArbitrumCCTPMint, simulateL2ToL1TokenBridging } from './relayArbitrumMessage';
 import relayBaseMessage from './relayBaseMessage';
 import relayLineaMessage from './relayLineaMessage';
 import relayOptimismMessage from './relayOptimismMessage';
@@ -73,6 +73,11 @@ export default async function relayMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber,
+        tenderlyLogs
+      );
+      await simulateL2ToL1TokenBridging(
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
         tenderlyLogs
       );
       return proposal;
