@@ -282,7 +282,7 @@ export async function proposal(
       const { target, value, signature, calldata: cd } = action as TargetAction;
       targets.push(target);
       values.push(value ?? 0);
-      calldatas.push(utils.id(signature).slice(0, 10) + cd.slice(2));
+      calldatas.push(signature ? utils.id(signature).slice(0, 10) + cd.slice(2) : cd);
       signatures.push('');
     }
   }
