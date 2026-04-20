@@ -17,12 +17,6 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
         uint128 supplyCap;
     }
 
-    struct LiquidationState {
-        uint256 debtRemainingValue;
-        bool isHealthy;                                                                                                                             
-        bool isFullDebtClosure;
-    }
-
     /** Internal constants **/
 
     /// @dev The max number of assets this contract is hardcoded to support
