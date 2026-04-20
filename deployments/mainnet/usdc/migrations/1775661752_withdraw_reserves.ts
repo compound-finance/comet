@@ -672,6 +672,7 @@ export default migration('1775661752_withdraw_reserves', {
     const LINK = await getErc20FromAddress(deploymentManager, withdrawConfigV2.cLINK.asset);
     const AAVE = await getErc20FromAddress(deploymentManager, withdrawConfigV2.cAAVE.asset);
     const COMP = await getErc20FromAddress(deploymentManager, withdrawConfigV2.cCOMP.asset);
+    const WETH = await getErc20FromAddress(deploymentManager, withdrawConfigV2.cETH.asset);
 
     balancesBefore = {
       WBTC: await WBTC.balanceOf(recipient),
@@ -684,6 +685,7 @@ export default migration('1775661752_withdraw_reserves', {
       AAVE: await AAVE.balanceOf(recipient),
       COMP: await COMP.balanceOf(recipient),
       ETH: BigNumber.from(await deploymentManager.hre.ethers.provider.getBalance(recipient)),
+      WETH: await WETH.balanceOf(recipient),
     };
 
     const description = `# Establishment of Treasury Management Program and Treasury Management Committee
@@ -728,6 +730,7 @@ Full proposal details, fund source methodology, on-chain controls, and TMC compo
     const LINK = await getErc20FromAddress(deploymentManager, withdrawConfigV2.cLINK.asset);
     const AAVE = await getErc20FromAddress(deploymentManager, withdrawConfigV2.cAAVE.asset);
     const COMP = await getErc20FromAddress(deploymentManager, withdrawConfigV2.cCOMP.asset);
+    const WETH = await getErc20FromAddress(deploymentManager, withdrawConfigV2.cETH.asset);
 
     const balancesAfter = {
       WBTC: await WBTC.balanceOf(recipient),
@@ -740,6 +743,7 @@ Full proposal details, fund source methodology, on-chain controls, and TMC compo
       AAVE: await AAVE.balanceOf(recipient),
       COMP: await COMP.balanceOf(recipient),
       ETH: BigNumber.from(await deploymentManager.hre.ethers.provider.getBalance(recipient)),
+      WETH: await WETH.balanceOf(recipient),
     };
 
     const aeraVault = new Contract(
@@ -777,9 +781,7 @@ Full proposal details, fund source methodology, on-chain controls, and TMC compo
     expect(balancesAfter.LINK.sub(balancesBefore.LINK)).to.equal(exp(withdrawConfigV2.cLINK.amount, withdrawConfigV2.cLINK.decimals));
     expect(balancesAfter.AAVE.sub(balancesBefore.AAVE)).to.equal(exp(withdrawConfigV2.cAAVE.amount, withdrawConfigV2.cAAVE.decimals));
     expect(balancesAfter.COMP.sub(balancesBefore.COMP)).to.equal(exp(withdrawConfigV2.cCOMP.amount, withdrawConfigV2.cCOMP.decimals));
-    expect(balancesAfter.ETH.sub(balancesBefore.ETH)).to.equal(
-      exp(withdrawConfigV2.cETH.amount, withdrawConfigV2.cETH.decimals) +
-      exp(withdrawConfigV3.arbitrum.cWETHv3.amount, withdrawConfigV3.arbitrum.cWETHv3.decimals)
-    );
+    expect(balancesAfter.ETH.sub(balancesBefore.ETH)).to.equal(exp(withdrawConfigV2.cETH.amount, withdrawConfigV2.cETH.decimals));
+    expect(balancesAfter.WETH.sub(balancesBefore.WETH)).to.equal(exp(withdrawConfigV3.arbitrum.cWETHv3.amount, withdrawConfigV3.arbitrum.cWETHv3.decimals));
   },
 });
