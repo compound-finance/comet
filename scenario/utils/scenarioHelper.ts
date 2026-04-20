@@ -103,10 +103,12 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
   }
 
   if (ctx.world.base.network === 'optimism' && ctx.world.base.deployment === 'usdc') {
-    config.bulkerAsset = 10000;
-    config.bulkerAsset1 = 10000;
-    config.transferAsset1 = 10000;
-    config.withdrawAsset = 7000;
+    config.bulkerAsset = 100000;
+    config.bulkerAsset1 = 100000;
+    config.transferAsset = 100000;
+    config.transferAsset1 = 100000;
+    config.rewardsAsset = 100000;
+    config.withdrawAsset = 100000;
   }
 
   if (ctx.world.base.network === 'optimism' && ctx.world.base.deployment === 'usdt') {

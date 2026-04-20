@@ -84,7 +84,7 @@ export async function relayArbitrumMessage(
     const header = '0x';
     const headerLength = header.length;
     const wordLength = 2 * 32;
-    const innnerData = header + data.slice(headerLength + (11 * wordLength));
+    const innerData = header + data.slice(headerLength + (11 * wordLength));
     const toValue = data.slice(headerLength + (2 * wordLength), headerLength + (3 * wordLength));
     let toAddress = BigNumber.from(`0x${toValue}`).toHexString();
     
@@ -95,7 +95,7 @@ export async function relayArbitrumMessage(
 
     const messageNum = topics[1];
     return {
-      data: innnerData,
+      data: innerData,
       toAddress,
       messageNum
     };
@@ -262,11 +262,10 @@ export async function simulateL2ToL1TokenBridging(
   tenderlyLogs?: any[],
   proposalId?: BigNumber
 ) {
-  console.log('Simulating L2→L1 token bridging for any executed Arbitrum proposals...');
-  // DO NOT SIMULATE IF TENDERLY LOGS ARE PROVIDED, AS THEY SHOULD ALREADY CONTAIN THE EFFECTS OF THE SIMULATION. THIS FUNCTION IS ONLY FOR SIMULATION PURPOSES IN NON-TENDERLY ENVIRONMENTS, AND SHOULD NOT BE CALLED IF TENDERLY LOGS ARE AVAILABLE.
   if(tenderlyLogs) {
     return;
   }
+  console.log('Simulating L2→L1 token bridging for any executed Arbitrum proposals...');
 
   // L2 contracts
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');

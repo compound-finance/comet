@@ -84,6 +84,8 @@ export async function getProposalBridgeNetworks(
   return [...new Set(networks)];
 }
 
+const existingBridgeManagers: Record<string, DeploymentManager> = {};
+
 export async function isBridgeProposal(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
@@ -92,43 +94,54 @@ export async function isBridgeProposal(
   const bridgeNetworks = await getProposalBridgeNetworks(governanceDeploymentManager, openProposal);
   const otherBridgeNetworks = bridgeNetworks.filter(n => n !== bridgeDeploymentManager.network);
   const bridgeManagers = [bridgeDeploymentManager];
+  if (!existingBridgeManagers[bridgeDeploymentManager.network]) {
+    existingBridgeManagers[bridgeDeploymentManager.network] = bridgeDeploymentManager;
+  }
+  if (!existingBridgeManagers[governanceDeploymentManager.network]) {
+    existingBridgeManagers[governanceDeploymentManager.network] = governanceDeploymentManager;
+  }
   for(const bridgeNetwork of otherBridgeNetworks) {
+    if (existingBridgeManagers[bridgeNetwork]) {
+      bridgeManagers.push(existingBridgeManagers[bridgeNetwork]);
+      continue;
+    }
     const hre = await forkedHreForBase({ name: '', network: bridgeNetwork, deployment: '' });
+    let dm: DeploymentManager;
     switch (bridgeNetwork) {
       case 'arbitrum': {
-        bridgeManagers.push(new DeploymentManager(bridgeNetwork, 'usdc', hre));
+        dm = new DeploymentManager(bridgeNetwork, 'usdc', hre);
         break;
       }
       case 'polygon': {
-        bridgeManagers.push(new DeploymentManager(bridgeNetwork, 'usdc', hre));
+        dm = new DeploymentManager(bridgeNetwork, 'usdc', hre);
         break;
       }
       case 'base': {
-        bridgeManagers.push(new DeploymentManager(bridgeNetwork, 'usdc', hre));
+        dm = new DeploymentManager(bridgeNetwork, 'usdc', hre);
         break;
       }
       case 'linea': {
-        bridgeManagers.push(new DeploymentManager(bridgeNetwork, 'usdc', hre));
+        dm = new DeploymentManager(bridgeNetwork, 'usdc', hre);
         break;
       }
       case 'optimism': {
-        bridgeManagers.push(new DeploymentManager(bridgeNetwork, 'usdc', hre));
+        dm = new DeploymentManager(bridgeNetwork, 'usdc', hre);
         break;
       }
       case 'mantle': {
-        bridgeManagers.push(new DeploymentManager(bridgeNetwork, 'usde', hre));
+        dm = new DeploymentManager(bridgeNetwork, 'usde', hre);
         break;
       }
       case 'unichain': {
-        bridgeManagers.push(new DeploymentManager(bridgeNetwork, 'usdc', hre));
+        dm = new DeploymentManager(bridgeNetwork, 'usdc', hre);
         break;
       }
       case 'scroll': {
-        bridgeManagers.push(new DeploymentManager(bridgeNetwork, 'usdc', hre));
+        dm = new DeploymentManager(bridgeNetwork, 'usdc', hre);
         break;
       }
       case 'ronin': {
-        bridgeManagers.push(new DeploymentManager(bridgeNetwork, 'weth', hre));
+        dm = new DeploymentManager(bridgeNetwork, 'weth', hre);
         break;
       }
       default: {
@@ -136,6 +149,8 @@ export async function isBridgeProposal(
         throw new Error(`${tag} Unable to determine whether to relay Proposal ${openProposal.id}`);
       }
     }
+    existingBridgeManagers[bridgeNetwork] = dm;
+    bridgeManagers.push(dm);
     // switch (bridgeNetwork) {
     //   case 'mainnet': {
     //     continue; // Mainnet proposals are not bridge proposals

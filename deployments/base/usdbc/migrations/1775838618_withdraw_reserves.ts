@@ -140,6 +140,6 @@ The first proposal action sends a message to the Base bridgeReceiver to execute 
       USDC: await USDC.balanceOf(recipient),
     };
 
-    expect(balancesAfter.USDC.sub(balancesBefore.USDC)).to.equal(exp(withdrawConfig.cUSDbCv3.amount, withdrawConfig.cUSDbCv3.decimals) + exp(withdrawConfig.cUSDbCv3.amount, withdrawConfig.cUSDbCv3.decimals));
+    expect(balancesAfter.USDC.sub(balancesBefore.USDC)).to.equal(exp(withdrawConfig.cUSDbCv3.amount, withdrawConfig.cUSDbCv3.decimals));
   },
 });

@@ -21,12 +21,18 @@ export default async function relayMessage(
   let proposal;
   switch (bridgeNetwork) {
     case 'base':
-      return await relayBaseMessage(
+      proposal = await relayBaseMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber,
         tenderlyLogs
       );
+      await simulateOptimismL2ToL1TokenBridging(
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
+        tenderlyLogs
+      );
+      return proposal;
     case 'optimism':
       proposal = await relayOptimismMessage(
         governanceDeploymentManager,
