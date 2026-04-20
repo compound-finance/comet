@@ -14,7 +14,7 @@ const withdrawConfig = {
   },
 };
 
-const recipient = '0x9825413dd3875E01B34451A7A7e066b2225a234E';
+const recipient = '0xDcB34b56842F853A69E86De5A0c22c49d97C130C';
 
 let balancesBefore: Record<string, BigNumber> = {};
 

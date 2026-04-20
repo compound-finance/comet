@@ -75,11 +75,6 @@ const withdrawConfigV3 = {
       address: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
       amount: 6_175_604,
       decimals: 6,
-    },
-    cWBTCv3: {
-      address: '0xe85Dc543813B8c2CFEaAc371517b925a166a9293',
-      amount: 0.078,
-      decimals: 8,
     }
   },
   optimism: {
@@ -615,28 +610,19 @@ export default migration('1775661752_withdraw_reserves', {
           [recipient, exp(withdrawConfigV3.mainnet.cUSDCv3.amount, withdrawConfigV3.mainnet.cUSDCv3.decimals)]
         ),
       },
-      // 22. Withdraw reserves from cWBTCv3
-      {
-        target: withdrawConfigV3.mainnet.cWBTCv3.address,
-        signature: 'withdrawReserves(address,uint256)',
-        calldata: utils.defaultAbiCoder.encode(
-          ['address', 'uint256'],
-          [recipient, exp(withdrawConfigV3.mainnet.cWBTCv3.amount, withdrawConfigV3.mainnet.cWBTCv3.decimals)]
-        ),
-      },
-      // 23. Send message to Optimism to trigger USDC and USDT withdrawals and bridging it back to Mainnet
+      // 22. Send message to Optimism to trigger USDC and USDT withdrawals and bridging it back to Mainnet
       {
         contract: opL1CrossDomainMessenger,
         signature: 'sendMessage(address,bytes,uint32)',
         args: [OPTIMISM_BRIDGE_RECEIVER, optimismProposalData, 2_500_000],
       },
-      // 24. Send message to Base to trigger USDbC withdrawal and bridging it back to Mainnet
+      // 23. Send message to Base to trigger USDbC withdrawal and bridging it back to Mainnet
       {
         contract: baseL1CrossDomainMessenger,
         signature: 'sendMessage(address,bytes,uint32)',
         args: [BASE_BRIDGE_RECEIVER, baseProposalData, 3_000_000]
       },
-      // 25. Sends the proposal to the L2
+      // 24. Sends the proposal to the L2
       {
         contract: arbitrumInbox,
         signature: 'createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,bytes)',
@@ -652,13 +638,13 @@ export default migration('1775661752_withdraw_reserves', {
         ],
         value: createRetryableTicketGasParams.deposit.mul(2),
       },
-      // 26. Transfer ownership of Aera vault to recipient
+      // 25. Transfer ownership of Aera vault to recipient
       {
         target: AERA_VAULT,
         signature: 'transferOwnership(address)',
         calldata: transferOwnershipCalldata,
       },
-      // 27. Transfer ownership of generic vault to recipient
+      // 26. Transfer ownership of generic vault to recipient
       {
         contract: avantgardeVault,
         signature: 'execTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)',
@@ -772,7 +758,7 @@ Full proposal details, fund source methodology, on-chain controls, and TMC compo
     const vaultOwner2 = await avantgardeVault.getOwners();
     expect(vaultOwner2).to.deep.equal([newVaultOwner]);
 
-    expect(balancesAfter.WBTC.sub(balancesBefore.WBTC)).to.equal(exp(withdrawConfigV2.cWBTC2.amount, withdrawConfigV2.cWBTC2.decimals) + exp(withdrawConfigV3.mainnet.cWBTCv3.amount, withdrawConfigV3.mainnet.cWBTCv3.decimals));
+    expect(balancesAfter.WBTC.sub(balancesBefore.WBTC)).to.equal(exp(withdrawConfigV2.cWBTC2.amount, withdrawConfigV2.cWBTC2.decimals));
     expect(balancesAfter.USDC.sub(balancesBefore.USDC)).to.equal(
       exp(withdrawConfigV2.cUSDC.amount, withdrawConfigV2.cUSDC.decimals) +
       exp(withdrawConfigV3.mainnet.cUSDCv3.amount, withdrawConfigV3.mainnet.cUSDCv3.decimals) +

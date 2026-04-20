@@ -21,7 +21,7 @@ const withdrawConfig = {
   },
 };
 
-const recipient = '0x9825413dd3875E01B34451A7A7e066b2225a234E';
+const recipient = '0xDcB34b56842F853A69E86De5A0c22c49d97C130C';
 
 let balancesBefore: Record<string, BigNumber> = {};
 
@@ -175,17 +175,14 @@ The first proposal action sends a message to the Optimism bridgeReceiver to exec
 
   async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager) {
     const USDC = await getErc20FromAddress(govDeploymentManager, withdrawConfig.cUSDCv3.assetL1);
+    const USDT = await getErc20FromAddress(govDeploymentManager, withdrawConfig.cUSDTv3.assetL1);
 
     const balancesAfter = {
       USDC: await USDC.balanceOf(recipient),
+      USDT: await USDT.balanceOf(recipient),
     };
 
     expect(balancesAfter.USDC.sub(balancesBefore.USDC)).to.equal(exp(withdrawConfig.cUSDCv3.amount, withdrawConfig.cUSDCv3.decimals));
-
-    const USDT = await getErc20FromAddress(govDeploymentManager, withdrawConfig.cUSDTv3.assetL1);
-
-    const USDTBalanceAfter = await USDT.balanceOf(recipient);
-
-    expect(USDTBalanceAfter.sub(balancesBefore.USDT)).to.equal(exp(withdrawConfig.cUSDTv3.amount, withdrawConfig.cUSDTv3.decimals));
+    expect(balancesAfter.USDT.sub(balancesBefore.USDT)).to.equal(exp(withdrawConfig.cUSDTv3.amount, withdrawConfig.cUSDTv3.decimals));
   },
 });

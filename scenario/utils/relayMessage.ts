@@ -3,7 +3,7 @@ import relayPolygonMessage from './relayPolygonMessage';
 import { relayArbitrumMessage, relayArbitrumCCTPMint, simulateL2ToL1TokenBridging } from './relayArbitrumMessage';
 import relayBaseMessage from './relayBaseMessage';
 import relayLineaMessage from './relayLineaMessage';
-import relayOptimismMessage from './relayOptimismMessage';
+import relayOptimismMessage, { simulateL2ToL1TokenBridging as simulateOptimismL2ToL1TokenBridging } from './relayOptimismMessage';
 import relayMantleMessage from './relayMantleMessage';
 import { relayUnichainMessage, relayUnichainCCTPMint } from './relayUnichainMessage';
 import relayScrollMessage from './relayScrollMessage';
@@ -28,12 +28,18 @@ export default async function relayMessage(
         tenderlyLogs
       );
     case 'optimism':
-      return await relayOptimismMessage(
+      proposal = await relayOptimismMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber,
         tenderlyLogs
       );
+      await simulateOptimismL2ToL1TokenBridging(
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
+        tenderlyLogs
+      );
+      return proposal;
     case 'mantle':
       return await relayMantleMessage(
         governanceDeploymentManager,
