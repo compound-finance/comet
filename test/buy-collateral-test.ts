@@ -137,7 +137,7 @@ describe('buyCollateral', function () {
     });
   });
 
-  it.skip('can buy any excess collateral which does not belong to users', async () => {
+  it('can buy any excess collateral which does not belong to users', async () => {
     const protocol = await makeProtocol({
       base: 'USDC',
       storeFrontPriceFactor: exp(0.5, 18),
@@ -154,7 +154,7 @@ describe('buyCollateral', function () {
           initialPrice: 1,
           borrowCF: exp(0.7, 18),
           liquidateCF: exp(0.75, 18),
-          liquidationFactor: exp(0.8, 18),
+          liquidationFactor: exp(1, 18),
         },
       }
     });

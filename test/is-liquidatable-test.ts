@@ -118,7 +118,7 @@ describe('isLiquidatable', function () {
     expect(await comet.isLiquidatable(alice.address)).to.be.true;
   });
 
-  it.skip('changes when the underlying asset price changes', async () => {
+  it('changes when the underlying asset price changes', async () => {
     const {
       comet,
       tokens,
@@ -136,8 +136,8 @@ describe('isLiquidatable', function () {
     });
     const { COMP } = tokens;
 
-    // user owes $100,000
-    await comet.setBasePrincipal(alice.address, -100_000_000_000);
+    // user owes $85,000
+    await comet.setBasePrincipal(alice.address, -85_000_000_000);
     // has $100,000 in COMP to cover
     await comet.setCollateralBalance(alice.address, COMP.address, exp(100_000, 18));
 
