@@ -84,12 +84,6 @@ export default migration('1776768296_update_curve_params_on_l2', {
     expectedSupplyPerSecondInterestRateSlopeLow = BigNumber.from(supplyPerYearInterestRateSlopeLow).div(365 * 86400);
     expectedSupplyPerSecondInterestRateSlopeHigh = BigNumber.from(supplyPerYearInterestRateSlopeHigh).div(365 * 86400);
 
-    console.log('Expected Borrow Per Second Interest Rate Slope Low:', expectedBorrowPerSecondInterestRateSlopeLow.toString());
-    console.log('Expected Borrow Per Second Interest Rate Slope High:', expectedBorrowPerSecondInterestRateSlopeHigh.toString());
-
-    console.log('Expected Supply Per Second Interest Rate Slope Low:', expectedSupplyPerSecondInterestRateSlopeLow.toString());
-    console.log('Expected Supply Per Second Interest Rate Slope High:', expectedSupplyPerSecondInterestRateSlopeHigh.toString());
-
     // Optimism
     const opHre = await forkedHreForBase({ name: 'optimism-weth', network: 'optimism', deployment: 'weth' });
     const opDm = await deploymentManager.addBridgedDeploymentManager('optimism', 'weth', opHre);
