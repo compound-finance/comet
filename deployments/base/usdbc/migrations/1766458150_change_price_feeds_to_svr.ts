@@ -125,7 +125,7 @@ Further detailed information can be found on the corresponding [proposal pull re
 
 ### SVR fee recipient
 
-SVR generates revenue from liquidators and Compound DAO will receive that revenue as part of the protocol fee. The fee recipient for SVR is set to Compound DAO multisig: 0xd9496F2A3fd2a97d8A4531D92742F3C8F53183cB.
+SVR generates revenue from liquidators and Compound DAO will receive that revenue as part of the protocol fee. The fee recipient for SVR is set to Compound DAO multisig: 0xb3e79c7cac540ca833015e63d96d3032ba0c4129.
 
 ## Proposal actions
 
