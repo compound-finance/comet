@@ -188,6 +188,7 @@ scenario(
     const preTxnTimestamp = await world.timestamp();
 
     const rewardsOwedBefore = (await rewards.callStatic.getRewardOwed(comet.address, albert.address)).owed.toBigInt();
+    await context.sourceTokens(exp(100, 18), rewardToken.address, rewards.address);
     const txn = await (await rewards.connect(albert.signer).claim(comet.address, albert.address, true)).wait();
     const rewardsOwedAfter = (await rewards.callStatic.getRewardOwed(comet.address, albert.address)).owed.toBigInt();
 
