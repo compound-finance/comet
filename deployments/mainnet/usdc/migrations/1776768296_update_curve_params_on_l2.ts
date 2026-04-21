@@ -362,7 +362,7 @@ export default migration('1776768296_update_curve_params_on_l2', {
 
 ## Simple Summary
 
-Given heightened market activity and elevated volatility across ETH markets Gauntlet recommends the following Interest Rate (IR) Curve updates across WETH comets on Ethereum. These changes are designed to keep borrow costs low and avoid liquidations during the volatile period.
+Given heightened market activity and elevated volatility across ETH markets Gauntlet recommends the following Interest Rate (IR) Curve updates across WETH comets on L2 networks. These changes are designed to keep borrow costs low and avoid liquidations during the volatile period.
 
 ## Motivation
 The recent Kelp exploit has led to heightened volatility and shifting dynamics across ETH-correlated assets. In this environment LST/LRT-based looping strategies are facing a significantly high negative carry. The recommendations below flatten the slope below kink and compress the slope above kink resulting in lower kink and max borrow rates across all WETH markets.
