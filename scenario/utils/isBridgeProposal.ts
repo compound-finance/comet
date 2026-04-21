@@ -105,50 +105,48 @@ export async function isBridgeProposal(
       bridgeManagers.push(existingBridgeManagers[bridgeNetwork]);
       continue;
     }
-    const hre = await forkedHreForBase({ name: '', network: bridgeNetwork, deployment: '' });
+    
+    let deploymentToken: string;
+
     let dm: DeploymentManager;
-    switch (bridgeNetwork) {
-      case 'arbitrum': {
-        dm = new DeploymentManager(bridgeNetwork, 'usdc', hre);
+    let existingBridgedDm: DeploymentManager | undefined;
+    for (const cachedDm of governanceDeploymentManager.bridgedDeploymentManagers.values()) {
+      if (cachedDm.network === bridgeNetwork) {
+        existingBridgedDm = cachedDm;
         break;
-      }
-      case 'polygon': {
-        dm = new DeploymentManager(bridgeNetwork, 'usdc', hre);
-        break;
-      }
-      case 'base': {
-        dm = new DeploymentManager(bridgeNetwork, 'usdc', hre);
-        break;
-      }
-      case 'linea': {
-        dm = new DeploymentManager(bridgeNetwork, 'usdc', hre);
-        break;
-      }
-      case 'optimism': {
-        dm = new DeploymentManager(bridgeNetwork, 'usdc', hre);
-        break;
-      }
-      case 'mantle': {
-        dm = new DeploymentManager(bridgeNetwork, 'usde', hre);
-        break;
-      }
-      case 'unichain': {
-        dm = new DeploymentManager(bridgeNetwork, 'usdc', hre);
-        break;
-      }
-      case 'scroll': {
-        dm = new DeploymentManager(bridgeNetwork, 'usdc', hre);
-        break;
-      }
-      case 'ronin': {
-        dm = new DeploymentManager(bridgeNetwork, 'weth', hre);
-        break;
-      }
-      default: {
-        const tag = `[${bridgeNetwork} -> ${governanceDeploymentManager.network}]`;
-        throw new Error(`${tag} Unable to determine whether to relay Proposal ${openProposal.id}`);
       }
     }
+
+    if (existingBridgedDm) {
+      dm = existingBridgedDm;
+    } else {
+      // default deployment token is USDC for all networks except Ronin (WETH) and Mantle (USDE)
+      switch (bridgeNetwork) {
+        case 'arbitrum':
+        case 'polygon':
+        case 'base':
+        case 'linea':
+        case 'optimism':
+        case 'unichain':
+        case 'scroll':
+          deploymentToken = 'usdc';
+          break;
+        case 'mantle':
+          deploymentToken = 'usde';
+          break;
+        case 'ronin':
+          deploymentToken = 'weth';
+          break;
+        default: {
+          const tag = `[${governanceDeploymentManager.network} -> ${bridgeNetwork}]`;
+          throw new Error(`${tag} Unable to determine whether to relay Proposal ${openProposal.id}`);
+        }
+      }
+
+      const hre = await forkedHreForBase({ name: '', network: bridgeNetwork, deployment: '' });
+      dm = await governanceDeploymentManager.addBridgedDeploymentManager(bridgeNetwork, deploymentToken, hre);
+    }
+    
     existingBridgeManagers[bridgeNetwork] = dm;
     bridgeManagers.push(dm);
     // switch (bridgeNetwork) {
