@@ -135,6 +135,10 @@ Further detailed information can be found on the [forum discussion for CAPO](htt
 
 CAPO has been audited by [OpenZeppelin](https://www.comp.xyz/t/capo-price-feed-audit/6631), as well as the LST / LRT implementation [here](https://www.comp.xyz/t/capo-lst-lrt-audit/7118).
 
+### SVR fee recipient
+
+SVR generates revenue from liquidators and Compound DAO will receive that revenue as part of the protocol fee. The fee recipient for SVR is set to Compound DAO multisig: 0xb3e79c7cac540ca833015e63d96d3032ba0c4129.
+
 ## Proposal Actions
 
 The first proposal action adds wsuperOETHb to the USDS Comet on Base. This sends the encoded 'addAsset' and 'deployAndUpgradeTo' calls across the bridge to the governance receiver on Base.`;
