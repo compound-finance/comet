@@ -11,6 +11,13 @@ export default {
   TransparentUpgradeableProxy: {
     artifact: 'contracts/ERC20.sol:ERC20'
   },
+  AdminUpgradableProxy: {
+    delegates: {
+      field: {
+        slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+      }
+    }
+  },
   // Native USDC
   '0xaf88d065e77c8cC2239327C5EDb3A432268e5831': {
     artifact: 'contracts/ERC20.sol:ERC20',

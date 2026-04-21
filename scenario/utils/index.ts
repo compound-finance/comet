@@ -1500,25 +1500,26 @@ export async function executeOpenProposalAndRelay(
     await governanceDeploymentManager.hre.ethers.provider.getBlockNumber();
   await executeOpenProposal(governanceDeploymentManager, openProposal);
   console.log(`Executed proposal ${openProposal.id} on ${governanceDeploymentManager.network}, checking if relay to ${bridgeDeploymentManager.network} is needed...`);
-  await mockAllRedstoneOracles(bridgeDeploymentManager);
   console.log(`All Redstone oracles on ${bridgeDeploymentManager.network} are mocked`);
-  if (
-    await isBridgeProposal(
-      governanceDeploymentManager,
-      bridgeDeploymentManager,
-      openProposal
-    )
-  ) {
-    await relayMessage(
-      governanceDeploymentManager,
-      bridgeDeploymentManager,
-      startingBlockNumber
-    );
-  } else {
-    console.log(
-      `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Proposal ${openProposal.id} doesn't target bridge; not relaying`
-    );
-    return;
+  const bridgeManagers = await isBridgeProposal(
+    governanceDeploymentManager,
+    bridgeDeploymentManager,
+    openProposal
+  );
+  for (const bridgeManager of bridgeManagers) {
+    await mockAllRedstoneOracles(bridgeManager);
+    if (bridgeManager) {
+      await relayMessage(
+        governanceDeploymentManager,
+        bridgeManager,
+        startingBlockNumber
+      );
+    } else {
+      console.log(
+        `[${governanceDeploymentManager.network} -> ${bridgeManager.network}] Proposal ${openProposal.id} doesn't target bridge; not relaying`
+      );
+      return;
+    }
   }
 }
 
