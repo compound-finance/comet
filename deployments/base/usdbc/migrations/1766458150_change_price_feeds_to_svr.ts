@@ -55,7 +55,7 @@ export default migration('1766458150_change_price_feeds_to_svr', {
 
     newPriceFeedCbETHAddress = cbETHUsdSvrPriceFeed;
 
-    const updateWEthPriceFeedCalldata = await calldata(
+    const updateWETHPriceFeedCalldata = await calldata(
       configurator.populateTransaction.updateAssetPriceFeed(
         comet.address,
         WETH.address,
@@ -91,7 +91,7 @@ export default migration('1766458150_change_price_feeds_to_svr', {
         [configurator.address, configurator.address, configurator.address, cometAdmin.address],
         [0, 0, 0, 0],
         ['updateAssetPriceFeed(address,address,address)', 'setBaseTokenPriceFeed(address,address)', 'updateAssetPriceFeed(address,address,address)', 'deployAndUpgradeTo(address,address)'],
-        [updateWEthPriceFeedCalldata, updateUSDCPriceFeedCalldata, updateCbETHPriceFeedCalldata, deployAndUpgradeToCalldata],
+        [updateWETHPriceFeedCalldata, updateUSDCPriceFeedCalldata, updateCbETHPriceFeedCalldata, deployAndUpgradeToCalldata],
       ]
     );
 
