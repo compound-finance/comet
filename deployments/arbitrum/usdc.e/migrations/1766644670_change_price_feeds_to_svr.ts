@@ -39,7 +39,7 @@ export default migration('1766644670_change_price_feeds_to_svr', {
 
     const { governor, timelock, arbitrumInbox } = await govDeploymentManager.getContracts();
 
-    const updateWEthPriceFeedCalldata = await calldata(
+    const updateWETHPriceFeedCalldata = await calldata(
       configurator.populateTransaction.updateAssetPriceFeed(
         comet.address,
         WETH.address,
@@ -95,7 +95,7 @@ export default migration('1766644670_change_price_feeds_to_svr', {
           'deployAndUpgradeTo(address,address)'
         ],
         [
-          updateWEthPriceFeedCalldata,
+          updateWETHPriceFeedCalldata,
           updateUSDCPriceFeedCalldata,
           updateARBPriceFeedCalldata,
           updateWBTCPriceFeedCalldata,
