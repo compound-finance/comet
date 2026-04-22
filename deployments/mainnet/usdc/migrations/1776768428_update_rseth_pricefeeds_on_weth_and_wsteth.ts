@@ -57,7 +57,7 @@ export default migration('1776768428_update_rseth_pricefeeds_on_weth_and_wsteth'
 
 ## Summary
 
-It is proposed to migrate the rsETH price feeds on the Mainnet WETH and wstETH Comets to a new `MinMaxConstantPriceFeed` contract. This follows [Gauntlet's proposal](https://www.comp.xyz/t/rseth-oracle-migration-and-temporary-liquidation-pause-on-ethereum-weth-and-wsteth-markets/7772) in response to the April 18 Kelp rsETH bridge exploit, and gives the Community Multisig a faster defensive lever than a full governance cycle.
+It is proposed to migrate the rsETH price feeds on the Mainnet WETH and wstETH Comets to a new 'MinMaxConstantPriceFeed' contract. This follows [Gauntlet's proposal](https://www.comp.xyz/t/rseth-oracle-migration-and-temporary-liquidation-pause-on-ethereum-weth-and-wsteth-markets/7772) in response to the April 18 Kelp rsETH bridge exploit, and gives the Community Multisig a faster defensive lever than a full governance cycle.
 
 This is intended as a temporary measure. Once the rsETH situation is resolved, a subsequent governance proposal will revert the price feeds to the prior configuration.
 
@@ -65,7 +65,7 @@ This is intended as a temporary measure. Once the rsETH situation is resolved, a
 
 The new feed wraps the existing Kelp exchange rate and operates in one of two modes, set by the Community Multisig:
 
-1. **Bounded exchange rate (default).** Passes the Kelp exchange rate through unchanged when it sits between configured `min` and `max` bounds. If the rate falls below `min` or rises above `max`, the feed returns the bound. Setting `min = 0` and `max = ∞` reproduces the existing oracle behavior.
+1. **Bounded exchange rate (default).** Passes the Kelp exchange rate through unchanged when it sits between configured 'min' and 'max' bounds. If the rate falls below 'min' or rises above 'max', the feed returns the bound. Setting 'min = 0' and 'max = ∞' reproduces the existing oracle behavior.
 2. **Constant price.** Returns a fixed price set by the multisig, bypassing the underlying feed. Intended for cases where the exchange rate can no longer be trusted.
 
 Bounds and mode changes are multisig-only, with no cooldown. A cursory review by SSPs was already performed and a final audit confirmation will be linked on the forum prior to proposal vote.
