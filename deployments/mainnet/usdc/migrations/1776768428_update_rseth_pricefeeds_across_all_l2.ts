@@ -91,9 +91,9 @@ The first action updates rsETH price feed to a new version for the WETH market o
 
 The second action updates rsETH price feed to a new version for the wstETH market on Mainnet.
 
-The third action deploy and upgrade the WETH Comet to a new version.
+The third action deploys and upgrades the WETH Comet to a new version.
 
-The fourth action deploy and upgrade the wstETH Comet to a new version.
+The fourth action deploys and upgrades the wstETH Comet to a new version.
 `;
 
     const txn = await deploymentManager.retry(async () =>
