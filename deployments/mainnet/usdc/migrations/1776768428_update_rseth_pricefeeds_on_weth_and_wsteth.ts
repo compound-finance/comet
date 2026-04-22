@@ -7,24 +7,11 @@ import { proposal } from '../../../../src/deploy';
 const MAINNET_WETH_COMET = '0xA17581A9E3356d9A858b789D68B4d866e593aE94';
 const MAINNET_WSTETH_COMET = '0x3D0bb1ccaB520A66e607822fC55BC921738fAFE3';
 
-let mainnetWethPriceFeedAddress: string;
-let mainnetWstEthPriceFeedAddress: string;
+const mainnetWethPriceFeedAddress = '0x49BB78FBB6ADEbD1fc75296213C8E60EBd434187';
+const mainnetWstEthPriceFeedAddress = '0x6407efA45FB767f594e1e966ECcb621176c58b28';
 
 export default migration('1776768428_update_rseth_pricefeeds_on_weth_and_wsteth', {
-  async prepare(deploymentManager: DeploymentManager) {
-    const _mainnetUsdcPriceFeed = await deploymentManager.deploy(
-      'rsETH:priceFeed',
-      'pricefeeds/ConstantPriceFeed.sol',
-      [
-        8, // decimals
-        1  // constantPrice
-      ],
-      true
-    );
-    
-    mainnetWethPriceFeedAddress = _mainnetUsdcPriceFeed.address;
-    mainnetWstEthPriceFeedAddress = _mainnetUsdcPriceFeed.address;
-
+  async prepare() {
     return {};
   },
 
