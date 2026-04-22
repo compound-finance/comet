@@ -1,10 +1,17 @@
 import { expect } from 'chai';
-import { utils } from 'ethers';
+import { utils, Contract } from 'ethers';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { proposal } from '../../../../src/deploy';
 import { forkedHreForBase } from '../../../../plugins/scenario/utils/hreForBase';
 import { applyL1ToL2Alias, estimateL2Transaction } from '../../../../scenario/utils/arbitrumUtils';
+
+const MAINNET_WETH_COMET = '0xA17581A9E3356d9A858b789D68B4d866e593aE94';
+const MAINNET_WSTETH_COMET = '0x3D0bb1ccaB520A66e607822fC55BC921738fAFE3';
+
+let mainnetUsdcPriceFeedAddress: string;
+let mainnetWethPriceFeedAddress: string;
+let mainnetWstEthPriceFeedAddress: string;
 
 let optimismPriceFeedAddress: string;
 let arbitrumPriceFeedAddress: string;
@@ -14,17 +21,32 @@ let unichainPriceFeedAddress: string;
 
 export default migration('1776768428_update_rseth_pricefeeds_across_all_l2', {
   async prepare(deploymentManager: DeploymentManager) {
-    // Optimism
-    const opHre = await forkedHreForBase({ name: 'optimism-weth', network: 'optimism', deployment: 'weth' });
-    const opDm = await deploymentManager.addBridgedDeploymentManager('optimism', 'weth', opHre);
-
-    const optimismRsETHPriceFeed = await opDm.deploy(
+    const _mainnetUsdcPriceFeed = await deploymentManager.deploy(
       'rsETH:priceFeed',
       'pricefeeds/ConstantPriceFeed.sol',
       [
         8, // decimals
         1  // constantPrice
-      ]
+      ],
+      true
+    );
+    
+    mainnetWethPriceFeedAddress = _mainnetUsdcPriceFeed.address;
+    mainnetUsdcPriceFeedAddress = _mainnetUsdcPriceFeed.address;
+    mainnetWstEthPriceFeedAddress = _mainnetUsdcPriceFeed.address;
+
+    // Optimism
+    const opHre = await forkedHreForBase({ name: 'optimism-weth', network: 'optimism', deployment: 'weth' });
+    const opDm = await deploymentManager.addBridgedDeploymentManager('optimism', 'weth', opHre);
+
+    const optimismRsETHPriceFeed = await opDm.deploy(
+      'wrsETH:priceFeed',
+      'pricefeeds/ConstantPriceFeed.sol',
+      [
+        8, // decimals
+        1  // constantPrice
+      ],
+      true
     );
 
     // Base
@@ -32,12 +54,13 @@ export default migration('1776768428_update_rseth_pricefeeds_across_all_l2', {
     const baseDm = await deploymentManager.addBridgedDeploymentManager('base', 'weth', baseHre);
 
     const baseRsETHPriceFeed = await baseDm.deploy(
-      'rsETH:priceFeed',
+      'wrsETH:priceFeed',
       'pricefeeds/ConstantPriceFeed.sol',
       [
         8, // decimals
         1  // constantPrice
-      ]
+      ],
+      true
     );
 
     // Arbitrum
@@ -50,7 +73,8 @@ export default migration('1776768428_update_rseth_pricefeeds_across_all_l2', {
       [
         8, // decimals
         1  // constantPrice
-      ]
+      ],
+      true
     );
 
     // Linea
@@ -58,12 +82,13 @@ export default migration('1776768428_update_rseth_pricefeeds_across_all_l2', {
     const lineaDm = await deploymentManager.addBridgedDeploymentManager('linea', 'weth', lineaHre);
 
     const lineaRsETHPriceFeed = await lineaDm.deploy(
-      'rsETH:priceFeed',
+      'wrsETH:priceFeed',
       'pricefeeds/ConstantPriceFeed.sol',
       [
         8, // decimals
         1  // constantPrice
-      ]
+      ],
+      true
     );
 
     // Unichain
@@ -76,7 +101,8 @@ export default migration('1776768428_update_rseth_pricefeeds_across_all_l2', {
       [
         8, // decimals
         1  // constantPrice
-      ]
+      ],
+      true
     );
 
     optimismPriceFeedAddress = optimismRsETHPriceFeed.address;
@@ -93,6 +119,10 @@ export default migration('1776768428_update_rseth_pricefeeds_across_all_l2', {
     const trace = deploymentManager.tracer();
 
     const {
+      configurator,
+      cometAdmin,
+      comet,
+      rsETH,
       timelock,
       governor,
       opL1CrossDomainMessenger,
@@ -292,19 +322,55 @@ export default migration('1776768428_update_rseth_pricefeeds_across_all_l2', {
     );
 
     const mainnetActions = [
-      // Optimism proposal
+      // 1. Update the price feed for rsETH in the USDC market on Mainnet
+      {
+        contract: configurator,
+        signature: 'updateAssetPriceFeed(address,address,address)',
+        args: [comet.address, rsETH.address, mainnetUsdcPriceFeedAddress],
+      },
+      // 2. Update the price feed for rsETH in the WETH market on mainnet
+      {
+        contract: configurator,
+        signature: 'updateAssetPriceFeed(address,address,address)',
+        args: [MAINNET_WETH_COMET, rsETH.address, mainnetWethPriceFeedAddress],
+      },
+      // 3. Update the price feed for rsETH in the stETH market on mainnet
+      {
+        contract: configurator,
+        signature: 'updateAssetPriceFeed(address,address,address)',
+        args: [MAINNET_WSTETH_COMET, rsETH.address, mainnetWstEthPriceFeedAddress],
+      },
+      // 4. Deploy and upgrade USDC Comet to a new version
+      {
+        contract: cometAdmin,
+        signature: 'deployAndUpgradeTo(address,address)',
+        args: [configurator.address, comet.address],
+      },
+      // 5. Deploy and upgrade WETH Comet to a new version 
+      {
+        contract: cometAdmin,
+        signature: 'deployAndUpgradeTo(address,address)',
+        args: [configurator.address, MAINNET_WETH_COMET],
+      },
+      // 6. Deploy and upgrade stETH Comet to a new version 
+      {
+        contract: cometAdmin,
+        signature: 'deployAndUpgradeTo(address,address)',
+        args: [configurator.address, MAINNET_WSTETH_COMET],
+      },
+      // 7. Optimism proposal
       {
         contract: opL1CrossDomainMessenger,
         signature: 'sendMessage(address,bytes,uint32)',
         args: [opBridgeReceiver.address, opProposalData, 3_000_000]
       },
-      // Base proposal
+      // 8. Base proposal
       {
         contract: baseL1CrossDomainMessenger,
         signature: 'sendMessage(address,bytes,uint32)',
         args: [baseBridgeReceiver.address, baseProposalData, 3_000_000]
       },
-      // Arbitrum proposal
+      // 9. Arbitrum proposal
       {
         contract: arbitrumInbox,
         signature: 'createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,bytes)',
@@ -320,13 +386,13 @@ export default migration('1776768428_update_rseth_pricefeeds_across_all_l2', {
         ],
         value: createRetryableTicketGasParams.deposit.mul(2),
       },
-      // Linea proposal
+      // 10. Linea proposal
       {
         contract: lineaMessageService,
         signature: 'sendMessage(address,uint256,bytes)',
         args: [lineaBridgeReceiver.address, 0, lineaProposalData],
       },
-      // Unichain proposal
+      // 11. Unichain proposal
       {
         contract: unichainL1CrossDomainMessenger,
         signature: 'sendMessage(address,bytes,uint32)',
@@ -334,7 +400,37 @@ export default migration('1776768428_update_rseth_pricefeeds_across_all_l2', {
       },
     ];
 
-    const description = `DESCRIPTION`;
+    const description = `# Update rsETH price feeds across all WETH markets
+
+## Proposal summary
+
+WOOF! proposes to update rsETH price feeds across all WETH markets to a new version.
+
+### New price feed details
+The primary mechanism of the contract relies on the exchange rate provided by the Kelp contract, while enforcing minimum and maximum boundaries. These boundary parameters are managed by the Community multisig and may be adjusted at any time without a cooldown period.
+
+Should the retrieved exchange rate fall below the prescribed minimum, the price feed will default to the minimum capped valuation. Conversely, if the exchange rate exceeds the maximum boundary, the feed will return the maximum capped valuation.
+
+Additionally, the contract incorporates functionality to establish a custom constant price, which is exclusively controlled by the Community multisig. Consequently, the contract is capable of operating in one of two distinct modes:
+
+1. Exchange rate valuation subject to minimum and maximum caps.
+2. A manually defined, constant valuation.
+
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1113).
+
+
+## Proposal Actions
+
+The seventh proposal action sends a message to the Optimism bridge receiver to update the price feed for rsETH in the WETH market.
+
+The eighth proposal action sends a message to the Base bridge receiver to update the price feed for rsETH in the WETH market.
+
+The ninth proposal action sends a message to the Arbitrum bridge receiver to update the price feed for rsETH in the WETH market.
+
+The tenth proposal action sends a message to the Linea bridge receiver to update the price feed for rsETH in the WETH market.
+
+The eleventh proposal action sends a message to the Unichain bridge receiver to update the price feed for rsETH in the WETH market.
+`;
 
     const txn = await deploymentManager.retry(async () =>
       trace(
@@ -354,6 +450,28 @@ export default migration('1776768428_update_rseth_pricefeeds_across_all_l2', {
   },
 
   async verify(deploymentManager: DeploymentManager) {
+    const {
+      comet,
+      rsETH
+    } = await deploymentManager.getContracts();
+    const cometAssetInfo = await comet.getAssetInfoByAddress(rsETH.address);
+
+    expect(cometAssetInfo.priceFeed).to.equal(mainnetUsdcPriceFeedAddress);
+
+    const cometWETH = new Contract(MAINNET_WETH_COMET, [
+      'function getAssetInfoByAddress(address asset) public view returns((uint8 offset, address asset, address priceFeed, uint64 scale, uint64 borrowCollateralFactor, uint64 liquidateCollateralFactor, uint64 liquidationFactor, uint128 supplyCap))',
+    ], await deploymentManager.getSigner());
+
+    const wethCometAssetInfo = await cometWETH.getAssetInfoByAddress(rsETH.address);
+    expect(wethCometAssetInfo.priceFeed).to.equal(mainnetWethPriceFeedAddress);
+
+    const wstEthComet = new Contract(MAINNET_WSTETH_COMET, [
+      'function getAssetInfoByAddress(address asset) public view returns((uint8 offset, address asset, address priceFeed, uint64 scale, uint64 borrowCollateralFactor, uint64 liquidateCollateralFactor, uint64 liquidationFactor, uint128 supplyCap))',
+    ], await deploymentManager.getSigner());
+
+    const wstEthCometAssetInfo = await wstEthComet.getAssetInfoByAddress(rsETH.address);
+    expect(wstEthCometAssetInfo.priceFeed).to.equal(mainnetWstEthPriceFeedAddress);
+
     // Optimism
     const opDm = deploymentManager.bridgedDeploymentManagers.get('optimism:weth') as DeploymentManager;
     const {
@@ -373,7 +491,6 @@ export default migration('1776768428_update_rseth_pricefeeds_across_all_l2', {
     } = await baseDm.getContracts();
 
     const baseCometAssetInfo = await baseComet.getAssetInfoByAddress(baseRsETH.address);
-
     expect(baseCometAssetInfo.priceFeed).to.equal(basePriceFeedAddress);
 
     // Arbitrum
@@ -384,7 +501,6 @@ export default migration('1776768428_update_rseth_pricefeeds_across_all_l2', {
     } = await arbitrumDm.getContracts();
 
     const arbitrumCometAssetInfo = await arbitrumComet.getAssetInfoByAddress(arbitrumRsETH.address);
-
     expect(arbitrumCometAssetInfo.priceFeed).to.equal(arbitrumPriceFeedAddress);
 
     // Linea
@@ -395,7 +511,6 @@ export default migration('1776768428_update_rseth_pricefeeds_across_all_l2', {
     } = await lineaDm.getContracts();
 
     const lineaCometAssetInfo = await lineaComet.getAssetInfoByAddress(lineaRsETH.address);
-
     expect(lineaCometAssetInfo.priceFeed).to.equal(lineaPriceFeedAddress);
     
     // Unichain
@@ -406,7 +521,6 @@ export default migration('1776768428_update_rseth_pricefeeds_across_all_l2', {
     } = await unichainDm.getContracts();
 
     const unichainCometAssetInfo = await unichainComet.getAssetInfoByAddress(unichainRsETH.address);
-
     expect(unichainCometAssetInfo.priceFeed).to.equal(unichainPriceFeedAddress);
   },
 });
