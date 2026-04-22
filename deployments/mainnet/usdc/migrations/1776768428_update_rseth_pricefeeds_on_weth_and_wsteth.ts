@@ -10,7 +10,7 @@ const MAINNET_WSTETH_COMET = '0x3D0bb1ccaB520A66e607822fC55BC921738fAFE3';
 let mainnetWethPriceFeedAddress: string;
 let mainnetWstEthPriceFeedAddress: string;
 
-export default migration('1776768428_update_rseth_pricefeeds_across_all_l2', {
+export default migration('1776768428_update_rseth_pricefeeds_on_weth_and_wsteth', {
   async prepare(deploymentManager: DeploymentManager) {
     const _mainnetUsdcPriceFeed = await deploymentManager.deploy(
       'rsETH:priceFeed',
