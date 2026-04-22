@@ -606,7 +606,7 @@ describe('configurator', function () {
       expect(await cometAsProxy.storeFrontPriceFactor()).to.be.equal(newStoreFrontPriceFactor);
     });
 
-    it.skip('sets targetHealthFactor and deploys Comet with new configuration', async () => {
+    it('sets targetHealthFactor and deploys Comet with new configuration', async () => {
       const { configurator, configuratorProxy, proxyAdmin, cometWithPartialLiquidation : comet, cometProxyWithPartialLiquidation : cometProxy } = await makeConfigurator({
         assets: {
           USDC: { decimals: 6, },
@@ -620,7 +620,7 @@ describe('configurator', function () {
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-      expect((await configuratorAsProxy.targetHealthFactors(cometProxy.address))).to.be.equal(await cometAsProxy.targetHealthFactor());
+      expect((await configuratorAsProxy.getConfiguration(cometProxy.address)).targetHealthFactor).to.be.equal(await cometAsProxy.targetHealthFactor());
 
       const oldHealthFactor = (await cometAsProxy.targetHealthFactor()).toBigInt();
       const newHealthFactor = factor(1.10);
@@ -635,7 +635,7 @@ describe('configurator', function () {
         }
       });
       expect(oldHealthFactor).to.be.not.equal(newHealthFactor);
-      expect((await configuratorAsProxy.targetHealthFactors(cometProxy.address))).to.be.equal(newHealthFactor);
+      expect((await configuratorAsProxy.getConfiguration(cometProxy.address)).targetHealthFactor).to.be.equal(newHealthFactor);
       expect(await cometAsProxy.targetHealthFactor()).to.be.equal(newHealthFactor);
     });
 

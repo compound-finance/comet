@@ -32,7 +32,7 @@ describe('isBorrowCollateralized', function () {
     expect(await comet.isBorrowCollateralized(alice.address)).to.be.false;
   });
 
-  it.skip('is true when value of collateral is greater than principal owed', async () => {
+  it('is true when value of collateral is greater than principal owed', async () => {
     const {
       comet,
       tokens,
@@ -45,6 +45,8 @@ describe('isBorrowCollateralized', function () {
           decimals: 18,
           initialPrice: 1, // 1 COMP = 1 USDC
           borrowCF: exp(0.9, 18),
+          liquidateCF: exp(0.95, 18),
+          liquidationFactor: exp(1, 18),
         },
       },
     });
@@ -57,7 +59,7 @@ describe('isBorrowCollateralized', function () {
     expect(await comet.isBorrowCollateralized(alice.address)).to.be.true;
   });
 
-  it.skip('takes borrow collateral factor into account when valuing collateral', async () => {
+  it('takes borrow collateral factor into account when valuing collateral', async () => {
     const {
       comet,
       tokens,
@@ -70,6 +72,8 @@ describe('isBorrowCollateralized', function () {
           decimals: 18,
           initialPrice: 1, // 1 COMP = 1 USDC
           borrowCF: exp(0.9, 18),
+          liquidateCF: exp(0.95, 18),
+          liquidationFactor: exp(1, 18),
         },
       },
     });
@@ -84,7 +88,7 @@ describe('isBorrowCollateralized', function () {
     expect(await comet.isBorrowCollateralized(alice.address)).to.be.false;
   });
 
-  it.skip('changes when the underlying asset price changes', async () => {
+  it('changes when the underlying asset price changes', async () => {
     const {
       comet,
       tokens,
@@ -93,7 +97,14 @@ describe('isBorrowCollateralized', function () {
     } = await makeProtocol({
       assets: {
         USDC: { decimals: 6 },
-        COMP: { initial: 1e7, decimals: 18, initialPrice: 1, borrowCF: exp(0.2, 18) },
+        COMP: { 
+          initial: 1e7, 
+          decimals: 18,
+          initialPrice: 1,
+          borrowCF: exp(0.2, 18),
+          liquidateCF: exp(0.95, 18),
+          liquidationFactor: exp(1, 18)
+        },
       },
     });
     const { COMP } = tokens;
