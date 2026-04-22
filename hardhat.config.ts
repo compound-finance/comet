@@ -198,7 +198,7 @@ export const networkConfigs: NetworkConfig[] = [
   {
     network: 'scroll',
     chainId: 534352,
-    url: 'https://rpc.scroll.io',
+    url: 'https://scroll.drpc.org',
   },
 ];
 
@@ -342,6 +342,7 @@ const config: HardhatUserConfig = {
             hardforkHistory: {
               berlin: 1,
               london: 2,
+              shanghai: 3,
             }
           };
           return acc;

@@ -5,6 +5,7 @@
     "cometFactory": "0x4DF9E0f8e94a7A8A9aEa6010CD9d341F8Ecfe4c6",
     "bridgeReceiver": "0x2c7EfA766338D33B9192dB1fB5D170Bdc03ef3F9",
     "l2CCIPRouter": "0x46527571D5D1B68eE7Eb60B18A32e6C60DcEAf99",
+    "l2CCIPOnRamp": "0x02b60267bceeaFDC45005e0Fa0dd783eFeBc9F1b",
     "l2CCIPOffRamp": "0x320A10449556388503Fd71D74A16AB52e0BD1dEb",
     "roninl2NativeBridge": "0x0cf8ff40a508bdbc39fbe1bb679dcba64e65c7df",
     "l2TokenAdminRegistry": "0x90e83d532A4aD13940139c8ACE0B93b0DdbD323a",
