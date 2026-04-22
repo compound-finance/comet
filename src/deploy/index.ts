@@ -160,6 +160,7 @@ export const WHALES = {
     '0xcf3D55c10DB69f28fD1A75Bd73f3D8A2d9c595ad', // cbETH whale
     '0xb125E6687d4313864e53df431d5425969c15Eb2F', // cbETH whale
     '0x1539A4611f16a139891c14365Cab86599F3A8AFC', // tBTC whale
+    '0x0a1d576f3eFeF75b330424287a95A366e8281D54', // USDbC whale
   ],
   scroll: [
     '0xaaaaAAAACB71BF2C8CaE522EA5fa455571A74106', // USDC whale
@@ -281,7 +282,7 @@ export async function proposal(
       const { target, value, signature, calldata: cd } = action as TargetAction;
       targets.push(target);
       values.push(value ?? 0);
-      calldatas.push(utils.id(signature).slice(0, 10) + cd.slice(2));
+      calldatas.push(signature ? utils.id(signature).slice(0, 10) + cd.slice(2) : cd);
       signatures.push('');
     }
   }
