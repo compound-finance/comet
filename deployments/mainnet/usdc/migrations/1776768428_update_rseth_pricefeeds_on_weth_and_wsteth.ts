@@ -53,35 +53,33 @@ export default migration('1776768428_update_rseth_pricefeeds_on_weth_and_wsteth'
       },
     ];
 
-    const description = `# Update rsETH price feeds on WETH and wstETH markets on Mainnet
+    const description = `# Update rsETH Price Feeds on WETH and wstETH Markets (Mainnet)
 
-## Proposal summary
+## Summary
 
-WOOF! proposes to update rsETH price feeds on WETH and wstETH markets on Mainnet to a new version.
+It is proposed to migrate the rsETH price feeds on the Mainnet WETH and wstETH Comets to a new `MinMaxConstantPriceFeed` contract. This follows [Gauntlet's proposal](FORUM_LINK) in response to the April 18 Kelp rsETH bridge exploit, and gives the Community Multisig a faster defensive lever than a full governance cycle.
 
-### New price feed details
-The primary mechanism of the contract relies on the exchange rate provided by the Kelp contract, while enforcing minimum and maximum boundaries. These boundary parameters are managed by the Community multisig and may be adjusted at any time without a cooldown period.
+This is intended as a temporary measure. Once the rsETH situation is resolved, a subsequent governance proposal will revert the price feeds to the prior configuration.
 
-Should the retrieved exchange rate fall below the prescribed minimum, the price feed will default to the minimum capped valuation. Conversely, if the exchange rate exceeds the maximum boundary, the feed will return the maximum capped valuation.
+## New Price Feed
 
-Additionally, the contract incorporates functionality to establish a custom constant price, which is exclusively controlled by the Community multisig. Consequently, the contract is capable of operating in one of two distinct modes:
+The new feed wraps the existing Kelp exchange rate and operates in one of two modes, set by the Community Multisig:
 
-1. Exchange rate valuation subject to minimum and maximum caps.
-2. A manually defined, constant valuation.
+1. **Bounded exchange rate (default).** Passes the Kelp exchange rate through unchanged when it sits between configured `min` and `max` bounds. If the rate falls below `min` or rises above `max`, the feed returns the bound. Setting `min = 0` and `max = ∞` reproduces the existing oracle behavior.
+2. **Constant price.** Returns a fixed price set by the multisig, bypassing the underlying feed. Intended for cases where the exchange rate can no longer be trusted.
 
-Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1113).
+Bounds and mode changes are multisig-only, with no cooldown. A cursory review by SSPs was already performed and a final audit confirmation will be linked on the forum prior to proposal vote.
 
+Implementation details: [PR #1113](https://github.com/compound-finance/comet/pull/1113).
 
 ## Proposal Actions
 
-The first action updates rsETH price feed to a new version for the WETH market on Mainnet.
+1. Update the rsETH price feed on the Mainnet WETH market.
+2. Update the rsETH price feed on the Mainnet wstETH market.
+3. Deploy and upgrade the WETH Comet to the new implementation.
+4. Deploy and upgrade the wstETH Comet to the new implementation.
 
-The second action updates rsETH price feed to a new version for the wstETH market on Mainnet.
-
-The third action deploys and upgrades the WETH Comet to a new version.
-
-The fourth action deploys and upgrades the wstETH Comet to a new version.
-`;
+On execution, the liquidation pause on rsETH/wrsETH collateral in these markets will be lifted. A follow-up proposal will revert these markets to their prior price feed configuration once the incident is resolved.`;
 
     const txn = await deploymentManager.retry(async () =>
       trace(
