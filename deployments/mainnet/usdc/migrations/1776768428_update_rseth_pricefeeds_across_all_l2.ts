@@ -400,11 +400,11 @@ export default migration('1776768428_update_rseth_pricefeeds_across_all_l2', {
       },
     ];
 
-    const description = `# Update rsETH price feeds across all WETH markets
+    const description = `# Update rsETH price feeds across all markets
 
 ## Proposal summary
 
-WOOF! proposes to update rsETH price feeds across all WETH markets to a new version.
+WOOF! proposes to update rsETH price feeds across all markets that have rsETH as collateral to a new version.
 
 ### New price feed details
 The primary mechanism of the contract relies on the exchange rate provided by the Kelp contract, while enforcing minimum and maximum boundaries. These boundary parameters are managed by the Community multisig and may be adjusted at any time without a cooldown period.
