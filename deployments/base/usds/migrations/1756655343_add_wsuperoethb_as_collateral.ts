@@ -6,49 +6,16 @@ import { IERC4626 } from '../../../../build/types';
 import { utils } from 'ethers';
 
 const WSUPEROETHB_ADDRESS = '0x7FcD174E80f264448ebeE8c88a7C4476AAF58Ea6';
-const ETH_USD_SVR_PRICE_FEED = '0x1428C9E908e32dD2839F99D63C242c91329A58C0';
-
-const blockToFetch = 40000000;
-
-let newPriceFeedAddress: string;
+const WSUPEROETHB_PRICE_FEED_ADDRESS = '0xA4F2e977CAb3177D61E2e7eAEcd257Bf09F2f915';
 
 export default migration('1756655343_add_wsuperoethb_as_collateral', {
-  async prepare(deploymentManager: DeploymentManager) {
-    const { timelock } = await deploymentManager.getContracts();
-    const blockToFetchTimestamp = (await deploymentManager.hre.ethers.provider.getBlock(blockToFetch))!.timestamp;
-
-    //1. wsuperOETHb
-    const rateProviderWsuperOETHb = await deploymentManager.existing('wsuperOETHb:_priceFeed', WSUPEROETHB_ADDRESS, 'base', 'contracts/IERC4626.sol:IERC4626') as IERC4626;
-    const currentRatioWsuperOETHb = await rateProviderWsuperOETHb.convertToAssets(exp(1, 18));
-
-    const wsuperOETHbCapoPriceFeed = await deploymentManager.deploy(
-      'wsuperOETHb:priceFeed',
-      'capo/contracts/ERC4626CorrelatedAssetsPriceOracle.sol',
-      [
-        timelock.address,
-        ETH_USD_SVR_PRICE_FEED,
-        WSUPEROETHB_ADDRESS,
-        'wsuperOETHb / USD CAPO SVR Price Feed',
-        8,
-        3600,
-        {
-          snapshotRatio: currentRatioWsuperOETHb,
-          snapshotTimestamp: blockToFetchTimestamp,
-          maxYearlyRatioGrowthPercent: exp(0.0647, 4)
-        }
-      ],
-      true
-    );
-
-    return { wsuperOETHbPriceFeedAddress: wsuperOETHbCapoPriceFeed.address };
+  async prepare() {
+    return {};
   },
 
   enact: async (
     deploymentManager: DeploymentManager,
-    govDeploymentManager: DeploymentManager,
-    {
-      wsuperOETHbPriceFeedAddress,
-    }
+    govDeploymentManager: DeploymentManager
   ) => {
     const trace = deploymentManager.tracer();
 
@@ -60,11 +27,9 @@ export default migration('1756655343_add_wsuperoethb_as_collateral', {
     );
     const wsuperOETHbPriceFeed = await deploymentManager.existing(
       'wsuperOETHb:priceFeed',
-      wsuperOETHbPriceFeedAddress,
+      WSUPEROETHB_PRICE_FEED_ADDRESS,
       'base'
     );
-
-    newPriceFeedAddress = wsuperOETHbPriceFeed.address;
 
     const {
       bridgeReceiver,
@@ -84,8 +49,6 @@ export default migration('1756655343_add_wsuperoethb_as_collateral', {
       liquidationFactor: exp(0.9, 18),
       supplyCap: exp(500, 18),
     };
-
-    newPriceFeedAddress = wsuperOETHbPriceFeed.address;
 
     const addAssetCalldata = await calldata(
       configurator.populateTransaction.addAsset(comet.address, newAssetConfig)
@@ -167,7 +130,7 @@ The first proposal action adds wsuperOETHb to the USDS Comet on Base. This sends
 
     const wsuperOETHbAssetConfig = {
       asset: WSUPEROETHB_ADDRESS,
-      priceFeed: newPriceFeedAddress,
+      priceFeed: WSUPEROETHB_PRICE_FEED_ADDRESS,
       decimals: 18,
       borrowCollateralFactor: exp(0.80, 18),
       liquidateCollateralFactor: exp(0.85, 18),
