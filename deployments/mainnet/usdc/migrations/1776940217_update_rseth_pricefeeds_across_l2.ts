@@ -356,15 +356,15 @@ The new feed wraps the existing Kelp exchange rate and operates in one of two mo
 
 Bounds and mode changes are multisig-only, with no cooldown. A cursory review by SSPs was already performed and a final audit confirmation will be linked on the forum prior to proposal vote.
 
-Implementation details: [PR #1113](https://github.com/compound-finance/comet/pull/1113).
+Implementation details: [PR #1113](https://github.com/compound-finance/comet/pull/1114).
 
 ## Proposal Actions
 
-1. Send message to update the rsETH price feed on the Optimism WETH market.
-2. Send message to update the rsETH price feed on the Base WETH market.
-3. Send message to update the rsETH price feed on the Arbitrum WETH market.
-4. Send message to update the rsETH price feed on the Linea WETH market.
-5. Send message to update the rsETH price feed on the Unichain WETH market.
+1. Sends a message to update the rsETH price feed on the Optimism WETH market.
+2. Sends a message to update the rsETH price feed on the Base WETH market.
+3. Sends a message to update the rsETH price feed on the Arbitrum WETH market.
+4. Sends a message to update the rsETH price feed on the Linea WETH market.
+5. Sends a message to update the rsETH price feed on the Unichain WETH market.
 
 On execution, the liquidation pause on rsETH/wrsETH collateral in these markets will be lifted. A follow-up proposal will revert these markets to their prior price feed configuration once the incident is resolved.
 `;
