@@ -3,7 +3,7 @@ import 'dotenv/config';
 import { HardhatUserConfig, subtask, task } from 'hardhat/config';
 import '@compound-finance/hardhat-import';
 import '@nomiclabs/hardhat-etherscan';
-import '@tenderly/hardhat-tenderly';
+// import '@tenderly/hardhat-tenderly';
 import '@nomiclabs/hardhat-ethers';
 import '@typechain/hardhat';
 import 'hardhat-chai-matchers';
@@ -198,7 +198,7 @@ export const networkConfigs: NetworkConfig[] = [
   {
     network: 'scroll',
     chainId: 534352,
-    url: 'https://rpc.scroll.io',
+    url: 'https://scroll.drpc.org',
   },
 ];
 
@@ -342,6 +342,7 @@ const config: HardhatUserConfig = {
             hardforkHistory: {
               berlin: 1,
               london: 2,
+              shanghai: 3,
             }
           };
           return acc;
@@ -703,12 +704,12 @@ const config: HardhatUserConfig = {
     ],
   },
 
-  tenderly: {
-    project: 'comet',
-    username: process.env.TENDERLY_USERNAME || '',
-    accessKey: process.env.TENDERLY_ACCESS_KEY || '',
-    privateVerification: false,
-  },
+  // tenderly: {
+  //   project: 'comet',
+  //   username: process.env.TENDERLY_USERNAME || '',
+  //   accessKey: process.env.TENDERLY_ACCESS_KEY || '',
+  //   privateVerification: false,
+  // },
 
   mocha: {
     reporter: 'mocha-multi-reporters',
