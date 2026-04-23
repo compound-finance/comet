@@ -51,6 +51,7 @@ export class DeploymentManager {
   cache: Cache; // TODO: kind of a misnomer since its handling *all* path stuff
   contractsCache: ContractMap | null;
   _signers: SignerWithAddress[];
+  bridgedDeploymentManagers: Map<string, DeploymentManager> = new Map();
 
   constructor(
     network: string,
@@ -73,6 +74,19 @@ export class DeploymentManager {
 
     this.contractsCache = null;
     this._signers = [];
+  }
+
+  async addBridgedDeploymentManager(network: string, deployment: string, hre?: HardhatRuntimeEnvironment): Promise<DeploymentManager> {
+    const key = `${network}:${deployment}`;
+    if (!this.bridgedDeploymentManagers.has(key)) {
+      if(!hre && this.network !== network) {
+        throw new Error(`Must provide hre to bridge to a different network deployment manager`);
+      }
+      const dm = new DeploymentManager(network, deployment, hre ?? this.hre, { writeCacheToDisk: true });
+      await dm.spider();
+      this.bridgedDeploymentManagers.set(key, dm);
+    }
+    return this.bridgedDeploymentManagers.get(key)!;
   }
 
   async getSigners(): Promise<SignerWithAddress[]> {
@@ -282,7 +296,7 @@ export class DeploymentManager {
     }
   }
 
-  stashRelayMessage(messanger: string, callData: string, signer: string) {
+  stashRelayMessage(messenger: string, callData: string, signer: string) {
     try {
       const cacheDir = path.resolve(__dirname, '../..', 'cache');
       mkdirSync(cacheDir, { recursive: true });
@@ -301,7 +315,7 @@ export class DeploymentManager {
         }
       }
 
-      const newEntry = { messanger, callData, signer };
+      const newEntry = { messenger, callData, signer };
       if (!data.some(entry => JSON.stringify(entry) === JSON.stringify(newEntry))) {
         data.push(newEntry);
         writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
