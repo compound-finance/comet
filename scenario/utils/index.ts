@@ -1001,12 +1001,6 @@ async function simulateBundle(
   const results = [];
 
   for (const sim of simulations) {
-    // const {
-    //   username,
-    //   project,
-    //   accessKey
-    // } = (dm.hre.config as any).tenderly;
-
     const project = 'comet';
     const username = process.env.TENDERLY_USERNAME || '';
     const accessKey = process.env.TENDERLY_ACCESS_KEY || '';
@@ -1067,7 +1061,6 @@ async function simulateBundle(
 }
 
 async function shareSimulation(dm: DeploymentManager, simulationId: string) {
-  // const { username, project, accessKey } = (dm.hre.config as any).tenderly;
   const project = 'comet';
   const username = process.env.TENDERLY_USERNAME || '';
   const accessKey = process.env.TENDERLY_ACCESS_KEY || '';
