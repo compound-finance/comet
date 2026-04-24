@@ -170,6 +170,8 @@ export default migration('1775661752_withdraw_reserves', {
     } = await deploymentManager.getContracts();
 
     // Optimism
+    const opHre = await forkedHreForBase({ name: 'optimism-usdc', network: 'optimism', deployment: 'usdc' });
+    await deploymentManager.addBridgedDeploymentManager('optimism', 'usdc', opHre);
     const withdrawUsdcOptimismCalldata = utils.defaultAbiCoder.encode(
       ['address', 'uint256'],
       [OPTIMISM_TIMELOCK, exp(withdrawConfigV3.optimism.cUSDCv3.amount, withdrawConfigV3.optimism.cUSDCv3.decimals)]
@@ -249,6 +251,8 @@ export default migration('1775661752_withdraw_reserves', {
     );
 
     // Base
+    const baseHre = await forkedHreForBase({ name: 'base-usdbc', network: 'base', deployment: 'usdbc' });
+    await deploymentManager.addBridgedDeploymentManager('base', 'usdbc', baseHre);
     const withdrawUsdbcBaseCalldata = utils.defaultAbiCoder.encode(
       ['address', 'uint256'],
       [BASE_TIMELOCK, exp(withdrawConfigV3.base.cUSDbCv3.amount, withdrawConfigV3.base.cUSDbCv3.decimals)]
@@ -296,6 +300,8 @@ export default migration('1775661752_withdraw_reserves', {
     );
 
     // Arbitrum
+    const arbitrumHre = await forkedHreForBase({ name: 'arbitrum-usdc', network: 'arbitrum', deployment: 'usdc' });
+    const arbitrumDm = await deploymentManager.addBridgedDeploymentManager('arbitrum', 'usdc', arbitrumHre);
     const withdrawUsdcArbitrumCalldata = utils.defaultAbiCoder.encode(
       ['address', 'uint256'],
       [ARBITRUM_TIMELOCK, exp(withdrawConfigV3.arbitrum.cUSDCv3.amount, withdrawConfigV3.arbitrum.cUSDCv3.decimals)]
@@ -389,16 +395,13 @@ export default migration('1775661752_withdraw_reserves', {
       ]
     );
 
-    const hreArbitrum = await forkedHreForBase({ name: '', network: 'arbitrum', deployment: '' });
-    const arbitrumDeploymentManager = new DeploymentManager('arbitrum', 'usdc', hreArbitrum);
-
     const createRetryableTicketGasParams = await estimateL2Transaction(
       {
         from: applyL1ToL2Alias(timelock.address),
         to: ARBITRUM_BRIDGE_RECEIVER,
         data: arbitrumProposalData
       },
-      arbitrumDeploymentManager
+      arbitrumDm
     );
     const refundAddress = ARBITRUM_TIMELOCK;
 
