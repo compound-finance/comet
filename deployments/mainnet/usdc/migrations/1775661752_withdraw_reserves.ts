@@ -704,6 +704,10 @@ Upon execution, this proposal:
 
 All withdrawals from Treasury Escrow are subject to a 2-day cooldown before execution, a 7-day expiration window, and Safeguard cancellation rights. The Treasury Timelock enforces a 2-day minimum delay on governance-level operations. Both contracts have been audited by ChainSecurity and Certora.
 
+### Audit
+
+Treasury manager has been audited by [Certora](https://www.certora.com/) and the report can be found [here](https://www.certora.com/reports/compound-treasury-manager).
+
 Full proposal details, fund source methodology, on-chain controls, and TMC composition: [Establishment of Treasury Management Program and Treasury Management Committee](https://www.comp.xyz/t/establishment-of-treasury-management-program-and-treasury-management-committee/7710).
 `;
     const txn = await deploymentManager.retry(async () =>
