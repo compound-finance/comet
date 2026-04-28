@@ -70,6 +70,8 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
 
   if (ctx.world.base.network === 'mainnet' && ctx.world.base.deployment === 'usds') {
     config.liquidationAsset = 100;
+    config.bulkerAsset = 10000;
+    config.bulkerAsset1 = 10000;
   }
 
   if (ctx.world.base.network === 'mainnet' && ctx.world.base.deployment === 'usdt') {
