@@ -1037,6 +1037,34 @@ contract CometWithExtendedAssetList is CometMainInterface {
     }
 
     /**
+    * @notice Internal helper used in absorbInternal() per-collateral cycle
+    * @return seizedAmount Collateral amount to cover the debt
+    * @return seizedValue Collateral value scaled by LF, which covers the debt
+    * @return wantedCollateralValue seizedAmount * collateral price
+    */
+    function _processDebtClosing(
+        uint256 debtRemainingValue,
+        AssetInfo memory collateralInfo,
+        uint256 collateralPrice,
+        uint256 collateralAmount
+    ) internal pure returns (uint256 seizedAmount, uint256 seizedValue, uint256 wantedCollateralValue) {
+        wantedCollateralValue = mulPrice(collateralAmount, collateralPrice, collateralInfo.scale);
+        uint256 collateralValueLeft = mulFactor(wantedCollateralValue, collateralInfo.liquidationFactor);
+
+        if (debtRemainingValue < collateralValueLeft) {
+            // collateral amount to seize = (debt value / LF) / price
+            // we need to scale down debt value by LF, as seized collateral value is treated as penalized
+            seizedAmount = divPrice(debtRemainingValue * FACTOR_SCALE / collateralInfo.liquidationFactor, collateralPrice, collateralInfo.scale);
+            seizedValue = debtRemainingValue;
+            wantedCollateralValue = mulPrice(seizedAmount, collateralPrice, collateralInfo.scale);
+        } else {
+            // Collateral is insufficient for full closure — seize all and continue to the next asset.
+            seizedAmount = collateralAmount;
+            seizedValue = collateralValueLeft;
+        }
+    }
+
+    /**
     * @notice Seizes collateral assets one by one until the account reaches targetHealthFactor
     *         or all debt is fully repaid. Any unrecoverable shortfall is written off
     *         as bad debt absorbed by the protocol
@@ -1055,51 +1083,30 @@ contract CometWithExtendedAssetList is CometMainInterface {
         uint256 debtRemainingValue = mulPrice(uint256(-oldBalance), basePrice, uint64(baseScale));
         // Account's value of all collaterals weighted by BCF
         uint256 totalCollateralizedValue = _getLiquidity(account, false);
+        uint256 minDebtValue = mulPrice(baseBorrowMin, basePrice, uint64(baseScale));
 
-        AssetInfo memory assetInfo;
-
-        uint256 price;
+        AssetInfo memory collateralInfo;
+        uint256 collateralPrice;
         uint256 collateralAmount;
         uint256 collateralValue;
 
         uint256 wantedCollateralValue;
-        uint256 seizeAmount;
+        uint256 seizedAmount;
         uint256 seizedValue;
     
-        for (uint8 i; i < numAssets; ) {
+        for (uint8 i; i < numAssets; ++i) {
             if (debtRemainingValue == 0) break;
-            if (!isInAsset(accountUser.assetsIn, i, accountUser._reserved)) {
-                unchecked { ++i; }
-                continue;
-            }
+            if (!isInAsset(accountUser.assetsIn, i, accountUser._reserved)) continue;
 
-            assetInfo = getAssetInfo(i);
-            price = getPrice(assetInfo.priceFeed);
-            collateralAmount = userCollateral[account][assetInfo.asset].balance;
-            collateralValue = mulPrice(collateralAmount, price, assetInfo.scale);
+            collateralInfo = getAssetInfo(i);
+            collateralPrice = getPrice(collateralInfo.priceFeed);
+            collateralAmount = userCollateral[account][collateralInfo.asset].balance;
+            collateralValue = mulPrice(collateralAmount, collateralPrice, collateralInfo.scale);
 
             // we derive value from the baseBorrowMin instead of comparing it directly with balance 
             // as this branch can be taken at any cycle step, not just the 1st step
-            if (debtRemainingValue <= mulPrice(baseBorrowMin, basePrice, uint64(baseScale))) {
-                uint256 collateralValueLeft = mulFactor(collateralValue, assetInfo.liquidationFactor);
-
-                if (debtRemainingValue < collateralValueLeft) {
-                    // collateral amount to seize = (debt value / LF) / price
-                    // we need to scale down debt value by LF, as seized collateral value is treated as penalized
-                    seizeAmount += divPrice(debtRemainingValue * FACTOR_SCALE / assetInfo.liquidationFactor, price, assetInfo.scale);
-                    seizedValue += debtRemainingValue;
-
-                    debtRemainingValue = 0;
-
-    // !! and we need to break right after that !
-                } else {
-                    // Collateral is insufficient for full closure — seize all and continue to the next asset.
-                    seizeAmount = collateralAmount;
-                    seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor);
-
-                    debtRemainingValue -= seizedValue;
-                    totalCollateralizedValue -= mulFactor(collateralValue, assetInfo.borrowCollateralFactor);
-                }
+            if (debtRemainingValue <= minDebtValue) {
+                (seizedAmount, seizedValue, wantedCollateralValue) = _processDebtClosing(debtRemainingValue, collateralInfo, collateralPrice, collateralAmount);
             }
             else if (mulFactor(debtRemainingValue, targetHealthFactor) <= totalCollateralizedValue) {
                 // target HF is reached
@@ -1124,48 +1131,44 @@ contract CometWithExtendedAssetList is CometMainInterface {
             //
             // The denominator is always positive since with targetHF >= 1:
             //   LF * targetHF > LF > LCF > BCF (enforced in Configurator)
-            else { // use formula
+            else {
                 wantedCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * FACTOR_SCALE
-                                    / (mulFactor(assetInfo.liquidationFactor, targetHealthFactor) - assetInfo.borrowCollateralFactor);
+                                    / (mulFactor(collateralInfo.liquidationFactor, targetHealthFactor) - collateralInfo.borrowCollateralFactor);
 
                 // So, we want to seize a collateral of value calculated above.
                 //   if user has more collateral than we want, we seize only calculated value
                 //   if user has less collateral value than we want - we seize what we can and move to the next collateral
                 if (wantedCollateralValue < collateralValue) {
-                    seizeAmount = divPrice(wantedCollateralValue, price, assetInfo.scale);
-                    seizedValue = mulFactor(wantedCollateralValue, assetInfo.liquidationFactor);
+                    seizedAmount = divPrice(wantedCollateralValue, collateralPrice, collateralInfo.scale);
+                    seizedValue = mulFactor(wantedCollateralValue, collateralInfo.liquidationFactor);
 
-                    debtRemainingValue -= seizedValue;
-                    totalCollateralizedValue -= mulFactor(wantedCollateralValue, assetInfo.borrowCollateralFactor);
-
-                    // continue with no iteration to check minDebt condition
-                    continue;
-    // !!! we need to check minDebt right after that but with the same collateral !
+                    // we can fall below minDebt at this step, so check it on current iteration
+                    if (debtRemainingValue - seizedValue <= minDebtValue) {
+                        (seizedAmount, seizedValue, wantedCollateralValue) = _processDebtClosing(debtRemainingValue, collateralInfo, collateralPrice, collateralAmount);
+                    }
                 } else {
-                    seizeAmount = collateralAmount;
-                    seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor);
-
-                    debtRemainingValue -= seizedValue;
-                    totalCollateralizedValue -= mulFactor(collateralValue, assetInfo.borrowCollateralFactor);
+                    seizedAmount = collateralAmount;
+                    seizedValue = mulFactor(collateralValue, collateralInfo.liquidationFactor);
+                    
+                    wantedCollateralValue = collateralValue;
                 }
             }
-    // !! seizeValue in the event should correspond to non-scaled value
-            emit AbsorbCollateral(absorber, account, assetInfo.asset, seizeAmount, seizedValue);
-            userCollateral[account][assetInfo.asset].balance -= uint128(seizeAmount);
-            totalsCollateral[assetInfo.asset].totalSupplyAsset -= uint128(seizeAmount);
-            updateAssetsIn(account, assetInfo, uint128(collateralAmount), userCollateral[account][assetInfo.asset].balance);
+            emit AbsorbCollateral(absorber, account, collateralInfo.asset, seizedAmount, wantedCollateralValue);
+            // storage update
+            userCollateral[account][collateralInfo.asset].balance -= uint128(seizedAmount);
+            totalsCollateral[collateralInfo.asset].totalSupplyAsset -= uint128(seizedAmount);
+            updateAssetsIn(account, collateralInfo, uint128(collateralAmount), userCollateral[account][collateralInfo.asset].balance);
 
-            unchecked { ++i; }
+            // cycle values update
+            totalCollateralizedValue -= mulFactor(wantedCollateralValue, collateralInfo.borrowCollateralFactor);
+            debtRemainingValue -= seizedValue;
         }
-
 
         // After the liquidation user can either have debt closed (balance == 0) or "healthy" debt (negative balance)
         int256 newBalance = -signed256(divPrice(debtRemainingValue, basePrice, uint64(baseScale)));
 
-        // If balance is negative but not "healthy" - bad debt occured. All excess debt absorbed by reserves
-        // Partial seizure succeeded: account retains remaining debt at targetHF — preserve negative balance.
-        // Full seizure (no asset brought HF to targetHF): zero out any residual shortfall as bad debt
-        // absorbed by the protocol.
+        // If balance is negative but not "healthy" - bad debt occured. (no asset brought HF to targetHF)
+        // Zero out any residual shortfall as bad debt absorbed by the protocol.
         if (newBalance < 0 && totalCollateralizedValue == 0) {
             newBalance = 0;
         }
@@ -1177,11 +1180,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
         accountUser._reserved = userBasic[account]._reserved;
         updateBasePrincipal(account, accountUser, newPrincipal);
 
-        // Split the principal change into repaid borrow and new supply for global index accounting
-        (uint104 repayAmount,) = repayAndSupplyAmount(oldPrincipal, newPrincipal);
-//! supply amount is always 0
-//!        totalSupplyBase += supplyAmount;
-        totalBorrowBase -= repayAmount;
+        totalBorrowBase -= uint104(newPrincipal - oldPrincipal);
 
         uint256 basePaidOut = unsigned256(newBalance - oldBalance); // Base tokens effectively paid out to the account
         uint256 valueOfBasePaidOut = mulPrice(basePaidOut, basePrice, uint64(baseScale));
