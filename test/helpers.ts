@@ -45,8 +45,9 @@ import {
 import { BigNumber } from 'ethers';
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
 import { TotalsBasicStructOutput, TotalsCollateralStructOutput } from '../build/types/CometHarness';
+import { defaultAssets, default24Assets } from './helpers/default-assets';
 
-export { Comet, ethers, expect, hre };
+export { Comet, ethers, expect, hre, default24Assets, defaultAssets };
 
 export type Numeric = number | bigint;
 
@@ -201,34 +202,13 @@ export function toYears(seconds: number, secondsPerYear = 31536000): number {
   return seconds / secondsPerYear;
 }
 
-export function defaultAssets(overrides = {}, perAssetOverrides = {}) {
-  return {
-    COMP: Object.assign({
-      initial: 1e7,
-      decimals: 18,
-      initialPrice: 175,
-    }, overrides, perAssetOverrides['COMP'] || {}),
-    USDC: Object.assign({
-      initial: 1e6,
-      decimals: 6,
-    }, overrides, perAssetOverrides['USDC'] || {}),
-    WETH: Object.assign({
-      initial: 1e4,
-      decimals: 18,
-      initialPrice: 3000,
-    }, overrides, perAssetOverrides['WETH'] || {}),
-    WBTC: Object.assign({
-      initial: 1e3,
-      decimals: 8,
-      initialPrice: 41000,
-    }, overrides, perAssetOverrides['WBTC'] || {}),
-  };
-}
+
 
 export const factorDecimals = 18;
 export const factorScale = factor(1);
 export const ONE = factorScale;
 export const ZERO = factor(0);
+export const BASE_INDEX_SCALE = 1e15;
 
 export async function getBlock(n?: number, ethers_ = ethers): Promise<Block> {
   const blockNumber = n == undefined ? await ethers_.provider.getBlockNumber() : n;
@@ -801,4 +781,54 @@ function convertToBigInt(arr) {
 
 export function getGasUsed(tx: TransactionResponseExt): bigint {
   return tx.receipt.gasUsed.mul(tx.receipt.effectiveGasPrice).toBigInt();
+}
+
+export function presentValueSupply(baseSupplyIndex: bigint | BigNumber, principalValue: bigint | BigNumber): bigint {
+  const principal = toBigInt(principalValue);
+  const index = toBigInt(baseSupplyIndex);
+  return principal * index / BigInt(BASE_INDEX_SCALE);
+}
+
+function presentValueBorrow(baseBorrowIndex: bigint | BigNumber, principalValue: bigint | BigNumber): bigint {
+  const principal = toBigInt(principalValue);
+  const index = toBigInt(baseBorrowIndex);
+  return principal * index / BigInt(BASE_INDEX_SCALE);
+}
+
+export function presentValue(
+  principalValue: bigint | BigNumber,
+  baseSupplyIndex: bigint | BigNumber,
+  baseBorrowIndex: bigint | BigNumber
+): bigint {
+  const principal = toBigInt(principalValue);
+  if (principal >= 0n) {
+    return presentValueSupply(baseSupplyIndex, principal);
+  } else {
+    return -presentValueBorrow(baseBorrowIndex, -principal);
+  }
+}
+
+export function mulFactor(n: bigint, factor: bigint):bigint {
+  return n * factor / factorScale;
+}
+
+function principalValueSupply(baseSupplyIndex: bigint, presentValue: bigint): bigint {
+  return (presentValue * BigInt(BASE_INDEX_SCALE)) / baseSupplyIndex;
+}
+
+function principalValueBorrow(baseBorrowIndex: bigint, presentValue: bigint): bigint {
+  return (presentValue * BigInt(BASE_INDEX_SCALE) + baseBorrowIndex - 1n) / baseBorrowIndex;
+}
+
+export function principalValue(
+  presentValue: bigint | BigNumber,
+  baseSupplyIndex: bigint | BigNumber,
+  baseBorrowIndex: bigint | BigNumber
+): Promise<bigint> {
+  const pv = toBigInt(presentValue);
+  if (pv >= 0n) {
+    return principalValueSupply(toBigInt(baseSupplyIndex), pv);
+  } else {
+    return -principalValueBorrow(toBigInt(baseBorrowIndex), -pv);
+  }
 }
