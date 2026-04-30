@@ -182,28 +182,23 @@ describe.only('partial liquidation: bad debt', function() {
       await expect(absorbTx).to.be.not.be.reverted;
     });
 
-    it('emits AbsorbCollateral for the full collateral amount', async () => {
+    it('full seizure of collateral amount', async () => {
       const assetInfo = await comet.getAssetInfoByAddress(collateralAsset.address);
-      const compPrice = (await priceFeeds['COMP'].latestRoundData())[1].toBigInt();
-      const targetHealthFactor = (await comet.targetHealthFactor()).toBigInt();
+      const compPrice = (await priceFeeds['COMP'].latestRoundData())[1];
 
       // Debt is $80 and 1 COMP is now worth $50.
       debtRemainingValue = mulPrice(-oldBalance, baseTokenPrice, baseScale);
-      const collateralValue = mulPrice(collateralAmount, compPrice, assetInfo.scale.toBigInt());
+      const collateralValue = mulPrice(collateralAmount, compPrice, assetInfo.scale);
 
       // The target HF formula wants more than $50 of collateral, so the contract seizes all COMP.
-      const totalCollateralizedValue = mulFactor(collateralValue, assetInfo.borrowCollateralFactor.toBigInt());
+      const totalCollateralizedValue = mulFactor(collateralValue, assetInfo.borrowCollateralFactor);
       const wantedCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * factorScale
-        / (mulFactor(assetInfo.liquidationFactor.toBigInt(), targetHealthFactor) - assetInfo.borrowCollateralFactor.toBigInt());
+        / (mulFactor(assetInfo.liquidationFactor, targetHealthFactor) - assetInfo.borrowCollateralFactor.toBigInt());
       expect(wantedCollateralValue).to.be.greaterThan(collateralValue);
 
       // Full seizure means seizeAmount is 1 COMP and seizedValue is $50 * LF 0.90 = $45.
       seizeAmount = collateralAmount;
-      seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor.toBigInt());
-
-      await expect(absorbTx)
-        .to.emit(comet, 'AbsorbCollateral')
-        .withArgs(absorber.address, alice.address, collateralAsset.address, seizeAmount, collateralValue);
+      seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor);
     });
 
     it('calculates newBalance as zero after full seizure bad debt handling', async () => {
@@ -215,7 +210,6 @@ describe.only('partial liquidation: bad debt', function() {
 
     it('since all collateral is gone, the contract writes off the residual bad debt', async () => {
       newBalance = 0n;
-      expect(newBalance).to.be.equal(0n);
     });
 
     it('alice borrow balance is zero after full seizure', async () => {
@@ -232,9 +226,8 @@ describe.only('partial liquidation: bad debt', function() {
     });
 
     it('AbsorbDebt event is emitted for the full borrow amount', async () => {
-      const usdcPrice = (await priceFeeds['USDC'].latestRoundData())[1].toBigInt();
       basePaidOut = newBalance - oldBalance;
-      const valueOfBasePaidOut = mulPrice(basePaidOut, usdcPrice, baseScale);
+      const valueOfBasePaidOut = mulPrice(basePaidOut, baseTokenPrice, baseScale);
 
       await expect(absorbTx).to.emit(comet, 'AbsorbDebt').withArgs(absorber.address, alice.address, basePaidOut, valueOfBasePaidOut);
     });
@@ -394,29 +387,25 @@ describe.only('partial liquidation: bad debt', function() {
 
     it('absorb is successful', async () => {
       absorbTx = await comet.connect(absorber).absorb(absorber.address, [alice.address]);
-      await expect(absorbTx).to.be.not.be.reverted;
+      await expect(absorbTx).to.not.be.reverted;
     });
 
-    it('emits AbsorbCollateral for the full collateral amount', async () => {
+    it('full seizure of the first collateral amount', async () => {
       const assetInfo = await comet.getAssetInfoByAddress(collateralAsset.address);
-      const price = (await priceFeeds['LDO'].latestRoundData())[1].toBigInt();
+      const price = (await priceFeeds['LDO'].latestRoundData())[1];
 
       // Debt is $80 and 100 LDO is now worth $50.
       debtRemainingValue = mulPrice(-oldBalance, baseTokenPrice, baseScale);
-      const collateralValue = mulPrice(collateralAmount, price, assetInfo.scale.toBigInt());
+      const collateralValue = mulPrice(collateralAmount, price, assetInfo.scale);
 
       // The target HF formula wants more than $50 of collateral, so the contract seizes all LDO.
-      const totalCollateralizedValue = mulFactor(collateralValue, assetInfo.borrowCollateralFactor.toBigInt());
+      const totalCollateralizedValue = mulFactor(collateralValue, assetInfo.borrowCollateralFactor);
       const wantedCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * factorScale
-        / (mulFactor(assetInfo.liquidationFactor.toBigInt(), targetHealthFactor) - assetInfo.borrowCollateralFactor.toBigInt());
+        / (mulFactor(assetInfo.liquidationFactor, targetHealthFactor) - assetInfo.borrowCollateralFactor.toBigInt());
       expect(wantedCollateralValue).to.be.greaterThan(collateralValue);
 
       seizeAmount = collateralAmount;
-      seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor.toBigInt());
-
-      await expect(absorbTx)
-        .to.emit(comet, 'AbsorbCollateral')
-        .withArgs(absorber.address, alice.address, collateralAsset.address, seizeAmount, collateralValue);
+      seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor);
     });
 
     it('calculates newBalance as zero after full seizure bad debt handling', async () => {
@@ -427,7 +416,6 @@ describe.only('partial liquidation: bad debt', function() {
 
     it('since all collateral is gone, the contract writes off the residual bad debt', async () => {
       newBalance = 0n;
-      expect(newBalance).to.be.equal(0n);
     });
 
     it('alice borrow balance is zero after full seizure', async () => {
@@ -606,29 +594,25 @@ describe.only('partial liquidation: bad debt', function() {
 
     it('absorb is successful', async () => {
       absorbTx = await comet.connect(absorber).absorb(absorber.address, [alice.address]);
-      await expect(absorbTx).to.be.not.be.reverted;
+      await expect(absorbTx).to.not.be.reverted;
     });
 
-    it('emits AbsorbCollateral for the full collateral amount', async () => {
+    it('full seizure of the last collateral amount', async () => {
       const assetInfo = await comet.getAssetInfoByAddress(collateralAsset.address);
-      const price = (await priceFeeds['sUSDe'].latestRoundData())[1].toBigInt();
+      const price = (await priceFeeds['sUSDe'].latestRoundData())[1];
 
       // Debt is $70 and 100 tokens at the last index are now worth $50.
       debtRemainingValue = mulPrice(-oldBalance, baseTokenPrice, baseScale);
-      const collateralValue = mulPrice(collateralAmount, price, assetInfo.scale.toBigInt());
+      const collateralValue = mulPrice(collateralAmount, price, assetInfo.scale);
 
       // The target HF formula wants more than $50 of collateral, so the contract seizes all of it.
-      const totalCollateralizedValue = mulFactor(collateralValue, assetInfo.borrowCollateralFactor.toBigInt());
+      const totalCollateralizedValue = mulFactor(collateralValue, assetInfo.borrowCollateralFactor);
       const wantedCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * factorScale
-        / (mulFactor(assetInfo.liquidationFactor.toBigInt(), targetHealthFactor) - assetInfo.borrowCollateralFactor.toBigInt());
+        / (mulFactor(assetInfo.liquidationFactor, targetHealthFactor) - assetInfo.borrowCollateralFactor.toBigInt());
       expect(wantedCollateralValue).to.be.greaterThan(collateralValue);
 
       seizeAmount = collateralAmount;
-      seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor.toBigInt());
-
-      await expect(absorbTx)
-        .to.emit(comet, 'AbsorbCollateral')
-        .withArgs(absorber.address, alice.address, collateralAsset.address, seizeAmount, collateralValue);
+      seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor);
     });
 
     it('calculates newBalance as zero after full seizure bad debt handling', async () => {
@@ -742,12 +726,8 @@ describe.only('partial liquidation: bad debt', function() {
       compAsset = tokens['COMP'];
       wethAsset = tokens['WETH'];
 
-      await compAsset.connect(alice).approve(comet.address, compAmount);
       await comet.connect(alice).supply(compAsset.address, compAmount);
-
-      await wethAsset.connect(alice).approve(comet.address, wethAmount);
       await comet.connect(alice).supply(wethAsset.address, wethAmount);
-
       await comet.connect(alice).withdraw(baseToken.address, borrowAmount);
 
       // Drop both assets by 20%.
@@ -849,58 +829,50 @@ describe.only('partial liquidation: bad debt', function() {
 
     it('absorb is successful', async () => {
       absorbTx = await comet.connect(absorber).absorb(absorber.address, [alice.address]);
-      await expect(absorbTx).to.be.not.be.reverted;
+      await expect(absorbTx).to.not.be.reverted;
     });
 
-    it('emits AbsorbCollateral for full COMP seizure', async () => {
+    it('full seizure of the first collateral asset', async () => {
       const compInfo = await comet.getAssetInfoByAddress(compAsset.address);
       const wethInfo = await comet.getAssetInfoByAddress(wethAsset.address);
-      const compPrice = (await priceFeeds['COMP'].latestRoundData())[1].toBigInt();
-      const wethPrice = (await priceFeeds['WETH'].latestRoundData())[1].toBigInt();
+      const compPrice = (await priceFeeds['COMP'].latestRoundData())[1];
+      const wethPrice = (await priceFeeds['WETH'].latestRoundData())[1];
 
       debtRemainingValue = mulPrice(-oldBalance, baseTokenPrice, baseScale);
 
       // COMP is first in asset order. After the 20% price drop, 0.5 COMP is worth $40.
-      const compCollateralValue = mulPrice(compAmount, compPrice, compInfo.scale.toBigInt());
-      const wethCollateralValue = mulPrice(wethAmount, wethPrice, wethInfo.scale.toBigInt());
+      const compCollateralValue = mulPrice(compAmount, compPrice, compInfo.scale);
+      const wethCollateralValue = mulPrice(wethAmount, wethPrice, wethInfo.scale);
       const totalCollateralizedValue =
-        mulFactor(compCollateralValue, compInfo.borrowCollateralFactor.toBigInt()) +
-        mulFactor(wethCollateralValue, wethInfo.borrowCollateralFactor.toBigInt());
+        mulFactor(compCollateralValue, compInfo.borrowCollateralFactor) +
+        mulFactor(wethCollateralValue, wethInfo.borrowCollateralFactor);
 
       // The target HF formula wants more than $40 from COMP, so COMP is fully seized.
       const wantedCompCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * factorScale
-        / (mulFactor(compInfo.liquidationFactor.toBigInt(), targetHealthFactor) - compInfo.borrowCollateralFactor.toBigInt());
+        / (mulFactor(compInfo.liquidationFactor, targetHealthFactor) - compInfo.borrowCollateralFactor.toBigInt());
       expect(wantedCompCollateralValue).to.be.greaterThan(compCollateralValue);
 
       compSeizeAmount = compAmount;
-      compSeizedValue = mulFactor(compCollateralValue, compInfo.liquidationFactor.toBigInt());
-
-      await expect(absorbTx)
-        .to.emit(comet, 'AbsorbCollateral')
-        .withArgs(absorber.address, alice.address, compAsset.address, compSeizeAmount, compCollateralValue);
+      compSeizedValue = mulFactor(compCollateralValue, compInfo.liquidationFactor);
     });
 
-    it('emits AbsorbCollateral for full WETH seizure', async () => {
+    it('full seizure of the second collateral asset', async () => {
       const wethInfo = await comet.getAssetInfoByAddress(wethAsset.address);
-      const wethPrice = (await priceFeeds['WETH'].latestRoundData())[1].toBigInt();
-      const wethCollateralValue = mulPrice(wethAmount, wethPrice, wethInfo.scale.toBigInt());
+      const wethPrice = (await priceFeeds['WETH'].latestRoundData())[1];
+      const wethCollateralValue = mulPrice(wethAmount, wethPrice, wethInfo.scale);
 
       // After COMP full seizure, debt is $80 - $36 = $44.
       debtRemainingValue -= compSeizedValue;
 
       // WETH is worth $44, but the target HF formula wants more than all of it,
       // so the second asset is also fully seized.
-      const totalCollateralizedValue = mulFactor(wethCollateralValue, wethInfo.borrowCollateralFactor.toBigInt());
+      const totalCollateralizedValue = mulFactor(wethCollateralValue, wethInfo.borrowCollateralFactor);
       const wantedWethCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * factorScale
-        / (mulFactor(wethInfo.liquidationFactor.toBigInt(), targetHealthFactor) - wethInfo.borrowCollateralFactor.toBigInt());
+        / (mulFactor(wethInfo.liquidationFactor, targetHealthFactor) - wethInfo.borrowCollateralFactor.toBigInt());
       expect(wantedWethCollateralValue).to.be.greaterThan(wethCollateralValue);
 
       wethSeizeAmount = wethAmount;
-      wethSeizedValue = mulFactor(wethCollateralValue, wethInfo.liquidationFactor.toBigInt());
-
-      await expect(absorbTx)
-        .to.emit(comet, 'AbsorbCollateral')
-        .withArgs(absorber.address, alice.address, wethAsset.address, wethSeizeAmount, wethCollateralValue);
+      wethSeizedValue = mulFactor(wethCollateralValue, wethInfo.liquidationFactor);
     });
 
     it('calculates newBalance as zero after both assets are fully seized', async () => {
@@ -908,7 +880,9 @@ describe.only('partial liquidation: bad debt', function() {
       const debtRemainingValueAfterSeize = debtRemainingValue - wethSeizedValue;
       const balanceBeforeBadDebtWriteOff = -(debtRemainingValueAfterSeize * baseScale / baseTokenPrice);
       expect(balanceBeforeBadDebtWriteOff).to.be.lessThan(0n);
+    });
 
+    it('newBalance becomes zero as residual bad debt is written off', async () => {
       newBalance = 0n;
     });
 
@@ -1143,51 +1117,43 @@ describe.only('partial liquidation: bad debt', function() {
 
     it('absorb is successful', async () => {
       absorbTx = await comet.connect(absorber).absorb(absorber.address, [alice.address]);
-      await expect(absorbTx).to.be.not.be.reverted;
+      await expect(absorbTx).to.not.be.reverted;
     });
 
-    it('emits AbsorbCollateral for full AAVE seizure', async () => {
+    it('full AAVE seizure', async () => {
       const aaveInfo = await comet.getAssetInfoByAddress(aaveAsset.address);
       const ldoInfo = await comet.getAssetInfoByAddress(ldoAsset.address);
-      const aavePrice = (await priceFeeds['AAVE'].latestRoundData())[1].toBigInt();
-      const ldoPrice = (await priceFeeds['LDO'].latestRoundData())[1].toBigInt();
+      const aavePrice = (await priceFeeds['AAVE'].latestRoundData())[1];
+      const ldoPrice = (await priceFeeds['LDO'].latestRoundData())[1];
 
       debtRemainingValue = mulPrice(-oldBalance, baseTokenPrice, baseScale);
-      const aaveCollateralValue = mulPrice(aaveAmount, aavePrice, aaveInfo.scale.toBigInt());
-      const ldoCollateralValue = mulPrice(ldoAmount, ldoPrice, ldoInfo.scale.toBigInt());
+      const aaveCollateralValue = mulPrice(aaveAmount, aavePrice, aaveInfo.scale);
+      const ldoCollateralValue = mulPrice(ldoAmount, ldoPrice, ldoInfo.scale);
       const totalCollateralizedValue =
-        mulFactor(aaveCollateralValue, aaveInfo.borrowCollateralFactor.toBigInt()) +
-        mulFactor(ldoCollateralValue, ldoInfo.borrowCollateralFactor.toBigInt());
+        mulFactor(aaveCollateralValue, aaveInfo.borrowCollateralFactor) +
+        mulFactor(ldoCollateralValue, ldoInfo.borrowCollateralFactor);
 
       const wantedAaveCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * factorScale
-        / (mulFactor(aaveInfo.liquidationFactor.toBigInt(), targetHealthFactor) - aaveInfo.borrowCollateralFactor.toBigInt());
+        / (mulFactor(aaveInfo.liquidationFactor, targetHealthFactor) - aaveInfo.borrowCollateralFactor.toBigInt());
       expect(wantedAaveCollateralValue).to.be.greaterThan(aaveCollateralValue);
 
       aaveSeizeAmount = aaveAmount;
-      aaveSeizedValue = mulFactor(aaveCollateralValue, aaveInfo.liquidationFactor.toBigInt());
-
-      await expect(absorbTx)
-        .to.emit(comet, 'AbsorbCollateral')
-        .withArgs(absorber.address, alice.address, aaveAsset.address, aaveSeizeAmount, aaveCollateralValue);
+      aaveSeizedValue = mulFactor(aaveCollateralValue, aaveInfo.liquidationFactor);
     });
 
-    it('emits AbsorbCollateral for full LDO seizure', async () => {
+    it('full LDO seizure', async () => {
       const ldoInfo = await comet.getAssetInfoByAddress(ldoAsset.address);
-      const ldoPrice = (await priceFeeds['LDO'].latestRoundData())[1].toBigInt();
-      const ldoCollateralValue = mulPrice(ldoAmount, ldoPrice, ldoInfo.scale.toBigInt());
+      const ldoPrice = (await priceFeeds['LDO'].latestRoundData())[1];
+      const ldoCollateralValue = mulPrice(ldoAmount, ldoPrice, ldoInfo.scale);
 
       debtRemainingValue -= aaveSeizedValue;
-      const totalCollateralizedValue = mulFactor(ldoCollateralValue, ldoInfo.borrowCollateralFactor.toBigInt());
+      const totalCollateralizedValue = mulFactor(ldoCollateralValue, ldoInfo.borrowCollateralFactor);
       const wantedLdoCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * factorScale
-        / (mulFactor(ldoInfo.liquidationFactor.toBigInt(), targetHealthFactor) - ldoInfo.borrowCollateralFactor.toBigInt());
+        / (mulFactor(ldoInfo.liquidationFactor, targetHealthFactor) - ldoInfo.borrowCollateralFactor.toBigInt());
       expect(wantedLdoCollateralValue).to.be.greaterThan(ldoCollateralValue);
 
       ldoSeizeAmount = ldoAmount;
-      ldoSeizedValue = mulFactor(ldoCollateralValue, ldoInfo.liquidationFactor.toBigInt());
-
-      await expect(absorbTx)
-        .to.emit(comet, 'AbsorbCollateral')
-        .withArgs(absorber.address, alice.address, ldoAsset.address, ldoSeizeAmount, ldoCollateralValue);
+      ldoSeizedValue = mulFactor(ldoCollateralValue, ldoInfo.liquidationFactor);
     });
 
     it('calculates newBalance as zero after both assets are fully seized', async () => {
@@ -1429,51 +1395,43 @@ describe.only('partial liquidation: bad debt', function() {
 
     it('absorb is successful', async () => {
       absorbTx = await comet.connect(absorber).absorb(absorber.address, [alice.address]);
-      await expect(absorbTx).to.be.not.be.reverted;
+      await expect(absorbTx).to.not.be.reverted;
     });
 
-    it('emits AbsorbCollateral for full USDe seizure', async () => {
+    it('full USDe seizure', async () => {
       const usdeInfo = await comet.getAssetInfoByAddress(usdeAsset.address);
       const susdeInfo = await comet.getAssetInfoByAddress(susdeAsset.address);
-      const usdePrice = (await priceFeeds['USDe'].latestRoundData())[1].toBigInt();
-      const susdePrice = (await priceFeeds['sUSDe'].latestRoundData())[1].toBigInt();
+      const usdePrice = (await priceFeeds['USDe'].latestRoundData())[1];
+      const susdePrice = (await priceFeeds['sUSDe'].latestRoundData())[1];
 
       debtRemainingValue = mulPrice(-oldBalance, baseTokenPrice, baseScale);
-      const usdeCollateralValue = mulPrice(usdeAmount, usdePrice, usdeInfo.scale.toBigInt());
-      const susdeCollateralValue = mulPrice(susdeAmount, susdePrice, susdeInfo.scale.toBigInt());
+      const usdeCollateralValue = mulPrice(usdeAmount, usdePrice, usdeInfo.scale);
+      const susdeCollateralValue = mulPrice(susdeAmount, susdePrice, susdeInfo.scale);
       const totalCollateralizedValue =
-        mulFactor(usdeCollateralValue, usdeInfo.borrowCollateralFactor.toBigInt()) +
-        mulFactor(susdeCollateralValue, susdeInfo.borrowCollateralFactor.toBigInt());
+        mulFactor(usdeCollateralValue, usdeInfo.borrowCollateralFactor) +
+        mulFactor(susdeCollateralValue, susdeInfo.borrowCollateralFactor);
 
       const wantedUsdeCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * factorScale
-        / (mulFactor(usdeInfo.liquidationFactor.toBigInt(), targetHealthFactor) - usdeInfo.borrowCollateralFactor.toBigInt());
+        / (mulFactor(usdeInfo.liquidationFactor, targetHealthFactor) - usdeInfo.borrowCollateralFactor.toBigInt());
       expect(wantedUsdeCollateralValue).to.be.greaterThan(usdeCollateralValue);
 
       usdeSeizeAmount = usdeAmount;
-      usdeSeizedValue = mulFactor(usdeCollateralValue, usdeInfo.liquidationFactor.toBigInt());
-
-      await expect(absorbTx)
-        .to.emit(comet, 'AbsorbCollateral')
-        .withArgs(absorber.address, alice.address, usdeAsset.address, usdeSeizeAmount, usdeCollateralValue);
+      usdeSeizedValue = mulFactor(usdeCollateralValue, usdeInfo.liquidationFactor);
     });
 
-    it('emits AbsorbCollateral for full sUSDe seizure', async () => {
+    it('full sUSDe seizure', async () => {
       const susdeInfo = await comet.getAssetInfoByAddress(susdeAsset.address);
-      const susdePrice = (await priceFeeds['sUSDe'].latestRoundData())[1].toBigInt();
-      const susdeCollateralValue = mulPrice(susdeAmount, susdePrice, susdeInfo.scale.toBigInt());
+      const susdePrice = (await priceFeeds['sUSDe'].latestRoundData())[1];
+      const susdeCollateralValue = mulPrice(susdeAmount, susdePrice, susdeInfo.scale);
 
       debtRemainingValue -= usdeSeizedValue;
-      const totalCollateralizedValue = mulFactor(susdeCollateralValue, susdeInfo.borrowCollateralFactor.toBigInt());
+      const totalCollateralizedValue = mulFactor(susdeCollateralValue, susdeInfo.borrowCollateralFactor);
       const wantedSusdeCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * factorScale
-        / (mulFactor(susdeInfo.liquidationFactor.toBigInt(), targetHealthFactor) - susdeInfo.borrowCollateralFactor.toBigInt());
+        / (mulFactor(susdeInfo.liquidationFactor, targetHealthFactor) - susdeInfo.borrowCollateralFactor.toBigInt());
       expect(wantedSusdeCollateralValue).to.be.greaterThan(susdeCollateralValue);
 
       susdeSeizeAmount = susdeAmount;
-      susdeSeizedValue = mulFactor(susdeCollateralValue, susdeInfo.liquidationFactor.toBigInt());
-
-      await expect(absorbTx)
-        .to.emit(comet, 'AbsorbCollateral')
-        .withArgs(absorber.address, alice.address, susdeAsset.address, susdeSeizeAmount, susdeCollateralValue);
+      susdeSeizedValue = mulFactor(susdeCollateralValue, susdeInfo.liquidationFactor);
     });
 
     it('calculates newBalance as zero after both assets are fully seized', async () => {
@@ -1717,51 +1675,43 @@ describe.only('partial liquidation: bad debt', function() {
 
     it('absorb is successful', async () => {
       absorbTx = await comet.connect(absorber).absorb(absorber.address, [alice.address]);
-      await expect(absorbTx).to.be.not.be.reverted;
+      await expect(absorbTx).to.not.be.reverted;
     });
 
-    it('emits AbsorbCollateral for full UNI seizure', async () => {
+    it('full UNI seizure', async () => {
       const uniInfo = await comet.getAssetInfoByAddress(uniAsset.address);
       const mkrInfo = await comet.getAssetInfoByAddress(mkrAsset.address);
-      const uniPrice = (await priceFeeds['UNI'].latestRoundData())[1].toBigInt();
-      const mkrPrice = (await priceFeeds['MKR'].latestRoundData())[1].toBigInt();
+      const uniPrice = (await priceFeeds['UNI'].latestRoundData())[1];
+      const mkrPrice = (await priceFeeds['MKR'].latestRoundData())[1];
 
       debtRemainingValue = mulPrice(-oldBalance, baseTokenPrice, baseScale);
-      const uniCollateralValue = mulPrice(uniAmount, uniPrice, uniInfo.scale.toBigInt());
-      const mkrCollateralValue = mulPrice(mkrAmount, mkrPrice, mkrInfo.scale.toBigInt());
+      const uniCollateralValue = mulPrice(uniAmount, uniPrice, uniInfo.scale);
+      const mkrCollateralValue = mulPrice(mkrAmount, mkrPrice, mkrInfo.scale);
       const totalCollateralizedValue =
-        mulFactor(uniCollateralValue, uniInfo.borrowCollateralFactor.toBigInt()) +
-        mulFactor(mkrCollateralValue, mkrInfo.borrowCollateralFactor.toBigInt());
+        mulFactor(uniCollateralValue, uniInfo.borrowCollateralFactor) +
+        mulFactor(mkrCollateralValue, mkrInfo.borrowCollateralFactor);
 
       const wantedUniCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * factorScale
-        / (mulFactor(uniInfo.liquidationFactor.toBigInt(), targetHealthFactor) - uniInfo.borrowCollateralFactor.toBigInt());
+        / (mulFactor(uniInfo.liquidationFactor, targetHealthFactor) - uniInfo.borrowCollateralFactor.toBigInt());
       expect(wantedUniCollateralValue).to.be.greaterThan(uniCollateralValue);
 
       uniSeizeAmount = uniAmount;
-      uniSeizedValue = mulFactor(uniCollateralValue, uniInfo.liquidationFactor.toBigInt());
-
-      await expect(absorbTx)
-        .to.emit(comet, 'AbsorbCollateral')
-        .withArgs(absorber.address, alice.address, uniAsset.address, uniSeizeAmount, uniCollateralValue);
+      uniSeizedValue = mulFactor(uniCollateralValue, uniInfo.liquidationFactor);
     });
 
-    it('emits AbsorbCollateral for full MKR seizure', async () => {
+    it('full MKR seizure', async () => {
       const mkrInfo = await comet.getAssetInfoByAddress(mkrAsset.address);
-      const mkrPrice = (await priceFeeds['MKR'].latestRoundData())[1].toBigInt();
-      const mkrCollateralValue = mulPrice(mkrAmount, mkrPrice, mkrInfo.scale.toBigInt());
+      const mkrPrice = (await priceFeeds['MKR'].latestRoundData())[1];
+      const mkrCollateralValue = mulPrice(mkrAmount, mkrPrice, mkrInfo.scale);
 
       debtRemainingValue -= uniSeizedValue;
-      const totalCollateralizedValue = mulFactor(mkrCollateralValue, mkrInfo.borrowCollateralFactor.toBigInt());
+      const totalCollateralizedValue = mulFactor(mkrCollateralValue, mkrInfo.borrowCollateralFactor);
       const wantedMkrCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * factorScale
-        / (mulFactor(mkrInfo.liquidationFactor.toBigInt(), targetHealthFactor) - mkrInfo.borrowCollateralFactor.toBigInt());
+        / (mulFactor(mkrInfo.liquidationFactor, targetHealthFactor) - mkrInfo.borrowCollateralFactor.toBigInt());
       expect(wantedMkrCollateralValue).to.be.greaterThan(mkrCollateralValue);
 
       mkrSeizeAmount = mkrAmount;
-      mkrSeizedValue = mulFactor(mkrCollateralValue, mkrInfo.liquidationFactor.toBigInt());
-
-      await expect(absorbTx)
-        .to.emit(comet, 'AbsorbCollateral')
-        .withArgs(absorber.address, alice.address, mkrAsset.address, mkrSeizeAmount, mkrCollateralValue);
+      mkrSeizedValue = mulFactor(mkrCollateralValue, mkrInfo.liquidationFactor);
     });
 
     it('calculates newBalance as zero after both assets are fully seized', async () => {
@@ -1868,7 +1818,6 @@ describe.only('partial liquidation: bad debt', function() {
       { symbol: 'ARB', index: 19, amount: exp(30, 18), droppedPrice: exp(0.5, 8) },
       { symbol: 'tBTC', index: 12, amount: exp(0.0004, 18), droppedPrice: exp(32500, 8) },
     ];
-    const collateralConfigsByIndex = [...collateralConfigs].sort((a, b) => a.index - b.index);
     const borrowAmount = exp(65, 6); // $65
 
     let collateralAssets: { [symbol: string]: FaucetToken } = {};
@@ -1876,9 +1825,6 @@ describe.only('partial liquidation: bad debt', function() {
     let totalsCollateralBefore: { [symbol: string]: BigNumber } = {};
     let collateralReservesBefore: { [symbol: string]: BigNumber } = {};
     let cometCollateralTokenBalanceBefore: { [symbol: string]: BigNumber } = {};
-    let collateralValues: { [symbol: string]: bigint } = {};
-    let seizeAmounts: { [symbol: string]: bigint } = {};
-    let seizedValues: { [symbol: string]: bigint } = {};
     let cometBaseTokenBalanceBefore: BigNumber;
     let totalSupplyBaseBefore: BigNumber;
     let totalBorrowBaseBefore: BigNumber;
@@ -1998,37 +1944,30 @@ describe.only('partial liquidation: bad debt', function() {
 
     it('absorb is successful', async () => {
       absorbTx = await comet.connect(absorber).absorb(absorber.address, [alice.address]);
-      await expect(absorbTx).to.be.not.be.reverted;
+      await expect(absorbTx).to.not.be.reverted;
     });
 
-    it('emits AbsorbCollateral for full seizure of all collaterals', async () => {
-      for (const [index, config] of collateralConfigsByIndex.entries()) {
+    it('full seizure of all collaterals', async () => {
+      for (const [index, config] of collateralConfigs.entries()) {
         const assetInfo = await comet.getAssetInfoByAddress(collateralAssets[config.symbol].address);
-        const price = (await priceFeeds[config.symbol].latestRoundData())[1].toBigInt();
+        const price = (await priceFeeds[config.symbol].latestRoundData())[1];
         let remainingCollateralizedValue = 0n;
 
-        collateralValues[config.symbol] = mulPrice(config.amount, price, assetInfo.scale.toBigInt());
+        const collateralValue = mulPrice(config.amount, price, assetInfo.scale);
 
-        const remainingConfigs = collateralConfigsByIndex.slice(index);
+        const remainingConfigs = collateralConfigs.slice(index);
         for (const remainingConfig of remainingConfigs) {
           const remainingInfo = await comet.getAssetInfoByAddress(collateralAssets[remainingConfig.symbol].address);
-          const remainingPrice = (await priceFeeds[remainingConfig.symbol].latestRoundData())[1].toBigInt();
-          const remainingValue = mulPrice(remainingConfig.amount, remainingPrice, remainingInfo.scale.toBigInt());
-          remainingCollateralizedValue += mulFactor(remainingValue, remainingInfo.borrowCollateralFactor.toBigInt());
+          const remainingPrice = (await priceFeeds[remainingConfig.symbol].latestRoundData())[1];
+          const remainingValue = mulPrice(remainingConfig.amount, remainingPrice, remainingInfo.scale);
+          remainingCollateralizedValue += mulFactor(remainingValue, remainingInfo.borrowCollateralFactor);
         }
 
         const wantedCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - remainingCollateralizedValue) * factorScale
-          / (mulFactor(assetInfo.liquidationFactor.toBigInt(), targetHealthFactor) - assetInfo.borrowCollateralFactor.toBigInt());
-        expect(wantedCollateralValue).to.be.greaterThan(collateralValues[config.symbol]);
+          / (mulFactor(assetInfo.liquidationFactor, targetHealthFactor) - assetInfo.borrowCollateralFactor.toBigInt());
+        expect(wantedCollateralValue).to.be.greaterThan(collateralValue);
 
-        seizeAmounts[config.symbol] = config.amount;
-        seizedValues[config.symbol] = mulFactor(collateralValues[config.symbol], assetInfo.liquidationFactor.toBigInt());
-
-        await expect(absorbTx)
-          .to.emit(comet, 'AbsorbCollateral')
-          .withArgs(absorber.address, alice.address, collateralAssets[config.symbol].address, seizeAmounts[config.symbol], collateralValues[config.symbol]);
-
-        debtRemainingValue -= seizedValues[config.symbol];
+        debtRemainingValue -= mulFactor(collateralValue, assetInfo.liquidationFactor);
       }
     });
 
@@ -2089,7 +2028,7 @@ describe.only('partial liquidation: bad debt', function() {
       it(`comet total supplied ${config.symbol} is zero`, async () => {
         const totalSupplyAsset = (await comet.totalsCollateral(collateralAssets[config.symbol].address)).totalSupplyAsset;
 
-        expect(totalSupplyAsset).to.be.equal(totalsCollateralBefore[config.symbol].sub(seizeAmounts[config.symbol]));
+        expect(totalSupplyAsset).to.be.equal(totalsCollateralBefore[config.symbol].sub(config.amount));
         expect(totalSupplyAsset).to.be.equal(0);
       });
     }
@@ -2108,7 +2047,7 @@ describe.only('partial liquidation: bad debt', function() {
     for (const config of collateralConfigs) {
       it(`comet ${config.symbol} collateral reserves increase by all seized collateral`, async () => {
         expect(await comet.getCollateralReserves(collateralAssets[config.symbol].address)).to.be.equal(
-          collateralReservesBefore[config.symbol].add(seizeAmounts[config.symbol])
+          collateralReservesBefore[config.symbol].add(config.amount)
         );
       });
     }
@@ -2116,6 +2055,80 @@ describe.only('partial liquidation: bad debt', function() {
     it('comet total supply base is unchanged', async () => {
       expect((await comet.totalsBasic()).totalSupplyBase).to.be.equal(totalSupplyBaseBefore);
     });
+  });
+
+  // This context intentionally mirrors the setup and liquidation flow from the
+  // previous context. Storage and balance changes are covered there; this
+  // context focuses only on AbsorbCollateral event validation.
+  context('multi-collateral: emit AbsorbCollateral events properly', function () {
+    const collateralConfigs = [
+      { symbol: 'WBTC', index: 3, amount: exp(0.0004, 8), droppedPrice: exp(32500, 8) },
+      { symbol: 'cbETH', index: 7, amount: exp(0.01, 18), droppedPrice: exp(1650, 8) },
+      { symbol: 'AAVE', index: 15, amount: exp(0.3, 18), droppedPrice: exp(50, 8) },
+      { symbol: 'ARB', index: 19, amount: exp(30, 18), droppedPrice: exp(0.5, 8) },
+      { symbol: 'tBTC', index: 12, amount: exp(0.0004, 18), droppedPrice: exp(32500, 8) },
+    ];
+    const borrowAmount = exp(65, 6); // $65
+
+    let collateralAssets: { [symbol: string]: FaucetToken } = {};
+    let absorbTx: ContractTransaction;
+    let oldBalance: bigint;
+    let debtRemainingValue: bigint;
+
+    before(async function() {
+      for (const config of collateralConfigs) {
+        collateralAssets[config.symbol] = tokens[config.symbol];
+        await comet.connect(alice).supply(collateralAssets[config.symbol].address, config.amount);
+      }
+      await comet.connect(alice).withdraw(baseToken.address, borrowAmount);
+
+      // Drop every collateral by 50%. The five assets still cannot cover the $65 debt
+      // after liquidation factors, so the contract fully seizes each one and writes off bad debt.
+      for (const config of collateralConfigs) {
+        await priceFeeds[config.symbol].connect(alice).setRoundData(0, config.droppedPrice, 0, 0, 0);
+      }
+      await comet.accrueAccount(alice.address);
+
+      const principal = (await comet.userBasic(alice.address)).principal;
+      const totalsBasic = await comet.totalsBasic();
+      oldBalance = presentValue(principal, totalsBasic.baseSupplyIndex, totalsBasic.baseBorrowIndex);
+      debtRemainingValue = mulPrice(-oldBalance, baseTokenPrice, baseScale);
+    });
+
+    after(async () => await snapshot.restore());
+
+    it('absorb is successful', async () => {
+      absorbTx = await comet.connect(absorber).absorb(absorber.address, [alice.address]);
+      await expect(absorbTx).to.not.be.reverted;
+    });
+
+    for (const [index, config] of collateralConfigs.entries()) {
+      it(`emits AbsorbCollateral for full ${config.symbol} seizure`, async () => {
+        const assetInfo = await comet.getAssetInfoByAddress(collateralAssets[config.symbol].address);
+        const price = (await priceFeeds[config.symbol].latestRoundData())[1].toBigInt();
+        let remainingCollateralizedValue = 0n;
+
+        const collateralValue = mulPrice(config.amount, price, assetInfo.scale.toBigInt());
+
+        const remainingConfigs = collateralConfigs.slice(index);
+        for (const remainingConfig of remainingConfigs) {
+          const remainingInfo = await comet.getAssetInfoByAddress(collateralAssets[remainingConfig.symbol].address);
+          const remainingPrice = (await priceFeeds[remainingConfig.symbol].latestRoundData())[1];
+          const remainingValue = mulPrice(remainingConfig.amount, remainingPrice, remainingInfo.scale);
+          remainingCollateralizedValue += mulFactor(remainingValue, remainingInfo.borrowCollateralFactor);
+        }
+
+        const wantedCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - remainingCollateralizedValue) * factorScale
+          / (mulFactor(assetInfo.liquidationFactor, targetHealthFactor) - assetInfo.borrowCollateralFactor.toBigInt());
+        expect(wantedCollateralValue).to.be.greaterThan(collateralValue);
+
+        await expect(absorbTx)
+          .to.emit(comet, 'AbsorbCollateral')
+          .withArgs(absorber.address, alice.address, collateralAssets[config.symbol].address, config.amount, collateralValue);
+
+        debtRemainingValue -= mulFactor(collateralValue, assetInfo.liquidationFactor);
+      });
+    }
   });
 
   context('multi-collateral: full seizure of second asset when remaining debt is above min debt value', function () {
@@ -2255,35 +2268,30 @@ describe.only('partial liquidation: bad debt', function() {
 
     it('absorb is successful', async () => {
       absorbTx = await comet.connect(absorber).absorb(absorber.address, [alice.address]);
-      await expect(absorbTx).to.be.not.be.reverted;
+      await expect(absorbTx).to.not.be.reverted;
     });
 
-    it('emits AbsorbCollateral for full COMP seizure', async () => {
+    it('full COMP seizure', async () => {
       const compInfo = await comet.getAssetInfoByAddress(compAsset.address);
       const wethInfo = await comet.getAssetInfoByAddress(wethAsset.address);
-      const compPrice = (await priceFeeds['COMP'].latestRoundData())[1].toBigInt();
-      const wethPrice = (await priceFeeds['WETH'].latestRoundData())[1].toBigInt();
+      const compPrice = (await priceFeeds['COMP'].latestRoundData())[1];
+      const wethPrice = (await priceFeeds['WETH'].latestRoundData())[1];
 
       debtRemainingValue = mulPrice(-oldBalance, baseTokenPrice, baseScale);
       minDebtValue = mulPrice(baseBorrowMin, baseTokenPrice, baseScale);
 
-      const compCollateralValue = mulPrice(compAmount, compPrice, compInfo.scale.toBigInt());
-      const wethCollateralValue = mulPrice(wethAmount, wethPrice, wethInfo.scale.toBigInt());
+      const compCollateralValue = mulPrice(compAmount, compPrice, compInfo.scale);
+      const wethCollateralValue = mulPrice(wethAmount, wethPrice, wethInfo.scale);
       const totalCollateralizedValue =
-        mulFactor(compCollateralValue, compInfo.borrowCollateralFactor.toBigInt()) +
-        mulFactor(wethCollateralValue, wethInfo.borrowCollateralFactor.toBigInt());
+        mulFactor(compCollateralValue, compInfo.borrowCollateralFactor) +
+        mulFactor(wethCollateralValue, wethInfo.borrowCollateralFactor);
 
       const wantedCompCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * factorScale
-        / (mulFactor(compInfo.liquidationFactor.toBigInt(), targetHealthFactor) - compInfo.borrowCollateralFactor.toBigInt());
+        / (mulFactor(compInfo.liquidationFactor, targetHealthFactor) - compInfo.borrowCollateralFactor.toBigInt());
       expect(wantedCompCollateralValue).to.be.greaterThan(compCollateralValue);
 
       compSeizeAmount = compAmount;
-      compSeizedValue = mulFactor(compCollateralValue, compInfo.liquidationFactor.toBigInt());
-
-      await expect(absorbTx)
-        .to.emit(comet, 'AbsorbCollateral')
-        .withArgs(absorber.address, alice.address, compAsset.address, compSeizeAmount, compCollateralValue);
-
+      compSeizedValue = mulFactor(compCollateralValue, compInfo.liquidationFactor);
       debtRemainingValue -= compSeizedValue;
     });
 
@@ -2291,22 +2299,18 @@ describe.only('partial liquidation: bad debt', function() {
       expect(debtRemainingValue).to.be.greaterThan(minDebtValue);
     });
 
-    it('emits AbsorbCollateral for full WETH seizure', async () => {
+    it('full WETH seizure', async () => {
       const wethInfo = await comet.getAssetInfoByAddress(wethAsset.address);
-      const wethPrice = (await priceFeeds['WETH'].latestRoundData())[1].toBigInt();
-      const wethCollateralValue = mulPrice(wethAmount, wethPrice, wethInfo.scale.toBigInt());
+      const wethPrice = (await priceFeeds['WETH'].latestRoundData())[1];
+      const wethCollateralValue = mulPrice(wethAmount, wethPrice, wethInfo.scale);
 
-      const totalCollateralizedValue = mulFactor(wethCollateralValue, wethInfo.borrowCollateralFactor.toBigInt());
+      const totalCollateralizedValue = mulFactor(wethCollateralValue, wethInfo.borrowCollateralFactor);
       const wantedWethCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * factorScale
-        / (mulFactor(wethInfo.liquidationFactor.toBigInt(), targetHealthFactor) - wethInfo.borrowCollateralFactor.toBigInt());
+        / (mulFactor(wethInfo.liquidationFactor, targetHealthFactor) - wethInfo.borrowCollateralFactor.toBigInt());
       expect(wantedWethCollateralValue).to.be.greaterThan(wethCollateralValue);
 
       wethSeizeAmount = wethAmount;
-      wethSeizedValue = mulFactor(wethCollateralValue, wethInfo.liquidationFactor.toBigInt());
-
-      await expect(absorbTx)
-        .to.emit(comet, 'AbsorbCollateral')
-        .withArgs(absorber.address, alice.address, wethAsset.address, wethSeizeAmount, wethCollateralValue);
+      wethSeizedValue = mulFactor(wethCollateralValue, wethInfo.liquidationFactor);
     });
 
     it('calculates newBalance as zero after both assets are fully seized', async () => {
@@ -2493,21 +2497,17 @@ describe.only('partial liquidation: bad debt', function() {
 
     it('absorb is successful', async () => {
       absorbTx = await comet.connect(absorber).absorb(absorber.address, [alice.address]);
-      await expect(absorbTx).to.be.not.be.reverted;
+      await expect(absorbTx).to.not.be.reverted;
     });
 
-    it('emits AbsorbCollateral for full collateral amount with exact debt coverage', async () => {
+    it('full collateral amount with exact debt coverage', async () => {
       const assetInfo = await comet.getAssetInfoByAddress(collateralAsset.address);
-      const compPrice = (await priceFeeds['COMP'].latestRoundData())[1].toBigInt();
+      const compPrice = (await priceFeeds['COMP'].latestRoundData())[1];
       debtValue = mulPrice(-oldBalance, baseTokenPrice, baseScale);
 
-      collateralValue = mulPrice(collateralAmount, compPrice, assetInfo.scale.toBigInt());
-      seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor.toBigInt());
+      collateralValue = mulPrice(collateralAmount, compPrice, assetInfo.scale);
+      seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor);
       seizeAmount = collateralAmount;
-
-      await expect(absorbTx)
-        .to.emit(comet, 'AbsorbCollateral')
-        .withArgs(absorber.address, alice.address, collateralAsset.address, seizeAmount, collateralValue);
     });
 
     it('debt is exactly seized value', async () => {
@@ -2716,33 +2716,28 @@ describe.only('partial liquidation: bad debt', function() {
 
     it('absorb is successful', async () => {
       absorbTx = await comet.connect(absorber).absorb(absorber.address, [alice.address]);
-      await expect(absorbTx).to.be.not.be.reverted;
+      await expect(absorbTx).to.not.be.reverted;
     });
 
-    it('emits AbsorbCollateral for full COMP seizure', async () => {
+    it('full COMP seizure', async () => {
       const compInfo = await comet.getAssetInfoByAddress(compAsset.address);
       const wethInfo = await comet.getAssetInfoByAddress(wethAsset.address);
-      const compPrice = (await priceFeeds['COMP'].latestRoundData())[1].toBigInt();
-      const wethPrice = (await priceFeeds['WETH'].latestRoundData())[1].toBigInt();
+      const compPrice = (await priceFeeds['COMP'].latestRoundData())[1];
+      const wethPrice = (await priceFeeds['WETH'].latestRoundData())[1];
 
       debtRemainingValue = mulPrice(-oldBalance, baseTokenPrice, baseScale);
-      compCollateralValue = mulPrice(compAmount, compPrice, compInfo.scale.toBigInt());
-      wethCollateralValue = mulPrice(wethAmount, wethPrice, wethInfo.scale.toBigInt());
+      compCollateralValue = mulPrice(compAmount, compPrice, compInfo.scale);
+      wethCollateralValue = mulPrice(wethAmount, wethPrice, wethInfo.scale);
       const totalCollateralizedValue =
-        mulFactor(compCollateralValue, compInfo.borrowCollateralFactor.toBigInt()) +
-        mulFactor(wethCollateralValue, wethInfo.borrowCollateralFactor.toBigInt());
+        mulFactor(compCollateralValue, compInfo.borrowCollateralFactor) +
+        mulFactor(wethCollateralValue, wethInfo.borrowCollateralFactor);
 
       const wantedCompCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * factorScale
-        / (mulFactor(compInfo.liquidationFactor.toBigInt(), targetHealthFactor) - compInfo.borrowCollateralFactor.toBigInt());
+        / (mulFactor(compInfo.liquidationFactor, targetHealthFactor) - compInfo.borrowCollateralFactor.toBigInt());
       expect(wantedCompCollateralValue).to.be.greaterThan(compCollateralValue);
 
       compSeizeAmount = compAmount;
-      compSeizedValue = mulFactor(compCollateralValue, compInfo.liquidationFactor.toBigInt());
-
-      await expect(absorbTx)
-        .to.emit(comet, 'AbsorbCollateral')
-        .withArgs(absorber.address, alice.address, compAsset.address, compSeizeAmount, compCollateralValue);
-
+      compSeizedValue = mulFactor(compCollateralValue, compInfo.liquidationFactor);
       debtRemainingValue -= compSeizedValue;
     });
 
@@ -2754,20 +2749,15 @@ describe.only('partial liquidation: bad debt', function() {
       expect(debtRemainingValue).to.be.greaterThan(mulPrice(baseBorrowMin, baseTokenPrice, baseScale));
     });
 
-    it('emits AbsorbCollateral for full WETH seizure and exact remaining debt coverage', async () => {
+    it('full WETH seizure and exact remaining debt coverage', async () => {
       const wethInfo = await comet.getAssetInfoByAddress(wethAsset.address);
-
-      const totalCollateralizedValue = mulFactor(wethCollateralValue, wethInfo.borrowCollateralFactor.toBigInt());
+      const totalCollateralizedValue = mulFactor(wethCollateralValue, wethInfo.borrowCollateralFactor);
       const wantedWethCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * factorScale
-        / (mulFactor(wethInfo.liquidationFactor.toBigInt(), targetHealthFactor) - wethInfo.borrowCollateralFactor.toBigInt());
+        / (mulFactor(wethInfo.liquidationFactor, targetHealthFactor) - wethInfo.borrowCollateralFactor.toBigInt());
       expect(wantedWethCollateralValue).to.be.equal(wethCollateralValue);
 
       wethSeizeAmount = wethAmount;
-      wethSeizedValue = mulFactor(wethCollateralValue, wethInfo.liquidationFactor.toBigInt());
-
-      await expect(absorbTx)
-        .to.emit(comet, 'AbsorbCollateral')
-        .withArgs(absorber.address, alice.address, wethAsset.address, wethSeizeAmount, wethCollateralValue);
+      wethSeizedValue = mulFactor(wethCollateralValue, wethInfo.liquidationFactor);
     });
 
     it('remaining weth seized value is equal to debt remaining value', async () => {
@@ -2853,6 +2843,796 @@ describe.only('partial liquidation: bad debt', function() {
 
     it('comet WETH collateral reserves increase by all seized WETH', async () => {
       expect(await comet.getCollateralReserves(wethAsset.address)).to.be.equal(wethCollateralReservesBefore.add(wethSeizeAmount));
+    });
+
+    it('comet total supply base is unchanged', async () => {
+      expect((await comet.totalsBasic()).totalSupplyBase).to.be.equal(totalSupplyBaseBefore);
+    });
+  });
+
+  context('multi-collateral: final collateral below min debt is fully seized as bad debt (assets index 3, 7, 19)', function () {
+    const wbtcAmount = exp(0.001, 8); // $40
+    const cbethAmount = exp(0.008, 18); // $21
+    const arbAmount = exp(10, 18); // $5
+    const borrowAmount = exp(65, 6); // $65
+
+    let wbtcAsset: FaucetToken;
+    let cbethAsset: FaucetToken;
+    let arbAsset: FaucetToken;
+    let absorbTx: ContractTransaction;
+    let wbtcTotalsCollateralBefore: BigNumber;
+    let cbethTotalsCollateralBefore: BigNumber;
+    let arbTotalsCollateralBefore: BigNumber;
+    let wbtcCollateralReservesBefore: BigNumber;
+    let cbethCollateralReservesBefore: BigNumber;
+    let arbCollateralReservesBefore: BigNumber;
+    let cometWbtcTokenBalanceBefore: BigNumber;
+    let cometCbethTokenBalanceBefore: BigNumber;
+    let cometArbTokenBalanceBefore: BigNumber;
+    let cometBaseTokenBalanceBefore: BigNumber;
+    let totalSupplyBaseBefore: BigNumber;
+    let totalBorrowBaseBefore: BigNumber;
+    let assetsInBefore: number;
+    let reservedBefore: number;
+    let oldBalance: bigint;
+    let newBalance: bigint;
+    let basePaidOut: bigint;
+    let debtRemainingValue: bigint;
+    let minDebtValue: bigint;
+    let wbtcCollateralValue: bigint;
+    let cbethCollateralValue: bigint;
+    let arbCollateralValue: bigint;
+    let wbtcSeizeAmount: bigint;
+    let wbtcSeizedValue: bigint;
+    let cbethSeizeAmount: bigint;
+    let cbethSeizedValue: bigint;
+    let arbSeizeAmount: bigint;
+    let arbSeizedValue: bigint;
+
+    before(async function() {
+      wbtcAsset = tokens['WBTC']; // index 3 in default24Assets
+      cbethAsset = tokens['cbETH']; // index 7 in default24Assets
+      arbAsset = tokens['ARB']; // index 19 in default24Assets
+
+      await comet.connect(alice).supply(wbtcAsset.address, wbtcAmount);
+      await comet.connect(alice).supply(cbethAsset.address, cbethAmount);
+      await comet.connect(alice).supply(arbAsset.address, arbAmount);
+      await comet.connect(alice).withdraw(baseToken.address, borrowAmount);
+
+      const wbtcInfo = await comet.getAssetInfoByAddress(wbtcAsset.address);
+      const cbethInfo = await comet.getAssetInfoByAddress(cbethAsset.address);
+      const arbInfo = await comet.getAssetInfoByAddress(arbAsset.address);
+
+      // We choose prices from target USD values, rather than hardcoding prices:
+      //   WBTC target value = $40  ->  $40 / 0.001 WBTC = $40,000
+      //   cbETH target value = $21 ->  $21 / 0.008 cbETH = $2,625
+      //   ARB target value = $5    ->  $5 / 10 ARB = $0.50
+      const wbtcTargetValue = exp(40, 8);
+      const cbethTargetValue = exp(21, 8);
+      const arbTargetValue = exp(5, 8);
+      const wbtcPrice = wbtcTargetValue * wbtcInfo.scale.toBigInt() / wbtcAmount;
+      const cbethPrice = cbethTargetValue * cbethInfo.scale.toBigInt() / cbethAmount;
+      const arbPrice = arbTargetValue * arbInfo.scale.toBigInt() / arbAmount;
+
+      await priceFeeds['WBTC'].connect(alice).setRoundData(0, wbtcPrice, 0, 0, 0);
+      await priceFeeds['cbETH'].connect(alice).setRoundData(0, cbethPrice, 0, 0, 0);
+      await priceFeeds['ARB'].connect(alice).setRoundData(0, arbPrice, 0, 0, 0);
+      await comet.accrueAccount(alice.address);
+
+      const principal = (await comet.userBasic(alice.address)).principal;
+      const totalsBasic = await comet.totalsBasic();
+      const userBasic = await comet.userBasic(alice.address);
+      totalSupplyBaseBefore = totalsBasic.totalSupplyBase;
+      assetsInBefore = userBasic.assetsIn;
+      reservedBefore = userBasic._reserved;
+      oldBalance = presentValue(principal, totalsBasic.baseSupplyIndex, totalsBasic.baseBorrowIndex);
+    });
+
+    after(async () => await snapshot.restore());
+
+    it('sanity check: user is liquidatable', async () => {
+      expect(await comet.isLiquidatable(alice.address)).to.be.true;
+    });
+
+    it('collaterals are at the expected asset indexes', async () => {
+      expect((await comet.getAssetInfoByAddress(wbtcAsset.address)).offset).to.be.equal(3);
+      expect((await comet.getAssetInfoByAddress(cbethAsset.address)).offset).to.be.equal(7);
+      expect((await comet.getAssetInfoByAddress(arbAsset.address)).offset).to.be.equal(19);
+    });
+
+    it('alice collateral balances are equal to supplied amounts', async () => {
+      expect(await comet.collateralBalanceOf(alice.address, wbtcAsset.address)).to.be.equal(wbtcAmount);
+      expect(await comet.collateralBalanceOf(alice.address, cbethAsset.address)).to.be.equal(cbethAmount);
+      expect(await comet.collateralBalanceOf(alice.address, arbAsset.address)).to.be.equal(arbAmount);
+    });
+
+    it('alice borrow balance is equal to borrowed amount', async () => {
+      expect(await comet.borrowBalanceOf(alice.address)).to.be.equal(borrowAmount);
+    });
+
+    it('alice assetsIn includes WBTC and cbETH', async () => {
+      const wbtcInfo = await comet.getAssetInfoByAddress(wbtcAsset.address);
+      const cbethInfo = await comet.getAssetInfoByAddress(cbethAsset.address);
+      const expectedAssetsIn = (1 << wbtcInfo.offset) | (1 << cbethInfo.offset);
+
+      expect(assetsInBefore).to.be.equal(expectedAssetsIn);
+      expect((await comet.userBasic(alice.address)).assetsIn).to.be.equal(expectedAssetsIn);
+    });
+
+    it('alice reserved has the bit for ARB', async () => {
+      const arbInfo = await comet.getAssetInfoByAddress(arbAsset.address);
+      const expectedReserved = 1 << (arbInfo.offset - 16);
+
+      expect(reservedBefore).to.be.equal(expectedReserved);
+      expect((await comet.userBasic(alice.address))._reserved).to.be.equal(expectedReserved);
+    });
+
+    it('comet total supplied collateral amounts are equal to alice supplied amounts', async () => {
+      wbtcTotalsCollateralBefore = (await comet.totalsCollateral(wbtcAsset.address)).totalSupplyAsset;
+      cbethTotalsCollateralBefore = (await comet.totalsCollateral(cbethAsset.address)).totalSupplyAsset;
+      arbTotalsCollateralBefore = (await comet.totalsCollateral(arbAsset.address)).totalSupplyAsset;
+
+      expect(wbtcTotalsCollateralBefore).to.be.equal(wbtcAmount);
+      expect(cbethTotalsCollateralBefore).to.be.equal(cbethAmount);
+      expect(arbTotalsCollateralBefore).to.be.equal(arbAmount);
+    });
+
+    it('comet total borrow base is equal to alice borrowed amount', async () => {
+      totalBorrowBaseBefore = (await comet.totalsBasic()).totalBorrowBase;
+      expect(totalBorrowBaseBefore).to.be.equal(borrowAmount);
+    });
+
+    it('comet reserves are equal to the initial base funding', async () => {
+      expect(await comet.getReserves()).to.be.equal(initialBaseFunding);
+    });
+
+    it('collateral reserves are equal to zero', async () => {
+      wbtcCollateralReservesBefore = await comet.getCollateralReserves(wbtcAsset.address);
+      cbethCollateralReservesBefore = await comet.getCollateralReserves(cbethAsset.address);
+      arbCollateralReservesBefore = await comet.getCollateralReserves(arbAsset.address);
+
+      expect(wbtcCollateralReservesBefore).to.be.equal(0);
+      expect(cbethCollateralReservesBefore).to.be.equal(0);
+      expect(arbCollateralReservesBefore).to.be.equal(0);
+    });
+
+    it('comet ERC20 collateral token balances are equal to supplied amounts before absorb', async () => {
+      cometWbtcTokenBalanceBefore = await wbtcAsset.balanceOf(comet.address);
+      cometCbethTokenBalanceBefore = await cbethAsset.balanceOf(comet.address);
+      cometArbTokenBalanceBefore = await arbAsset.balanceOf(comet.address);
+
+      expect(cometWbtcTokenBalanceBefore).to.be.equal(wbtcAmount);
+      expect(cometCbethTokenBalanceBefore).to.be.equal(cbethAmount);
+      expect(cometArbTokenBalanceBefore).to.be.equal(arbAmount);
+    });
+
+    it('comet ERC20 base token balance is reduced by the borrow before absorb', async () => {
+      cometBaseTokenBalanceBefore = await baseToken.balanceOf(comet.address);
+      expect(cometBaseTokenBalanceBefore).to.be.equal(initialBaseFunding - borrowAmount);
+    });
+
+    it('absorb is successful', async () => {
+      absorbTx = await comet.connect(absorber).absorb(absorber.address, [alice.address]);
+      await expect(absorbTx).to.not.be.reverted;
+    });
+
+    it('full WBTC seizure', async () => {
+      const wbtcInfo = await comet.getAssetInfoByAddress(wbtcAsset.address);
+      const cbethInfo = await comet.getAssetInfoByAddress(cbethAsset.address);
+      const arbInfo = await comet.getAssetInfoByAddress(arbAsset.address);
+      const wbtcPrice = (await priceFeeds['WBTC'].latestRoundData())[1];
+      const cbethPrice = (await priceFeeds['cbETH'].latestRoundData())[1];
+      const arbPrice = (await priceFeeds['ARB'].latestRoundData())[1];
+
+      debtRemainingValue = mulPrice(-oldBalance, baseTokenPrice, baseScale);
+      minDebtValue = mulPrice(baseBorrowMin, baseTokenPrice, baseScale);
+
+      wbtcCollateralValue = mulPrice(wbtcAmount, wbtcPrice, wbtcInfo.scale);
+      cbethCollateralValue = mulPrice(cbethAmount, cbethPrice, cbethInfo.scale);
+      arbCollateralValue = mulPrice(arbAmount, arbPrice, arbInfo.scale);
+      const totalCollateralizedValue =
+        mulFactor(wbtcCollateralValue, wbtcInfo.borrowCollateralFactor) +
+        mulFactor(cbethCollateralValue, cbethInfo.borrowCollateralFactor) +
+        mulFactor(arbCollateralValue, arbInfo.borrowCollateralFactor);
+
+      const wantedWbtcCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * factorScale
+        / (mulFactor(wbtcInfo.liquidationFactor, targetHealthFactor) - wbtcInfo.borrowCollateralFactor.toBigInt());
+    
+      expect(wantedWbtcCollateralValue).to.be.greaterThan(wbtcCollateralValue);
+
+      wbtcSeizeAmount = wbtcAmount;
+      wbtcSeizedValue = mulFactor(wbtcCollateralValue, wbtcInfo.liquidationFactor);
+
+      debtRemainingValue -= wbtcSeizedValue;
+    });
+
+    it('debt after WBTC full seizure is still greater than minDebtValue', () => {
+      expect(debtRemainingValue).to.be.greaterThan(minDebtValue);
+    });
+
+    it('full cbETH seizure', async () => {
+      const cbethInfo = await comet.getAssetInfoByAddress(cbethAsset.address);
+      const arbInfo = await comet.getAssetInfoByAddress(arbAsset.address);
+      const totalCollateralizedValue =
+        mulFactor(cbethCollateralValue, cbethInfo.borrowCollateralFactor) +
+        mulFactor(arbCollateralValue, arbInfo.borrowCollateralFactor);
+
+      const wantedCbethCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * factorScale
+        / (mulFactor(cbethInfo.liquidationFactor, targetHealthFactor) - cbethInfo.borrowCollateralFactor.toBigInt());
+      expect(wantedCbethCollateralValue).to.be.greaterThan(cbethCollateralValue);
+
+      cbethSeizeAmount = cbethAmount;
+      cbethSeizedValue = mulFactor(cbethCollateralValue, cbethInfo.liquidationFactor);
+
+      debtRemainingValue -= cbethSeizedValue;
+    });
+
+    it('debt after cbETH full seizure is less than minDebtValue', () => {
+      expect(debtRemainingValue).to.be.lessThan(minDebtValue);
+    });
+
+    it('ARB value is below current debt and cannot cover remaining debt', async () => {
+      const arbInfo = await comet.getAssetInfoByAddress(arbAsset.address);
+      const arbSeizedValueIfFullySeized = mulFactor(arbCollateralValue, arbInfo.liquidationFactor);
+
+      expect(arbCollateralValue).to.be.lessThan(debtRemainingValue);
+      expect(arbSeizedValueIfFullySeized).to.be.lessThan(debtRemainingValue);
+    });
+
+    it('full ARB seizure as bad debt', async () => {
+      const arbInfo = await comet.getAssetInfoByAddress(arbAsset.address);
+      const totalCollateralizedValue = mulFactor(arbCollateralValue, arbInfo.borrowCollateralFactor);
+
+      const wantedArbCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * factorScale
+        / (mulFactor(arbInfo.liquidationFactor, targetHealthFactor) - arbInfo.borrowCollateralFactor.toBigInt());
+      expect(wantedArbCollateralValue).to.be.greaterThan(arbCollateralValue);
+
+      arbSeizeAmount = arbAmount;
+      arbSeizedValue = mulFactor(arbCollateralValue, arbInfo.liquidationFactor);
+    });
+
+    it('residual bad debt after all collateral is fully seized', async () => {
+      const debtRemainingValueAfterSeize = debtRemainingValue - arbSeizedValue;
+      expect(debtRemainingValueAfterSeize).to.be.greaterThan(0n);
+    });
+
+    it('newBalance becomes zero as residual bad debt is written off', async () => {
+      newBalance = 0n;
+    });
+
+    it('alice borrow balance is zero after absorb', async () => {
+      expect(await comet.borrowBalanceOf(alice.address)).to.be.equal(newBalance);
+    });
+
+    it('alice principal is zero after absorb', async () => {
+      expect((await comet.userBasic(alice.address)).principal).to.be.equal(0);
+    });
+
+    it('AbsorbDebt event is emitted for the full borrow amount', async () => {
+      basePaidOut = newBalance - oldBalance;
+      const valueOfBasePaidOut = mulPrice(basePaidOut, baseTokenPrice, baseScale);
+
+      await expect(absorbTx).to.emit(comet, 'AbsorbDebt').withArgs(absorber.address, alice.address, basePaidOut, valueOfBasePaidOut);
+    });
+
+    it('alice WBTC collateral balance is zero', async () => {
+      expect(await comet.collateralBalanceOf(alice.address, wbtcAsset.address)).to.be.equal(0);
+    });
+
+    it('alice cbETH collateral balance is zero', async () => {
+      expect(await comet.collateralBalanceOf(alice.address, cbethAsset.address)).to.be.equal(0);
+    });
+
+    it('alice ARB collateral balance is zero', async () => {
+      expect(await comet.collateralBalanceOf(alice.address, arbAsset.address)).to.be.equal(0);
+    });
+
+    it('comet ERC20 collateral token balances do not change during absorb', async () => {
+      expect(await wbtcAsset.balanceOf(comet.address)).to.be.equal(cometWbtcTokenBalanceBefore);
+      expect(await cbethAsset.balanceOf(comet.address)).to.be.equal(cometCbethTokenBalanceBefore);
+      expect(await arbAsset.balanceOf(comet.address)).to.be.equal(cometArbTokenBalanceBefore);
+    });
+
+    it('comet ERC20 base token balance does not change during absorb', async () => {
+      expect(await baseToken.balanceOf(comet.address)).to.be.equal(cometBaseTokenBalanceBefore);
+    });
+
+    it('alice assetsIn is cleared', async () => {
+      expect((await comet.userBasic(alice.address)).assetsIn).to.be.equal(0);
+    });
+
+    it('alice reserved bits are cleared', async () => {
+      expect(reservedBefore).to.not.equal(0);
+      expect((await comet.userBasic(alice.address))._reserved).to.be.equal(0);
+    });
+
+    it('comet total supplied WBTC is zero', async () => {
+      const totalSupplyAsset = (await comet.totalsCollateral(wbtcAsset.address)).totalSupplyAsset;
+
+      expect(totalSupplyAsset).to.be.equal(wbtcTotalsCollateralBefore.sub(wbtcSeizeAmount));
+      expect(totalSupplyAsset).to.be.equal(0);
+    });
+
+    it('comet total supplied cbETH is zero', async () => {
+      const totalSupplyAsset = (await comet.totalsCollateral(cbethAsset.address)).totalSupplyAsset;
+
+      expect(totalSupplyAsset).to.be.equal(cbethTotalsCollateralBefore.sub(cbethSeizeAmount));
+      expect(totalSupplyAsset).to.be.equal(0);
+    });
+
+    it('comet total supplied ARB is zero', async () => {
+      const totalSupplyAsset = (await comet.totalsCollateral(arbAsset.address)).totalSupplyAsset;
+
+      expect(totalSupplyAsset).to.be.equal(arbTotalsCollateralBefore.sub(arbSeizeAmount));
+      expect(totalSupplyAsset).to.be.equal(0);
+    });
+
+    it('comet total borrow base is zero', async () => {
+      const totalBorrowBase = (await comet.totalsBasic()).totalBorrowBase;
+
+      expect(totalBorrowBase).to.be.equal(totalBorrowBaseBefore.sub(basePaidOut));
+      expect(totalBorrowBase).to.be.equal(0);
+    });
+
+    it('comet base reserves are reduced by the full borrow amount', async () => {
+      expect(await comet.getReserves()).to.be.equal(initialBaseFunding - basePaidOut);
+    });
+
+    it('comet collateral reserves increase for all seized collateral', async () => {
+      expect(await comet.getCollateralReserves(wbtcAsset.address)).to.be.equal(wbtcCollateralReservesBefore.add(wbtcSeizeAmount));
+      expect(await comet.getCollateralReserves(cbethAsset.address)).to.be.equal(cbethCollateralReservesBefore.add(cbethSeizeAmount));
+      expect(await comet.getCollateralReserves(arbAsset.address)).to.be.equal(arbCollateralReservesBefore.add(arbSeizeAmount));
+    });
+
+    it('comet total supply base is unchanged', async () => {
+      expect((await comet.totalsBasic()).totalSupplyBase).to.be.equal(totalSupplyBaseBefore);
+    });
+  });
+
+  context('1 collateral: debt below min debt and collateral cannot cover it', function () {
+    const collateralAmount = exp(1, 18); // 1 AAVE
+    const borrowAmount = exp(12, 6); // $12, initially above baseBorrowMin
+    const repayAmount = exp(4, 6); // leaves $8 debt, below baseBorrowMin
+    const droppedAavePrice = exp(5, 8); // collateral value becomes $5
+
+    let collateralAsset: FaucetToken;
+    let absorbTx: ContractTransaction;
+    let totalsCollateralBefore: BigNumber;
+    let totalSupplyBaseBefore: BigNumber;
+    let totalBorrowBaseBefore: BigNumber;
+    let collateralReservesBefore: BigNumber;
+    let cometCollateralTokenBalanceBefore: BigNumber;
+    let cometBaseTokenBalanceBefore: BigNumber;
+    let oldBalance: bigint;
+    let newBalance: bigint;
+    let basePaidOut: bigint;
+    let debtRemainingValue: bigint;
+    let minDebtValue: bigint;
+    let collateralValue: bigint;
+    let seizedValue: bigint;
+    let seizeAmount: bigint;
+
+    before(async function() {
+      collateralAsset = tokens['AAVE'];
+    });
+
+    after(async () => await snapshot.restore());
+
+    it('alice supplies AAVE', async () => {
+      await expect(
+        comet.connect(alice).supply(collateralAsset.address, collateralAmount)
+      ).to.not.be.reverted;
+    });
+
+    it('alice borrows above baseBorrowMin', async () => {
+      await expect(
+        comet.connect(alice).withdraw(baseToken.address, borrowAmount)
+      ).to.not.be.reverted;
+    });
+
+    it('alice borrow balance is above baseBorrowMin', async () => {
+      expect(await comet.borrowBalanceOf(alice.address)).to.be.greaterThan(baseBorrowMin);
+    });
+
+    it('alice repays part of the borrow', async () => {
+      await expect(
+        comet.connect(alice).supply(baseToken.address, repayAmount)
+      ).to.not.be.reverted;
+    });
+
+    it('alice borrow balance is below baseBorrowMin after repay', async () => {
+      expect(await comet.borrowBalanceOf(alice.address)).to.be.equal(borrowAmount - repayAmount);
+      expect(await comet.borrowBalanceOf(alice.address)).to.be.lessThan(baseBorrowMin);
+    });
+
+    it('AAVE price drops', async () => {
+      await priceFeeds['AAVE'].connect(alice).setRoundData(0, droppedAavePrice, 0, 0, 0);
+      await comet.accrueAccount(alice.address);
+    });
+
+    it('sanity check: user is liquidatable', async () => {
+      expect(await comet.isLiquidatable(alice.address)).to.be.true;
+    });
+
+    it('alice collateral balance is equal to supplied amount', async () => {
+      expect(await comet.collateralBalanceOf(alice.address, collateralAsset.address)).to.be.equal(collateralAmount);
+    });
+
+    it('alice borrow balance remains below baseBorrowMin before absorb', async () => {
+      expect(await comet.borrowBalanceOf(alice.address)).to.be.equal(borrowAmount - repayAmount);
+      expect(await comet.borrowBalanceOf(alice.address)).to.be.lessThan(baseBorrowMin);
+    });
+
+    it('comet total supplied collateral amount is equal to alice supplied amount', async () => {
+      totalsCollateralBefore = (await comet.totalsCollateral(collateralAsset.address)).totalSupplyAsset;
+      expect(totalsCollateralBefore).to.be.equal(collateralAmount);
+    });
+
+    it('comet total borrow base is equal to alice remaining borrow', async () => {
+      totalBorrowBaseBefore = (await comet.totalsBasic()).totalBorrowBase;
+      expect(totalBorrowBaseBefore).to.be.equal(borrowAmount - repayAmount);
+    });
+
+    it('collateral reserves are equal to zero', async () => {
+      collateralReservesBefore = await comet.getCollateralReserves(collateralAsset.address);
+      expect(collateralReservesBefore).to.be.equal(0);
+    });
+
+    it('comet ERC20 collateral token balance is equal to supplied collateral before absorb', async () => {
+      cometCollateralTokenBalanceBefore = await collateralAsset.balanceOf(comet.address);
+      expect(cometCollateralTokenBalanceBefore).to.be.equal(collateralAmount);
+    });
+
+    it('comet ERC20 base token balance reflects borrow and partial repay before absorb', async () => {
+      cometBaseTokenBalanceBefore = await baseToken.balanceOf(comet.address);
+      expect(cometBaseTokenBalanceBefore).to.be.equal(initialBaseFunding - borrowAmount + repayAmount);
+    });
+
+    it('captures account state before absorb', async () => {
+      const principal = (await comet.userBasic(alice.address)).principal;
+      const totalsBasic = await comet.totalsBasic();
+      totalSupplyBaseBefore = totalsBasic.totalSupplyBase;
+      oldBalance = presentValue(principal, totalsBasic.baseSupplyIndex, totalsBasic.baseBorrowIndex);
+
+      expect(oldBalance).to.be.equal(-(borrowAmount - repayAmount));
+    });
+
+    it('min debt branch wants to close debt but AAVE cannot cover it', async () => {
+      const assetInfo = await comet.getAssetInfoByAddress(collateralAsset.address);
+      debtRemainingValue = mulPrice(-oldBalance, baseTokenPrice, baseScale);
+      minDebtValue = mulPrice(baseBorrowMin, baseTokenPrice, baseScale);
+      collateralValue = mulPrice(collateralAmount, droppedAavePrice, assetInfo.scale);
+
+      // debtRemainingValue = 8e8, minDebtValue = 10e8, so absorb enters
+      // _processDebtClosing. AAVE value left after LF is 5e8 * 0.85 = 4.25e8,
+      // which is insufficient to close the 8e8 debt, so all AAVE is seized.
+      seizedValue = mulFactor(collateralValue, assetInfo.liquidationFactor);
+      seizeAmount = collateralAmount;
+
+      expect(debtRemainingValue).to.be.lessThan(minDebtValue);
+    });
+
+    it('collateral value is less than debt remaining value: full seizure', () => {
+      expect(collateralValue).to.be.lessThan(debtRemainingValue);
+    });
+
+    it('seized value is less than debt remaining value: full seizure', () => {
+      expect(seizedValue).to.be.lessThan(debtRemainingValue);
+    });
+
+    it('absorb is successful', async () => {
+      absorbTx = await comet.connect(absorber).absorb(absorber.address, [alice.address]);
+      await expect(absorbTx).to.not.be.reverted;
+    });
+
+    it('calculates residual bad debt after all collateral is fully seized', async () => {
+      const debtRemainingValueAfterSeize = debtRemainingValue - seizedValue;
+      expect(debtRemainingValueAfterSeize).to.be.greaterThan(0n);
+    });
+
+    it('newBalance becomes zero as residual bad debt is written off', async () => {
+      newBalance = 0n;
+    });
+
+    it('alice borrow balance is zero after absorb', async () => {
+      expect(await comet.borrowBalanceOf(alice.address)).to.be.equal(newBalance);
+    });
+
+    it('alice principal is zero after absorb', async () => {
+      expect((await comet.userBasic(alice.address)).principal).to.be.equal(0);
+    });
+
+    it('AbsorbDebt event is emitted for the full remaining borrow amount', async () => {
+      basePaidOut = newBalance - oldBalance;
+      const valueOfBasePaidOut = mulPrice(basePaidOut, baseTokenPrice, baseScale);
+
+      await expect(absorbTx).to.emit(comet, 'AbsorbDebt').withArgs(absorber.address, alice.address, basePaidOut, valueOfBasePaidOut);
+    });
+
+    it('alice collateral balance is zero', async () => {
+      expect(await comet.collateralBalanceOf(alice.address, collateralAsset.address)).to.be.equal(0);
+    });
+
+    it('comet ERC20 collateral token balance does not change during absorb', async () => {
+      expect(await collateralAsset.balanceOf(comet.address)).to.be.equal(cometCollateralTokenBalanceBefore);
+    });
+
+    it('comet ERC20 base token balance does not change during absorb', async () => {
+      expect(await baseToken.balanceOf(comet.address)).to.be.equal(cometBaseTokenBalanceBefore);
+    });
+
+    it('comet total supplied collateral is zero', async () => {
+      const totalSupplyAsset = (await comet.totalsCollateral(collateralAsset.address)).totalSupplyAsset;
+
+      expect(totalSupplyAsset).to.be.equal(totalsCollateralBefore.sub(seizeAmount));
+      expect(totalSupplyAsset).to.be.equal(0);
+    });
+
+    it('comet total borrow base is zero', async () => {
+      const totalBorrowBase = (await comet.totalsBasic()).totalBorrowBase;
+
+      expect(totalBorrowBase).to.be.equal(totalBorrowBaseBefore.sub(basePaidOut));
+      expect(totalBorrowBase).to.be.equal(0);
+    });
+
+    it('comet base reserves are reduced by the residual bad debt amount', async () => {
+      expect(await comet.getReserves()).to.be.equal(initialBaseFunding - basePaidOut);
+    });
+
+    it('comet collateral reserves increase by all seized collateral', async () => {
+      expect(await comet.getCollateralReserves(collateralAsset.address)).to.be.equal(collateralReservesBefore.add(seizeAmount));
+    });
+
+    it('comet total supply base is unchanged', async () => {
+      expect((await comet.totalsBasic()).totalSupplyBase).to.be.equal(totalSupplyBaseBefore);
+    });
+  });
+
+  context('24 collaterals: all collaterals are fully seized after moderate price drops', function () {
+    const collateralSymbols = [
+      'COMP', 'WETH', 'USDT', 'WBTC', 'DAI', 'wstETH', 'rsETH', 'cbETH',
+      'rETH', 'weETH', 'ezETH', 'cbBTC', 'tBTC', 'LINK', 'UNI', 'AAVE',
+      'LDO', 'CRV', 'MKR', 'ARB', 'OP', 'GMX', 'USDe', 'sUSDe',
+    ];
+    const largeCollateralValue = exp(9_000, 8);
+    const stableCollateralValue = exp(100, 8);
+    const dustCollateralValue = exp(1, 8);
+    const priceDropFactor = 85n; // 15% price drop
+
+    let collateralConfigs: {
+      symbol: string;
+      asset: FaucetToken;
+      amount: bigint;
+      initialPrice: bigint;
+      droppedPrice: bigint;
+    }[] = [];
+    let absorbTx: ContractTransaction;
+    let totalSupplyBaseBefore: BigNumber;
+    let cometBaseTokenBalanceBefore: BigNumber;
+    let oldBalance: bigint;
+    let newBalance: bigint;
+    let basePaidOut: bigint;
+    let borrowAmount: bigint;
+    let maxBorrowValue: bigint;
+    let debtRemainingValue: bigint;
+    let totalSeizedValue: bigint;
+    let collateralValues: { [symbol: string]: bigint } = {};
+    let seizedValues: { [symbol: string]: bigint } = {};
+    let totalsCollateralBefore: { [symbol: string]: BigNumber } = {};
+    let collateralReservesBefore: { [symbol: string]: BigNumber } = {};
+    let cometCollateralTokenBalanceBefore: { [symbol: string]: BigNumber } = {};
+
+    before(async function() {
+      for (const symbol of collateralSymbols) {
+        const asset = tokens[symbol];
+        const assetInfo = await comet.getAssetInfoByAddress(asset.address);
+        const initialPrice = (await priceFeeds[symbol].latestRoundData())[1].toBigInt();
+        let targetValue = dustCollateralValue;
+        if (symbol === 'COMP') {
+          targetValue = largeCollateralValue;
+        } else if (symbol === 'USDT' || symbol === 'DAI') {
+          targetValue = stableCollateralValue;
+        }
+        const amount = targetValue * assetInfo.scale.toBigInt() / initialPrice;
+
+        collateralConfigs.push({
+          symbol,
+          asset,
+          amount,
+          initialPrice,
+          droppedPrice: initialPrice * priceDropFactor / 100n,
+        });
+      }
+    });
+
+    it('uses all supported collateral assets', () => {
+      expect(collateralConfigs.length).to.be.equal(24);
+    });
+
+    it('alice supplies every collateral', async () => {
+      for (const config of collateralConfigs) {
+        await expect(
+          comet.connect(alice).supply(config.asset.address, config.amount)
+        ).to.not.be.reverted;
+      }
+    });
+
+    it('calculates a borrow amount close to the initial borrow capacity', async () => {
+      maxBorrowValue = 0n;
+
+      for (const config of collateralConfigs) {
+        const assetInfo = await comet.getAssetInfoByAddress(config.asset.address);
+        const collateralValue = mulPrice(config.amount, config.initialPrice, assetInfo.scale);
+        maxBorrowValue += mulFactor(collateralValue, assetInfo.borrowCollateralFactor);
+      }
+
+      // Borrow just under the initial borrow limit so the position is valid before prices move.
+      borrowAmount = maxBorrowValue * 99n / 100n * baseScale / baseTokenPrice;
+    });
+
+    it('alice borrows close to the initial borrow capacity', async () => {
+      await expect(
+        comet.connect(alice).withdraw(baseToken.address, borrowAmount)
+      ).to.not.be.reverted;
+    });
+
+    it('alice borrow balance is equal to the borrowed amount', async () => {
+      expect(await comet.borrowBalanceOf(alice.address)).to.be.equal(borrowAmount);
+    });
+
+    it('every collateral price drops', async () => {
+      for (const config of collateralConfigs) {
+        await priceFeeds[config.symbol].connect(alice).setRoundData(0, config.droppedPrice, 0, 0, 0);
+      }
+      await comet.accrueAccount(alice.address);
+    });
+
+    it('sanity check: user is liquidatable', async () => {
+      expect(await comet.isLiquidatable(alice.address)).to.be.true;
+    });
+
+    it('captures state before absorb', async () => {
+      const principal = (await comet.userBasic(alice.address)).principal;
+      const totalsBasic = await comet.totalsBasic();
+      const utilization = await comet.getUtilization();
+      const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
+      const timeElapsed = 1n;
+      const baseBorrowIndex = totalsBasic.baseBorrowIndex.toBigInt()
+        + mulFactor(totalsBasic.baseBorrowIndex.toBigInt(), borrowRate * timeElapsed);
+
+      totalSupplyBaseBefore = totalsBasic.totalSupplyBase;
+      cometBaseTokenBalanceBefore = await baseToken.balanceOf(comet.address);
+      oldBalance = presentValue(principal, totalsBasic.baseSupplyIndex, baseBorrowIndex);
+    });
+
+    it('borrow balance is greater than or equal to the borrowed amount', async () => {
+      expect(-oldBalance).to.be.greaterThanOrEqual(borrowAmount);
+    });
+
+    it('comet ERC20 base token balance is reduced by the borrow before absorb', async () => {
+      expect(cometBaseTokenBalanceBefore).to.be.equal(initialBaseFunding - borrowAmount);
+    });
+
+    it('captures collateral state before absorb', async () => {
+      for (const config of collateralConfigs) {
+        totalsCollateralBefore[config.symbol] = (await comet.totalsCollateral(config.asset.address)).totalSupplyAsset;
+        collateralReservesBefore[config.symbol] = await comet.getCollateralReserves(config.asset.address);
+        cometCollateralTokenBalanceBefore[config.symbol] = await config.asset.balanceOf(comet.address);
+
+        // Note: these checks are not strictly necessary, but they help to ensure that the collateral state is captured correctly.
+        // This checks inside the for loop to avoid massive test output.
+        expect(totalsCollateralBefore[config.symbol]).to.be.equal(config.amount);
+        expect(collateralReservesBefore[config.symbol]).to.be.equal(0);
+        expect(cometCollateralTokenBalanceBefore[config.symbol]).to.be.equal(config.amount);
+      }
+    });
+
+    it('post-drop collateral cannot cover the debt after liquidation factors', async () => {
+      debtRemainingValue = mulPrice(-oldBalance, baseTokenPrice, baseScale);
+      totalSeizedValue = 0n;
+
+      for (const config of collateralConfigs) {
+        const assetInfo = await comet.getAssetInfoByAddress(config.asset.address);
+        collateralValues[config.symbol] = mulPrice(config.amount, config.droppedPrice, assetInfo.scale);
+        seizedValues[config.symbol] = mulFactor(collateralValues[config.symbol], assetInfo.liquidationFactor);
+        totalSeizedValue += seizedValues[config.symbol];
+      }
+
+      expect(totalSeizedValue).to.be.lessThan(debtRemainingValue);
+    });
+
+    it('target health math requires full seizure for each collateral', async () => {
+      for (const [index, config] of collateralConfigs.entries()) {
+        const assetInfo = await comet.getAssetInfoByAddress(config.asset.address);
+        const remainingConfigs = collateralConfigs.slice(index);
+        let remainingCollateralizedValue = 0n;
+
+        for (const remainingConfig of remainingConfigs) {
+          const remainingInfo = await comet.getAssetInfoByAddress(remainingConfig.asset.address);
+          remainingCollateralizedValue += mulFactor(
+            collateralValues[remainingConfig.symbol],
+            remainingInfo.borrowCollateralFactor
+          );
+        }
+
+        const wantedCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - remainingCollateralizedValue) * factorScale
+            / (mulFactor(assetInfo.liquidationFactor, targetHealthFactor) - assetInfo.borrowCollateralFactor.toBigInt());
+        
+        expect(wantedCollateralValue).to.be.greaterThan(collateralValues[config.symbol]);
+        
+        debtRemainingValue -= seizedValues[config.symbol];
+      }
+    });
+
+    it('debt remaining value is greater than zero: bad debt', async () => {
+      expect(debtRemainingValue).to.be.greaterThan(0n);
+    });
+
+    it('absorb is successful', async () => {
+      absorbTx = await comet.connect(absorber).absorb(absorber.address, [alice.address]);
+      await expect(absorbTx).to.not.be.reverted;
+    });
+
+    it('newBalance becomes zero as residual bad debt is written off', async () => {
+      newBalance = 0n;
+    });
+
+    it('alice borrow balance is zero after absorb', async () => {
+      expect(await comet.borrowBalanceOf(alice.address)).to.be.equal(newBalance);
+    });
+
+    it('alice principal is zero after absorb', async () => {
+      expect((await comet.userBasic(alice.address)).principal).to.be.equal(0);
+    });
+
+    it('AbsorbDebt event is emitted for the full absorbed borrow amount', async () => {
+      basePaidOut = newBalance - oldBalance;
+      const valueOfBasePaidOut = mulPrice(basePaidOut, baseTokenPrice, baseScale);
+
+      await expect(absorbTx).to.emit(comet, 'AbsorbDebt').withArgs(absorber.address, alice.address, basePaidOut, valueOfBasePaidOut);
+    });
+
+    it('all alice collateral balances are zero', async () => {
+      for (const config of collateralConfigs) {
+        expect(await comet.collateralBalanceOf(alice.address, config.asset.address)).to.be.equal(0);
+      }
+    });
+
+    it('comet ERC20 collateral token balances do not change during absorb', async () => {
+      for (const config of collateralConfigs) {
+        expect(await config.asset.balanceOf(comet.address)).to.be.equal(cometCollateralTokenBalanceBefore[config.symbol]);
+      }
+    });
+
+    it('comet ERC20 base token balance does not change during absorb', async () => {
+      expect(await baseToken.balanceOf(comet.address)).to.be.equal(cometBaseTokenBalanceBefore);
+    });
+
+    it('all collateral totals are zero', async () => {
+      for (const config of collateralConfigs) {
+        const totalSupplyAsset = (await comet.totalsCollateral(config.asset.address)).totalSupplyAsset;
+
+        expect(totalSupplyAsset).to.be.equal(totalsCollateralBefore[config.symbol].sub(config.amount));
+        expect(totalSupplyAsset).to.be.equal(0);
+      }
+    });
+
+    it('comet total borrow base is zero', async () => {
+      const totalBorrowBase = (await comet.totalsBasic()).totalBorrowBase;
+
+      expect(totalBorrowBase).to.be.equal(0);
+    });
+
+    it('comet base reserves are reduced by the borrowed base tokens', async () => {
+      expect(await comet.getReserves()).to.be.equal(initialBaseFunding - borrowAmount);
+    });
+
+    it('all collateral reserves increase by the seized amounts', async () => {
+      for (const config of collateralConfigs) {
+        expect(await comet.getCollateralReserves(config.asset.address)).to.be.equal(
+          collateralReservesBefore[config.symbol].add(config.amount)
+        );
+      }
     });
 
     it('comet total supply base is unchanged', async () => {

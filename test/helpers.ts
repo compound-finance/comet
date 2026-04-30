@@ -182,8 +182,8 @@ export function truncateDecimals(factor: bigint | BigNumber, decimals = 4) {
   return toBigInt(factor) / descaleFactor * descaleFactor;
 }
 
-export function mulPrice(n: bigint, price: bigint | BigNumber, fromScale: bigint | BigNumber): bigint {
-  return n * toBigInt(price) / toBigInt(fromScale);
+export function mulPrice(n: bigint | BigNumber, price: bigint | BigNumber, fromScale: bigint | BigNumber): bigint {
+  return toBigInt(n) * toBigInt(price) / toBigInt(fromScale);
 }
 
 function toBigInt(f: bigint | BigNumber): bigint {
@@ -808,8 +808,8 @@ export function presentValue(
   }
 }
 
-export function mulFactor(n: bigint, factor: bigint):bigint {
-  return n * factor / factorScale;
+export function mulFactor(n: bigint | BigNumber, factor: bigint | BigNumber):bigint {
+  return toBigInt(n) * toBigInt(factor) / factorScale;
 }
 
 function principalValueSupply(baseSupplyIndex: bigint, presentValue: bigint): bigint {
@@ -824,7 +824,7 @@ export function principalValue(
   presentValue: bigint | BigNumber,
   baseSupplyIndex: bigint | BigNumber,
   baseBorrowIndex: bigint | BigNumber
-): Promise<bigint> {
+): bigint {
   const pv = toBigInt(presentValue);
   if (pv >= 0n) {
     return principalValueSupply(toBigInt(baseSupplyIndex), pv);
