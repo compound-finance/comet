@@ -1162,7 +1162,7 @@ export async function executeOpenProposal(
     console.log(`Updating CCIP prices...`);
     await updateCCIPStats(dm);
 
-    await governor.execute(id, { gasPrice: 0, gasLimit: 120000000 });
+    await governor.execute(id, { gasPrice: 0, gasLimit: 16_777_215 });
   }
 
   await redeployRenzoOracle(dm);
