@@ -148,7 +148,7 @@ Further detailed information can be found on the corresponding [proposal pull re
   },
 
   async enacted(): Promise<boolean> {
-    return true;
+    return false;
   },
 
   async verify(deploymentManager: DeploymentManager) {
