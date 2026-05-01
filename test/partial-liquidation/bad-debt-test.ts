@@ -4,7 +4,7 @@ import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { BigNumber, ContractTransaction } from 'ethers';
 import { SnapshotRestorer, takeSnapshot } from '../helpers/snapshot';
 
-describe.only('partial liquidation: bad debt', function() {
+describe('partial liquidation: bad debt', function() {
   // Protocol
   let comet: CometHarnessInterfaceExtendedAssetList;
 
@@ -17,13 +17,6 @@ describe.only('partial liquidation: bad debt', function() {
   let tokens: { [symbol: string]: FaucetToken } = {};
   let baseToken: FaucetToken;
   let priceFeeds: { [symbol: string]: SimplePriceFeed } = {};
-
-  // Prices
-  const initialPrices = {
-    USDC: exp(1, 8),
-    COMP: exp(100, 8),
-    WETH: exp(2800, 8),
-  };
 
   // Signers
   let alice: SignerWithAddress;
@@ -100,7 +93,8 @@ describe.only('partial liquidation: bad debt', function() {
 
       // Drop COMP by 50%. Alice's 1 COMP is now worth only $50,
       // so the collateral cannot repay the $80 debt even after full seizure.
-      const newCompPrice = initialPrices.COMP * 50n / 100n;
+      const compPrice = (await priceFeeds['COMP'].latestRoundData())[1].toBigInt();
+      const newCompPrice = compPrice * 50n / 100n;
       await priceFeeds['COMP'].connect(alice).setRoundData(0, newCompPrice, 0, 0, 0);
       await comet.accrueAccount(alice.address);
 
@@ -111,13 +105,13 @@ describe.only('partial liquidation: bad debt', function() {
       assetsInBefore = userBasic.assetsIn;
       reservedBefore = userBasic._reserved;
       oldBalance = presentValue(principal, totalsBasic.baseSupplyIndex, totalsBasic.baseBorrowIndex);
+
+      // We paste the sanity check here to prevent going forward if the user is not liquidatable.
+      // Because if the user is not liquidatable, the whole flow will be reverted.
+      expect(await comet.isLiquidatable(alice.address)).to.equal(true, 'User is not liquidatable');
     });
 
     after(async () => await snapshot.restore());
-
-    it('sanity check: user is liquidatable', async () => {
-      expect(await comet.isLiquidatable(alice.address)).to.be.true;
-    });
 
     it('alice collateral balance is equal to supplied amount', async () => {
       const collateralBalance = await comet.collateralBalanceOf(alice.address, collateralAsset.address);
@@ -318,13 +312,13 @@ describe.only('partial liquidation: bad debt', function() {
       assetsInBefore = userBasic.assetsIn;
       reservedBefore = userBasic._reserved;
       oldBalance = presentValue(principal, totalsBasic.baseSupplyIndex, totalsBasic.baseBorrowIndex);
+
+      // We paste the sanity check here to prevent going forward if the user is not liquidatable.
+      // Because if the user is not liquidatable, the whole flow will be reverted.
+      expect(await comet.isLiquidatable(alice.address)).to.equal(true, 'User is not liquidatable');
     });
 
     after(async () => await snapshot.restore());
-
-    it('sanity check: user is liquidatable', async () => {
-      expect(await comet.isLiquidatable(alice.address)).to.be.true;
-    });
 
     it('alice collateral balance is equal to supplied amount', async () => {
       const collateralBalance = await comet.collateralBalanceOf(alice.address, collateralAsset.address);
@@ -525,13 +519,13 @@ describe.only('partial liquidation: bad debt', function() {
       assetsInBefore = userBasic.assetsIn;
       reservedBefore = userBasic._reserved;
       oldBalance = presentValue(principal, totalsBasic.baseSupplyIndex, totalsBasic.baseBorrowIndex);
+
+      // We paste the sanity check here to prevent going forward if the user is not liquidatable.
+      // Because if the user is not liquidatable, the whole flow will be reverted.
+      expect(await comet.isLiquidatable(alice.address)).to.equal(true, 'User is not liquidatable');
     });
 
     after(async () => await snapshot.restore());
-
-    it('sanity check: user is liquidatable', async () => {
-      expect(await comet.isLiquidatable(alice.address)).to.be.true;
-    });
 
     it('alice collateral balance is equal to supplied amount', async () => {
       const collateralBalance = await comet.collateralBalanceOf(alice.address, collateralAsset.address);
@@ -745,13 +739,13 @@ describe.only('partial liquidation: bad debt', function() {
       assetsInBefore = userBasic.assetsIn;
       reservedBefore = userBasic._reserved;
       oldBalance = presentValue(principal, totalsBasic.baseSupplyIndex, totalsBasic.baseBorrowIndex);
+
+      // We paste the sanity check here to prevent going forward if the user is not liquidatable.
+      // Because if the user is not liquidatable, the whole flow will be reverted.
+      expect(await comet.isLiquidatable(alice.address)).to.equal(true, 'User is not liquidatable');
     });
 
     after(async () => await snapshot.restore());
-
-    it('sanity check: user is liquidatable', async () => {
-      expect(await comet.isLiquidatable(alice.address)).to.be.true;
-    });
 
     it('alice COMP collateral balance is equal to supplied amount', async () => {
       expect(await comet.collateralBalanceOf(alice.address, compAsset.address)).to.be.equal(compAmount);
@@ -1021,13 +1015,13 @@ describe.only('partial liquidation: bad debt', function() {
       assetsInBefore = userBasic.assetsIn;
       reservedBefore = userBasic._reserved;
       oldBalance = presentValue(principal, totalsBasic.baseSupplyIndex, totalsBasic.baseBorrowIndex);
+
+      // We paste the sanity check here to prevent going forward if the user is not liquidatable.
+      // Because if the user is not liquidatable, the whole flow will be reverted.
+      expect(await comet.isLiquidatable(alice.address)).to.equal(true, 'User is not liquidatable');
     });
 
     after(async () => await snapshot.restore());
-
-    it('sanity check: user is liquidatable', async () => {
-      expect(await comet.isLiquidatable(alice.address)).to.be.true;
-    });
 
     it('AAVE is at asset index 15', async () => {
       expect((await comet.getAssetInfoByAddress(aaveAsset.address)).offset).to.be.equal(15);
@@ -1301,13 +1295,13 @@ describe.only('partial liquidation: bad debt', function() {
       assetsInBefore = userBasic.assetsIn;
       reservedBefore = userBasic._reserved;
       oldBalance = presentValue(principal, totalsBasic.baseSupplyIndex, totalsBasic.baseBorrowIndex);
+
+      // We paste the sanity check here to prevent going forward if the user is not liquidatable.
+      // Because if the user is not liquidatable, the whole flow will be reverted.
+      expect(await comet.isLiquidatable(alice.address)).to.equal(true, 'User is not liquidatable');
     });
 
     after(async () => await snapshot.restore());
-
-    it('sanity check: user is liquidatable', async () => {
-      expect(await comet.isLiquidatable(alice.address)).to.be.true;
-    });
 
     it('USDe is at asset index 22', async () => {
       expect((await comet.getAssetInfoByAddress(usdeAsset.address)).offset).to.be.equal(22);
@@ -1579,13 +1573,13 @@ describe.only('partial liquidation: bad debt', function() {
       assetsInBefore = userBasic.assetsIn;
       reservedBefore = userBasic._reserved;
       oldBalance = presentValue(principal, totalsBasic.baseSupplyIndex, totalsBasic.baseBorrowIndex);
+
+      // We paste the sanity check here to prevent going forward if the user is not liquidatable.
+      // Because if the user is not liquidatable, the whole flow will be reverted.
+      expect(await comet.isLiquidatable(alice.address)).to.equal(true, 'User is not liquidatable');
     });
 
     after(async () => await snapshot.restore());
-
-    it('sanity check: user is liquidatable', async () => {
-      expect(await comet.isLiquidatable(alice.address)).to.be.true;
-    });
 
     it('UNI is at asset index 14', async () => {
       expect((await comet.getAssetInfoByAddress(uniAsset.address)).offset).to.be.equal(14);
@@ -1857,13 +1851,13 @@ describe.only('partial liquidation: bad debt', function() {
       reservedBefore = userBasic._reserved;
       oldBalance = presentValue(principal, totalsBasic.baseSupplyIndex, totalsBasic.baseBorrowIndex);
       debtRemainingValue = mulPrice(-oldBalance, baseTokenPrice, baseScale);
+
+      // We paste the sanity check here to prevent going forward if the user is not liquidatable.
+      // Because if the user is not liquidatable, the whole flow will be reverted.
+      expect(await comet.isLiquidatable(alice.address)).to.equal(true, 'User is not liquidatable');
     });
 
     after(async () => await snapshot.restore());
-
-    it('sanity check: user is liquidatable', async () => {
-      expect(await comet.isLiquidatable(alice.address)).to.be.true;
-    });
 
     for (const config of collateralConfigs) {
       it(`${config.symbol} is at asset index ${config.index}`, async () => {
@@ -2093,6 +2087,10 @@ describe.only('partial liquidation: bad debt', function() {
       const totalsBasic = await comet.totalsBasic();
       oldBalance = presentValue(principal, totalsBasic.baseSupplyIndex, totalsBasic.baseBorrowIndex);
       debtRemainingValue = mulPrice(-oldBalance, baseTokenPrice, baseScale);
+
+      // We paste the sanity check here to prevent going forward if the user is not liquidatable.
+      // Because if the user is not liquidatable, the whole flow will be reverted.
+      expect(await comet.isLiquidatable(alice.address)).to.equal(true, 'User is not liquidatable');
     });
 
     after(async () => await snapshot.restore());
@@ -2182,13 +2180,13 @@ describe.only('partial liquidation: bad debt', function() {
       assetsInBefore = userBasic.assetsIn;
       reservedBefore = userBasic._reserved;
       oldBalance = presentValue(principal, totalsBasic.baseSupplyIndex, totalsBasic.baseBorrowIndex);
+
+      // We paste the sanity check here to prevent going forward if the user is not liquidatable.
+      // Because if the user is not liquidatable, the whole flow will be reverted.
+      expect(await comet.isLiquidatable(alice.address)).to.equal(true, 'User is not liquidatable');
     });
 
     after(async () => await snapshot.restore());
-
-    it('sanity check: user is liquidatable', async () => {
-      expect(await comet.isLiquidatable(alice.address)).to.be.true;
-    });
 
     it('alice COMP collateral balance is equal to supplied amount', async () => {
       expect(await comet.collateralBalanceOf(alice.address, compAsset.address)).to.be.equal(compAmount);
@@ -2450,13 +2448,13 @@ describe.only('partial liquidation: bad debt', function() {
       const totalsBasic = await comet.totalsBasic();
       totalSupplyBaseBefore = totalsBasic.totalSupplyBase;
       oldBalance = presentValue(principal, totalsBasic.baseSupplyIndex, totalsBasic.baseBorrowIndex);
+
+      // We paste the sanity check here to prevent going forward if the user is not liquidatable.
+      // Because if the user is not liquidatable, the whole flow will be reverted.
+      expect(await comet.isLiquidatable(alice.address)).to.equal(true, 'User is not liquidatable');
     });
 
     after(async () => await snapshot.restore());
-
-    it('sanity check: user is liquidatable', async () => {
-      expect(await comet.isLiquidatable(alice.address)).to.be.true;
-    });
 
     it('alice collateral balance is equal to supplied amount', async () => {
       expect(await comet.collateralBalanceOf(alice.address, collateralAsset.address)).to.be.equal(collateralAmount);
@@ -2643,13 +2641,13 @@ describe.only('partial liquidation: bad debt', function() {
       totalSupplyBaseBefore = totalsBasic.totalSupplyBase;
       assetsInBefore = userBasic.assetsIn;
       oldBalance = presentValue(principal, totalsBasic.baseSupplyIndex, totalsBasic.baseBorrowIndex);
+
+      // We paste the sanity check here to prevent going forward if the user is not liquidatable.
+      // Because if the user is not liquidatable, the whole flow will be reverted.
+      expect(await comet.isLiquidatable(alice.address)).to.equal(true, 'User is not liquidatable');
     });
 
     after(async () => await snapshot.restore());
-
-    it('sanity check: user is liquidatable', async () => {
-      expect(await comet.isLiquidatable(alice.address)).to.be.true;
-    });
 
     it('alice COMP collateral balance is equal to supplied amount', async () => {
       expect(await comet.collateralBalanceOf(alice.address, compAsset.address)).to.be.equal(compAmount);
@@ -2926,13 +2924,13 @@ describe.only('partial liquidation: bad debt', function() {
       assetsInBefore = userBasic.assetsIn;
       reservedBefore = userBasic._reserved;
       oldBalance = presentValue(principal, totalsBasic.baseSupplyIndex, totalsBasic.baseBorrowIndex);
+
+      // We paste the sanity check here to prevent going forward if the user is not liquidatable.
+      // Because if the user is not liquidatable, the whole flow will be reverted.
+      expect(await comet.isLiquidatable(alice.address)).to.equal(true, 'User is not liquidatable');
     });
 
     after(async () => await snapshot.restore());
-
-    it('sanity check: user is liquidatable', async () => {
-      expect(await comet.isLiquidatable(alice.address)).to.be.true;
-    });
 
     it('collaterals are at the expected asset indexes', async () => {
       expect((await comet.getAssetInfoByAddress(wbtcAsset.address)).offset).to.be.equal(3);
