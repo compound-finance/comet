@@ -73,7 +73,7 @@ const withdrawConfigV3 = {
   mainnet: {
     cUSDCv3: {
       address: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      amount: 192_000,
+      amount: 5_983_604,
       decimals: 6,
     }
   },
