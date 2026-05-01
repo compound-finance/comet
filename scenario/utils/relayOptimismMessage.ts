@@ -146,42 +146,41 @@ export default async function relayOptimismMessage(
     } else {
       throw new Error(`[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Unrecognized target for cross-chain message`);
     }
-
-    // Execute open bridged proposals now that all messages have been bridged
-    for (let proposal of openBridgedProposals) {
-      const { eta, id } = proposal;
-      // Fast forward l2 time
-      await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
-
-      // Execute queued proposal
-      await setNextBaseFeeToZero(bridgeDeploymentManager);
-
-      if (tenderlyLogs) {
-        const callData = bridgeReceiver.interface.encodeFunctionData('executeProposal', [id]);
-        const signer = await bridgeDeploymentManager.getSigner();
-
-        bridgeDeploymentManager.stashRelayMessage(
-          bridgeReceiver.address,
-          callData,
-          signer.address
-        );
-      } else {
-        await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
-      }
-      console.log(
-        `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
-      );
-    }
-
-    return openBridgedProposals;
   }
+
+  // Execute open bridged proposals now that all messages have been bridged
+  for (let proposal of openBridgedProposals) {
+    const { eta, id } = proposal;
+    // Fast forward l2 time
+    await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
+
+    // Execute queued proposal
+    await setNextBaseFeeToZero(bridgeDeploymentManager);
+
+    if (tenderlyLogs) {
+      const callData = bridgeReceiver.interface.encodeFunctionData('executeProposal', [id]);
+      const signer = await bridgeDeploymentManager.getSigner();
+
+      bridgeDeploymentManager.stashRelayMessage(
+        bridgeReceiver.address,
+        callData,
+        signer.address
+      );
+    } else {
+      await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
+    }
+    console.log(
+      `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
+    );
+  }
+
+  return openBridgedProposals;
 }
 
 export async function simulateL2ToL1TokenBridging(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
-  tenderlyLogs?: any[],
-  proposalId?: BigNumber
+  tenderlyLogs?: any[]
 ) {
   if(tenderlyLogs) {
     return;
@@ -213,11 +212,7 @@ export async function simulateL2ToL1TokenBridging(
 
   for (const event of proposalCreatedEvents) {
     const decodedEvent = bridgeReceiver.interface.parseLog(event);
-    const { id, signatures, calldatas } = decodedEvent.args;
-
-    if (proposalId && id.toString() !== proposalId.toString()) {
-      continue;
-    }
+    const { signatures, calldatas } = decodedEvent.args;
 
     for (let i = 0; i < signatures.length; i++) {
       if (signatures[i] === bridgeERC20ToSignature) {

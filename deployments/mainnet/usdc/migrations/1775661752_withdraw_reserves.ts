@@ -73,7 +73,7 @@ const withdrawConfigV3 = {
   mainnet: {
     cUSDCv3: {
       address: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      amount: 6_175_604,
+      amount: 192_000,
       decimals: 6,
     }
   },
@@ -216,33 +216,23 @@ export default migration('1775661752_withdraw_reserves', {
       ]
     );
 
-    const optimismProposalData = utils.defaultAbiCoder.encode(
+    const optimismProposalData1 = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
         [
-          withdrawConfigV3.optimism.cUSDCv3.address,
-          withdrawConfigV3.optimism.cUSDCv3.assetL2,
-          OPTIMISM_STANDARD_BRIDGE,
           withdrawConfigV3.optimism.cUSDTv3.address,
           withdrawConfigV3.optimism.cUSDTv3.assetL2,
           OPTIMISM_STANDARD_BRIDGE,
         ],
         [
           0, 0, 0,
-          0, 0, 0,
         ],
         [
-          'withdrawReserves(address,uint256)',
-          'approve(address,uint256)',
-          'bridgeERC20To(address,address,address,uint256,uint32,bytes)',
           'withdrawReserves(address,uint256)',
           'approve(address,uint256)',
           'bridgeERC20To(address,address,address,uint256,uint32,bytes)'
         ],
         [
-          withdrawUsdcOptimismCalldata,
-          approveUsdcOptimismCalldata,
-          bridgeERC20ToUsdcOptimismCalldata,
           withdrawUsdtOptimismCalldata,
           approveUsdtOptimismCalldata,
           bridgeERC20ToUsdtOptimismCalldata,
@@ -250,6 +240,29 @@ export default migration('1775661752_withdraw_reserves', {
       ]
     );
 
+    const optimismProposalData2 = utils.defaultAbiCoder.encode(
+      ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
+      [
+        [
+          withdrawConfigV3.optimism.cUSDCv3.address,
+          withdrawConfigV3.optimism.cUSDCv3.assetL2,
+          OPTIMISM_STANDARD_BRIDGE,
+        ],
+        [
+          0, 0, 0,
+        ],
+        [
+          'withdrawReserves(address,uint256)',
+          'approve(address,uint256)',
+          'bridgeERC20To(address,address,address,uint256,uint32,bytes)',
+        ],
+        [
+          withdrawUsdcOptimismCalldata,
+          approveUsdcOptimismCalldata,
+          bridgeERC20ToUsdcOptimismCalldata,
+        ]
+      ]
+    );
     // Base
     const baseHre = await forkedHreForBase({ name: 'base-usdbc', network: 'base', deployment: 'usdbc' });
     await deploymentManager.addBridgedDeploymentManager('base', 'usdbc', baseHre);
@@ -365,44 +378,105 @@ export default migration('1775661752_withdraw_reserves', {
       ]
     );
 
-    const arbitrumProposalData = utils.defaultAbiCoder.encode(
+    const arbitrumProposalData1 = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
         [
-          withdrawConfigV3.arbitrum.cUSDCv3.address, withdrawConfigV3.arbitrum.cUSDCev3.address, withdrawConfigV3.arbitrum.cWETHv3.address,
-          withdrawConfigV3.arbitrum.cUSDCv3.assetL2, ARBITRUM_CCTP_TOKEN_MESSENGER,
-          withdrawConfigV3.arbitrum.cUSDCev3.assetL2, ARBITRUM_USDCE_GATEWAY,
-          withdrawConfigV3.arbitrum.cWETHv3.assetL2, ARBITRUM_WETH_GATEWAY
+          withdrawConfigV3.arbitrum.cUSDCv3.address,
+          withdrawConfigV3.arbitrum.cUSDCv3.assetL2,
+          ARBITRUM_CCTP_TOKEN_MESSENGER,
         ],
         [
           0, 0, 0,
-          0, 0,
-          0, 0,
-          0, 0
         ],
         [
-          'withdrawReserves(address,uint256)', 'withdrawReserves(address,uint256)', 'withdrawReserves(address,uint256)',
-          'approve(address,uint256)', 'depositForBurn(uint256,uint32,bytes32,address,bytes32,uint256,uint32)',
-          'approve(address,uint256)', 'outboundTransfer(address,address,uint256,bytes)',
-          'approve(address,uint256)', 'outboundTransfer(address,address,uint256,bytes)',
+          'withdrawReserves(address,uint256)',
+          'approve(address,uint256)',
+          'depositForBurn(uint256,uint32,bytes32,address,bytes32,uint256,uint32)',
         ],
         [
-          withdrawUsdcArbitrumCalldata, withdrawUsdceArbitrumCalldata, withdrawEthArbitrumCalldata,
-          approveUsdcArbitrumCalldata, depositForBurnUsdcArbitrumCalldata,
-          approveUsdceArbitrumCalldata, outboundTransferUsdceArbitrumCalldata,
-          approveWethArbitrumCalldata, outboundTransferWethArbitrumCalldata
+          withdrawUsdcArbitrumCalldata,
+          approveUsdcArbitrumCalldata,
+          depositForBurnUsdcArbitrumCalldata,
         ]
       ]
     );
 
-    const createRetryableTicketGasParams = await estimateL2Transaction(
+    const arbitrumProposalData2 = utils.defaultAbiCoder.encode(
+      ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
+      [
+        [
+          withdrawConfigV3.arbitrum.cUSDCev3.address,
+          withdrawConfigV3.arbitrum.cUSDCev3.assetL2,
+          ARBITRUM_USDCE_GATEWAY,
+        ],
+        [
+          0, 0, 0,
+        ],
+        [
+          'withdrawReserves(address,uint256)',
+          'approve(address,uint256)',
+          'outboundTransfer(address,address,uint256,bytes)',
+        ],
+        [
+          withdrawUsdceArbitrumCalldata,
+          approveUsdceArbitrumCalldata,
+          outboundTransferUsdceArbitrumCalldata,
+        ]
+      ]
+    );
+
+    const arbitrumProposalData3 = utils.defaultAbiCoder.encode(
+      ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
+      [
+        [
+          withdrawConfigV3.arbitrum.cWETHv3.address,
+          withdrawConfigV3.arbitrum.cWETHv3.assetL2,
+          ARBITRUM_WETH_GATEWAY
+        ],
+        [
+          0, 0, 0,
+        ],
+        [
+          'withdrawReserves(address,uint256)',
+          'approve(address,uint256)',
+          'outboundTransfer(address,address,uint256,bytes)',
+        ],
+        [
+          withdrawEthArbitrumCalldata,
+          approveWethArbitrumCalldata,
+          outboundTransferWethArbitrumCalldata
+        ]
+      ]
+    );
+
+    const createRetryableTicketGasParams1 = await estimateL2Transaction(
       {
         from: applyL1ToL2Alias(timelock.address),
         to: ARBITRUM_BRIDGE_RECEIVER,
-        data: arbitrumProposalData
+        data: arbitrumProposalData1
       },
       arbitrumDm
     );
+
+    const createRetryableTicketGasParams2 = await estimateL2Transaction(
+      {
+        from: applyL1ToL2Alias(timelock.address),
+        to: ARBITRUM_BRIDGE_RECEIVER,
+        data: arbitrumProposalData2
+      },
+      arbitrumDm
+    );
+
+    const createRetryableTicketGasParams3 = await estimateL2Transaction(
+      {
+        from: applyL1ToL2Alias(timelock.address),
+        to: ARBITRUM_BRIDGE_RECEIVER,
+        data: arbitrumProposalData3
+      },
+      arbitrumDm
+    );
+
     const refundAddress = ARBITRUM_TIMELOCK;
 
     // Vaults
@@ -613,41 +687,79 @@ export default migration('1775661752_withdraw_reserves', {
           [recipient, exp(withdrawConfigV3.mainnet.cUSDCv3.amount, withdrawConfigV3.mainnet.cUSDCv3.decimals)]
         ),
       },
-      // 22. Send message to Optimism to trigger USDC and USDT withdrawals and bridging it back to Mainnet
+      // 22. Send message to Optimism to trigger USDT withdrawal and bridging it back to Mainnet
       {
         contract: opL1CrossDomainMessenger,
         signature: 'sendMessage(address,bytes,uint32)',
-        args: [OPTIMISM_BRIDGE_RECEIVER, optimismProposalData, 2_500_000],
+        args: [OPTIMISM_BRIDGE_RECEIVER, optimismProposalData1, 2_500_000],
       },
-      // 23. Send message to Base to trigger USDbC withdrawal and bridging it back to Mainnet
+      // 23. Send message to Optimism to trigger USDC withdrawal and bridging it back to Mainnet
+      {
+        contract: opL1CrossDomainMessenger,
+        signature: 'sendMessage(address,bytes,uint32)',
+        args: [OPTIMISM_BRIDGE_RECEIVER, optimismProposalData2, 2_500_000],
+      },
+      // 24. Send message to Base to trigger USDbC withdrawal and bridging it back to Mainnet
       {
         contract: baseL1CrossDomainMessenger,
         signature: 'sendMessage(address,bytes,uint32)',
         args: [BASE_BRIDGE_RECEIVER, baseProposalData, 3_000_000]
       },
-      // 24. Sends the proposal to the L2
+      // 25. Send message to Arbitrum to trigger USDC withdrawal and bridging it back to Mainnet
       {
         contract: arbitrumInbox,
         signature: 'createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,bytes)',
         args: [
           ARBITRUM_BRIDGE_RECEIVER,                         // address to,
           0,                                                // uint256 l2CallValue,
-          createRetryableTicketGasParams.maxSubmissionCost, // uint256 maxSubmissionCost,
+          createRetryableTicketGasParams1.maxSubmissionCost, // uint256 maxSubmissionCost,
           refundAddress,                                    // address excessFeeRefundAddress,
           refundAddress,                                    // address callValueRefundAddress,
-          createRetryableTicketGasParams.gasLimit,          // uint256 gasLimit,
-          createRetryableTicketGasParams.maxFeePerGas*2,    // uint256 maxFeePerGas,
-          arbitrumProposalData,                             // bytes calldata data
+          createRetryableTicketGasParams1.gasLimit,          // uint256 gasLimit,
+          createRetryableTicketGasParams1.maxFeePerGas*2,    // uint256 maxFeePerGas,
+          arbitrumProposalData1,                             // bytes calldata data
         ],
-        value: createRetryableTicketGasParams.deposit.mul(2),
+        value: createRetryableTicketGasParams1.deposit.mul(2),
       },
-      // 25. Transfer ownership of Aera vault to recipient
+      // 26. Send message to Arbitrum to trigger USDC.e withdrawal and bridging it back to Mainnet
+      {
+        contract: arbitrumInbox,
+        signature: 'createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,bytes)',
+        args: [
+          ARBITRUM_BRIDGE_RECEIVER,                         // address to,
+          0,                                                // uint256 l2CallValue,
+          createRetryableTicketGasParams2.maxSubmissionCost, // uint256 maxSubmissionCost,
+          refundAddress,                                    // address excessFeeRefundAddress,
+          refundAddress,                                    // address callValueRefundAddress,
+          createRetryableTicketGasParams2.gasLimit,          // uint256 gasLimit,
+          createRetryableTicketGasParams2.maxFeePerGas*2,    // uint256 maxFeePerGas,
+          arbitrumProposalData2,                             // bytes calldata data
+        ],
+        value: createRetryableTicketGasParams2.deposit.mul(2),
+      },
+      // 27. Send message to Arbitrum to trigger WETH withdrawal and bridging it back to Mainnet
+      {
+        contract: arbitrumInbox,
+        signature: 'createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,bytes)',
+        args: [
+          ARBITRUM_BRIDGE_RECEIVER,                         // address to,
+          0,                                                // uint256 l2CallValue,
+          createRetryableTicketGasParams3.maxSubmissionCost, // uint256 maxSubmissionCost,
+          refundAddress,                                    // address excessFeeRefundAddress,
+          refundAddress,                                    // address callValueRefundAddress,
+          createRetryableTicketGasParams3.gasLimit,          // uint256 gasLimit,
+          createRetryableTicketGasParams3.maxFeePerGas*2,    // uint256 maxFeePerGas,
+          arbitrumProposalData3,                             // bytes calldata data
+        ],
+        value: createRetryableTicketGasParams3.deposit.mul(2),
+      },
+      // 28. Transfer ownership of Aera vault to recipient
       {
         target: AERA_VAULT,
         signature: 'transferOwnership(address)',
         calldata: transferOwnershipCalldata,
       },
-      // 26. Transfer ownership of generic vault to recipient
+      // 29. Transfer ownership of generic vault to recipient
       {
         contract: avantgardeVault,
         signature: 'execTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)',

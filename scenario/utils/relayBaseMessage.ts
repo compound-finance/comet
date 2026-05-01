@@ -212,8 +212,7 @@ export default async function relayBaseMessage(
 export async function simulateL2ToL1TokenBridging(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
-  tenderlyLogs?: any[],
-  proposalId?: BigNumber
+  tenderlyLogs?: any[]
 ) {
   if(tenderlyLogs) {
     return;
@@ -245,11 +244,8 @@ export async function simulateL2ToL1TokenBridging(
 
   for (const event of proposalCreatedEvents) {
     const decodedEvent = bridgeReceiver.interface.parseLog(event);
-    const { id, signatures, calldatas } = decodedEvent.args;
+    const { signatures, calldatas } = decodedEvent.args;
 
-    if (proposalId && id.toString() !== proposalId.toString()) {
-      continue;
-    }
 
     for (let i = 0; i < signatures.length; i++) {
       if (signatures[i] === bridgeERC20ToSignature) {
