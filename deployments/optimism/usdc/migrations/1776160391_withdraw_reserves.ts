@@ -22,6 +22,7 @@ const withdrawConfig = {
 };
 
 const recipient = '0xDcB34b56842F853A69E86De5A0c22c49d97C130C';
+const OPTIMISM_CCTP_TOKEN_MESSENGER = '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d';
 
 let balancesBefore: Record<string, BigNumber> = {};
 
@@ -47,40 +48,40 @@ export default migration('1776160391_withdraw_reserves', {
       governor,
       opL1CrossDomainMessenger
     } = await govDeploymentManager.getContracts();
-
-    const withdrawUSDCCalldata = utils.defaultAbiCoder.encode(
+    const withdrawUsdcOptimismCalldata = utils.defaultAbiCoder.encode(
       ['address', 'uint256'],
       [l2Timelock.address, exp(withdrawConfig.cUSDCv3.amount, withdrawConfig.cUSDCv3.decimals)]
     );
 
-    const approveUSDCCalldata = utils.defaultAbiCoder.encode(
+    const approveUsdcOptimismCalldata = utils.defaultAbiCoder.encode(
       ['address', 'uint256'],
-      [l2StandardBridge.address, exp(withdrawConfig.cUSDCv3.amount, withdrawConfig.cUSDCv3.decimals)]
+      [OPTIMISM_CCTP_TOKEN_MESSENGER, exp(withdrawConfig.cUSDCv3.amount, withdrawConfig.cUSDCv3.decimals)]
     );
 
-    const bridgeERC20ToUSDCCalldata = utils.defaultAbiCoder.encode(
-      ['address', 'address', 'address', 'uint256', 'uint32', 'bytes'],
+    const depositForBurnUsdcOptimismCalldata = utils.defaultAbiCoder.encode(
+      ['uint256', 'uint32', 'bytes32', 'address', 'bytes32', 'uint256', 'uint32'],
       [
-        withdrawConfig.cUSDCv3.assetL2, // _localToken
-        withdrawConfig.cUSDCv3.assetL1, // _remoteToken
-        recipient, // _to
-        exp(withdrawConfig.cUSDCv3.amount, withdrawConfig.cUSDCv3.decimals), // _amount
-        200000, // _minGasLimit
-        '0x', // _data
+        exp(withdrawConfig.cUSDCv3.amount, withdrawConfig.cUSDCv3.decimals), // amount
+        0, // destinationDomain (Ethereum Mainnet)
+        utils.hexZeroPad(recipient, 32), // mintRecipient
+        withdrawConfig.cUSDCv3.assetL2, // burnToken
+        utils.hexZeroPad('0x', 32), // destinationCaller
+        exp(10, 6), // maxFee
+        1000 // minFinalityThreshold
       ]
     );
 
-    const withdrawUSDTCalldata = utils.defaultAbiCoder.encode(
+    const withdrawUsdtOptimismCalldata = utils.defaultAbiCoder.encode(
       ['address', 'uint256'],
       [l2Timelock.address, exp(withdrawConfig.cUSDTv3.amount, withdrawConfig.cUSDTv3.decimals)]
     );
 
-    const approveUSDTCalldata = utils.defaultAbiCoder.encode(
+    const approveUsdtOptimismCalldata = utils.defaultAbiCoder.encode(
       ['address', 'uint256'],
       [l2StandardBridge.address, exp(withdrawConfig.cUSDTv3.amount, withdrawConfig.cUSDTv3.decimals)]
     );
 
-    const bridgeERC20ToUSDTCalldata = utils.defaultAbiCoder.encode(
+    const bridgeERC20ToUsdtOptimismCalldata = utils.defaultAbiCoder.encode(
       ['address', 'address', 'address', 'uint256', 'uint32', 'bytes'],
       [
         withdrawConfig.cUSDTv3.assetL2, // _localToken
@@ -92,47 +93,67 @@ export default migration('1776160391_withdraw_reserves', {
       ]
     );
 
-    const l2ProposalData = utils.defaultAbiCoder.encode(
+    const optimismProposalData1 = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
         [
-          withdrawConfig.cUSDCv3.address,
-          withdrawConfig.cUSDCv3.assetL2,
-          l2StandardBridge.address,
           withdrawConfig.cUSDTv3.address,
           withdrawConfig.cUSDTv3.assetL2,
           l2StandardBridge.address,
         ],
         [
           0, 0, 0,
-          0, 0, 0,
         ],
         [
-          'withdrawReserves(address,uint256)',
-          'approve(address,uint256)',
-          'bridgeERC20To(address,address,address,uint256,uint32,bytes)',
           'withdrawReserves(address,uint256)',
           'approve(address,uint256)',
           'bridgeERC20To(address,address,address,uint256,uint32,bytes)'
         ],
         [
-          withdrawUSDCCalldata,
-          approveUSDCCalldata,
-          bridgeERC20ToUSDCCalldata,
-          withdrawUSDTCalldata,
-          approveUSDTCalldata,
-          bridgeERC20ToUSDTCalldata,
+          withdrawUsdtOptimismCalldata,
+          approveUsdtOptimismCalldata,
+          bridgeERC20ToUsdtOptimismCalldata,
+        ]
+      ]
+    );
+
+    const optimismProposalData2 = utils.defaultAbiCoder.encode(
+      ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
+      [
+        [
+          withdrawConfig.cUSDCv3.address,
+          withdrawConfig.cUSDCv3.assetL2,
+          OPTIMISM_CCTP_TOKEN_MESSENGER,
+        ],
+        [
+          0, 0, 0,
+        ],
+        [
+          'withdrawReserves(address,uint256)',
+          'approve(address,uint256)',
+          'depositForBurn(uint256,uint32,bytes32,address,bytes32,uint256,uint32)',
+        ],
+        [
+          withdrawUsdcOptimismCalldata,
+          approveUsdcOptimismCalldata,
+          depositForBurnUsdcOptimismCalldata,
         ]
       ]
     );
 
     const mainnetActions = [
-      // Send the proposal to the L2 bridge
+      // 1. Send message to Optimism to trigger USDT withdrawal and bridging it back to Mainnet
       {
         contract: opL1CrossDomainMessenger,
         signature: 'sendMessage(address,bytes,uint32)',
-        args: [bridgeReceiver.address, l2ProposalData, 2_500_000],
-      }
+        args: [bridgeReceiver.address, optimismProposalData1, 2_500_000],
+      },
+      // 2. Send message to Optimism to trigger USDC withdrawal and bridging it back to Mainnet
+      {
+        contract: opL1CrossDomainMessenger,
+        signature: 'sendMessage(address,bytes,uint32)',
+        args: [bridgeReceiver.address, optimismProposalData2, 2_500_000],
+      },
     ];
 
     const USDC = await getErc20FromAddress(govDeploymentManager, withdrawConfig.cUSDCv3.assetL1);
