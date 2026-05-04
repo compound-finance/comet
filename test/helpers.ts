@@ -812,6 +812,10 @@ export function mulFactor(n: bigint | BigNumber, factor: bigint | BigNumber):big
   return toBigInt(n) * toBigInt(factor) / factorScale;
 }
 
+export function divPrice(n: bigint | BigNumber, price: bigint | BigNumber, toScale: bigint | BigNumber): bigint {
+  return toBigInt(n) * toBigInt(toScale) / toBigInt(price);
+}
+
 function principalValueSupply(baseSupplyIndex: bigint, presentValue: bigint): bigint {
   return (presentValue * BigInt(BASE_INDEX_SCALE)) / baseSupplyIndex;
 }

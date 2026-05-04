@@ -4,7 +4,7 @@ import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { BigNumber, ContractTransaction } from 'ethers';
 import { SnapshotRestorer, takeSnapshot } from '../helpers/snapshot';
 
-describe.only('partial liquidation', function() {
+describe('partial liquidation', function() {
   // Protocol
   let comet: CometHarnessInterfaceExtendedAssetList;
 
@@ -31,14 +31,14 @@ describe.only('partial liquidation', function() {
   let snapshot: SnapshotRestorer;
 
   before(async function() {
-    const da = default24Assets();
+    const default24AssetsData = default24Assets();
     const protocol = await makeProtocol({
       base: 'USDC',
       assets: {
         USDC: { decimals: 6, initialPrice: 1 },
-        ...da,
-        // Large cap so the 24-collateral scenario can hold enough sUSDe at $1→$0.80 without a price pump.
-        sUSDe: { ...da.sUSDe, supplyCap: exp(400, 18) },
+        ...default24AssetsData,
+        // Large cap so the 24-collateral scenario can hold enough sUSDe.
+        sUSDe: { ...default24AssetsData.sUSDe, supplyCap: exp(400, 18) },
       },
       baseTrackingBorrowSpeed: 0,
       baseBorrowMin: baseBorrowMin,
@@ -3562,6 +3562,519 @@ describe.only('partial liquidation', function() {
 
     it('comet total supply base is unchanged', async () => {
       expect((await comet.totalsBasic()).totalSupplyBase).to.be.equal(totalSupplyBaseBefore);
+    });
+  });
+
+  // Note: this flow uses an 18-decimal base asset to show that the dust left
+  // after two full seizures would be non-zero base debt, but a third collateral
+  // is processed through _processDebtClosing before the account can keep it.
+  context.only('rsETH base: third collateral closes debt dust that would be non-zero base wei', function () {
+    const rsEthBaseScale = 10n ** 18n;
+    const rsEthBasePrice = exp(3400, 8);
+    const rsEthInitialBaseFunding = exp(10, 18);
+    const rsEthBaseBorrowMin = 2941176470588236n; // $10 at $3,400/rsETH
+    const compAmount = exp(0.1, 18); // 0.1 COMP, worth $10
+    const wethAmount = 7037037000000000n; // WETH LF-weighted value becomes $9.49999995
+    const daiAmount = exp(0.000001, 18); // enough to close a few price wei of debt
+    const borrowAmount = 5441176470588236n; // $18.50 at $3,400/rsETH
+    const droppedWethPrice = exp(1500, 8);
+
+    let rsEthComet: CometHarnessInterfaceExtendedAssetList;
+    let rsEthBaseToken: FaucetToken;
+    let compAsset: FaucetToken;
+    let wethAsset: FaucetToken;
+    let daiAsset: FaucetToken;
+    let rsEthPriceFeeds: { [symbol: string]: SimplePriceFeed };
+    let rsEthAlice: SignerWithAddress;
+    let rsEthAbsorber: SignerWithAddress;
+    let rsEthSnapshot: SnapshotRestorer;
+    let absorbTx: ContractTransaction;
+    let oldBalance: bigint;
+    let debtRemainingValue: bigint;
+    let minDebtValue: bigint;
+    let residualDebtValue: bigint;
+    let residualBorrowUnits: bigint;
+    let compSeizeAmount: bigint;
+    let compSeizedValue: bigint;
+    let compWantedCollateralValue: bigint;
+    let wethSeizeAmount: bigint;
+    let wethSeizedValue: bigint;
+    let wethWantedCollateralValue: bigint;
+    let daiSeizeAmount: bigint;
+    let daiSeizedValue: bigint;
+    let daiWantedCollateralValue: bigint;
+
+    before(async function() {
+      const protocol = await makeProtocol({
+        base: 'rsETH',
+        assets: {
+          rsETH: {
+            decimals: 18,
+            initialPrice: 3400,
+          },
+          COMP: {
+            decimals: 18,
+            initialPrice: 100,
+            borrowCF: exp(0.8, 18),
+            liquidateCF: exp(0.85, 18),
+            liquidationFactor: exp(0.9, 18),
+          },
+          WETH: {
+            decimals: 18,
+            initialPrice: 3000,
+            borrowCF: exp(0.75, 18),
+            liquidateCF: exp(0.80, 18),
+            liquidationFactor: exp(0.9, 18),
+          },
+          DAI: {
+            decimals: 18,
+            initialPrice: 1,
+            borrowCF: exp(0.83, 18),
+            liquidateCF: exp(0.88, 18),
+            liquidationFactor: exp(0.9, 18),
+          },
+        },
+        baseTrackingBorrowSpeed: 0,
+        borrowInterestRateBase: 0,
+        borrowInterestRateSlopeLow: 0,
+        borrowInterestRateSlopeHigh: 0,
+        baseBorrowMin: rsEthBaseBorrowMin,
+      });
+      rsEthComet = protocol.cometWithExtendedAssetList;
+      rsEthBaseToken = protocol.tokens['rsETH'] as FaucetToken;
+      compAsset = protocol.tokens['COMP'] as FaucetToken;
+      wethAsset = protocol.tokens['WETH'] as FaucetToken;
+      daiAsset = protocol.tokens['DAI'] as FaucetToken;
+      rsEthPriceFeeds = protocol.priceFeeds;
+      [rsEthAlice, rsEthAbsorber] = protocol.users;
+
+      for (const token of Object.values(protocol.tokens)) {
+        await (token as FaucetToken).allocateTo(rsEthAlice.address, exp(1_000_000, 18));
+        await (token as FaucetToken).connect(rsEthAlice).approve(rsEthComet.address, ethers.constants.MaxUint256);
+      }
+      await rsEthBaseToken.allocateTo(rsEthComet.address, rsEthInitialBaseFunding);
+      rsEthSnapshot = await takeSnapshot();
+    });
+
+    after(async () => await rsEthSnapshot.restore());
+
+    it('alice supplies three collaterals and borrows rsETH', async () => {
+      await expect(rsEthComet.connect(rsEthAlice).supply(compAsset.address, compAmount)).to.not.be.reverted;
+      await expect(rsEthComet.connect(rsEthAlice).supply(wethAsset.address, wethAmount)).to.not.be.reverted;
+      await expect(rsEthComet.connect(rsEthAlice).supply(daiAsset.address, daiAmount)).to.not.be.reverted;
+      await expect(rsEthComet.connect(rsEthAlice).withdraw(rsEthBaseToken.address, borrowAmount)).to.not.be.reverted;
+    });
+
+    it('WETH price drops and alice becomes liquidatable', async () => {
+      await rsEthPriceFeeds['WETH'].connect(rsEthAlice).setRoundData(0, droppedWethPrice, 0, 0, 0);
+      await rsEthComet.accrueAccount(rsEthAlice.address);
+
+      const principal = (await rsEthComet.userBasic(rsEthAlice.address)).principal;
+      const totalsBasic = await rsEthComet.totalsBasic();
+      oldBalance = presentValue(principal, totalsBasic.baseSupplyIndex, totalsBasic.baseBorrowIndex);
+
+      expect(await rsEthComet.isLiquidatable(rsEthAlice.address)).to.equal(true, 'User is not liquidatable');
+    });
+
+    it('calculates COMP full seizure values', async () => {
+      const compInfo = await rsEthComet.getAssetInfoByAddress(compAsset.address);
+      const wethInfo = await rsEthComet.getAssetInfoByAddress(wethAsset.address);
+      const daiInfo = await rsEthComet.getAssetInfoByAddress(daiAsset.address);
+      const compPrice = (await rsEthPriceFeeds['COMP'].latestRoundData())[1].toBigInt();
+      const wethPrice = (await rsEthPriceFeeds['WETH'].latestRoundData())[1].toBigInt();
+      const daiPrice = (await rsEthPriceFeeds['DAI'].latestRoundData())[1].toBigInt();
+
+      debtRemainingValue = mulPrice(-oldBalance, rsEthBasePrice, rsEthBaseScale);
+      minDebtValue = mulPrice(rsEthBaseBorrowMin, rsEthBasePrice, rsEthBaseScale);
+
+      const compCollateralValue = mulPrice(compAmount, compPrice, compInfo.scale);
+      const wethCollateralValue = mulPrice(wethAmount, wethPrice, wethInfo.scale);
+      const daiCollateralValue = mulPrice(daiAmount, daiPrice, daiInfo.scale);
+      const totalCollateralizedValue =
+        mulFactor(compCollateralValue, compInfo.borrowCollateralFactor) +
+        mulFactor(wethCollateralValue, wethInfo.borrowCollateralFactor) +
+        mulFactor(daiCollateralValue, daiInfo.borrowCollateralFactor);
+
+      // The target HF formula wants more than $10 from COMP, so COMP is fully seized.
+      const wantedCompCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * factorScale
+        / (mulFactor(compInfo.liquidationFactor, targetHealthFactor) - compInfo.borrowCollateralFactor.toBigInt());
+      expect(wantedCompCollateralValue).to.be.greaterThan(compCollateralValue);
+
+      compSeizeAmount = compAmount;
+      compWantedCollateralValue = compCollateralValue;
+      compSeizedValue = mulFactor(compWantedCollateralValue, compInfo.liquidationFactor);
+    });
+
+    it('calculates WETH full seizure values that leave non-zero rsETH borrow units', async () => {
+      const wethInfo = await rsEthComet.getAssetInfoByAddress(wethAsset.address);
+      const wethPrice = (await rsEthPriceFeeds['WETH'].latestRoundData())[1].toBigInt();
+
+      // COMP full seizure covers $9, leaving $9.50 debt, below the $10 baseBorrowMin.
+      debtRemainingValue -= compSeizedValue;
+      expect(debtRemainingValue).to.be.lessThan(minDebtValue);
+
+      const wethCollateralValue = mulPrice(wethAmount, wethPrice, wethInfo.scale);
+      const wethCollateralValueLeft = mulFactor(wethCollateralValue, wethInfo.liquidationFactor);
+
+      // WETH is short by 5 price wei, which is non-zero when converted to 18-decimal rsETH.
+      expect(wethCollateralValueLeft).to.be.lessThan(debtRemainingValue);
+      wethSeizeAmount = wethAmount;
+      wethWantedCollateralValue = wethCollateralValue;
+      wethSeizedValue = wethCollateralValueLeft;
+      residualDebtValue = debtRemainingValue - wethSeizedValue;
+      residualBorrowUnits = residualDebtValue * rsEthBaseScale / rsEthBasePrice;
+
+      expect(residualDebtValue).to.be.equal(5n);
+      expect(residualBorrowUnits).to.be.greaterThan(0n);
+    });
+
+    it('calculates DAI partial seizure that closes the residual debt dust', async () => {
+      const daiInfo = await rsEthComet.getAssetInfoByAddress(daiAsset.address);
+      const daiPrice = (await rsEthPriceFeeds['DAI'].latestRoundData())[1].toBigInt();
+
+      debtRemainingValue = residualDebtValue;
+      expect(debtRemainingValue).to.be.lessThan(minDebtValue);
+
+      const daiCollateralValue = mulPrice(daiAmount, daiPrice, daiInfo.scale);
+      const daiCollateralValueLeft = mulFactor(daiCollateralValue, daiInfo.liquidationFactor);
+      expect(debtRemainingValue).to.be.lessThan(daiCollateralValueLeft);
+
+      daiWantedCollateralValue = debtRemainingValue * factorScale / daiInfo.liquidationFactor.toBigInt();
+      daiSeizeAmount = divPrice(daiWantedCollateralValue, daiPrice, daiInfo.scale);
+      daiSeizedValue = debtRemainingValue;
+      daiWantedCollateralValue = mulPrice(daiSeizeAmount, daiPrice, daiInfo.scale);
+    });
+
+    it('absorb is successful', async () => {
+      absorbTx = await rsEthComet.connect(rsEthAbsorber).absorb(rsEthAbsorber.address, [rsEthAlice.address]);
+      await expect(absorbTx).to.not.be.reverted;
+    });
+
+    it('AbsorbCollateral event is emitted for COMP full seizure', async () => {
+      await expect(absorbTx).to.emit(rsEthComet, 'AbsorbCollateral').withArgs(
+        rsEthAbsorber.address,
+        rsEthAlice.address,
+        compAsset.address,
+        compSeizeAmount,
+        compWantedCollateralValue
+      );
+    });
+
+    it('AbsorbCollateral event is emitted for WETH full seizure', async () => {
+      await expect(absorbTx).to.emit(rsEthComet, 'AbsorbCollateral').withArgs(
+        rsEthAbsorber.address,
+        rsEthAlice.address,
+        wethAsset.address,
+        wethSeizeAmount,
+        wethWantedCollateralValue
+      );
+    });
+
+    it('AbsorbCollateral event is emitted for DAI dust close', async () => {
+      await expect(absorbTx).to.emit(rsEthComet, 'AbsorbCollateral').withArgs(
+        rsEthAbsorber.address,
+        rsEthAlice.address,
+        daiAsset.address,
+        daiSeizeAmount,
+        daiWantedCollateralValue
+      );
+    });
+
+    it('alice borrow balance is zero because DAI closes the dust', async () => {
+      expect(await rsEthComet.borrowBalanceOf(rsEthAlice.address)).to.be.equal(0);
+    });
+
+    it('alice keeps remaining DAI collateral', async () => {
+      expect(await rsEthComet.collateralBalanceOf(rsEthAlice.address, daiAsset.address)).to.be.equal(daiAmount - daiSeizeAmount);
+    });
+
+    it('debt dust would have been non-zero without the third collateral', () => {
+      expect(residualBorrowUnits).to.be.equal(14705882n);
+    });
+
+    it('DAI seized value closes the residual debt value', () => {
+      expect(residualDebtValue - daiSeizedValue).to.be.equal(0n);
+    });
+
+    it('log the state values', async () => {
+    // weth balance 
+      const wethBalance = await rsEthComet.collateralBalanceOf(rsEthAlice.address, wethAsset.address);
+      console.log('wethBalance', ethers.utils.formatEther(wethBalance));
+      // dai balance
+      const daiBalance = await rsEthComet.collateralBalanceOf(rsEthAlice.address, daiAsset.address);
+      console.log('daiBalance', ethers.utils.formatEther(daiBalance));
+      // residual debt value
+      console.log('residualDebtValue', ethers.utils.formatEther(residualDebtValue));
+      // residual borrow units
+      console.log('residualBorrowUnits', residualBorrowUnits);
+    });
+  });
+
+  // Note: this flow shows that target-HF math would leave tiny borrow debt and
+  // 1 collateral wei, but the minDebt override closes that residual debt.
+  context.only('rsETH base: minDebt override closes one-wei target-HF residue', function () {
+    const rsEthBaseScale = 10n ** 18n;
+    const rsEthBasePrice = exp(3400, 8);
+    const rsEthInitialBaseFunding = exp(10, 18);
+    const rsEthBaseBorrowMin = 2941176470588236n; // $10 at $3,400/rsETH
+    const compAmount = exp(0.1, 18); // 0.1 COMP, worth $10
+    const wethAmount = 7037037000000000n; // WETH LF-weighted value becomes $9.49999995
+    const usdtAmount = exp(11, 6); // 11 USDT, worth $11
+    const borrowAmount = 8514705829411765n; // $28.94999982 at $3,400/rsETH
+    const droppedWethPrice = exp(1500, 8);
+
+    let rsEthComet: CometHarnessInterfaceExtendedAssetList;
+    let rsEthBaseToken: FaucetToken;
+    let compAsset: FaucetToken;
+    let wethAsset: FaucetToken;
+    let usdtAsset: FaucetToken;
+    let rsEthPriceFeeds: { [symbol: string]: SimplePriceFeed };
+    let rsEthAlice: SignerWithAddress;
+    let rsEthAbsorber: SignerWithAddress;
+    let rsEthSnapshot: SnapshotRestorer;
+    let absorbTx: ContractTransaction;
+    let totalSupplyBaseBefore: BigNumber;
+    let totalBorrowBaseBefore: BigNumber;
+    let oldBalance: bigint;
+    let newBalance: bigint;
+    let basePaidOut: bigint;
+    let debtRemainingValue: bigint;
+    let minDebtValue: bigint;
+    let residualDebtValue: bigint;
+    let targetResidualDebtValue: bigint;
+    let targetResidualBorrowUnits: bigint;
+    let compSeizeAmount: bigint;
+    let compSeizedValue: bigint;
+    let compWantedCollateralValue: bigint;
+    let wethSeizeAmount: bigint;
+    let wethSeizedValue: bigint;
+    let wethWantedCollateralValue: bigint;
+    let usdtSeizeAmount: bigint;
+    let usdtSeizedValue: bigint;
+    let usdtWantedCollateralValue: bigint;
+
+    before(async function() {
+      const protocol = await makeProtocol({
+        base: 'rsETH',
+        assets: {
+          rsETH: {
+            decimals: 18,
+            initialPrice: 3400,
+          },
+          COMP: {
+            decimals: 18,
+            initialPrice: 100,
+            borrowCF: exp(0.8, 18),
+            liquidateCF: exp(0.85, 18),
+            liquidationFactor: exp(0.9, 18),
+          },
+          WETH: {
+            decimals: 18,
+            initialPrice: 3000,
+            borrowCF: exp(0.75, 18),
+            liquidateCF: exp(0.80, 18),
+            liquidationFactor: exp(0.9, 18),
+          },
+          USDT: {
+            decimals: 6,
+            initialPrice: 1,
+            borrowCF: exp(0.85, 18),
+            liquidateCF: exp(0.90, 18),
+            liquidationFactor: exp(0.95, 18),
+          },
+        },
+        baseTrackingBorrowSpeed: 0,
+        borrowInterestRateBase: 0,
+        borrowInterestRateSlopeLow: 0,
+        borrowInterestRateSlopeHigh: 0,
+        baseBorrowMin: rsEthBaseBorrowMin,
+      });
+      rsEthComet = protocol.cometWithExtendedAssetList;
+      rsEthBaseToken = protocol.tokens['rsETH'] as FaucetToken;
+      compAsset = protocol.tokens['COMP'] as FaucetToken;
+      wethAsset = protocol.tokens['WETH'] as FaucetToken;
+      usdtAsset = protocol.tokens['USDT'] as FaucetToken;
+      rsEthPriceFeeds = protocol.priceFeeds;
+      [rsEthAlice, rsEthAbsorber] = protocol.users;
+
+      for (const token of Object.values(protocol.tokens)) {
+        await (token as FaucetToken).allocateTo(rsEthAlice.address, exp(1_000_000, 18));
+        await (token as FaucetToken).connect(rsEthAlice).approve(rsEthComet.address, ethers.constants.MaxUint256);
+      }
+      await rsEthBaseToken.allocateTo(rsEthComet.address, rsEthInitialBaseFunding);
+      rsEthSnapshot = await takeSnapshot();
+    });
+
+    after(async () => await rsEthSnapshot.restore());
+
+    it('alice supplies three collaterals and borrows rsETH', async () => {
+      await expect(rsEthComet.connect(rsEthAlice).supply(compAsset.address, compAmount)).to.not.be.reverted;
+      await expect(rsEthComet.connect(rsEthAlice).supply(wethAsset.address, wethAmount)).to.not.be.reverted;
+      await expect(rsEthComet.connect(rsEthAlice).supply(usdtAsset.address, usdtAmount)).to.not.be.reverted;
+      await expect(rsEthComet.connect(rsEthAlice).withdraw(rsEthBaseToken.address, borrowAmount)).to.not.be.reverted;
+    });
+
+    it('WETH price drops and alice becomes liquidatable', async () => {
+      await rsEthPriceFeeds['WETH'].connect(rsEthAlice).setRoundData(0, droppedWethPrice, 0, 0, 0);
+      await rsEthComet.accrueAccount(rsEthAlice.address);
+
+      const principal = (await rsEthComet.userBasic(rsEthAlice.address)).principal;
+      const totalsBasic = await rsEthComet.totalsBasic();
+      totalSupplyBaseBefore = totalsBasic.totalSupplyBase;
+      totalBorrowBaseBefore = totalsBasic.totalBorrowBase;
+      oldBalance = presentValue(principal, totalsBasic.baseSupplyIndex, totalsBasic.baseBorrowIndex);
+
+      expect(await rsEthComet.isLiquidatable(rsEthAlice.address)).to.equal(true, 'User is not liquidatable');
+    });
+
+    it('calculates COMP full seizure values', async () => {
+      const compInfo = await rsEthComet.getAssetInfoByAddress(compAsset.address);
+      const wethInfo = await rsEthComet.getAssetInfoByAddress(wethAsset.address);
+      const usdtInfo = await rsEthComet.getAssetInfoByAddress(usdtAsset.address);
+      const compPrice = (await rsEthPriceFeeds['COMP'].latestRoundData())[1].toBigInt();
+      const wethPrice = (await rsEthPriceFeeds['WETH'].latestRoundData())[1].toBigInt();
+      const usdtPrice = (await rsEthPriceFeeds['USDT'].latestRoundData())[1].toBigInt();
+
+      debtRemainingValue = mulPrice(-oldBalance, rsEthBasePrice, rsEthBaseScale);
+      minDebtValue = mulPrice(rsEthBaseBorrowMin, rsEthBasePrice, rsEthBaseScale);
+
+      const compCollateralValue = mulPrice(compAmount, compPrice, compInfo.scale);
+      const wethCollateralValue = mulPrice(wethAmount, wethPrice, wethInfo.scale);
+      const usdtCollateralValue = mulPrice(usdtAmount, usdtPrice, usdtInfo.scale);
+      const totalCollateralizedValue =
+        mulFactor(compCollateralValue, compInfo.borrowCollateralFactor) +
+        mulFactor(wethCollateralValue, wethInfo.borrowCollateralFactor) +
+        mulFactor(usdtCollateralValue, usdtInfo.borrowCollateralFactor);
+
+      // The target HF formula wants more than $10 from COMP, so COMP is fully seized.
+      const wantedCompCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * factorScale
+        / (mulFactor(compInfo.liquidationFactor, targetHealthFactor) - compInfo.borrowCollateralFactor.toBigInt());
+      expect(wantedCompCollateralValue).to.be.greaterThan(compCollateralValue);
+
+      compSeizeAmount = compAmount;
+      compWantedCollateralValue = compCollateralValue;
+      compSeizedValue = mulFactor(compWantedCollateralValue, compInfo.liquidationFactor);
+    });
+
+    it('calculates WETH full seizure values', async () => {
+      const wethInfo = await rsEthComet.getAssetInfoByAddress(wethAsset.address);
+      const wethPrice = (await rsEthPriceFeeds['WETH'].latestRoundData())[1].toBigInt();
+
+      debtRemainingValue -= compSeizedValue;
+      expect(debtRemainingValue).to.be.greaterThan(minDebtValue);
+
+      const wethCollateralValue = mulPrice(wethAmount, wethPrice, wethInfo.scale);
+      const wethCollateralValueLeft = mulFactor(wethCollateralValue, wethInfo.liquidationFactor);
+
+      wethSeizeAmount = wethAmount;
+      wethWantedCollateralValue = wethCollateralValue;
+      wethSeizedValue = wethCollateralValueLeft;
+      debtRemainingValue -= wethSeizedValue;
+      expect(debtRemainingValue).to.be.greaterThan(minDebtValue);
+    });
+
+    it('calculates USDT target-HF seizure would leave one collateral wei and borrow dust', async () => {
+      const usdtInfo = await rsEthComet.getAssetInfoByAddress(usdtAsset.address);
+      const usdtPrice = (await rsEthPriceFeeds['USDT'].latestRoundData())[1].toBigInt();
+      const usdtCollateralValue = mulPrice(usdtAmount, usdtPrice, usdtInfo.scale);
+      const totalCollateralizedValue = mulFactor(usdtCollateralValue, usdtInfo.borrowCollateralFactor);
+
+      // debtRemainingValue is still above minDebt, so this uses target-HF partial liquidation.
+      expect(debtRemainingValue).to.be.greaterThan(minDebtValue);
+
+      usdtWantedCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * factorScale
+        / (mulFactor(usdtInfo.liquidationFactor, targetHealthFactor) - usdtInfo.borrowCollateralFactor.toBigInt());
+      expect(usdtWantedCollateralValue).to.be.lessThan(usdtCollateralValue);
+
+      usdtSeizeAmount = divPrice(usdtWantedCollateralValue, usdtPrice, usdtInfo.scale);
+      usdtSeizedValue = mulFactor(usdtWantedCollateralValue, usdtInfo.liquidationFactor);
+      targetResidualDebtValue = debtRemainingValue - usdtSeizedValue;
+      targetResidualBorrowUnits = targetResidualDebtValue * rsEthBaseScale / rsEthBasePrice;
+
+      // USDT has 6 decimals and $1 price, so divPrice rounds down to leave exactly 1 raw wei.
+      expect(usdtAmount - usdtSeizeAmount).to.be.equal(1n);
+      expect(targetResidualDebtValue).to.be.greaterThan(0n);
+      expect(targetResidualBorrowUnits).to.be.greaterThan(0n);
+      expect(targetResidualDebtValue).to.be.lessThan(minDebtValue);
+    });
+
+    it('minDebt override recalculates USDT seizure and closes the residual debt', async () => {
+      const usdtInfo = await rsEthComet.getAssetInfoByAddress(usdtAsset.address);
+      const usdtPrice = (await rsEthPriceFeeds['USDT'].latestRoundData())[1].toBigInt();
+
+      // Because target-HF seizure would leave debt below minDebt, absorbInternal
+      // overrides it with _processDebtClosing on the same collateral.
+      usdtWantedCollateralValue = debtRemainingValue * factorScale / usdtInfo.liquidationFactor.toBigInt();
+      usdtSeizeAmount = divPrice(usdtWantedCollateralValue, usdtPrice, usdtInfo.scale);
+      usdtSeizedValue = debtRemainingValue;
+      usdtWantedCollateralValue = mulPrice(usdtSeizeAmount, usdtPrice, usdtInfo.scale);
+      residualDebtValue = debtRemainingValue - usdtSeizedValue;
+
+      expect(usdtAmount - usdtSeizeAmount).to.be.equal(1n);
+      expect(residualDebtValue).to.be.equal(0n);
+    });
+
+    it('absorb is successful', async () => {
+      absorbTx = await rsEthComet.connect(rsEthAbsorber).absorb(rsEthAbsorber.address, [rsEthAlice.address]);
+      await expect(absorbTx).to.not.be.reverted;
+    });
+
+    it('newBalance is zero because minDebt override closes the dust', async () => {
+      newBalance = -(residualDebtValue * rsEthBaseScale / rsEthBasePrice);
+
+      expect(targetResidualBorrowUnits).to.be.greaterThan(0n);
+      expect(newBalance).to.be.equal(0n);
+      expect(await rsEthComet.borrowBalanceOf(rsEthAlice.address)).to.be.equal(0);
+    });
+
+    it('alice keeps one wei of USDT collateral', async () => {
+      expect(await rsEthComet.collateralBalanceOf(rsEthAlice.address, usdtAsset.address)).to.be.equal(1);
+    });
+
+    it('AbsorbDebt event is emitted with fully closed debt', async () => {
+      basePaidOut = newBalance - oldBalance;
+      const valueOfBasePaidOut = mulPrice(basePaidOut, rsEthBasePrice, rsEthBaseScale);
+
+      await expect(absorbTx).to.emit(rsEthComet, 'AbsorbDebt').withArgs(rsEthAbsorber.address, rsEthAlice.address, basePaidOut, valueOfBasePaidOut);
+    });
+
+    it('AbsorbCollateral event is emitted for COMP full seizure', async () => {
+      await expect(absorbTx).to.emit(rsEthComet, 'AbsorbCollateral').withArgs(
+        rsEthAbsorber.address,
+        rsEthAlice.address,
+        compAsset.address,
+        compSeizeAmount,
+        compWantedCollateralValue
+      );
+    });
+
+    it('AbsorbCollateral event is emitted for WETH full seizure', async () => {
+      await expect(absorbTx).to.emit(rsEthComet, 'AbsorbCollateral').withArgs(
+        rsEthAbsorber.address,
+        rsEthAlice.address,
+        wethAsset.address,
+        wethSeizeAmount,
+        wethWantedCollateralValue
+      );
+    });
+
+    it('AbsorbCollateral event is emitted for USDT partial seizure', async () => {
+      await expect(absorbTx).to.emit(rsEthComet, 'AbsorbCollateral').withArgs(
+        rsEthAbsorber.address,
+        rsEthAlice.address,
+        usdtAsset.address,
+        usdtSeizeAmount,
+        usdtWantedCollateralValue
+      );
+    });
+
+    it('comet total borrow base is zero', async () => {
+      expect((await rsEthComet.totalsBasic()).totalBorrowBase).to.be.equal(totalBorrowBaseBefore.sub(basePaidOut));
+      expect((await rsEthComet.totalsBasic()).totalBorrowBase).to.be.equal(0);
+    });
+
+    it('comet total supply base is unchanged', async () => {
+      expect((await rsEthComet.totalsBasic()).totalSupplyBase).to.be.equal(totalSupplyBaseBefore);
     });
   });
 });
