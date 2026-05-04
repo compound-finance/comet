@@ -137,6 +137,7 @@ const OPTIMISM_STANDARD_BRIDGE = '0x4200000000000000000000000000000000000010';
 const BASE_BRIDGE_RECEIVER = '0x18281dfC4d00905DA1aaA6731414EABa843c468A';
 const BASE_TIMELOCK = '0xCC3E7c85Bb0EE4f09380e041fee95a0caeDD4a02';
 const BASE_STANDARD_BRIDGE = '0x4200000000000000000000000000000000000010';
+const OPTIMISM_CCTP_TOKEN_MESSENGER = '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d';
 
 const ARBITRUM_USDCE_GATEWAY = '0x096760F208390250649E3e8763348E783AEF5562';
 const ARBITRUM_WETH_GATEWAY = '0x6c411aD3E74De3E7Bd422b94A27770f5B86C623B';
@@ -179,18 +180,19 @@ export default migration('1775661752_withdraw_reserves', {
 
     const approveUsdcOptimismCalldata = utils.defaultAbiCoder.encode(
       ['address', 'uint256'],
-      [OPTIMISM_STANDARD_BRIDGE, exp(withdrawConfigV3.optimism.cUSDCv3.amount, withdrawConfigV3.optimism.cUSDCv3.decimals)]
+      [OPTIMISM_CCTP_TOKEN_MESSENGER, exp(withdrawConfigV3.optimism.cUSDCv3.amount, withdrawConfigV3.optimism.cUSDCv3.decimals)]
     );
 
-    const bridgeERC20ToUsdcOptimismCalldata = utils.defaultAbiCoder.encode(
-      ['address', 'address', 'address', 'uint256', 'uint32', 'bytes'],
+    const depositForBurnUsdcOptimismCalldata = utils.defaultAbiCoder.encode(
+      ['uint256', 'uint32', 'bytes32', 'address', 'bytes32', 'uint256', 'uint32'],
       [
-        withdrawConfigV3.optimism.cUSDCv3.assetL2, // _localToken
-        withdrawConfigV3.optimism.cUSDCv3.assetL1, // _remoteToken
-        recipient, // _to
-        exp(withdrawConfigV3.optimism.cUSDCv3.amount, withdrawConfigV3.optimism.cUSDCv3.decimals), // _amount
-        200000, // _minGasLimit
-        '0x', // _data
+        exp(withdrawConfigV3.optimism.cUSDCv3.amount, withdrawConfigV3.optimism.cUSDCv3.decimals), // amount
+        0, // destinationDomain (Ethereum Mainnet)
+        utils.hexZeroPad(recipient, 32), // mintRecipient
+        withdrawConfigV3.optimism.cUSDCv3.assetL2, // burnToken
+        utils.hexZeroPad('0x', 32), // destinationCaller
+        exp(10, 6), // maxFee
+        1000 // minFinalityThreshold
       ]
     );
 
@@ -246,7 +248,7 @@ export default migration('1775661752_withdraw_reserves', {
         [
           withdrawConfigV3.optimism.cUSDCv3.address,
           withdrawConfigV3.optimism.cUSDCv3.assetL2,
-          OPTIMISM_STANDARD_BRIDGE,
+          OPTIMISM_CCTP_TOKEN_MESSENGER,
         ],
         [
           0, 0, 0,
@@ -254,12 +256,12 @@ export default migration('1775661752_withdraw_reserves', {
         [
           'withdrawReserves(address,uint256)',
           'approve(address,uint256)',
-          'bridgeERC20To(address,address,address,uint256,uint32,bytes)',
+          'depositForBurn(uint256,uint32,bytes32,address,bytes32,uint256,uint32)',
         ],
         [
           withdrawUsdcOptimismCalldata,
           approveUsdcOptimismCalldata,
-          bridgeERC20ToUsdcOptimismCalldata,
+          depositForBurnUsdcOptimismCalldata,
         ]
       ]
     );

@@ -266,24 +266,6 @@ export async function simulateL2ToL1TokenBridging(
           utils.hexZeroPad(l2CrossDomainMessenger.address, 32)
         ]);
 
-        // Set deposits[_localToken][_remoteToken] on L1StandardBridge so finalizeBridgeERC20 won't underflow
-        // deposits mapping is at base slot 2 in L1StandardBridge storage layout
-        // In finalizeBridgeERC20 context: _localToken = remoteToken (L1), _remoteToken = localToken (L2)
-        const depositsBaseSlot = 2;
-        const innerSlot = utils.keccak256(
-          utils.defaultAbiCoder.encode(['address', 'uint256'], [remoteToken, depositsBaseSlot])
-        );
-        const depositsSlot = utils.keccak256(
-          utils.defaultAbiCoder.encode(['address', 'bytes32'], [localToken, innerSlot])
-        );
-
-        console.log(`Setting deposits[${remoteToken}][${localToken}] to ${amount.toString()} at slot ${depositsSlot} on ${baseL1Bridge.address}`);
-        await governanceDeploymentManager.hre.network.provider.send('hardhat_setStorageAt', [
-          baseL1Bridge.address,
-          depositsSlot,
-          utils.hexZeroPad(amount.toHexString(), 32)
-        ]);
-
         await governanceDeploymentManager.hre.network.provider.send('hardhat_setStorageAt', [
           baseL1CrossDomainMessenger.address,
           '0xcc',
