@@ -1,0 +1,36 @@
+name: Rome CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Install Hardhat dependencies
+        run: |
+          if [ -f "package.json" ]; then
+            npm ci
+          fi
+
+      - name: Forge build
+        run: forge build --sizes
+
+      - name: Forge test
+        run: forge test -vvv
+
+      - name: Hardhat compile (if used)
+        run: |
+          if [ -f "hardhat.config.ts" ] || [ -f "hardhat.config.js" ]; then
+            npx hardhat compile
+          fi
