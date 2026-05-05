@@ -5,6 +5,21 @@ import "./CometMainInterface.sol";
 import "./IERC20NonStandard.sol";
 import "./IPriceFeed.sol";
 
+/// Phase 3 (Compound on Rome): minimal interface used by the modified
+/// `doTransferIn` to bypass the SPL CPI when the base asset is a unified
+/// token wrapper. Keeping this interface inline avoids a new import chain on
+/// Compound's monolithic Comet.sol — surgical edit, easy to revert.
+interface IUnifiedTokenDoTransferIn {
+    function transferFromPreDeposited(
+        address from,
+        address to,
+        bytes32 recipientAta,
+        uint256 value
+    ) external;
+    function solanaAtaOf(address account) external view returns (bytes32);
+    function isPreDepositedCaller(address who) external view returns (bool);
+}
+
 /**
  * @title Compound's Comet Contract
  * @notice An efficient monolithic money market protocol
@@ -785,6 +800,33 @@ contract Comet is CometMainInterface {
      */
     function doTransferIn(address asset, address from, uint amount) internal returns (uint) {
         uint256 preTransferBalance = IERC20NonStandard(asset).balanceOf(address(this));
+
+        // Phase 3 (Compound on Rome): when the asset is the canonical unified
+        // base token AND the caller (`from`) is a pre-deposited caller of that
+        // token, route the transfer through `transferFromPreDeposited`. This
+        // skips the SPL CPI entirely on the supply path — closing the Q1 1.4M
+        // CU gate. Behavior is observably identical from Compound's POV: the
+        // post-balance increases by `amount` exactly as a real transferFrom
+        // would have driven it.
+        //
+        // The `try/catch` around `isPreDepositedCaller` keeps the path safe
+        // for non-unified-token assets (e.g. the wrapped jitoSOL collateral).
+        // Any non-conforming ERC-20 falls through to the standard path below.
+        if (asset == baseToken) {
+            try IUnifiedTokenDoTransferIn(asset).isPreDepositedCaller(from) returns (bool isPre) {
+                if (isPre) {
+                    bytes32 cometAta = IUnifiedTokenDoTransferIn(asset).solanaAtaOf(address(this));
+                    IUnifiedTokenDoTransferIn(asset).transferFromPreDeposited(
+                        from, address(this), cometAta, amount
+                    );
+                    return IERC20NonStandard(asset).balanceOf(address(this)) - preTransferBalance;
+                }
+            } catch {
+                // Asset doesn't expose the unified-token interface; fall
+                // through to the standard ERC-20 path below.
+            }
+        }
+
         IERC20NonStandard(asset).transferFrom(from, address(this), amount);
         bool success;
         assembly ("memory-safe") {

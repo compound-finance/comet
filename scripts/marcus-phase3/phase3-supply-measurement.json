@@ -1,0 +1,397 @@
+{
+  "timestamp": "2026-05-05T04:40:15.428Z",
+  "network": "marcus",
+  "chainId": 121301,
+  "deployer": "0x109B92c1B867dbF0955928722Ca46db0a1F6e484",
+  "inputs": {
+    "COMET_PROXY": "0x458fd96E090F642D68f96CdEF7d42aCE41E0528c",
+    "UNIFIED_TOKEN_V2": "0xfbd4De54443ddB44b3B0b32f4D39813aC7df3A31"
+  },
+  "measurements": {
+    "snapshot": {
+      "txHash": "0xa8b028a80c566f7ab9c71cd57d46e062ca56061477cf629f0d922ca7b68525ef",
+      "sigMetas": [
+        {
+          "sig": "4zBHQEvRAVYSWTta7A48KXjmyiAxoS2USh9UZSXHqgBCSEXJL81w7DERUhUPPqa5DCD85K3bwTctccQYHaiVbg3g",
+          "cu": 278901,
+          "err": null,
+          "accts": 13,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        }
+      ]
+    },
+    "transferToComet": {
+      "txHash": "0x56ac7fbec91aaa5477952d21eba30243a34555054e2790d78960473f19237c1e",
+      "sigMetas": [
+        {
+          "sig": "4Mmb2SmCJKicE2KpthzJ7r2esV23Pc9YektwGo7jXPvam8wnd16fRG7art6NF2sGgtgYNCpeZ96dcTTMT52HUS8K",
+          "cu": 15807,
+          "err": null,
+          "accts": 5,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "4Mi5Tf8Q7zvPS3xooxHWaoS8i99sWR9qDzKSavUTR4DisK4aSS6exmPiLZMu8mAtbTtHaYKuf2bdf9gfwbmp1pLf",
+          "cu": 897519,
+          "err": null,
+          "accts": 16,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        }
+      ]
+    },
+    "supplyV3": {
+      "txHash": "0xc1bb0b32089f4cfbe2df3febb87d2788bd37499f41cf4513538691e1258a5f2f",
+      "sigMetas": [
+        {
+          "sig": "Db2iyagEeQoXEnSLB6gj5mqmTyVF48Dd2ruBPRBxopRspXVAbU4JXrLv5CgN5SoLMRvipdmfc39c6oCvQecjAH6",
+          "cu": 16395,
+          "err": null,
+          "accts": 5,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "4vHwYELcFVRA7Sfmk7EJttgx4qFbyDzYuAQshDUq53Y7TpfgqhsqYat8BJ4skGvNS282RnwcCgvYqGHw8uaVCUtT",
+          "cu": 108835,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "372hDhtwtj1G6DZqMsZoFtFDWuXN2vqvFuwdM7R355C8Lpe4fGCnBM2f6YJ5exLN7BmHBMsCgjCbk4SE8zrDn9SM",
+          "cu": 144655,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "EuKZLkopEHwArjS3EELDkWNSHkMNJpRdc8Fmh6qr3e3cSrjK6YNnZrNPy187nGkGMjuQUjjtFR5ay9bFLjtrtPE",
+          "cu": 146830,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "bWieamBc1ArFRHecfj1gSunPHb5gmBgZJzWuyTKS1xemAK53qeXW8XgwSa8tbVVRqVDCiCmrStriqDCdvejn89q",
+          "cu": 127556,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "3sBA3CTxXjyP2AEnGEmKSSGYWfWe6gb5H72y683YJvLy2kq2r2cbnUbrVRg7p88dLRS8rYBjMwM6YpHe4Q8UALRz",
+          "cu": 131923,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "36coE6rC2hcesNRGJ6AmxaHZU2jfYMZkKC2FMJWMNjg9Ec3SFucL4sfeiN56sccUNn2LyJqNnVTkYbELDoXbuDkP",
+          "cu": 127743,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "AvuZ8qj36V6YFcVja9YUJsbDUq7UvWEUAH5fXXRS76kqVTpdC5CopC6Ljgci3SFuKnsW43UjWhR3jZvtoi7Ehe5",
+          "cu": 125753,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "3Nvf5dBMUySQJB9778NZKXJCn1dnSpHTxwwvXyxtZxHXvK6WzHLhtsPD8XvuvV71uMeSnEqZpv4EysRQNqcx4d44",
+          "cu": 134456,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "25XPK9Nf8SpVhFYUPKphRWhfJkVVX8G6UegSyB4v6VQTauV3HdpZ6G2hEKczJ62W7ETW1CWW9ftZa68cgiPukeBH",
+          "cu": 124763,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "gRCWfGENzsu1LB2YTPZ46xyjYgJQqz9honJYewWKsDhiSLPAM6evvxPWc9vu65UYDaqKcdJW7Y2H9umcG2T53H6",
+          "cu": 135291,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "3v7f3gKneYqWHLKpxi5nAXnMSWLT86iqu3Jw8TceymopD5jUgEfs3mJFg5exAAAxwGkNAeuqnRcUTruk7MA4og7s",
+          "cu": 148871,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "3bEMqrSCAPMa3v6gKqYC2Duxgj2DnvMKSYXSW9QfRuvCnmyGzkSvcfN7WTNDGAjBzJWH5S51GKCS6GNRUW9EwiZ3",
+          "cu": 131101,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "21jBbigCgxPxhAwsyPGibuTtKazwchdZqbGgbBtXZLU9jsLCrbmSU4vDVo4EoWyU9wshSXBJou2rS1uicpeyCQvv",
+          "cu": 135369,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "2YMSPjKvLp2opdJpaxXB1QTjeusMB2cb7T2Bn8VArQFfZEBiqLnZBNsyhDu24xoDLJ1KCKaknkpkkG9CwmRrm8YQ",
+          "cu": 130914,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "67j6U8AVcoB71bVZm813BDbi58iXp8ABMMSdoD8TqdJZaKF4wJtw1nP5fyaNjDUjHpsV6SwphMLLY5aSrDB4SVYu",
+          "cu": 129998,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "5Egc8YtibKWKSvFLGayUp48MdrH8Hoh4xLWvqbxQ4xWKp3Sf9du5BgiMdh7LFzhWMwtA55xUqeaDGRVFtXwRdtTK",
+          "cu": 164060,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "3W7omTwYSu4TMdb4SKFwtxH3oD8PcyGiNy1B85PutcRiFspu4y8Hjhq33GsgPdsdBWkG9tZ7h5HopLPn3TicMwcJ",
+          "cu": 209071,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "2yfeCREbeX74qwKuVNa8sLR9yUiJ4642BUUAdnHY2NiACzb2rbjo1Vpc6T7ceCoxwr8nvQwsPsZStSwPP7hpCnob",
+          "cu": 141886,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "55vWg4m1vinsGRxMHyPgCMTtmpW6gpseiUegNCzDqDKTgofeKFuNEdyvF53bsPV5XVnohdMG4bLv2yBdA6pAuYJ8",
+          "cu": 141328,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "4gjJVkz55wtaVVqpmYcSnWr7Jm1nmkEsnraVfLiiNWFPSsFKVTzQJdx4weFiVi4XthmHyXkUZzitFPJUeX2UffLc",
+          "cu": 158063,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "2zc269tp39zBu7ZRdtmvRZwruJan4E693DJfSpKGd357kxhuQUxCmTyiWvmWEvvqhFkEKZPiMNS2AmVxbQtg6rZC",
+          "cu": 144919,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "uMkxEGqDkz2pSghXo6uuK3RZ36KdQD1wH9NRmmrd9TE7Q4Lmt9vT1B3UaD9bzFTd63HyJmyDNFyoNykt2EER3Fa",
+          "cu": 149294,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "8WEL356KGYAffyN4nicPGa1LnD6mjT6iTvrdgugFvBWYfYN5qgAcV586UCAhW26SZ41PoKEokxD14yafcLgnpnc",
+          "cu": 144672,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "215FtumRrkKB4ya3soHmm8wMsgUqqXY5h99wR6ZjBbTJxMBM1ud1ddvk3KCPQfKAf454wrqE9zzaG5BupToCgECm",
+          "cu": 144627,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "3upzATnY8c6YvwLfHnKqn5FbiiywFX6jQBQrdcUqfii2gPXRfx67AecrLduFocTcciuZBdqNp2CEnB5dF3pdR72S",
+          "cu": 152154,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "2uGpdfwVR3YavKupP3sEfodidqjHwqd2FTJfkVq6izZMi7rjMoAVBFCFycSmp88hJLCsc2LCFG8fuXbiHe7MpQmu",
+          "cu": 143259,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "5yr76V4FACAm4Z5ZG3mYK6UR6yo4crCym3ste4SvvSpQNBHENCzoQ47bB2xaRJGMLcKSo3MXacimutpZDWb38q3a",
+          "cu": 141852,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "5YWkexm2RrCi5MRJbhGkDi2EhAcGBwTefXw84KXZVSH4rqrTgYyogDb25KuxVymDV6wFNH73gYJSPYSw4GuTuMfY",
+          "cu": 161890,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "RHxVYtr53hQmC6xLzumXkEnyJHoyWpXyqhzsoeXD22rfhTcp9XgYwHJkH5DUksQCJybJjbUfSWs5oK4bDkPJTVX",
+          "cu": 171300,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "3pW4VQz4E5reUcgEZcfNhbtRbYE7x1CbiVdRCxuzJRiSRrzzSm2K5Z5gLp98ZabcYcKZAXj6YCTVNwVnr7ak9Xrc",
+          "cu": 151811,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "66Kk12N6uVgFs8WHrMiu6Wx1r2qneYPD9KiQNLNMuNZi4T9VgEjf1pE8WNQP4h7WKv6tFatwbbvBiXPRsTqnnpvE",
+          "cu": 153732,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "64cUJj85TQbvgKgDZFyMxQXeA86cVRsh4GTrsgC3thwHaPvY1NGKHySPLPGTcBZEFCU5m5CHi7ukCSAaWgzYJK5",
+          "cu": 114971,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "3yyre3bzjPHrzx6G6ZRzQDvYe1szZtDm1vsfZBaECkpZJGoQ1mLt6cKrWPeo9XbVLH3194q8WM1qTMeNRxBAFQqm",
+          "cu": 143712,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "2R9umDL1ikd2Fd3hQDNAJFYLEkHepZ5g9J3czhXQJnuxsTExajTtfX7Rct4xN9iZXvckL6ZmqbqW8WBeD7E8eXm1",
+          "cu": 165924,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "5co6xBkD3v2SpgkmJfz8whZojeBgfUA65Z1yLwMi78wdwN5CseLkAq5EiobCKks9KWtgkc1tg6xbfwJjgbovapF3",
+          "cu": 99457,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "5r1YZGf5GfzsMjRypH9VwPFQ6NhKW5infimyvcGYWze85FQgszy47tFBfpcauhLH7rkEDUjrHsLkymRFcu26DbzC",
+          "cu": 155934,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        },
+        {
+          "sig": "3TBHDoirNNJ1M65x4u9xEGkRKSc9CWg3XidKaabDCwSXAZxT4aFkvsh2faacLZ64BeoSrqWwMsvfxiUdSvPzB6p8",
+          "cu": 71900,
+          "err": null,
+          "accts": 24,
+          "altLookups": 0,
+          "altReadonly": 0,
+          "version": "legacy"
+        }
+      ],
+      "postCometBalance": "0"
+    }
+  }
+}

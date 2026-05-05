@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-05-05T04:27:52.863Z",
+  "network": "marcus",
+  "chainId": 121301,
+  "deployer": "0x109B92c1B867dbF0955928722Ca46db0a1F6e484",
+  "inputs": {
+    "COMET_PROXY": "0x458fd96E090F642D68f96CdEF7d42aCE41E0528c",
+    "UNIFIED_TOKEN_V2": "0xfbd4De54443ddB44b3B0b32f4D39813aC7df3A31",
+    "COMET_IMPL_V3": "0xE27fA4Fcefa100C07161a4d9999d8c5255c48d4f"
+  },
+  "orchestratorRouter": "0xbbaFb7427ef86f1F0a8425A06B1Fa04bbd273DA9",
+  "grantRouterTx": "0xe29f27bb3277f63de6f12c4680098afd3bd68ff45df483f7fbae8d15336baef9",
+  "grantCometTx": "0xf0aeae186b5944a6366f0f5c44d81147a2c4322cb4ebf3bc9cae13f6049c47b4",
+  "verifications": {
+    "routerBaseAsset": "0xfbd4De54443ddB44b3B0b32f4D39813aC7df3A31",
+    "routerComet": "0x458fd96E090F642D68f96CdEF7d42aCE41E0528c",
+    "routerUnifiedToken": "0xfbd4De54443ddB44b3B0b32f4D39813aC7df3A31",
+    "routerIsPreDeposited": true,
+    "cometIsPreDeposited": true
+  }
+}
