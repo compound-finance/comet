@@ -1,0 +1,63 @@
+{
+  "timestamp": "2026-05-05T02:39:22.015Z",
+  "network": "marcus",
+  "chainId": 121301,
+  "deployer": "0x109B92c1B867dbF0955928722Ca46db0a1F6e484",
+  "inputs": {
+    "WJITOSOL": "0x408724bD7A645761873a639dCB50C31FD3E371f4",
+    "COMP": "0xfc3D32a2fc5790485f1683e52bFBA2B1F613621e",
+    "USDC_FEED": "0xCD7bE9AC42dc73a4E618b8164820F8b3CF742714",
+    "SOL_USD_FEED": "0x6FcE6648C0350e3f7dA0C0f432405df98dD0D12E",
+    "COMET_PROXY": "0x458fd96E090F642D68f96CdEF7d42aCE41E0528c",
+    "COMET_PROXY_ADMIN": "0xC75611c265C3c03357D5f9CF5883967150E6782C",
+    "COMET_EXT": "0x85D80481244761Bc40800Ec108BF6bFB2AFD9339",
+    "UNIFIED_TOKEN_V2": "0xfbd4De54443ddB44b3B0b32f4D39813aC7df3A31"
+  },
+  "deployments": {
+    "cometImplV2": "0x9bAc716949D297E78de092FF60cd8Ac2f76e37AA"
+  },
+  "measurements": {
+    "upgradeProxy": {
+      "txHash": "0x6a68096014b1fdd0adadf5ed346ab7bcb597f9400e5d719a12fc3d9313f1e717",
+      "evmGas": "15000",
+      "blockNumber": 232,
+      "reverted": false,
+      "solanaTxs": [
+        "5J3uxoSsMoTbPFesAwbzjUgpeZj5juGrhoGQuFSBuQedgQiT2Z4urqeQpxCXsePFujgyQNebsUtuv1AuxdVhJZ7B",
+        "127UA54NEYq8NcXNt38VNP1hF1ttnzJMSb5PMcTW5zngaoUBRtug94f1s7RgbaiW2CaFcc5DwoDxT8J44FWebdUR"
+      ],
+      "computeUnits": [
+        16369,
+        205001
+      ],
+      "accountCount": 15,
+      "txVersion": "legacy"
+    },
+    "approveBeforeSupply": {
+      "txHash": "0xe12cd604e8d9a0c2184e1282e597e7acd1ffbeaa291fa264bae736c6280733ee",
+      "evmGas": "15000",
+      "blockNumber": 233,
+      "reverted": false,
+      "solanaTxs": [
+        "2nuMqgZ9p1jk46enfenhBhhFMEeX75GsJL8RfC6wp4YvMabBF7Q63g56122kguM9DwWFvYgsdMFxVZvnWA4eUtHR",
+        "3StM4EhdYSyPyuf7f1KHgDgsUoHYUT2aB3c6SptEJ5YRZZW78FegaNUQrpFDEtQ8yxFsYpGn73eRPKPzC3mdidpi"
+      ],
+      "computeUnits": [
+        14307,
+        764362
+      ],
+      "accountCount": 16,
+      "txVersion": "legacy"
+    }
+  },
+  "notes": [
+    "initializeStorage: execution reverted: ",
+    "supply failed: execution reverted: SimulateTransactionError: mollusk error: Failure(InvalidAccountData)"
+  ],
+  "priorImpl": "0xBf9CcC6e2321894AeFC1EF197A800A719E600B64",
+  "newImpl": "0x9bAc716949D297E78de092FF60cd8Ac2f76e37AA",
+  "verifications": {
+    "baseToken": "0xfbd4De54443ddB44b3B0b32f4D39813aC7df3A31",
+    "totalSupply": "0"
+  }
+}

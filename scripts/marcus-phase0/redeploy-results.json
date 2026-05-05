@@ -1,0 +1,80 @@
+{
+  "timestamp": "2026-05-04T23:52:50.857Z",
+  "network": "marcus",
+  "chainId": 121301,
+  "deployer": "0x109B92c1B867dbF0955928722Ca46db0a1F6e484",
+  "preExisting": {
+    "USDC": "0x14D9359B6F72CbAa25c54fedd5846B26965716e4",
+    "WJITOSOL": "0x408724bD7A645761873a639dCB50C31FD3E371f4",
+    "COMP": "0xfc3D32a2fc5790485f1683e52bFBA2B1F613621e",
+    "USDC_FEED": "0xCD7bE9AC42dc73a4E618b8164820F8b3CF742714",
+    "SOL_USD_FEED": "0x6FcE6648C0350e3f7dA0C0f432405df98dD0D12E",
+    "COMET_PROXY_ADMIN": "0xC75611c265C3c03357D5f9CF5883967150E6782C",
+    "COMET_EXT": "0x85D80481244761Bc40800Ec108BF6bFB2AFD9339",
+    "COMET_FACTORY": "0x0497eC7884693e630c7BF074F1E61169966f4a78",
+    "COMET_IMPL": "0x4e81Db7fd317B61BcDd73eA9983A6B077b4a5A39",
+    "CONFIGURATOR_IMPL": "0x12B81aaCC822C1Ff19Dc70B46Da7BC4feBB8AC56",
+    "CONFIGURATOR_PROXY": "0x53FF4076E6D82908806aEA3b5447AD919FdC10F8"
+  },
+  "redeployed": {
+    "cometRewards": "0x29142D91E5fe7EdD534f0783612a076E4309Dc24",
+    "cometProxy": "0x458fd96E090F642D68f96CdEF7d42aCE41E0528c"
+  },
+  "wiring": {
+    "proxyInitializeStorage": {
+      "txHash": "0x83c517f796a54f36bf83d1e399fb014148f26450d265c9cd01041819f039fe2c",
+      "evmGas": "1673440",
+      "blockNumber": 151
+    },
+    "setFactory": {
+      "txHash": "0xfb703173f5a9a89d1fa49ca572cc26cfd5b43c8d415ce68fcd61175845c13a20",
+      "evmGas": "1443760",
+      "blockNumber": 152
+    }
+  },
+  "proxyShapeMeasurement": {
+    "approve": {
+      "txHash": "0x8aeefe56b6f754c1cc64a1a3a9dfcb774490a0eed644790af741981e11d326e5",
+      "evmGas": "1443760",
+      "blockNumber": 153,
+      "solanaTxs": [
+        "55pZ7v4r6FR4qaBv6JS2DkAGRjhkEtmaFrQEqifP8x6oaXmy9qVEYEVbtzin8Q3uZRcYgACTFfA1FaDsSvu9ipdP"
+      ],
+      "computeUnits": [
+        137368
+      ],
+      "accountCounts": [
+        10
+      ],
+      "txSizes": [
+        646
+      ]
+    },
+    "supply": {
+      "txHash": "0x55fc03789f8d298b635bd5dec336d32b88b56eb7ba0c79694233b73892c46179",
+      "evmGas": "4316280",
+      "blockNumber": 154,
+      "solanaTxs": [
+        "25st3CwcpJSc63Bn1dKZyE68RHNBdYEQQJwPrQmAWq9XwFxED7zCcivyd4Grvw8Z6BZ42vVW7aqQFhCkYg3J91Yk",
+        "47QHQcfQgqaqef8dRVQJnUqoTVDJJ8cvbxGfNmgMFXfmHNiNyNqiEBBkTHm1B2KBHwruxbntW8m8GPc7Y9ozG7Jf"
+      ],
+      "computeUnits": [
+        14869,
+        746994
+      ],
+      "accountCounts": [
+        5,
+        20
+      ],
+      "txSizes": [
+        502,
+        849
+      ]
+    }
+  },
+  "notes": [
+    "Re-deploy after operator funded rome-sdk proxy keypairs (each ~9.9 SOL, was empty).",
+    "Original failure root cause: empty proxy keypairs caused emulator-side preflight to fail with mollusk Custom(1).",
+    "CometFactory verified live at 0x0497eC78... despite operator listing it as failed; deployed in original run."
+  ]
+}

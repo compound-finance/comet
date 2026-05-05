@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-05-05T03:28:59.623Z",
+  "measurements": {
+    "approveMaxToComet": {
+      "txHash": "0x74a8b01bf2742d0eef3e0c87e5f5aecc26ab97ddbbed942a3046832217ccf193",
+      "evmGas": "15000",
+      "block": 253,
+      "reverted": false,
+      "sigs": [
+        "cs1G8CpBueiLYT7CtjX2EpvxwMbzGCnzZAJ7c9cLseLBf1b7WQPmBLKiyHkhiHyiauP8aBFm4GQ9pH9o1WVSwoz",
+        "pwmNMcn6QqDnNzifDJiskgLg9hJLXmvXgSJYR53d7V1g9ZGA2otfGybELH8Wi3pBcHtpJsm4fhHUwxMHeKbFGrA"
+      ],
+      "cus": [
+        15807,
+        767469
+      ],
+      "accountCount": 16,
+      "altLookups": 0,
+      "txVersion": "legacy"
+    }
+  },
+  "balances": {
+    "deployerUsdcBefore": "3839999",
+    "cometUsdcBefore": "150001",
+    "deployerUsdcAfter": "3839999",
+    "cometUsdcAfter": "150001",
+    "cometBalanceForDeployer": "0",
+    "totalSupplyAfter": "0"
+  },
+  "supplyErr": "{\"m\":\"\",\"c\":-32000}"
+}

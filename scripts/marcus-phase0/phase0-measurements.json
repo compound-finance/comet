@@ -1,0 +1,298 @@
+{
+  "timestamp": "2026-05-04T23:21:59.139Z",
+  "network": "marcus",
+  "chainId": 121301,
+  "addresses": {
+    "USDC": "0x14D9359B6F72CbAa25c54fedd5846B26965716e4",
+    "WJITOSOL": "0x408724bD7A645761873a639dCB50C31FD3E371f4",
+    "USDC_FEED": "0xCD7bE9AC42dc73a4E618b8164820F8b3CF742714",
+    "COMET_IMPL": "0x4e81Db7fd317B61BcDd73eA9983A6B077b4a5A39",
+    "SOL_USD_FEED": "0x6FcE6648C0350e3f7dA0C0f432405df98dD0D12E",
+    "COMET_PROXY_ADMIN": "0xC75611c265C3c03357D5f9CF5883967150E6782C",
+    "COMET_EXT": "0x85D80481244761Bc40800Ec108BF6bFB2AFD9339",
+    "COMET_FACTORY": "0x0497eC7884693e630c7BF074F1E61169966f4a78",
+    "CONFIGURATOR_IMPL": "0x12B81aaCC822C1Ff19Dc70B46Da7BC4feBB8AC56",
+    "CONFIGURATOR_PROXY": "0x53FF4076E6D82908806aEA3b5447AD919FdC10F8",
+    "COMET_PROXY": "0x458fd96E090F642D68f96CdEF7d42aCE41E0528c",
+    "COMET_REWARDS": "0x29142D91E5fe7EdD534f0783612a076E4309Dc24"
+  },
+  "proxyShape": {
+    "note": "CometProxy/CometRewards/CometFactory deployed 2026-05-05 after proxy-keypair funding fix. Production shape verified — supply via CometProxy succeeds and benchmarks within ~6.6% of impl-direct.",
+    "proxyInitializeStorage": {
+      "txHash": "0x83c517f796a54f36bf83d1e399fb014148f26450d265c9cd01041819f039fe2c",
+      "blockNumber": 151
+    },
+    "setFactoryWiring": {
+      "txHash": "0xfb703173f5a9a89d1fa49ca572cc26cfd5b43c8d415ce68fcd61175845c13a20",
+      "blockNumber": 152
+    },
+    "supplyVerify": {
+      "txHash": "0x55fc03789f8d298b635bd5dec336d32b88b56eb7ba0c79694233b73892c46179",
+      "evmGas": "4316280",
+      "blockNumber": 154,
+      "solanaTxs": [
+        "25st3CwcpJSc63Bn1dKZyE68RHNBdYEQQJwPrQmAWq9XwFxED7zCcivyd4Grvw8Z6BZ42vVW7aqQFhCkYg3J91Yk",
+        "47QHQcfQgqaqef8dRVQJnUqoTVDJJ8cvbxGfNmgMFXfmHNiNyNqiEBBkTHm1B2KBHwruxbntW8m8GPc7Y9ozG7Jf"
+      ],
+      "computeUnits": [14869, 746994],
+      "accountCounts": [5, 20],
+      "txSizes": [502, 849],
+      "deltaVsImpl": {
+        "implIter2": 700809,
+        "proxyIter2": 746994,
+        "deltaCu": 46185,
+        "deltaPct": 6.6,
+        "comment": "Proxy DELEGATECALL + ERC1967 admin slot + impl slot reads add ~46K CU. Stays well under 1.4M ceiling."
+      }
+    }
+  },
+  "measurements": {
+    "initializeStorage": {
+      "evmGas": "1673440",
+      "txHash": "0xe0305eec12e1b3e114a5cac448439598d72facdc027f7694f50675708cfa8a5b"
+    },
+    "usdcApprove": {
+      "txHash": "0xbc9c2b4a532474e6c2330d024562b9f852a3800580af08da47b580d93cdcae33",
+      "evmGas": "10000",
+      "blockNumber": 122,
+      "solanaTxs": [
+        "t1PYJuNrxGadXo9uiJFdgmjc7JWanWzgFg8mApH6XKafv6Cp5vdxngsR1WRbLWmcPK4edFohQuAR9Qat4m5mt9h"
+      ],
+      "computeUnits": [
+        114083
+      ],
+      "accountCount": 10
+    },
+    "jitoApprove": {
+      "txHash": "0x9af612a1d18d73ef7c43308f77bc54b7877a92768347605dd0799ad55e7ac15c",
+      "evmGas": "10000",
+      "blockNumber": 123,
+      "solanaTxs": [
+        "2DAUWiWbBjy5JeJ1d4kYgkg7u8HDKgvrWHdJJHCAdzi7VDhimaLABEBpRB7KF7wG17kZt4DZMoHxRDfbJjtTSTge"
+      ],
+      "computeUnits": [
+        123083
+      ],
+      "accountCount": 10
+    },
+    "supplySmall": {
+      "txHash": "0xa7901bd3f37f098f7c8775669fe006f03be5244f194f9acc773fcfb568807a6a",
+      "evmGas": "4316280",
+      "blockNumber": 124,
+      "solanaTxs": [
+        "4ZwEgGQK2hfvGahG1zWsqrASbUomNtZ1KHQRvQS77z39hwb4rjz7WrxAmoG9bp9jxQ43Qevo49qYwjo8SrjX1N1x",
+        "ncqpSG7hUFsPh4DswuuGccQ8ENH8YUwRTFs8tnSER9KtGA5FvEMc25ipqSokwtRZbybn8CMtaENjBHknEpT9nWV"
+      ],
+      "computeUnits": [
+        16369,
+        700809
+      ],
+      "accountCount": 17
+    },
+    "supplyLarge": {
+      "txHash": "0x32b7a6758e068dbb7979fc9cb56c72c9daf9975dae50ced8a7ad864c07fba544",
+      "evmGas": "15000",
+      "blockNumber": 125,
+      "solanaTxs": [
+        "2eJZjjYQfSABHCDJ1cowCe4u8K5oN1uc9zsW2KeYeCwdv1SNfj5pTqkW5doM9FGYS66qww2zruDYwLso2kQY99PU",
+        "312DiheEMjYEAgWdAqvfrrvxpsUdnQfYJc24McEC49aDLkR4b6JfH4HfcPwA6aVmc61DbGD7CkUyT1EByMTcxxw3"
+      ],
+      "computeUnits": [
+        16369,
+        652382
+      ],
+      "accountCount": 17
+    },
+    "supplyCollateral": {
+      "txHash": "0xdfc85a00a0199a7dffd523578a01f4272b12fda5ddbb8e46e06ae13a52e23295",
+      "evmGas": "4316280",
+      "blockNumber": 126,
+      "solanaTxs": [
+        "25m77N8oaQJVVp8hXf4HWFeVz9pzJrPmqQK6jt7zNDchCawPvJqfYt52g7eP1T3fX1DjzcrZ3PcyAqCBFtzXTqXs",
+        "2AG7j5fwWn9aB1fQks5a2NbAzQrnr3KTFyaurszwSSzujjJG1a1oYnLXwQZvNBcFo6XHq1uaqFd8s8heRP3Hosza"
+      ],
+      "computeUnits": [
+        14869,
+        629506
+      ],
+      "accountCount": 19
+    },
+    "withdrawSmall": {
+      "txHash": "0x20c1c417f4485fcfe35142c3c958a9981eac451e3ac10b0c77429acda418e53d",
+      "evmGas": "15000",
+      "blockNumber": 127,
+      "solanaTxs": [
+        "2FCmW1DsJrLocwGd3XbzewLnvGGQsj8Bf8JhNjUzj71nHEtEjzhr7Wg137EMbRvc9PQ6huoMwo1YSTNYK1NuXqKY",
+        "3bdbFCgQXguvA9VtrVvxADuVSuwMC25ZjDbG7zhfNuKKeixHhDGeJEhYjpLVjoS3rESHkUvYBxKg7mkXtqRifQDT"
+      ],
+      "computeUnits": [
+        14307,
+        584421
+      ],
+      "accountCount": 16
+    },
+    "withdrawLarge": {
+      "txHash": "0xda39c98436983f341970fed0b5d9847062f0f7e5aca63b2708bb75190ceaf957",
+      "evmGas": "15000",
+      "blockNumber": 128,
+      "solanaTxs": [
+        "4xRdczs9bWtHxBzGhkRYHFAhcTY1CziQXGFmJRUmbtP1jYwRm6ckZvvuWmHsSoX2GSzQG5ixA1SGd3PhRh4H7Me7",
+        "1ty77ge7BUyHcZvarkRWyGqtF7xqFoP9xHfU7BjYbr5NDJXMAi4r6cDHn5LBcmFURagYukFTp2Jf8VyEnq636qS"
+      ],
+      "computeUnits": [
+        15807,
+        583853
+      ],
+      "accountCount": 16
+    },
+    "borrowSmall": {
+      "error": "execution reverted: ERC20: transfer amount exceeds balance"
+    },
+    "borrowLarge": {
+      "error": "execution reverted: ERC20: transfer amount exceeds balance"
+    },
+    "repay": {
+      "txHash": "0x5a7c549bb14c5f70a3fe3e55a47e9c9fb92ddcbb701f2a179d2bb01a48c0e6b9",
+      "evmGas": "15000",
+      "blockNumber": 129,
+      "solanaTxs": [
+        "2gMQH8qJCYWy9WxhmPhRn6sGD9UmFAguH2W96zYNurzX2CgKj9QX1GHYbbcoNUVAGknxAJozvcN8ibEfgaHqCwkz",
+        "58iiVJLfJPFRzKocHjBGrVGLNoHDrQhyZc76BhXZSNuaZKhRc5iEdS4bRRNG7UkouNQtYEvGbd4VyoZ3UoQ2CMh8"
+      ],
+      "computeUnits": [
+        14307,
+        675055
+      ],
+      "accountCount": 17
+    },
+    "absorbHealthyRevert": {
+      "error": "execution reverted: "
+    },
+    "usdcTransferBaseline": {
+      "txHash": "0x0270d1b5f009cb9d8b1f53027e1ce5c33fbe5faa73c32829dac04abaa6523bee",
+      "evmGas": "10000",
+      "blockNumber": 130,
+      "solanaTxs": [
+        "34qv7t8NKyg3vBee81z4KJpF7h7WBtjv6rd44U9kHCxP5QMu3a36sLC9Qh5qC5RSya3YVecvUcXDwgkgCiUsmZz4"
+      ],
+      "computeUnits": [
+        151838
+      ],
+      "accountCount": 11
+    }
+  },
+  "vr3FollowUp": {
+    "note": "Phase 0 follow-up 2026-05-05: borrow + absorb + buyCollateral measurements. See scripts/marcus-phase0/phase0-borrow-absorb.json for full run; scripts/marcus-phase0/measure-borrow-absorb.ts and measure-buycollateral.ts for source. Borrow done both impl-direct (Comet V1, Pyth feed) and proxy-shape (CometProxy production user path); absorb + buyCollateral done on CometHarness (cometV2) with mutable SimplePriceFeed for jitoSOL price drop.",
+    "borrowImplDirect": {
+      "operation": "comet.withdraw(USDC, 700e6) on Comet V1 — 555 USDC supply withdraw + 145 pure borrow",
+      "iter1Cu": 15807,
+      "iter2Cu": 1263800,
+      "iter1Accounts": 5,
+      "iter2Accounts": 25,
+      "iter1Size": 501,
+      "iter2Size": 1014,
+      "txVersions": ["legacy", "legacy"],
+      "txHash": "0x5d9cd33e7a1e525da6b4d8fc3509fce8a5153b32a17f880bb1b0d858f02bd74a",
+      "totalCu": 1279607,
+      "headroomVsCeiling": 136200,
+      "verdict": "FITS in 1.4M ceiling but iter2 = 1.26M leaves only 136K headroom. Ship + Jito tips."
+    },
+    "borrowImplDirectIncremental": {
+      "operation": "comet.withdraw(USDC, 30e6) on already-indebted position",
+      "iter1Cu": 15807,
+      "iter2Cu": 1254639,
+      "iter1Accounts": 5,
+      "iter2Accounts": 25,
+      "txHash": "0x406e071dfb69b5226b99f0f9ed43fa533ac8e86600eee84e604b05c7b85bef56"
+    },
+    "borrowProxy": {
+      "operation": "cometProxy.withdraw(USDC, 25e6) — first borrow via production CometProxy: 1 supply + 24 pure borrow vs 5 wjitoSOL coll",
+      "iter1Cu": 16369,
+      "iter2Cu": 1278885,
+      "iter1Accounts": 5,
+      "iter2Accounts": 28,
+      "iter1Size": 502,
+      "iter2Size": 1113,
+      "txVersions": ["legacy", "legacy"],
+      "txHash": "0x7a4c10b179dd034f0643a4b0855455402a59993b754304aa2438dfecb2c65af4",
+      "totalCu": 1295254,
+      "headroomVsCeiling": 121115,
+      "deltaVsImplDirect": {
+        "iter2": 15085,
+        "deltaPct": 1.2
+      },
+      "verdict": "FITS in 1.4M ceiling. 28 accounts == MAX_KEYS_WITHOUT_ALT (28) — at the boundary; first op that touches more accounts will trigger ALT promotion (rome-sdk auto)."
+    },
+    "borrowProxyIncremental": {
+      "operation": "cometProxy.withdraw(USDC, 5e6) — incremental pure borrow",
+      "iter1Cu": 14869,
+      "iter2Cu": 1277307,
+      "iter1Accounts": 5,
+      "iter2Accounts": 28,
+      "txHash": "0xe4042d20363f3d5752ebf9ad40b75c762203ed123c959626887f60da2e6d7118"
+    },
+    "repayProxy": {
+      "operation": "cometProxy.supply(USDC, 10e6) — partial repay via supply",
+      "iter1Cu": 15807,
+      "iter2Cu": 697666,
+      "iter1Accounts": 5,
+      "iter2Accounts": 20,
+      "txHash": "0xfc05ea5ca54b2c46325ff8e3d78b740f7a1469a067fe8863e82bdc39a9b0a165",
+      "verdict": "Repay (supply on debt) is identical CU to fresh supply (~700K). Not affected by indebtedness state — interest accrual is a small extension."
+    },
+    "absorb": {
+      "operation": "cometV2.absorb(admin, [signer1]) on CometHarness with forged underwater state, 1 collateral asset (wjitoSOL) seized",
+      "iter1Cu": 14895,
+      "iter2Cu": 1066197,
+      "iter1Accounts": 5,
+      "iter2Accounts": 19,
+      "iter2Size": 816,
+      "txHash": "0xf38584923c36d40411e61bd44437dbbbdb43c6e33a2872f5d1564e9c05fe6b7a",
+      "totalCu": 1081092,
+      "headroomVsCeiling": 333803,
+      "verdict": "FITS comfortably. Single-asset seize. Multi-asset absorb (e.g. 5 collaterals) would scale, but Compound's absorb loop is bounded by numAssets which is config-time-set."
+    },
+    "buyCollateral": {
+      "operation": "cometV2.buyCollateral(jitoSOL, 0.05e9 min, 5e6 USDC, admin) — spot buy from absorbed reserves",
+      "iter1Cu": 16395,
+      "iter2Cu": 923607,
+      "iter1Accounts": 5,
+      "iter2Accounts": 24,
+      "txHash": "0x0c7b1069355f71e127a06ba1a021eb4365d03537356847192ba4fb1375a28317",
+      "verdict": "FITS. Less than borrow's 1.27M iter2. 24 accounts; under the 28 ALT threshold."
+    },
+    "harnessUtilities": {
+      "note": "Not user-facing ops; CometHarness ledger writes used to forge signer1's underwater position cheaply. Each is single-Solana-tx (atomic), not iterative.",
+      "setCollateralBalance": { "cu": 287267, "accounts": 11 },
+      "setBasePrincipal": { "cu": 140621, "accounts": 10 },
+      "setTotalsBasic": { "iter1Cu": 16395, "iter2Cu": 218221, "accounts": [5, 11] },
+      "setTotalsCollateral": { "cu": 172618, "accounts": 10 }
+    },
+    "emulatorComparison": {
+      "status": "deferred",
+      "reason": "rome_emulateTx on Marcus current build expects RLP-encoded signed raw tx as a string param, not a tx-object map. Building signed-raw txs for unsigned-call testing is non-trivial. All measurements above are real on-chain ground truth. Per Phase 0 memo §VR-3, emulator/real CU comparison was a 'soft' goal not a gate."
+    },
+    "phase1Implications": {
+      "iter2HeadroomVsCeiling": {
+        "supply": "699K headroom (700K vs 1.4M)",
+        "borrowImpl": "136K headroom (1.26M vs 1.4M) — TIGHT",
+        "borrowProxy": "121K headroom (1.28M vs 1.4M) — TIGHT",
+        "absorb": "334K headroom (1.07M vs 1.4M)",
+        "buyCollateral": "476K headroom (0.92M vs 1.4M)"
+      },
+      "altThreshold": {
+        "currentBorrowProxyAccounts": 28,
+        "altLimit": 28,
+        "interpretation": "Borrow currently sits AT the ALT promotion threshold. Adding ANY new account (e.g. unified-USDC's MetaHook frame, or extra precompile) will trigger ALT promotion in rome-sdk. ALT path is wired but not exercised by Compound today; this changes in Phase 1."
+      },
+      "jitoTipRecommendation": "Confirmed: borrow's 1.27M iter2 with 121K headroom is exactly the kind of tail iteration that needs Jito tip submission for reliable mainnet landing. Phase 1 dispatch parameters from §VR-6 stand."
+    }
+  },
+  "notes": [
+    "Original 2026-05-04 run: CometProxy + CometRewards failed mollusk Custom(1) — root cause turned out to be empty rome-sdk proxy keypairs (3 of 3), NOT an emulator bug.",
+    "After 2026-05-05 keypair funding (~9.9 SOL each), CometProxy + CometRewards deployed cleanly on first attempt. CometFactory also confirmed live (was in fact deployed in the original run despite 12-retry log noise).",
+    "Original measurements run directly against the Comet impl bytecode for VR-3 — same opcodes for runtime ops. Production shape now verified through CometProxy with +6.6% CU overhead (746,994 vs 700,809) for supply.",
+    "Blocker #1 (mollusk emulator drift) CLOSED — see Phase 0 memo addendum for closure note.",
+    "VR-3 borrow + absorb follow-up captured 2026-05-05. Borrow proxy iter2=1,278,885 CU sits at 28 accounts == MAX_KEYS_WITHOUT_ALT — ALT promotion threshold met; ANY new account in Phase 1 (e.g. unified-USDC's MetaHook frame) triggers ALT. Absorb 1,066,197 CU. buyCollateral 923,607 CU. All fit 1.4M ceiling but borrow iter2 has only 121K CU headroom — Jito tips on iter2 are required, not optional, for reliable mainnet landing."
+  ]
+}

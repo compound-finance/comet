@@ -1,0 +1,438 @@
+{
+  "timestamp": "2026-05-05T00:00:00.000Z",
+  "network": "marcus",
+  "chainId": 121301,
+  "addresses": {
+    "USDC": "0x14D9359B6F72CbAa25c54fedd5846B26965716e4",
+    "WJITOSOL": "0x408724bD7A645761873a639dCB50C31FD3E371f4",
+    "USDC_FEED": "0xCD7bE9AC42dc73a4E618b8164820F8b3CF742714",
+    "COMP": "0xfc3D32a2fc5790485f1683e52bFBA2B1F613621e",
+    "COMET_IMPL_V1": "0x4e81Db7fd317B61BcDd73eA9983A6B077b4a5A39",
+    "COMET_EXT": "0x85D80481244761Bc40800Ec108BF6bFB2AFD9339",
+    "SOL_USD_FEED": "0x6FcE6648C0350e3f7dA0C0f432405df98dD0D12E",
+    "newSolFeed": "0x219f2835337693116580c4601D13B32468928e51",
+    "cometImplV2": "0x6dba2EFF3E118374957b8BeD296cF976906bFC63",
+    "COMET_PROXY": "0x458fd96E090F642D68f96CdEF7d42aCE41E0528c"
+  },
+  "measurements": {
+    "usdcTransferToCometLiquidity": {
+      "txHash": "0x0d8cdd3d0d5cb69f7619f6a7ef163c23223d9ad03249772c80aed36c333d1fe7",
+      "evmGas": "10000",
+      "blockNumber": 132,
+      "solanaTxs": [
+        "3ako6KuFohtQjtoEqQ2j5d4SDLfEomyUntcSwMNi1rJJX7Qvwjr4ThhjnfUusqTKNuDbvSffytXifMSpfGWqvaKj"
+      ],
+      "computeUnits": [
+        156338
+      ],
+      "accountCounts": [
+        11
+      ],
+      "txSizes": [
+        679
+      ],
+      "versions": [
+        "legacy"
+      ],
+      "semantic": "200 USDC transfer to Comet for borrow liquidity"
+    },
+    "borrowFirst": {
+      "txHash": "0x5d9cd33e7a1e525da6b4d8fc3509fce8a5153b32a17f880bb1b0d858f02bd74a",
+      "evmGas": "15000",
+      "blockNumber": 133,
+      "solanaTxs": [
+        "3Gv6CSraNoYCxvRU4uhuMuLbN7vjyKCucTWqpaguaoARSjL23mEA1SjunrpBFyuudscdspZhNY42tg64iG5tS1n5",
+        "4ynyMy2Lo7HLEyfrwK2MMaVnXk1on4Lv6aast8SDhH55P7psyJQjmc9QJcvRuAKNbwjrenFcHGPvHy8o8d71EkMp"
+      ],
+      "computeUnits": [
+        15807,
+        1263800
+      ],
+      "accountCounts": [
+        5,
+        25
+      ],
+      "txSizes": [
+        501,
+        1014
+      ],
+      "versions": [
+        "legacy",
+        "legacy"
+      ],
+      "emulator": {
+        "cu": null,
+        "accountList": null,
+        "error": "{\"code\":-32602,\"message\":\"Invalid params\",\"data\":\"invalid type: map, expected a string at line 1 column 0\"}"
+      },
+      "semantic": "555 supply withdraw + 145 USDC pure borrow"
+    },
+    "borrowIncremental": {
+      "txHash": "0x406e071dfb69b5226b99f0f9ed43fa533ac8e86600eee84e604b05c7b85bef56",
+      "evmGas": "15000",
+      "blockNumber": 134,
+      "solanaTxs": [
+        "4LSgdYzP19Nf2AGs9ttBoKSnxT6TdzuBzyFx4y3E3FtnmC3vwQ6jHy37MqnJi9KsFbCcoQ9KdCoLDVgbySjPShaZ",
+        "4FYAJuxqvDQjqzeA7z3rtoii63RewQC6FiQLStpYxev5uXT6TtsdJY5uYZnVy5gHL3pPFsz9JwgRqnWMxUUhhfuF"
+      ],
+      "computeUnits": [
+        15807,
+        1254639
+      ],
+      "accountCounts": [
+        5,
+        25
+      ],
+      "txSizes": [
+        501,
+        1014
+      ],
+      "versions": [
+        "legacy",
+        "legacy"
+      ],
+      "emulator": {
+        "cu": null,
+        "accountList": null,
+        "error": "rome_emulateTx returned 'Invalid params: invalid type: map, expected a string' — the params shape this client used is not what the RPC method expects on Marcus current build"
+      },
+      "semantic": "pure borrow on already-indebted position (175 USDC outstanding, against 10 wjitoSOL)"
+    },
+    "proxyJitoApprove": {
+      "txHash": "0x7c5e37ecb5f09e7a5619e2c9e82c0c6a1c3545f7878a11ea6c5ad50ded98278e",
+      "evmGas": "1443760",
+      "blockNumber": 165,
+      "solanaTxs": [
+        "22k2KQYCLpRcSxG2JG1t9aa44iLYGkBTy5aDiQzB5iBrK4KUkrjkgYj2UitjNTywLBaZSAbXuckNHDk4DAPP7Ydy"
+      ],
+      "computeUnits": [
+        138256
+      ],
+      "accountCounts": [
+        10
+      ],
+      "txSizes": [
+        647
+      ],
+      "versions": [
+        "legacy"
+      ]
+    },
+    "proxyLiquidityTopup": {
+      "txHash": "0xc28fdea67be2e087cb2f756ed80df817cded229d8489d4d8cc11cdfa61df5a0d",
+      "evmGas": "10000",
+      "blockNumber": 166,
+      "solanaTxs": [
+        "565PSd1KWuRCYUhThiYkg9tNCwP8jeZa6PxRurDQShqjajGckpdYS7ZUD7oYX5VsdtkGbmMfdyGLHbpNpAKFTQJ6"
+      ],
+      "computeUnits": [
+        158504
+      ],
+      "accountCounts": [
+        11
+      ],
+      "txSizes": [
+        680
+      ],
+      "versions": [
+        "legacy"
+      ]
+    },
+    "proxySupplyCollateral": {
+      "txHash": "0x95c7d43d5fd3aec5c0ad641fb87bae11ec8994e1e250eb17c9e03dd0bf9653dd",
+      "evmGas": "4316280",
+      "blockNumber": 167,
+      "solanaTxs": [
+        "5iFxNFFKEr8smtVccMGsf4E5eHRjACrKEFypJt5nhfBmVmjfjJpgjtt9QuRw52z2n2Sm4yMrhJaX7hSasvUh5rpx",
+        "3cXNt4cuWfmSa8Peomw11LyLCfeth4qA9pz1UtSHrcft6s7YrTqwbJ2tPsTKxoKR78pnPr6v21XLus85vz35MH2f"
+      ],
+      "computeUnits": [
+        16369,
+        667093
+      ],
+      "accountCounts": [
+        5,
+        22
+      ],
+      "txSizes": [
+        502,
+        915
+      ],
+      "versions": [
+        "legacy",
+        "legacy"
+      ]
+    },
+    "borrowProxy": {
+      "txHash": "0x7a4c10b179dd034f0643a4b0855455402a59993b754304aa2438dfecb2c65af4",
+      "evmGas": "15000",
+      "blockNumber": 168,
+      "solanaTxs": [
+        "59ghSphUUSpQcbi2x5xL2S8yAobooGs4RwjTybvrdZ7KG8GjPCTSxBVHcbn8fLChdBKZi9y52mwUcGSCJBDBA6fm",
+        "4wProsQopzie5vhdhBUoVsG79u75Hzq8YvXQqdDdf19zQd3hZq6wQKEjWRJyBzsSk7bWL2gPb7qcukGaY7Tgimjv"
+      ],
+      "computeUnits": [
+        16369,
+        1278885
+      ],
+      "accountCounts": [
+        5,
+        28
+      ],
+      "txSizes": [
+        502,
+        1113
+      ],
+      "versions": [
+        "legacy",
+        "legacy"
+      ],
+      "emulator": {
+        "error": "{\"code\":-32602,\"message\":\"Invalid params\",\"data\":\"invalid type: map, expected a string at line 1 column 0\"}",
+        "raw": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "error": {
+            "code": -32602,
+            "message": "Invalid params",
+            "data": "invalid type: map, expected a string at line 1 column 0"
+          }
+        }
+      },
+      "semantic": "first borrow via production CometProxy: 1 supply withdraw + 24 USDC pure borrow against 5 wjitoSOL coll"
+    },
+    "borrowProxyIncremental": {
+      "txHash": "0xe4042d20363f3d5752ebf9ad40b75c762203ed123c959626887f60da2e6d7118",
+      "evmGas": "15000",
+      "blockNumber": 169,
+      "solanaTxs": [
+        "2uT7yadWNQHudN9X2HPq32tV3gzRCBm7M721qwkUyHAnsbtv2P2d1MDTNVkQiNor7xRK9Hsh4G3pRuCNXPFkpq11",
+        "qVoJ7XXQ8kTxjYRv46DjntqJMPcc43kXnrVmyRGWi6vmrRZg7KjtYxhN3PDvpo6ZbGmDg52jcoaC98zzmACEEV5"
+      ],
+      "computeUnits": [
+        14869,
+        1277307
+      ],
+      "accountCounts": [
+        5,
+        28
+      ],
+      "txSizes": [
+        502,
+        1113
+      ],
+      "versions": [
+        "legacy",
+        "legacy"
+      ],
+      "emulator": {
+        "error": "{\"code\":-32602,\"message\":\"Invalid params\",\"data\":\"invalid type: map, expected a string at line 1 column 0\"}",
+        "raw": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "error": {
+            "code": -32602,
+            "message": "Invalid params",
+            "data": "invalid type: map, expected a string at line 1 column 0"
+          }
+        }
+      },
+      "semantic": "incremental pure borrow via proxy on already-indebted position"
+    },
+    "repayProxy": {
+      "txHash": "0xfc05ea5ca54b2c46325ff8e3d78b740f7a1469a067fe8863e82bdc39a9b0a165",
+      "evmGas": "15000",
+      "blockNumber": 170,
+      "solanaTxs": [
+        "3yqs5TbCGzDuSBUUBUHvbh1McUCmepsZMjumYvrXvEFUMFSwDtBnyGFMDcZNBH8jAKrDbH8qhQxYwNPyVQhu9qP7",
+        "5Y75SYsEkRAH11tW8wzWUQFsmHLjNJsrUZTDysRSGJnPxdxRYuCfzCxPU7wwXydmcvukXJod1MvCw6ac4d72Wg4E"
+      ],
+      "computeUnits": [
+        15807,
+        697666
+      ],
+      "accountCounts": [
+        5,
+        20
+      ],
+      "txSizes": [
+        502,
+        849
+      ],
+      "versions": [
+        "legacy",
+        "legacy"
+      ],
+      "emulator": {
+        "error": "{\"code\":-32602,\"message\":\"Invalid params\",\"data\":\"invalid type: map, expected a string at line 1 column 0\"}",
+        "raw": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "error": {
+            "code": -32602,
+            "message": "Invalid params",
+            "data": "invalid type: map, expected a string at line 1 column 0"
+          }
+        }
+      },
+      "semantic": "partial repay via proxy supply against debt position"
+    },
+    "harnessSetCollateral": {
+      "txHash": "0xa9e6e71f243b2e9172b43391494b73961af877b46a158fd7dcf544cea3649321",
+      "evmGas": "2877520",
+      "blockNumber": 171,
+      "solanaTxs": [
+        "3zfbtWawWWtojCH2Gfzu2rL218vd29tuaBbe418LRGhYLojvQJDXxFnUMPFy52f6tntLj4dFexj5zPsbXetAPEEV"
+      ],
+      "computeUnits": [
+        287267
+      ],
+      "accountCounts": [
+        11
+      ],
+      "txSizes": [
+        712
+      ],
+      "versions": [
+        "legacy"
+      ]
+    },
+    "harnessSetPrincipal": {
+      "txHash": "0x71743c2f9214be4757e3c212d06af250a748da12af21e84e8ea1dd27ca715785",
+      "evmGas": "10000",
+      "blockNumber": 172,
+      "solanaTxs": [
+        "32X1kwRCTzX4KLs9r3CRTLCxfhiP2Y2zo8m1PqDXPWqeu2CYHLEFT3r4CRm6vrBFtskvLCrVY4QYS3qUs8YmUKVN"
+      ],
+      "computeUnits": [
+        140621
+      ],
+      "accountCounts": [
+        10
+      ],
+      "txSizes": [
+        647
+      ],
+      "versions": [
+        "legacy"
+      ]
+    },
+    "harnessSetTotalsBasic": {
+      "txHash": "0xdbb612c22e61d6b2b68d1a2c9f496e3609012588374b835c9eadf906761dd27a",
+      "evmGas": "15000",
+      "blockNumber": 175,
+      "solanaTxs": [
+        "5QCBPevgUPk2srnYj8LdtYLnnwoXcVFqdBbkmr4NkjDZpQnLoaqNsYQUqt544sPPpXBakGhQ6bwia19D8qS37Mv6",
+        "53WdLySqA7mcLPYM38nrHX9r4CApfyW1NeLkDeEvnAfWNN1YxkhY739qy5rtTxnL3Ac4HywzsnN5yzPUTm8DZNcB"
+      ],
+      "computeUnits": [
+        16395,
+        218221
+      ],
+      "accountCounts": [
+        5,
+        11
+      ],
+      "txSizes": [
+        696,
+        552
+      ],
+      "versions": [
+        "legacy",
+        "legacy"
+      ]
+    },
+    "harnessSetTotalsCollateral": {
+      "txHash": "0x19646d61e2b3c3d2bcaa41c9ced8be381c9d3ec286a95529c6a2e5d260f89bc6",
+      "evmGas": "1443760",
+      "blockNumber": 176,
+      "solanaTxs": [
+        "4oTL5bHyXrJv3x2tPiuzQsLujkjFr2f47uKCFPfSFWP48uL4LsS2cGcDka8AzNSUncR8vnZjhK9sK3B8bJu1EwQ"
+      ],
+      "computeUnits": [
+        172618
+      ],
+      "accountCounts": [
+        10
+      ],
+      "txSizes": [
+        679
+      ],
+      "versions": [
+        "legacy"
+      ]
+    },
+    "absorb": {
+      "txHash": "0xf38584923c36d40411e61bd44437dbbbdb43c6e33a2872f5d1564e9c05fe6b7a",
+      "evmGas": "1448760",
+      "blockNumber": 178,
+      "solanaTxs": [
+        "3npyVJEh2gsvztyRxZo5FFW3wcE8anktAfopoKSBqNUbzLLUmD5V8wB791nft5DudeLb4omHj6mR2fCp927pkbes",
+        "4hMQeeNdZMYXwJUB3jaYaYneFcfEkXQtjxR8AQMsaqZv3qvzw3Yyo5uocNVBKEnHykn8tvDNNtAmXDqxdFnaSedM"
+      ],
+      "computeUnits": [
+        14895,
+        1066197
+      ],
+      "accountCounts": [
+        5,
+        19
+      ],
+      "txSizes": [
+        566,
+        816
+      ],
+      "versions": [
+        "legacy",
+        "legacy"
+      ],
+      "emulator": {
+        "error": "{\"code\":-32602,\"message\":\"Invalid params\",\"data\":\"invalid type: map, expected a string at line 1 column 0\"}",
+        "raw": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "error": {
+            "code": -32602,
+            "message": "Invalid params",
+            "data": "invalid type: map, expected a string at line 1 column 0"
+          }
+        }
+      },
+      "semantic": "1 underwater account, 1 collateral asset to seize, harness-forged state"
+    },
+    "buyCollateral": {
+      "txHash": "0x0c7b1069355f71e127a06ba1a021eb4365d03537356847192ba4fb1375a28317",
+      "evmGas": "2882520",
+      "blockNumber": 180,
+      "solanaTxs": [
+        "3d1ujuAMEyHfttATrzfgyxnKsepy3g46hHAx1X83CJwCo8KkRiJy27qXT41SgUgz9g4vs7RusVbkWgmkWBcT6mM",
+        "3uxpWRFRigBZ4dJM7H8ehQN4iPptxEfauqTPUGNVy3VS5wmBAnCrzNAx6D9txBEBEs6boMEsZcEDy13pk172SzNH"
+      ],
+      "computeUnits": [
+        16395,
+        923607
+      ],
+      "accountCounts": [
+        5,
+        24
+      ],
+      "txSizes": [
+        566,
+        981
+      ],
+      "versions": [
+        "legacy",
+        "legacy"
+      ],
+      "semantic": "spot purchase from absorbed reserves"
+    }
+  },
+  "notes": [
+    "Stage 1 (borrow) results captured from first run on 2026-05-05.",
+    "Stage 2 (absorb) deferred to retry with CometHarness deploy + setBasePrincipal forging.",
+    "signer1 liquidatable post-price-drop: true",
+    "post-absorb: signer1 borrow=55.000052, signer1 coll=1.0, reserves=0.0",
+    "signer1 liquidatable post-price-drop: true",
+    "post-absorb: signer1 borrow=0.0, signer1 coll=0.0, reserves=0.0"
+  ]
+}

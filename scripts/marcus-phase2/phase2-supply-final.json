@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-05-05T03:14:25.094Z",
+  "measurements": {
+    "approveMaxToComet": {
+      "txHash": "0x75a1d9e7e90f7d04d1ae2575b5fe88281095e5f2e449e31ce365e557682e75fe",
+      "evmGas": "15000",
+      "block": 243,
+      "reverted": false,
+      "sigs": [
+        "hzvEvHp3GbsEygiuDFuRobnvmpPitMNXpk6UkofABJSimUT7WdHjMkrZasFNnw2RVemrjv9cqUdMzymsdt98cWG",
+        "YMGosS1XmMrG1TLatKJiMJxitG9RfQzgpWvLwrJs6d4G5i8RJozGfLpkRRbNCUkxE9CHpDABfpx35RdMxUhQFs4"
+      ],
+      "cus": [
+        15807,
+        770469
+      ],
+      "accountCount": 16,
+      "altLookups": 0,
+      "txVersion": "legacy"
+    },
+    "supplyError": "{\"message\":\"\",\"code\":-32000}",
+    "withdrawError": "{\"m\":\"execution reverted: SimulateTransactionError: mollusk error: Failure(Custom(1))\"}"
+  },
+  "totalSupplyAfter": "0",
+  "cometBalance": "0"
+}

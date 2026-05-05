@@ -88,7 +88,7 @@ const {
 function* deriveAccounts(pk: string, n: number = 10) {
   for (let i = 0; i < n; i++){
     if(!pk.startsWith('0x')) pk = '0x' + pk;
-    yield (BigInt(pk) + BigInt(i)).toString(16);
+    yield '0x' + (BigInt(pk) + BigInt(i)).toString(16).padStart(64, '0');
   }
 }
 
@@ -199,6 +199,12 @@ export const networkConfigs: NetworkConfig[] = [
     network: 'scroll',
     chainId: 534352,
     url: 'https://rpc.scroll.io',
+  },
+  {
+    network: 'marcus',
+    chainId: 121301,
+    url: 'https://marcus.devnet.romeprotocol.xyz/',
+    gas: 30000000,
   },
 ];
 

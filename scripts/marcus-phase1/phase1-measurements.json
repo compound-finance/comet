@@ -1,0 +1,101 @@
+{
+  "timestamp": "2026-05-05T01:55:23.031Z",
+  "network": "marcus",
+  "chainId": 121301,
+  "deployer": "0x109B92c1B867dbF0955928722Ca46db0a1F6e484",
+  "inputs": {
+    "usdcMintBs58": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+    "usdcMintBytes32": "0x3b442cb3912157f13a933d0134282d032b5ffecd01a2dbf1b7790608df002ea7",
+    "cometProxy": "0x458fd96E090F642D68f96CdEF7d42aCE41E0528c",
+    "cometRewards": "0x29142D91E5fe7EdD534f0783612a076E4309Dc24"
+  },
+  "measurements": {
+    "approve": {
+      "txHash": "0xf5ce164d61d658abd7d3cc763d3280f1ac80178ab670918df3a5e7262ac0f6fc",
+      "evmGas": "1443760",
+      "blockNumber": 219,
+      "reverted": false,
+      "solanaTxs": [
+        "E1Behpehk9wNspzdoHeCs7DQujzk6d8uFRLcufyBuSzFTnweYB6n6uaKEBX11bk2wqyQiv4RuCBPA7uRzMcBxfk"
+      ],
+      "computeUnits": [
+        137962
+      ],
+      "accountCount": 10,
+      "txVersion": "legacy"
+    },
+    "transferZeroSelf": {
+      "error": "execution reverted: SimulateTransactionError: mollusk error: Failure(InvalidAccountData)"
+    },
+    "transferOneToFresh": {
+      "error": "execution reverted: SimulateTransactionError: mollusk error: Failure(InvalidAccountData)"
+    },
+    "grantRole": {
+      "txHash": "0xa4ad139c94a0fc469a3cfeb983256ba13963a28969ae0201ea7258bf56394418",
+      "evmGas": "1443760",
+      "blockNumber": 220,
+      "reverted": false,
+      "solanaTxs": [
+        "436fyUggfM9FpMH9PwtyAYJGoSgySjBuKyZEPRgMW2hhNJJKwkrRkyTUZgiQ5HpYjBSUayM89FZjDXha5D3trMAW"
+      ],
+      "computeUnits": [
+        148049
+      ],
+      "accountCount": 11,
+      "txVersion": "legacy"
+    },
+    "snapshotAta": {
+      "txHash": "0x7eb544c5c600c37106741252407ac1d63f90befc0895200911ffe28d9cfa07e8",
+      "evmGas": "2877520",
+      "blockNumber": 221,
+      "reverted": false,
+      "solanaTxs": [
+        "2d36BiBXm2Kf6MQBg6oHdTNcDTgZmSpvf5PhQUdGB4k86VVudzH5MtJ6gB1TmfG8SsjbZegiJnYSu1A4YFejjSAg"
+      ],
+      "computeUnits": [
+        222356
+      ],
+      "accountCount": 13,
+      "txVersion": "legacy"
+    },
+    "preDepositedRevert": {
+      "error": "execution reverted: UnifiedToken: insufficient pre-deposit"
+    },
+    "revokeRole": {
+      "txHash": "0x6eb1ce9be2cb9dff0f1cd798cb5f0e3685634b43aa22635cdb7473381c820cc1",
+      "evmGas": "10000",
+      "blockNumber": 222,
+      "reverted": false,
+      "solanaTxs": [
+        "228JNgdwoKqpjTZ1QwAkxB8oirhD6giv3TRhCvDTDJDphdpy4NzwkzMQ7xXNECQz2QCr4zVZjzpqsKEZhxAGrkJg"
+      ],
+      "computeUnits": [
+        129338
+      ],
+      "accountCount": 11,
+      "txVersion": "legacy"
+    }
+  },
+  "notes": [
+    "Phase 1.4 — UnifiedToken Marcus integration smoke + CU measurement",
+    "Deploys a UnifiedToken bound to Solana devnet USDC mint",
+    "transfer/transferFrom CPIs sign as msg.sender AUTHORITY_PDA — see Phase 1 memo §Cross-impl drift for the integration nuance"
+  ],
+  "deployments": {
+    "unifiedToken": "0xBaEDFcfd5e2C042F0f9929f02CA2619eABc22a0C"
+  },
+  "staticState": {
+    "mintId": "0x3b442cb3912157f13a933d0134282d032b5ffecd01a2dbf1b7790608df002ea7",
+    "name": "Unified USDC",
+    "symbol": "USDC",
+    "decimals": 6,
+    "deployerAta": "0xe09d44df016849af36ab930fc4f95132d5bf30914bb2801e60a37e9de210b611",
+    "deployerBalance": "0"
+  },
+  "spent": {
+    "preWei": "66604823213659573400",
+    "postWei": "66264627125646913400",
+    "diffWei": "340196088012660000",
+    "diffUsdc": "0.34019608801266"
+  }
+}

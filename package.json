@@ -67,6 +67,9 @@
     "@nomiclabs/hardhat-etherscan": "3.1.7",
     "@safe-global/safe-core-sdk": "^3.3.2",
     "@safe-global/safe-ethers-lib": "^1.9.2",
+    "@solana/spl-token": "^0.4.14",
+    "@solana/web3.js": "^1.98.4",
+    "@tenderly/hardhat-tenderly": "^2.5.2",
     "@typechain/ethers-v5": "^8.0.2",
     "@typechain/hardhat": "^3.0.0",
     "@types/chai": "^4.2.22",
@@ -93,8 +96,7 @@
     "ts-node": "^10.4.0",
     "typechain": "^6.0.2",
     "typescript": "^4.4.4",
-    "vendoza": "0.0.4",
-    "@tenderly/hardhat-tenderly": "^2.5.2"
+    "vendoza": "0.0.4"
   },
   "repository": "git@github.com:compound-finance/comet.git",
   "resolutions": {

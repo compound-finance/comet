@@ -1,0 +1,76 @@
+{
+  "timestamp": "2026-05-05T02:31:11.506Z",
+  "network": "marcus",
+  "chainId": 121301,
+  "deployer": "0x109B92c1B867dbF0955928722Ca46db0a1F6e484",
+  "inputs": {
+    "usdcMintBs58": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+    "usdcMintBytes32": "0x3b442cb3912157f13a933d0134282d032b5ffecd01a2dbf1b7790608df002ea7",
+    "cometProxy": "0x458fd96E090F642D68f96CdEF7d42aCE41E0528c",
+    "cometProxyAdmin": "0xC75611c265C3c03357D5f9CF5883967150E6782C",
+    "configuratorProxy": "0x53FF4076E6D82908806aEA3b5447AD919FdC10F8",
+    "cometFactory": "0x0497eC7884693e630c7BF074F1E61169966f4a78",
+    "cometExt": "0x85D80481244761Bc40800Ec108BF6bFB2AFD9339",
+    "placeholderWjitoSol": "0x408724bD7A645761873a639dCB50C31FD3E371f4",
+    "usdcPriceFeed": "0xCD7bE9AC42dc73a4E618b8164820F8b3CF742714",
+    "jitoSolPriceFeed": "0x6FcE6648C0350e3f7dA0C0f432405df98dD0D12E",
+    "compPlaceholder": "0xfc3D32a2fc5790485f1683e52bFBA2B1F613621e"
+  },
+  "deployments": {
+    "unifiedTokenV2": "0xfbd4De54443ddB44b3B0b32f4D39813aC7df3A31"
+  },
+  "measurements": {
+    "approveMaxToProxy": {
+      "txHash": "0x74d8d8438f284ad8b0343f7c12e549b0beecbc4d5b39b65dee66209483c1b9da",
+      "evmGas": "1448760",
+      "blockNumber": 225,
+      "reverted": false,
+      "solanaTxs": [
+        "4tQrcMSpoBf6GNzJNXyN6DcmqqynET7Lcs3JqFSNu5CVd8Z6eDVGgYVvEH9Hu86Tr8z8vCmiC49jfbJ2KGX1NyVA",
+        "4tifPFfWuSLFNKwd7RRY43mzcSDu2DQkaG5hESRGfM2ugcaCRAZ9GuWKZ7jY69kEzWNnAy6g2RmtHjcF4isfor3Y"
+      ],
+      "computeUnits": [
+        14869,
+        781633
+      ],
+      "accountCount": 16,
+      "txVersion": "legacy"
+    },
+    "approveFiniteToProxy": {
+      "txHash": "0xe9a35cd271aa87a97dcdbf993c39e3cb10cdd161cb708daff62fb401d5427087",
+      "evmGas": "15000",
+      "blockNumber": 226,
+      "reverted": false,
+      "solanaTxs": [
+        "4Yr5rjpf6AAsdEsi2gJpwQRPRv1gNcw13SC3XF96WLSAE66PwnXb1xqqpEbsm6ZvFDNN9FWvUuMGdTW6qFQAhi3e",
+        "4Wjbay26xTu5MkeV56tTkKGXY8QSU5hEUU1xPqA4J83wuYTKWhLVBq1sTVPFbyDW2rvTfkdp3DuPHbPExD9jog21"
+      ],
+      "computeUnits": [
+        16369,
+        766099
+      ],
+      "accountCount": 16,
+      "txVersion": "legacy"
+    },
+    "approveZeroToProxy": {
+      "txHash": "0xa9a08e9acd0f73e4e1477908220db4525aefa459a1832655cf52093b04aa4a89",
+      "evmGas": "15000",
+      "blockNumber": 227,
+      "reverted": false,
+      "solanaTxs": [
+        "3Y2uudQ4TpuB7d8LNbkhtc9EZkxXwW7eCYz7Trnj6HHRRiSYEJ69pnpMaQN1cLNyjB5vzYQyPbP2Y6RRbsL91wjA",
+        "EaQMqXoVFwz1fDNc748j2jxCgdvLHdwgy6EhwNtX46G9HfyWngc4txJojpQmtU2X6q55xfv2iEsYXnMk5kZ6bPS"
+      ],
+      "computeUnits": [
+        14307,
+        567037
+      ],
+      "accountCount": 15,
+      "txVersion": "legacy"
+    }
+  },
+  "notes": [
+    "Phase 2.2 — UnifiedToken v2 with SPL-delegate approve deployed. approve() now does both EVM allowance + SPL Token Approve CPI; approve(0) issues SPL Revoke. Compound supply pattern (transferFrom user→comet) now executes end-to-end without separate Solana wallet steps.",
+    "setBaseToken failed: cannot estimate gas; transaction may fail or may require manual gas limit [ See: https://links.ethers.org/v5-errors-UNPREDICTABLE_GAS_LIMIT ] (reason=\"execution reverted\", method=\"estimateGas\", transaction={\"from\":\"0x109B92c1B867dbF0955928722Ca46db0a1F6e484\",\"to\":\"0x53FF4076E6D82908806aEA3b5447AD919FdC10F8\",\"data\":\"0x4ef7f1f4000000000000000000000000458fd96e090f642d68f96cdef7d42ace41e0528c000000000000000000000000fbd4de54443ddb44b3b0b32f4d39813ac7df3a31\",\"accessList\":null}, error={\"name\":\"ProviderError\",\"_stack\":\"ProviderError: execution reverted\\n    at HttpProvider.request (/Users/anilkumar/rome/.worktrees/compound-phase0/compound-on-rome-comet/node_modules/hardhat/src/internal/core/providers/http.ts:116:21)\\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\\n    at async EthersProviderWrapper.send (/Users/anilkumar/rome/.worktrees/compound-phase0/compound-on-rome-comet/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)\",\"code\":3,\"_isProviderError\":true,\"data\":\"0x\"}, code=UNPREDICTABLE_GAS_LIMIT, version=providers/5.8.0)"
+  ]
+}

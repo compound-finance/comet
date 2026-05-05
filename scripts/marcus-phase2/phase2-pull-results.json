@@ -1,0 +1,39 @@
+{
+  "measurements": {
+    "approveToPull": {
+      "txHash": "0xe2454cad8754023621d0a0fb7f2be244762f31da85d0f05e07c20e2e760408c4",
+      "evmGas": "1448760",
+      "block": 248,
+      "reverted": false,
+      "sigs": [
+        "2XcwxnvrPPa6HuNpfbFwbEwEkmHn1MsT3KxXVDnppunNCnvkSLMebXpJBGvowS9ts9bcyWtMHUw1Xe1UN1ZUJuJ9",
+        "4gicm4P1ZJ5RywnrASzH8WRjbrd8R98s1xTEV16LPf9q8ybSiU9eLpPffRKYvJSEeoK1SNMgrdQUq6mNxGs7NEPJ"
+      ],
+      "cus": [
+        16369,
+        786364
+      ],
+      "accountCount": 16,
+      "altLookups": 0,
+      "txVersion": "legacy"
+    },
+    "pullTransferFrom": {
+      "txHash": "0x91d7dc5d77770a31445a9667f9a0618944151f2310d4e4dbe6d4d9918d529e7f",
+      "evmGas": "15000",
+      "block": 249,
+      "reverted": false,
+      "sigs": [
+        "5cGd8bEDyTKVuGWTWB7V1NGMVfhxjG6GP8MNZhhgwF8dPhux5JKMeVCmUo1uYksm6Sh3thszKaN9hUWQHQ4Fz6Dw",
+        "2P1QQuaK8Zn8oyx9JpiD2CyYJv82ikAVKEUMeGSKDysp7W7YrUMevdZ5VzBPZrRjnVdEq6cemCwW9ia2KMZDFhio"
+      ],
+      "cus": [
+        16369,
+        976327
+      ],
+      "accountCount": 18,
+      "altLookups": 0,
+      "txVersion": "legacy"
+    }
+  },
+  "pullAddr": "0xAe04Ac53B05DcecD2ed00b31f7937e86A273B80A"
+}

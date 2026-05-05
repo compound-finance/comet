@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-05-05T02:41:52.327Z",
+  "measurements": {
+    "supplyError": "{\"message\":\"\",\"code\":-32000}"
+  },
+  "totalSupplyAfter": "0",
+  "cometBalance": "0"
+}
