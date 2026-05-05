@@ -1220,7 +1220,12 @@ export async function executeOpenProposal(
     console.log(`Updating CCIP prices...`);
     await updateCCIPStats(dm);
 
-    await governor.execute(id, { gasPrice: 0, gasLimit: 120000000 });
+    const tx = await governor.execute(id, { gasPrice: 0, gasLimit: 120000000 });
+    const receipt = await tx.wait();
+
+    if(receipt.gasUsed.toNumber() >= 16_777_215) {
+      throw new Error('Execution may have failed due to hitting gas limit');
+    }
   }
 
   await redeployRenzoOracle(dm);
