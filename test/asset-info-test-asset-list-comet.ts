@@ -1,4 +1,4 @@
-import { expect, exp, makeConfigurator, ONE, makeProtocol } from './helpers';
+import { expect, exp, makeConfigurator, makeProtocol } from './helpers';
 
 describe('asset info', function () {
   it('initializes protocol', async () => {

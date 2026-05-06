@@ -607,7 +607,7 @@ describe('configurator', function () {
     });
 
     it('sets targetHealthFactor and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, cometWithPartialLiquidation : comet, cometProxyWithPartialLiquidation : cometProxy } = await makeConfigurator({
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList : comet, cometProxyWithExtendedAssetList : cometProxy } = await makeConfigurator({
         assets: {
           USDC: { decimals: 6, },
           COMP: {

@@ -137,12 +137,18 @@ contract AssetList {
         if (IPriceFeed(priceFeed).decimals() != PRICE_FEED_DECIMALS) revert CometMainInterface.BadDecimals();
         if (IERC20NonStandard(asset).decimals() != decimals_) revert CometMainInterface.BadDecimals();
 
-        // Ensure collateral factors are within range
-        if (assetConfig.borrowCollateralFactor >= assetConfig.liquidateCollateralFactor) revert CometMainInterface.BorrowCFTooLarge();
-        if (
-            assetConfig.liquidateCollateralFactor > MAX_COLLATERAL_FACTOR ||
-            assetConfig.liquidateCollateralFactor >= assetConfig.liquidationFactor
-        ) revert CometMainInterface.LiquidateCFTooLarge();
+        // Valid collateral factor configurations:
+        //  1. Both zero => fully de-listed
+        //  2. borrowCF=0, liquidateCF>0 => soft de-list (no new borrows, controlled liquidation wind-down)
+        //  3. Both non-zero, properly ordered => active collateral
+        // Invalid: borrowCF>0, liquidateCF=0 => reverts (borrow power without liquidation coverage)
+        if (assetConfig.borrowCollateralFactor != 0 && assetConfig.liquidateCollateralFactor == 0) {
+            revert CometMainInterface.BorrowCFTooLarge();
+        } else if (assetConfig.borrowCollateralFactor != 0 && assetConfig.liquidateCollateralFactor != 0) {
+            // Ensure collateral factors are within range
+            if (assetConfig.borrowCollateralFactor > assetConfig.liquidateCollateralFactor) revert CometMainInterface.BorrowCFTooLarge();
+            if (assetConfig.liquidateCollateralFactor > MAX_COLLATERAL_FACTOR) revert CometMainInterface.LiquidateCFTooLarge();
+        }
 
         unchecked {
             // Keep 4 decimals for each factor
@@ -151,8 +157,12 @@ contract AssetList {
             uint16 liquidateCollateralFactor = uint16(assetConfig.liquidateCollateralFactor / descale);
             uint16 liquidationFactor = uint16(assetConfig.liquidationFactor / descale);
 
-            // Be nice and check descaled values are still within range
-            if (borrowCollateralFactor >= liquidateCollateralFactor) revert CometMainInterface.BorrowCFTooLarge();
+            if (borrowCollateralFactor != 0 && liquidateCollateralFactor == 0) {
+                revert CometMainInterface.BorrowCFTooLarge();
+            } else if (borrowCollateralFactor != 0 && liquidateCollateralFactor != 0) {
+                // Be nice and check descaled values are still within range
+                if (borrowCollateralFactor >= liquidateCollateralFactor) revert CometMainInterface.BorrowCFTooLarge();
+            }
 
             // Keep whole units of asset for supply cap
             uint64 supplyCap = uint64(assetConfig.supplyCap / (10 ** decimals_));
