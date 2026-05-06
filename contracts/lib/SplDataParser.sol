@@ -19,18 +19,16 @@ library SplDataParser {
 
     /// Returns the SPL token account amount at `tokenAccount`, or 0 if the
     /// account does not yet exist on Solana.
-    /// @dev rome-evm's CPI precompile returns empty `data` for non-existent
-    /// pubkeys (per the precompile's documented behavior); we treat that as 0.
+    /// @dev Uses the v2 CPI shortcut precompiles (rome-evm-private PR #319):
+    /// `account_lamports` as a cheap existence probe, then `account_u64_at`
+    /// for the amount field — skips the 6-tuple ABI encoding overhead of
+    /// `account_info` plus the full data copy. Saves ~160k CU per call.
     function loadTokenAmount(bytes32 tokenAccount) internal view returns (uint64) {
-        (,,,,, bytes memory data) = CpiProgram.account_info(tokenAccount);
-        if (data.length == 0) {
+        if (CpiProgram.account_lamports(tokenAccount) == 0) {
             return 0; // ATA not yet initialized — same UX as Phantom.
         }
-        if (data.length < SPL_TOKEN_ACCOUNT_MIN_LEN) {
-            revert InvalidTokenAccountDataLength(data.length);
-        }
         // amount lives at byte offset 64..72 (LE u64).
-        return _readU64Le(data, 64);
+        return CpiProgram.account_u64_at(tokenAccount, 64);
     }
 
     /// Returns the SPL mint's `supply` field.

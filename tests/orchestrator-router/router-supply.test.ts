@@ -1,12 +1,19 @@
 // router-supply.test.ts
 //
-// Unit tests for OrchestratorRouter.supplyForUser.
+// Unit tests for the two-phase relayer-gated OrchestratorRouter:
+//   - snapshotForPendingSupply (phase 1)
+//   - completeSupplyForUser    (phase 2)
 //
-// SPEC: spec §3.3 (UnifiedToken `transferFromPreDeposited`) +
-// spec §3.2 (orchestrator dispatches MetaHook → router) +
-// SyntheticSender derivation locked by Phase 1.
+// The two-phase split exists because the cometAta snapshot must be taken
+// BEFORE the user's SPL deposit lands. A single synchronous call cannot
+// straddle that ordering, so the relayer drives both phases off-chain
+// around the user's Solana SPL transfer.
 //
-// All tests are TDD (red) → green via the implementation.
+// MockComet records the supplyTo call without actually invoking
+// `transferFromPreDeposited` — the V3 doTransferIn path is exercised
+// separately in v3-doTransferIn.test.ts.
+//
+// Helpers reused from ../unified-token/_helpers.
 
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
@@ -18,7 +25,7 @@ import {
   deployUnifiedToken,
 } from '../unified-token/_helpers';
 
-describe('OrchestratorRouter.supplyForUser (Phase 3)', () => {
+describe('OrchestratorRouter (two-phase relayer flow)', () => {
   let snap: string;
   beforeEach(async () => {
     await installMockPrecompiles();
@@ -29,129 +36,203 @@ describe('OrchestratorRouter.supplyForUser (Phase 3)', () => {
   });
 
   async function deployRouterStack() {
-    const [admin] = await ethers.getSigners();
+    const [admin, relayer, otherRelayer, outsider] = await ethers.getSigners();
     const token = await deployUnifiedToken(USDC_MINT_DEVNET, 'Unified USDC', 'USDC', 6, admin);
     const Comet = await ethers.getContractFactory('MockComet');
     const comet = await Comet.deploy(token.address);
     await comet.deployed();
     const Router = await ethers.getContractFactory('OrchestratorRouter');
-    const router = await Router.deploy(comet.address, token.address);
+    const router = await Router.deploy(comet.address, token.address, relayer.address);
     await router.deployed();
-    return { admin, token, comet, router };
+    // Router needs the pre-deposited caller role to snapshotAta + drive
+    // transferFromPreDeposited on the unified token.
+    await token.connect(admin).grantPreDepositedCaller(router.address);
+    return { admin, relayer, otherRelayer, outsider, token, comet, router };
   }
 
   /// SPEC: constructor pins `baseAsset = unifiedToken` and reverts on mismatch.
   it('constructor reverts when comet.baseToken != unifiedToken', async () => {
-    const [admin] = await ethers.getSigners();
+    const [admin, relayer] = await ethers.getSigners();
     const tokenA = await deployUnifiedToken(USDC_MINT_DEVNET, 'A', 'A', 6, admin);
     const tokenB = await deployUnifiedToken(USDC_MINT_DEVNET, 'B', 'B', 6, admin);
     const Comet = await ethers.getContractFactory('MockComet');
     const cometWithA = await Comet.deploy(tokenA.address);
     const Router = await ethers.getContractFactory('OrchestratorRouter');
     await expect(
-      Router.deploy(cometWithA.address, tokenB.address),
+      Router.deploy(cometWithA.address, tokenB.address, relayer.address),
     ).to.be.revertedWith('router: baseToken mismatch');
   });
 
-  /// SPEC: zero-amount supply reverts cleanly. (Compound's supplyTo would
-  /// happily accept 0, but for UX we surface this earlier.)
-  it('reverts ZeroAmount on amount=0', async () => {
-    const { router } = await deployRouterStack();
-    const userPubkey = '0x' + '11'.repeat(32);
-    await expect(router.supplyForUser(userPubkey, 0))
-      .to.be.revertedWithCustomError(router, 'ZeroAmount');
+  /// SPEC: initialRelayer is authorized at construction; zero-address rejected.
+  it('constructor authorizes initialRelayer + rejects zero', async () => {
+    const [admin, relayer] = await ethers.getSigners();
+    const token = await deployUnifiedToken(USDC_MINT_DEVNET, 'USDC', 'USDC', 6, admin);
+    const Comet = await ethers.getContractFactory('MockComet');
+    const comet = await Comet.deploy(token.address);
+    const Router = await ethers.getContractFactory('OrchestratorRouter');
+
+    await expect(
+      Router.deploy(comet.address, token.address, ethers.constants.AddressZero),
+    ).to.be.revertedWith('router: zero relayer');
+
+    const router = await Router.deploy(comet.address, token.address, relayer.address);
+    expect(await router.authorizedRelayers(relayer.address)).to.equal(true);
+    expect(await router.initialRelayer()).to.equal(relayer.address);
   });
 
-  /// SPEC: router must be a pre-deposited caller of UnifiedToken — otherwise
-  /// `transferFromPreDeposited` would revert deep in Comet's `doTransferIn`.
-  /// We check upfront to give a clearer error.
-  it('reverts NotPreDepositedCaller when router lacks the role', async () => {
-    const { router } = await deployRouterStack();
-    const userPubkey = '0x' + '22'.repeat(32);
-    await expect(router.supplyForUser(userPubkey, 1_000_000))
-      .to.be.revertedWithCustomError(router, 'NotPreDepositedCaller');
-  });
+  // ── happy path ────────────────────────────────────────────────────────
 
-  /// SPEC: happy path. Router does:
-  ///   1. snapshotAta(cometAta) — emits AtaSnapshotted on the unified token
-  ///   2. comet.supplyTo(dst=derive(userPubkey), asset=baseAsset, amount)
-  it('happy path: snapshots cometAta then calls comet.supplyTo with derived dst', async () => {
-    const { admin, token, comet, router } = await deployRouterStack();
-
-    // Grant router pre-deposited caller role.
-    await token.connect(admin).grantPreDepositedCaller(router.address);
-    expect(await token.isPreDepositedCaller(router.address)).to.equal(true);
-
+  /// SPEC: snapshot then complete happy path.
+  /// Phase 1: relayer snapshots cometAta, pendingSnapshotAmount[user] = amount.
+  /// Phase 2: relayer completes, supplyTo lands at the derived per-user address.
+  it('happy path: snapshot then complete; supplyTo lands at derived dst', async () => {
+    const { relayer, token, comet, router } = await deployRouterStack();
     const userPubkey = '0x' + '42'.repeat(32);
+    const amount = 1_000_000;
 
     // Compute expected derived address off-chain (mirrors SyntheticSender.derive).
     const SALT = 'rome.protocol.unified-token.synthetic-sender.v1';
     const packed = ethers.utils.solidityPack(['string', 'bytes32'], [SALT, userPubkey]);
     const expectedAddr = '0x' + ethers.utils.keccak256(packed).slice(2 + 24);
 
-    await expect(router.supplyForUser(userPubkey, 1_000_000))
+    // Phase 1: snapshot.
+    await expect(router.connect(relayer).snapshotForPendingSupply(userPubkey, amount))
       .to.emit(token, 'AtaSnapshotted')
-      .and.to.emit(router, 'SuppliedForUser');
+      .and.to.emit(router, 'SnapshotTaken');
+    expect((await router.pendingSnapshotAmount(userPubkey)).toString())
+      .to.equal(amount.toString());
 
-    // Verify Comet.supplyTo was invoked with the right (caller=router, dst=derived, asset=token, amount).
+    // Between phases the user's SPL transfer would land on Solana. The unit
+    // test does not need to simulate the on-chain delta; MockComet's supplyTo
+    // is a no-op recorder, so phase 2 just verifies the supplyTo call shape.
+    expect((await comet.supplyToCount()).toString()).to.equal('0');
+
+    // Phase 2: complete.
+    await expect(router.connect(relayer).completeSupplyForUser(userPubkey, amount))
+      .to.emit(router, 'SuppliedForUser');
+
+    // Pending intent cleared.
+    expect((await router.pendingSnapshotAmount(userPubkey)).toString()).to.equal('0');
+
+    // supplyTo invoked once with (caller=router, dst=derived, asset=token, amount).
     const last = await comet.lastSupplyTo();
     expect(last.caller.toLowerCase()).to.equal(router.address.toLowerCase());
     expect(last.dst.toLowerCase()).to.equal(expectedAddr.toLowerCase());
     expect(last.asset.toLowerCase()).to.equal(token.address.toLowerCase());
-    expect(last.amount.toString()).to.equal('1000000');
+    expect(last.amount.toString()).to.equal(amount.toString());
     expect((await comet.supplyToCount()).toString()).to.equal('1');
   });
 
-  /// SPEC: distinct user pubkeys derive distinct EVM addresses → distinct
-  /// Compound positions. This is the core of cross-lane fungibility (each
-  /// Solana-lane user gets their own position).
-  it('distinct userPubkeys produce distinct supplyTo dst addresses', async () => {
-    const { admin, token, comet, router } = await deployRouterStack();
-    await token.connect(admin).grantPreDepositedCaller(router.address);
+  // ── relayer ACL ───────────────────────────────────────────────────────
 
-    const pkA = '0x' + '01'.repeat(32);
-    const pkB = '0x' + '02'.repeat(32);
-
-    await router.supplyForUser(pkA, 1_000_000);
-    const lastA = await comet.lastSupplyTo();
-
-    await router.supplyForUser(pkB, 2_000_000);
-    const lastB = await comet.lastSupplyTo();
-
-    expect(lastA.dst).to.not.equal(lastB.dst);
-    expect(lastA.amount.toString()).to.equal('1000000');
-    expect(lastB.amount.toString()).to.equal('2000000');
+  /// SPEC: only authorized relayer may take snapshots or complete.
+  it('non-relayer reverts on snapshotForPendingSupply', async () => {
+    const { outsider, router } = await deployRouterStack();
+    const userPubkey = '0x' + '11'.repeat(32);
+    await expect(
+      router.connect(outsider).snapshotForPendingSupply(userPubkey, 1_000_000),
+    ).to.be.revertedWith('OR: not relayer');
   });
 
-  /// SPEC: SyntheticSender.derive(zero pubkey) reverts (ZeroPubkey). Router
-  /// surfaces that as a propagated revert.
-  it('zero userPubkey reverts via SyntheticSender.ZeroPubkey', async () => {
-    const { admin, token, router } = await deployRouterStack();
-    await token.connect(admin).grantPreDepositedCaller(router.address);
-    const zeroPubkey = '0x' + '00'.repeat(32);
-    await expect(router.supplyForUser(zeroPubkey, 1)).to.be.reverted;
+  it('non-relayer reverts on completeSupplyForUser', async () => {
+    const { outsider, router } = await deployRouterStack();
+    const userPubkey = '0x' + '22'.repeat(32);
+    await expect(
+      router.connect(outsider).completeSupplyForUser(userPubkey, 1_000_000),
+    ).to.be.revertedWith('OR: not relayer');
   });
 
-  /// SPEC: snapshotAta is called for the comet's PDA-ATA, NOT the user's. The
-  /// user's USDC was deposited TO the comet's ATA (where Compound holds the
-  /// pool); the snapshot tracks that.
-  it('snapshots comet PDA-ATA, not the user ATA', async () => {
-    const { admin, token, router, comet } = await deployRouterStack();
-    await token.connect(admin).grantPreDepositedCaller(router.address);
+  /// SPEC: setRelayerAuthorization adds + removes; the new relayer can drive
+  /// both phases; after removal, the old relayer cannot.
+  it('relayer authorization roundtrip (add then remove)', async () => {
+    const { relayer, otherRelayer, router } = await deployRouterStack();
+    const userPubkey = '0x' + '33'.repeat(32);
 
-    // Compute the comet PDA-ATA off-chain via the mocked SystemProgram. We
-    // cannot directly inspect router's snapshotAta arg; instead we observe
-    // the AtaSnapshotted event and check the indexed ataPubkey matches
-    // comet's solanaAtaOf.
-    const cometAta = await token.solanaAtaOf(comet.address);
-    const userPubkey = '0x' + '99'.repeat(32);
-    const tx = await router.supplyForUser(userPubkey, 500_000);
-    const rcpt = await tx.wait();
+    expect(await router.authorizedRelayers(otherRelayer.address)).to.equal(false);
 
-    // AtaSnapshotted(address indexed caller, bytes32 indexed ataPubkey, uint256 prior)
-    const TOPIC = ethers.utils.id('AtaSnapshotted(address,bytes32,uint256)');
-    const log = rcpt.logs.find((l: any) => l.topics[0] === TOPIC);
-    expect(log).to.not.equal(undefined);
-    expect(log.topics[2]).to.equal(cometAta);
+    // Add otherRelayer.
+    await expect(
+      router.connect(relayer).setRelayerAuthorization(otherRelayer.address, true),
+    ).to.emit(router, 'RelayerAuthorizationSet');
+    expect(await router.authorizedRelayers(otherRelayer.address)).to.equal(true);
+
+    // otherRelayer can now drive a full intent.
+    await router.connect(otherRelayer).snapshotForPendingSupply(userPubkey, 500_000);
+    await router.connect(otherRelayer).completeSupplyForUser(userPubkey, 500_000);
+
+    // Remove otherRelayer.
+    await router.connect(relayer).setRelayerAuthorization(otherRelayer.address, false);
+    expect(await router.authorizedRelayers(otherRelayer.address)).to.equal(false);
+
+    // Revoked relayer reverts.
+    const userPubkey2 = '0x' + '34'.repeat(32);
+    await expect(
+      router.connect(otherRelayer).snapshotForPendingSupply(userPubkey2, 1),
+    ).to.be.revertedWith('OR: not relayer');
+  });
+
+  // ── intent state machine ──────────────────────────────────────────────
+
+  /// SPEC: completeSupplyForUser reverts when no pending intent exists.
+  /// (pendingSnapshotAmount[user] == 0 → mismatch vs nonzero amount.)
+  it('completeSupplyForUser reverts when no snapshot has been taken', async () => {
+    const { relayer, router } = await deployRouterStack();
+    const userPubkey = '0x' + '44'.repeat(32);
+    await expect(
+      router.connect(relayer).completeSupplyForUser(userPubkey, 1_000_000),
+    ).to.be.revertedWith('OR: amount mismatch');
+  });
+
+  /// SPEC: amount mismatch on complete reverts (snapshot 100, complete 200).
+  it('completeSupplyForUser reverts when amount differs from snapshot', async () => {
+    const { relayer, router } = await deployRouterStack();
+    const userPubkey = '0x' + '55'.repeat(32);
+    await router.connect(relayer).snapshotForPendingSupply(userPubkey, 100);
+    await expect(
+      router.connect(relayer).completeSupplyForUser(userPubkey, 200),
+    ).to.be.revertedWith('OR: amount mismatch');
+    // Pending intent still exists (no delete).
+    expect((await router.pendingSnapshotAmount(userPubkey)).toString()).to.equal('100');
+  });
+
+  /// SPEC: a second snapshotForPendingSupply for the same user pubkey reverts
+  /// while the first intent is still pending.
+  it('double snapshot for the same user reverts (one intent at a time)', async () => {
+    const { relayer, router } = await deployRouterStack();
+    const userPubkey = '0x' + '66'.repeat(32);
+    await router.connect(relayer).snapshotForPendingSupply(userPubkey, 1_000_000);
+    await expect(
+      router.connect(relayer).snapshotForPendingSupply(userPubkey, 2_000_000),
+    ).to.be.revertedWith('OR: pending exists');
+    // After completing the first intent, a new one is allowed.
+    await router.connect(relayer).completeSupplyForUser(userPubkey, 1_000_000);
+    await router.connect(relayer).snapshotForPendingSupply(userPubkey, 2_000_000);
+    expect((await router.pendingSnapshotAmount(userPubkey)).toString())
+      .to.equal('2000000');
+  });
+
+  // ── input guards ──────────────────────────────────────────────────────
+
+  /// SPEC: zero-amount snapshot reverts (matches old supplyForUser guard).
+  it('snapshotForPendingSupply reverts ZeroAmount on amount=0', async () => {
+    const { relayer, router } = await deployRouterStack();
+    const userPubkey = '0x' + '77'.repeat(32);
+    await expect(router.connect(relayer).snapshotForPendingSupply(userPubkey, 0))
+      .to.be.revertedWithCustomError(router, 'ZeroAmount');
+  });
+
+  /// SPEC: router lacking pre-deposited caller role reverts cleanly.
+  it('snapshotForPendingSupply reverts NotPreDepositedCaller when role missing', async () => {
+    // Bypass the helper that grants the role.
+    const [admin, relayer] = await ethers.getSigners();
+    const token = await deployUnifiedToken(USDC_MINT_DEVNET, 'USDC', 'USDC', 6, admin);
+    const Comet = await ethers.getContractFactory('MockComet');
+    const comet = await Comet.deploy(token.address);
+    const Router = await ethers.getContractFactory('OrchestratorRouter');
+    const router = await Router.deploy(comet.address, token.address, relayer.address);
+    const userPubkey = '0x' + '88'.repeat(32);
+    await expect(
+      router.connect(relayer).snapshotForPendingSupply(userPubkey, 1_000_000),
+    ).to.be.revertedWithCustomError(router, 'NotPreDepositedCaller');
   });
 });

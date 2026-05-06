@@ -40,6 +40,23 @@ contract MockCpiReentrancyAttacker {
         _attack();
     }
 
+    /// rome-evm-private PR #318 SPL Token Classic transfer_checked precompile.
+    /// `UnifiedToken._transferViaCpiAsSpender` now hits this selector instead
+    /// of `invoke_signed`. The reentrancy attack shape is identical: under
+    /// delegatecall, `_attack()` re-enters UnifiedToken's `transfer` and trips
+    /// the reentrancy guard.
+    function spl_transfer_checked_v1(
+        bytes32 /*srcAta*/,
+        bytes32 /*mint*/,
+        bytes32 /*dstAta*/,
+        uint64 /*amount*/,
+        uint8 /*decimals*/,
+        bytes32[] memory /*salts*/
+    ) external returns (bool) {
+        _attack();
+        return true;
+    }
+
     /// Re-enter the contract that delegatecalled us. Under delegatecall,
     /// address(this) IS the contract under test (UnifiedToken), so we just
     /// call ourselves. The reentrancy guard MUST trip and bubble its revert

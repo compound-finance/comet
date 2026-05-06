@@ -39,7 +39,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           cache: 'yarn'
-          node-version: '18'
+          node-version: '20'
 
       - name: Install packages
         run: yarn install --non-interactive --frozen-lockfile

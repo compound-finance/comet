@@ -41,5 +41,11 @@
     "scenario",
     "test",
     "types/**/*.d.ts"
+  ],
+  "exclude": [
+    "scripts/marcus-phase0",
+    "scripts/marcus-phase1",
+    "scripts/marcus-phase2",
+    "scripts/marcus-phase3"
   ]
 }

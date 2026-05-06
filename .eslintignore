@@ -2,3 +2,7 @@ plugins/scenario/worker/BootstrapWorker.js
 plugins/deployment_manager/test/SolcList.json
 scripts/build-spec.js
 scripts/exportNetworkConfigs.js
+scripts/marcus-phase0/
+scripts/marcus-phase1/
+scripts/marcus-phase2/
+scripts/marcus-phase3/

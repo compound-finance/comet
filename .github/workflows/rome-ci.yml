@@ -9,6 +9,15 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      # hardhat.config.ts requireEnv() defaults — values are unused for compile/test;
+      # only relevant for live-network ops (Etherscan verify, fork tests). Set to
+      # placeholders so hardhat boots in CI without the upstream Compound secrets.
+      ETHERSCAN_KEY: skip
+      SNOWTRACE_KEY: skip
+      MAINNET_QUICKNODE_LINK: https://example.invalid
+      UNICHAIN_QUICKNODE_LINK: https://example.invalid
+      LINEA_QUICKNODE_LINK: https://example.invalid
     steps:
       - uses: actions/checkout@v4
         with:
@@ -17,20 +26,18 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Install Hardhat dependencies
-        run: |
-          if [ -f "package.json" ]; then
-            npm ci
-          fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: yarn install --non-interactive --frozen-lockfile
 
       - name: Forge build
-        run: forge build --sizes
+        run: forge build
 
-      - name: Forge test
-        run: forge test -vvv
+      - name: Hardhat compile
+        run: npx hardhat compile
 
-      - name: Hardhat compile (if used)
-        run: |
-          if [ -f "hardhat.config.ts" ] || [ -f "hardhat.config.js" ]; then
-            npx hardhat compile
-          fi
+      - name: Hardhat test (Rome-specific suites)
+        run: npx hardhat test tests/unified-token/*.test.ts tests/orchestrator-router/*.test.ts

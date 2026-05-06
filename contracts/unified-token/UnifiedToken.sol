@@ -409,51 +409,42 @@ contract UnifiedToken is ICrossVMAsset, EIP712, ReentrancyGuard, IERC165 {
     /// where the spender (a delegate established via `approve`) initiates the
     /// transfer of `from`'s funds. SPL Token's transfer_checked verifies the
     /// signing authority is either the ATA owner OR a registered delegate.
+    ///
+    /// Uses `spl_transfer_checked_v1` precompile (rome-evm-private PR #318) —
+    /// builds the AccountMeta[4] and 10-byte ix data buffer in Rust on the
+    /// program side, skipping ~500k CU of Solidity-side marshaling. Signs as
+    /// the spender's external_auth PDA via the empty-salts auto-sign path
+    /// (precompile derives `external_auth(caller)` and pushes the bump).
+    ///
+    /// Under delegatecall to the precompile, `caller` = the EVM caller of
+    /// UnifiedToken.transfer/transferFrom, which is the spender — same auth
+    /// model as the legacy invoke_signed path.
     function _transferViaCpiAsSpender(
         address from,
         address to,
         uint256 value,
-        address spender
+        address /* spender */
     ) internal {
         require(to != address(0), "ERC20: transfer to the zero address");
         require(value <= type(uint64).max, "UnifiedToken: amount exceeds uint64");
 
         bytes32 fromAta = AtaDeriver.ataForUser(from, mintId);
         bytes32 toAta = AtaDeriver.ataForUser(to, mintId);
-        bytes32 spenderPda = AtaDeriver.authorityPda(spender);
+        bytes32[] memory salts = new bytes32[](0);
 
-        // Build accounts for transfer_checked.
-        ICrossProgramInvocation.AccountMeta[] memory accounts =
-            new ICrossProgramInvocation.AccountMeta[](4);
-        accounts[0] = ICrossProgramInvocation.AccountMeta(fromAta, false, true);
-        accounts[1] = ICrossProgramInvocation.AccountMeta(mintId, false, false);
-        accounts[2] = ICrossProgramInvocation.AccountMeta(toAta, false, true);
-        accounts[3] = ICrossProgramInvocation.AccountMeta(spenderPda, true, false);
-
-        // transfer_checked tag = 12, then u64 LE amount, then u8 decimals.
-        bytes memory data = bytes.concat(
-            bytes1(uint8(12)),
-            _u64Le(uint64(value)),
-            bytes1(_decimals)
-        );
-
-        bytes32[] memory seeds = new bytes32[](0);
-
-        // Use delegatecall to invoke_signed so the precompile sees this
-        // contract's caller frame as the signer. Per
-        // rome-evm-private/program/src/non_evm/cpi_ix.rs:invoke_signed_ix —
-        // the precompile derives the AUTHORITY_PDA from
-        // `params.context.caller`, which (under delegatecall) is the original
-        // caller of UnifiedToken.transfer/transferFrom. That's the desired
-        // signer (the spender / the from-address). Same pattern as
-        // SPL_ERC20._transfer in rome-solidity.
+        // Delegatecall preserves the caller frame so the precompile signs
+        // as `external_auth(spender)` for the SPL transfer authority —
+        // which matches what SPL Token's transfer_checked expects (either
+        // the source ATA owner or a registered delegate).
         (bool success, bytes memory result) = CPI_PROGRAM_ADDRESS.delegatecall(
             abi.encodeWithSignature(
-                "invoke_signed(bytes32,(bytes32,bool,bool)[],bytes,bytes32[])",
-                SolanaConstants.SPL_TOKEN_PROGRAM,
-                accounts,
-                data,
-                seeds
+                "spl_transfer_checked_v1(bytes32,bytes32,bytes32,uint64,uint8,bytes32[])",
+                fromAta,
+                mintId,
+                toAta,
+                uint64(value),
+                _decimals,
+                salts
             )
         );
         require(success, _revertMsg(result));

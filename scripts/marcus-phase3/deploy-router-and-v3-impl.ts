@@ -114,9 +114,24 @@ async function main() {
   }
 
   // ─────── Step 3: Deploy OrchestratorRouter ───────
-  console.log('\n[3/5] Deploying OrchestratorRouter…');
+  // Two-phase router (post-2026-05-05 redesign): constructor takes the EVM
+  // address of the off-chain relayer service. Set RELAYER_ADDRESS in env.
+  const relayerAddr = process.env.RELAYER_ADDRESS;
+  if (!relayerAddr || !ethers.utils.isAddress(relayerAddr)) {
+    throw new Error(
+      `Set RELAYER_ADDRESS env var to the EVM address that the off-chain relayer service signs with. Got: ${relayerAddr ?? '(unset)'}`,
+    );
+  }
+  console.log(`\n[3/5] Deploying OrchestratorRouter (initialRelayer=${relayerAddr})…`);
+  out.initialRelayer = relayerAddr;
+
   const Router = await ethers.getContractFactory('OrchestratorRouter');
-  const router = await Router.deploy(ADDR.COMET_PROXY, ADDR.UNIFIED_TOKEN_V2, { gasLimit: 25_000_000 });
+  const router = await Router.deploy(
+    ADDR.COMET_PROXY,
+    ADDR.UNIFIED_TOKEN_V2,
+    relayerAddr,
+    { gasLimit: 25_000_000 },
+  );
   await router.deployed();
   console.log(`  OrchestratorRouter: ${router.address}`);
   out.deployments.orchestratorRouter = router.address;
@@ -158,6 +173,7 @@ async function main() {
     routerUnifiedToken: await router.unifiedToken(),
     routerIsPreDeposited: await token.isPreDepositedCaller(router.address),
     cometIsPreDeposited: await token.isPreDepositedCaller(ADDR.COMET_PROXY),
+    relayerAuthorized: await router.authorizedRelayers(relayerAddr),
   };
   console.log(JSON.stringify(out.verifications, null, 2));
 

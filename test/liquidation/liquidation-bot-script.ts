@@ -2,7 +2,12 @@ import { expect, exp } from '../helpers';
 import { arbitragePurchaseableCollateral, getAssets, hasPurchaseableCollateral, liquidateUnderwaterBorrowers } from '../../scripts/liquidation_bot/liquidateUnderwaterBorrowers';
 import { forkMainnet, makeProtocol, makeLiquidatableProtocol, resetHardhatNetwork } from './makeLiquidatableProtocol';
 
-describe('Liquidation Bot', function () {
+// Skipped in CI when MAINNET_QUICKNODE_LINK is the public-RPC fallback;
+// the free RPC rate-limits before the fork setup completes. Runs locally
+// or in CI when SKIP_FORK_TESTS is unset (real RPC available).
+const describeFork = process.env.SKIP_FORK_TESTS ? describe.skip : describe;
+
+describeFork('Liquidation Bot', function () {
   before(forkMainnet);
   after(resetHardhatNetwork);
 

@@ -134,7 +134,11 @@ describe('DeploymentManager', () => {
   });
 
   describe('verifyContracts', () => {
-    it('should verify contracts successfully', async () => {
+    // Skipped in CI when MAINNET_QUICKNODE_LINK is the public-RPC fallback;
+    // Etherscan plugin reads bytecode from mainnet, free RPC rate-limits.
+    // Runs locally or in CI when SKIP_FORK_TESTS is unset.
+    const itFork = process.env.SKIP_FORK_TESTS ? it.skip : it;
+    itFork('should verify contracts successfully', async () => {
       let deploymentManager = new DeploymentManager('test-network', 'test-deployment', hre, {
         importRetries: 0,
         writeCacheToDisk: true,

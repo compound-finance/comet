@@ -819,7 +819,14 @@ contract Comet is CometMainInterface {
                     IUnifiedTokenDoTransferIn(asset).transferFromPreDeposited(
                         from, address(this), cometAta, amount
                     );
-                    return IERC20NonStandard(asset).balanceOf(address(this)) - preTransferBalance;
+                    // Pre-deposited mode: UnifiedToken.transferFromPreDeposited
+                    // emits Transfer but does NOT update _balances (SPL is the
+                    // source of truth — the snapshot-delta check inside
+                    // transferFromPreDeposited revert-guards this). Trust the
+                    // verified amount; computing the EVM-side balance delta
+                    // would always yield 0 here and silently zero out the
+                    // supply principal.
+                    return amount;
                 }
             } catch {
                 // Asset doesn't expose the unified-token interface; fall

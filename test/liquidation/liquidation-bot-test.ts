@@ -3,7 +3,12 @@ import { ethers } from 'hardhat';
 import { Exchange, forkMainnet, makeLiquidatableProtocol, resetHardhatNetwork } from './makeLiquidatableProtocol';
 import { DAI, SUSHISWAP_ROUTER, UNISWAP_ROUTER } from './addresses';
 
-describe('Liquidator', function () {
+// Skipped in CI when MAINNET_QUICKNODE_LINK is the public-RPC fallback;
+// the free RPC rate-limits before the fork setup completes. Runs locally
+// or in CI when SKIP_FORK_TESTS is unset (real RPC available).
+const describeFork = process.env.SKIP_FORK_TESTS ? describe.skip : describe;
+
+describeFork('Liquidator', function () {
   before(forkMainnet);
   after(resetHardhatNetwork);
 

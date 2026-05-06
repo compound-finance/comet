@@ -44,6 +44,64 @@ interface ICrossProgramInvocation {
     function account_info(bytes32 pubkey)
         external view
         returns (uint64, bytes32, bool, bool, bool, bytes memory);
+
+    // ────────────────────────────────────────────────────────────────────
+    // CPI precompile shortcuts (rome-evm-private PR #318 + #319):
+    //   - read-side: account_data_at, account_u64_at, account_lamports —
+    //     skip the 6-tuple ABI encoding overhead of `account_info` for
+    //     callers that only need a slice / typed value / lamports.
+    //   - write-side: spl_transfer_checked_v1 — builds the AccountMeta[4]
+    //     and 10-byte ix data in Rust, signing as caller's external_auth
+    //     PDA. Saves ~500k CU per call vs Solidity-side AccountMeta
+    //     marshaling through invoke_signed.
+    //   - derivation helpers: derive_user_ata (Rome user → ATA in one
+    //     syscall), pdas_batch_derive (N PDAs in one call).
+    // Mirror: rome-evm-private/program/src/non_evm/cpi.rs selector consts.
+    // ────────────────────────────────────────────────────────────────────
+
+    /// Read `length` bytes of account `pubkey`'s data starting at `offset`.
+    /// Reverts if (offset + length) > data.len() OR the account is missing
+    /// in the program-side context (emulator returns empty data, which
+    /// also reverts on any non-zero length).
+    function account_data_at(bytes32 pubkey, uint16 offset, uint16 length)
+        external view returns (bytes memory);
+
+    /// SPL Token Classic transfer_checked. `salts.length == 0` → signs as
+    /// caller's external_auth PDA; non-empty → first salt-derived PDA is
+    /// the signer.
+    function spl_transfer_checked_v1(
+        bytes32 src_ata,
+        bytes32 mint,
+        bytes32 dst_ata,
+        uint64 amount,
+        uint8 decimals,
+        bytes32[] memory salts
+    ) external returns (bool);
+
+    /// Read u64 LE at `offset` of account data. Sugar over
+    /// `account_data_at(pubkey, offset, 8)` with native u64 decode.
+    /// Reverts on missing account (use account_lamports first as a
+    /// cheap existence probe).
+    function account_u64_at(bytes32 pubkey, uint16 offset)
+        external view returns (uint64);
+
+    /// Lamports-only read. Returns 0 for missing accounts in emulator
+    /// context; reverts in program context for accounts not in the
+    /// instruction's account list.
+    function account_lamports(bytes32 pubkey)
+        external view returns (uint64);
+
+    /// Rome user PDA → ATA derivation in one syscall. Equivalent to
+    /// `find_program_address([EXTERNAL_AUTHORITY, evm_user], rome_evm)`
+    /// then `find_program_address([owner_pda, SPL_TOKEN, mint], ata_program)`,
+    /// but skips the EVM-side double-derivation.
+    function derive_user_ata(address evm_user, bytes32 mint)
+        external view returns (bytes32);
+
+    /// Batched PDA derivation. Each `seed_groups[i]` is a list of seed
+    /// segments; returns the (pda, bump) for each.
+    function pdas_batch_derive(bytes[][] memory seed_groups, bytes32 program_id)
+        external view returns (bytes32[] memory pdas, uint8[] memory bumps);
 }
 
 address constant SYSTEM_PROGRAM_ADDRESS = address(0xfF00000000000000000000000000000000000007);

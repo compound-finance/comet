@@ -1,6 +1,10 @@
 // Phase 3 — Deploy router only (V3 impl already deployed + proxy upgraded
 // in deploy-router-and-v3-impl.ts; that run died at the router step due to
 // undersized gasLimit).
+//
+// Phase 3 (post-redesign 2026-05-05): the router is now a two-phase relayer
+// gate. Constructor takes an `initialRelayer` arg authorized to call
+// snapshotForPendingSupply / completeSupplyForUser. Set RELAYER_ADDRESS in env.
 
 import { ethers } from 'hardhat';
 import * as fs from 'fs';
@@ -16,11 +20,20 @@ async function main() {
   const [signer] = await ethers.getSigners();
   console.log(`Deployer: ${signer.address}`);
 
+  const relayerAddr = process.env.RELAYER_ADDRESS;
+  if (!relayerAddr || !ethers.utils.isAddress(relayerAddr)) {
+    throw new Error(
+      `Set RELAYER_ADDRESS env var to the EVM address that the off-chain relayer service signs with. Got: ${relayerAddr ?? '(unset)'}`,
+    );
+  }
+  console.log(`Initial relayer: ${relayerAddr}`);
+
   const out: any = {
     timestamp: new Date().toISOString(),
     network: 'marcus',
     chainId: 121301,
     deployer: signer.address,
+    initialRelayer: relayerAddr,
     inputs: ADDR,
   };
 
@@ -29,7 +42,8 @@ async function main() {
   const router = await Router.deploy(
     ADDR.COMET_PROXY,
     ADDR.UNIFIED_TOKEN_V2,
-    { gasLimit: 25_000_000 },
+    relayerAddr,
+    { gasLimit: 50_000_000 },
   );
   await router.deployed();
   console.log(`  OrchestratorRouter: ${router.address}`);
@@ -62,6 +76,7 @@ async function main() {
     routerUnifiedToken: await router.unifiedToken(),
     routerIsPreDeposited: await token.isPreDepositedCaller(router.address),
     cometIsPreDeposited: await token.isPreDepositedCaller(ADDR.COMET_PROXY),
+    relayerAuthorized: await router.authorizedRelayers(relayerAddr),
   };
   console.log(JSON.stringify(out.verifications, null, 2));
 

@@ -1,0 +1,6 @@
+# Test-only mocks — stand-ins for Rome precompile bytecode installed
+# at canonical addresses via hardhat_setCode. Mock setters are
+# intentionally unguarded (no access control, no events) so tests can
+# poke arbitrary state into the mock; security rules that gate on those
+# don't apply to non-deployed code.
+contracts/mocks/
