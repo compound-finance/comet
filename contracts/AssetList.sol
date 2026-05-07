@@ -147,7 +147,10 @@ contract AssetList {
         } else if (assetConfig.borrowCollateralFactor != 0 && assetConfig.liquidateCollateralFactor != 0) {
             // Ensure collateral factors are within range
             if (assetConfig.borrowCollateralFactor > assetConfig.liquidateCollateralFactor) revert CometMainInterface.BorrowCFTooLarge();
-            if (assetConfig.liquidateCollateralFactor > MAX_COLLATERAL_FACTOR) revert CometMainInterface.LiquidateCFTooLarge();
+            if (
+                assetConfig.liquidateCollateralFactor > MAX_COLLATERAL_FACTOR ||
+                assetConfig.liquidateCollateralFactor >= assetConfig.liquidationFactor
+            ) revert CometMainInterface.LiquidateCFTooLarge();
         }
 
         unchecked {
