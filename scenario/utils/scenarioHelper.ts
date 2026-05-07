@@ -207,8 +207,8 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
   }
 
   if (ctx.world.base.network === 'linea' && ctx.world.base.deployment === 'usdc') {
-    config.bulkerAsset = 500;
-    config.bulkerAsset1 = 500;
+    config.bulkerAsset = 10;
+    config.bulkerAsset1 = 15;
     config.supplyCollateral = 10;
     config.transferCollateral = 10;
     config.withdrawCollateral = 10;    
