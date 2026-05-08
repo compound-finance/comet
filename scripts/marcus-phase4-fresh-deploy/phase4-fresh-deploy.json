@@ -1,0 +1,35 @@
+{
+  "timestamp": "2026-05-07T02:18:17.884Z",
+  "network": "marcus",
+  "chainId": 121301,
+  "deployer": "0xe4abFBCa0FEACc65BA51602Bcbc8AA9B797830AF",
+  "relayer": "0x56D704338cdE8602374E7dFd0D4BEAD125261AfD",
+  "usdcMint": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+  "usdcMintBytes32": "0x3b442cb3912157f13a933d0134282d032b5ffecd01a2dbf1b7790608df002ea7",
+  "addresses": {
+    "cometProxyAdmin": "0xE4A9fC1152D6661F90Faa4DD1dC54A4973eEC7f2",
+    "unifiedToken": "0xe76bb4c8C0f50C75eE348E91ddd34f4043582aCC",
+    "usdcFeed": "0xf69ffDb2c49f71250Be8B99Fe76bAd196aC7D255",
+    "cometExt": "0xE3e26f4b7BeB5e93d8D7882815062E475A38B595",
+    "cometImpl": "0x50f9fA29EbE19446Bf8a66Db19b6550c9d8F8C80",
+    "configuratorImpl": "0x207Dad7e3BF7Df0bBa8FC0E5cac998bb0bd70c40",
+    "configuratorProxy": "0x6D33AD9CbB620Fd95a36f5e0132D4739816b8375",
+    "cometProxy": "0xDf203b46C89921537F24beA30046eb1FF8c3FCD3",
+    "orchestratorRouter": "0x02Ed3401ba0f75a2ebF4E3f724B1C115EC110914"
+  },
+  "txReceipts": {
+    "initializeStorage": "0x16f3e06c23ddcbc66574d31d2e560af490ba25fc81fe70bb419f14dfe1df1b42",
+    "grantRouter": "0x0c28730fa3d346fef4c700d02153b69b5107b058673a35270fa016e4f4cb0f53",
+    "grantComet": "0xc08355b61efeb3a08b3b97293c0ee4578a87c5ac5c1f5a1eb57741ece42bbc2d"
+  },
+  "notes": [],
+  "verifications": {
+    "cometBaseToken": "0xe76bb4c8C0f50C75eE348E91ddd34f4043582aCC",
+    "routerBaseAsset": "0xe76bb4c8C0f50C75eE348E91ddd34f4043582aCC",
+    "routerComet": "0xDf203b46C89921537F24beA30046eb1FF8c3FCD3",
+    "routerUnifiedToken": "0xe76bb4c8C0f50C75eE348E91ddd34f4043582aCC",
+    "routerIsPreDeposited": true,
+    "cometIsPreDeposited": true,
+    "relayerAuthorized": true
+  }
+}

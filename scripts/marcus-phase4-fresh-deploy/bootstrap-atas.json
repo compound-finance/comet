@@ -1,0 +1,44 @@
+{
+  "timestamp": "2026-05-07T02:40:05.440Z",
+  "payer": "FJqMVaC6wXNFa3jiAnQfXHxLouzEaGHgA3CkmLVxoodR",
+  "seedAmountUsdc": 0.01,
+  "targets": [
+    {
+      "label": "Deployer (test user)",
+      "evmAddr": "0xe4abFBCa0FEACc65BA51602Bcbc8AA9B797830AF",
+      "pda": "9hbZLKcR6vZr9KvPMwRAw1Yq4q1ZBw6LpSjG2BzEDmcN",
+      "ata": "DcSxZawrYNG7GuQrLkMuAdFxLHNYMC8yccwe7UMmyUyf",
+      "bootstrapped": false
+    },
+    {
+      "label": "CometProxy (decimals=6)",
+      "evmAddr": "0xDf203b46C89921537F24beA30046eb1FF8c3FCD3",
+      "pda": "b5tT2CmGjkffea5BHnAan95cheeDWs6Z1K8JxDbY3wE",
+      "ata": "GC9rVSVwEBEJjKWwb86xR4Dk9iNwMzRiyvYfEMJoaXjC",
+      "bootstrapped": false
+    },
+    {
+      "label": "OrchestratorRouter (decimals=6)",
+      "evmAddr": "0x02Ed3401ba0f75a2ebF4E3f724B1C115EC110914",
+      "pda": "2fjJ4FdQ2z8BSJhqTooFCWkNeq6b2gKN7nc6yhFArSJe",
+      "ata": "3k57VVBzm5wk2TuH9S7BUHuSmee5k5Mej1aPXZHTJCBN",
+      "bootstrapped": false
+    },
+    {
+      "label": "CometProxy (collateral stack)",
+      "evmAddr": "0x057c15b0162CC8b6242Ac22A6B9FC92B00e3c710",
+      "pda": "FUCgAzmmMjKvzT2onWyUr3NUoF6nNyrfRPRJwMMrm5iv",
+      "ata": "EhxeQCibPxRnh3B89Yx4hHPSo46jpWvv7apNwmeWGxqA",
+      "bootstrapped": true,
+      "sig": "4SANcBs4zDUbwZzXTnrsTMhi1dtVKwQbECJoK3ydzRYdHn722rgpKvnmMZTXLyGALkcgiW6eoLQMZuDeSwurkdy7"
+    },
+    {
+      "label": "OrchestratorRouter (collateral)",
+      "evmAddr": "0xDD3841043b49836D7A27323fb109553CB3dD0bd0",
+      "pda": "4chynRGZWSm9tx5awgEgANhykUaZ3EzYzH3Hu8c4HsmA",
+      "ata": "2mQ92QrVPW6L48DE1xoBmGVhApYGRDJRumgGwWStTAqb",
+      "bootstrapped": true,
+      "sig": "2jfCcNPZ4Hz5F1VxhfQ4ptbd29TKjdYPySJbGyc8ASLR5hW4sTPaqwkKizm4tBazVXsY2tcjU5TytEDbcePKMsUf"
+    }
+  ]
+}

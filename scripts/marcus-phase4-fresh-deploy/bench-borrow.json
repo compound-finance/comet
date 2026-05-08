@@ -1,0 +1,49 @@
+{
+  "timestamp": "2026-05-08T07:19:18.999Z",
+  "network": "marcus",
+  "chainId": 121301,
+  "addresses": {
+    "unifiedToken": "0xe76bb4c8C0f50C75eE348E91ddd34f4043582aCC",
+    "pcol": "0x06419D33D1cfBc406Ca50EC014Ec02117742907f",
+    "cometProxy": "0x057c15b0162CC8b6242Ac22A6B9FC92B00e3c710"
+  },
+  "iterations": 1,
+  "collateralAmount": "100000000000000000000",
+  "seedUsdcRaw": "50000",
+  "borrowUsdcRaw": "10000",
+  "setup": {},
+  "runs": [
+    {
+      "iteration": 1,
+      "steps": {
+        "borrow": {
+          "txHash": "0x16da20339552ccbf681d6141aa73decb0b1d5e8cd187e7a535901175218b64cb",
+          "gasUsed": "15000",
+          "sigs": [
+            "2oKge5vYp3BoePoTvygpLxqoB6s29JaeMufDPSoJ1WWtrufrLAvZwNLNgDvJ9XbsAPHJPFf292CcabGspo4cdnTZ",
+            "mp7soXrgiqPYcapkfEsM2dBHYfWSxYETuwenPWbX3QxdwrQLAou46Ktgk9grcejA1oWSYkG75KSmDhvUHC7Cf6J"
+          ],
+          "perSig": [
+            {
+              "sig": "2oKge5vYp3BoePoTvygpLxqoB6s29JaeMufDPSoJ1WWtrufrLAvZwNLNgDvJ9XbsAPHJPFf292CcabGspo4cdnTZ",
+              "cu": 11864,
+              "err": null
+            },
+            {
+              "sig": "mp7soXrgiqPYcapkfEsM2dBHYfWSxYETuwenPWbX3QxdwrQLAou46Ktgk9grcejA1oWSYkG75KSmDhvUHC7Cf6J",
+              "cu": 1337653,
+              "err": null
+            }
+          ],
+          "maxCu": 1337653,
+          "totalCu": 1349517
+        }
+      },
+      "summary": {
+        "maxSingleSolanaTxCU": 1337653,
+        "totalCU": 1349517,
+        "atomicFitsCeiling": true
+      }
+    }
+  ]
+}

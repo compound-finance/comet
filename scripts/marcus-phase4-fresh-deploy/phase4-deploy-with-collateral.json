@@ -1,0 +1,40 @@
+{
+  "timestamp": "2026-05-07T02:37:43.227Z",
+  "network": "marcus",
+  "chainId": 121301,
+  "deployer": "0xe4abFBCa0FEACc65BA51602Bcbc8AA9B797830AF",
+  "relayer": "0x56D704338cdE8602374E7dFd0D4BEAD125261AfD",
+  "reuse": {
+    "cometProxyAdmin": "0x41aE246D1D212e9E1999DC4D438bA810653c0e0E",
+    "unifiedToken": "0xe76bb4c8C0f50C75eE348E91ddd34f4043582aCC",
+    "usdcFeed": "0x52F2054AEB16F33b03C24910D1Ec82ca0ca0fB9d"
+  },
+  "addresses": {
+    "pcol": "0x06419D33D1cfBc406Ca50EC014Ec02117742907f",
+    "pcolFeed": "0x8BD46e8097AEBBAe56B6aD38Dbf6Dfef8d12Ff7f",
+    "cometExt": "0x11682a3aE61334d3837C8941994FcE2A8e6c7AfA",
+    "cometImpl": "0x8E222c74d585446CB6ED28c6941189F948727bF4",
+    "configuratorImpl": "0x67C43E92390f65E7cDC5Ba9F555f012B1F06d844",
+    "configuratorProxy": "0xF7a8B37A75aBe8345E37f0b36b107B79EE98CE44",
+    "cometProxy": "0x057c15b0162CC8b6242Ac22A6B9FC92B00e3c710",
+    "orchestratorRouter": "0xDD3841043b49836D7A27323fb109553CB3dD0bd0"
+  },
+  "txReceipts": {
+    "initializeStorage": "0x2ed4a7c830a320882eec2319be12f1455cc739ff92086342bf1be6c36e45fa29",
+    "grantRouter": "0xe0c72871f2bb45f5b0394a8ad44e7b11d8b69ccf4d1ead4023b2ae9e3f3fad3d",
+    "grantComet": "0xd3948a64de1b9f6fe1b5ef90fdc791fd56472a746853e044ddd3a2f1ebb3375d"
+  },
+  "notes": [
+    "Fresh Comet stack with one placeholder collateral. Reuses UnifiedToken + CometProxyAdmin + USDC feed from supply-bench deploy."
+  ],
+  "verifications": {
+    "cometBaseToken": "0xe76bb4c8C0f50C75eE348E91ddd34f4043582aCC",
+    "cometNumAssets": "1",
+    "cometAsset0": {
+      "asset": "0x06419D33D1cfBc406Ca50EC014Ec02117742907f",
+      "priceFeed": "0x8BD46e8097AEBBAe56B6aD38Dbf6Dfef8d12Ff7f",
+      "scale": "1000000000000000000"
+    },
+    "pcolBalanceOfDeployer": "1000000000000000000000000"
+  }
+}
