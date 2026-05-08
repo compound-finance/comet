@@ -47,6 +47,7 @@
     "scripts/marcus-phase1",
     "scripts/marcus-phase2",
     "scripts/marcus-phase3",
-    "scripts/marcus-phase4-fresh-deploy"
+    "scripts/marcus-phase4-fresh-deploy",
+    "scripts/marcus-stress"
   ]
 }
