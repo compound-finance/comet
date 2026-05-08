@@ -235,4 +235,138 @@ describe('OrchestratorRouter (two-phase relayer flow)', () => {
       router.connect(relayer).snapshotForPendingSupply(userPubkey, 1_000_000),
     ).to.be.revertedWithCustomError(router, 'NotPreDepositedCaller');
   });
+
+  // ── EVM-keypair flow (snapshotForPendingSupplyEvm / completeSupplyForUserEvm) ──
+  //
+  // These overloads target the EVM-lane supply path: the user already has
+  // an EVM-keypair identity, so SyntheticSender derivation is skipped and
+  // the address is used directly. Mirrors the bytes32 happy-path + guards
+  // above, plus a cross-mapping isolation check.
+
+  /// SPEC: EVM-lane happy path — supplyTo lands at `user` directly, no synthesis.
+  it('EVM-lane happy path: snapshotForPendingSupplyEvm then completeSupplyForUserEvm', async () => {
+    const { relayer, token, comet, router } = await deployRouterStack();
+    const [, , , , user] = await ethers.getSigners();
+    const amount = 500_000;
+
+    await expect(router.connect(relayer).snapshotForPendingSupplyEvm(user.address, amount))
+      .to.emit(token, 'AtaSnapshotted')
+      .and.to.emit(router, 'SnapshotTakenEvm');
+    expect((await router.pendingSnapshotAmountEvm(user.address)).toString())
+      .to.equal(amount.toString());
+
+    await expect(router.connect(relayer).completeSupplyForUserEvm(user.address, amount))
+      .to.emit(router, 'SuppliedForUserEvm');
+
+    expect((await router.pendingSnapshotAmountEvm(user.address)).toString()).to.equal('0');
+
+    // supplyTo invoked with dst=user directly (no derivation).
+    const last = await comet.lastSupplyTo();
+    expect(last.dst.toLowerCase()).to.equal(user.address.toLowerCase());
+    expect(last.amount.toString()).to.equal(amount.toString());
+  });
+
+  /// SPEC: cancelPendingSnapshotEvm clears state + emits.
+  it('EVM-lane cancel clears pending intent and emits SnapshotCancelledEvm', async () => {
+    const { relayer, router } = await deployRouterStack();
+    const [, , , , user] = await ethers.getSigners();
+    await router.connect(relayer).snapshotForPendingSupplyEvm(user.address, 1_000_000);
+    await expect(router.connect(relayer).cancelPendingSnapshotEvm(user.address))
+      .to.emit(router, 'SnapshotCancelledEvm');
+    expect((await router.pendingSnapshotAmountEvm(user.address)).toString()).to.equal('0');
+  });
+
+  /// SPEC: non-relayer cannot drive any of the EVM-lane functions.
+  it('non-relayer reverts on EVM-lane functions', async () => {
+    const { outsider, router } = await deployRouterStack();
+    const [, , , , user] = await ethers.getSigners();
+    await expect(
+      router.connect(outsider).snapshotForPendingSupplyEvm(user.address, 1_000_000),
+    ).to.be.revertedWith('OR: not relayer');
+    await expect(
+      router.connect(outsider).completeSupplyForUserEvm(user.address, 1_000_000),
+    ).to.be.revertedWith('OR: not relayer');
+    await expect(
+      router.connect(outsider).cancelPendingSnapshotEvm(user.address),
+    ).to.be.revertedWith('OR: not relayer');
+  });
+
+  /// SPEC: zero-amount + zero-address are rejected.
+  it('snapshotForPendingSupplyEvm reverts ZeroAmount on amount=0', async () => {
+    const { relayer, router } = await deployRouterStack();
+    const [, , , , user] = await ethers.getSigners();
+    await expect(router.connect(relayer).snapshotForPendingSupplyEvm(user.address, 0))
+      .to.be.revertedWithCustomError(router, 'ZeroAmount');
+  });
+  it('snapshotForPendingSupplyEvm reverts WrongUserMapping on zero address', async () => {
+    const { relayer, router } = await deployRouterStack();
+    await expect(
+      router.connect(relayer).snapshotForPendingSupplyEvm(ethers.constants.AddressZero, 1_000_000),
+    ).to.be.revertedWithCustomError(router, 'WrongUserMapping');
+  });
+
+  /// SPEC: amount-mismatch + double-snapshot mirror the bytes32 path.
+  it('completeSupplyForUserEvm reverts when amount differs from snapshot', async () => {
+    const { relayer, router } = await deployRouterStack();
+    const [, , , , user] = await ethers.getSigners();
+    await router.connect(relayer).snapshotForPendingSupplyEvm(user.address, 100);
+    await expect(
+      router.connect(relayer).completeSupplyForUserEvm(user.address, 200),
+    ).to.be.revertedWith('OR: amount mismatch');
+    expect((await router.pendingSnapshotAmountEvm(user.address)).toString()).to.equal('100');
+  });
+  it('double snapshotForPendingSupplyEvm for same user reverts', async () => {
+    const { relayer, router } = await deployRouterStack();
+    const [, , , , user] = await ethers.getSigners();
+    await router.connect(relayer).snapshotForPendingSupplyEvm(user.address, 1_000_000);
+    await expect(
+      router.connect(relayer).snapshotForPendingSupplyEvm(user.address, 2_000_000),
+    ).to.be.revertedWith('OR: pending exists');
+  });
+
+  /// SPEC: cancelPendingSnapshotEvm reverts when no intent exists.
+  it('cancelPendingSnapshotEvm reverts when nothing pending', async () => {
+    const { relayer, router } = await deployRouterStack();
+    const [, , , , user] = await ethers.getSigners();
+    await expect(
+      router.connect(relayer).cancelPendingSnapshotEvm(user.address),
+    ).to.be.revertedWith('OR: nothing pending');
+  });
+
+  /// SPEC: bytes32 and address mappings are completely independent.
+  /// A pending bytes32 intent does NOT block an EVM-lane intent and vice versa.
+  it('EVM-lane and bytes32 intents are independent (no cross-mapping interference)', async () => {
+    const { relayer, router } = await deployRouterStack();
+    const [, , , , user] = await ethers.getSigners();
+    const userPubkey = '0x' + 'aa'.repeat(32);
+
+    // Open a bytes32 intent + an EVM-lane intent for "the same identity" (different mappings).
+    await router.connect(relayer).snapshotForPendingSupply(userPubkey, 100);
+    await router.connect(relayer).snapshotForPendingSupplyEvm(user.address, 200);
+
+    expect((await router.pendingSnapshotAmount(userPubkey)).toString()).to.equal('100');
+    expect((await router.pendingSnapshotAmountEvm(user.address)).toString()).to.equal('200');
+
+    // Completing the bytes32 intent does not affect the EVM-lane intent.
+    await router.connect(relayer).completeSupplyForUser(userPubkey, 100);
+    expect((await router.pendingSnapshotAmount(userPubkey)).toString()).to.equal('0');
+    expect((await router.pendingSnapshotAmountEvm(user.address)).toString()).to.equal('200');
+
+    // Completing the EVM-lane intent works as expected.
+    await router.connect(relayer).completeSupplyForUserEvm(user.address, 200);
+    expect((await router.pendingSnapshotAmountEvm(user.address)).toString()).to.equal('0');
+  });
+
+  /// SPEC: router lacking pre-deposited caller role reverts on the Evm overload too.
+  it('snapshotForPendingSupplyEvm reverts NotPreDepositedCaller when role missing', async () => {
+    const [admin, relayer, , , user] = await ethers.getSigners();
+    const token = await deployUnifiedToken(USDC_MINT_DEVNET, 'USDC', 'USDC', 6, admin);
+    const Comet = await ethers.getContractFactory('MockComet');
+    const comet = await Comet.deploy(token.address);
+    const Router = await ethers.getContractFactory('OrchestratorRouter');
+    const router = await Router.deploy(comet.address, token.address, relayer.address);
+    await expect(
+      router.connect(relayer).snapshotForPendingSupplyEvm(user.address, 1_000_000),
+    ).to.be.revertedWithCustomError(router, 'NotPreDepositedCaller');
+  });
 });

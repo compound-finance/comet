@@ -1,0 +1,16 @@
+{
+  "network": "marcus",
+  "chainId": 121301,
+  "deployer": "0xe4abFBCa0FEACc65BA51602Bcbc8AA9B797830AF",
+  "timestamp": "2026-05-08T09:44:00.746Z",
+  "addresses": {
+    "newOrchestratorRouter": "0x5831A48EeabCe1C90Ee639865f356b52b808C023",
+    "oldOrchestratorRouter": "0x02Ed3401ba0f75a2ebF4E3f724B1C115EC110914",
+    "unifiedToken": "0xe76bb4c8C0f50C75eE348E91ddd34f4043582aCC",
+    "cometProxy": "0xDf203b46C89921537F24beA30046eb1FF8c3FCD3"
+  },
+  "txReceipts": {
+    "deploy": "0xac42ebd27984436dd9b1fc82769ab7244f96ecbb279f963da11053f68ccf9d1f",
+    "grantPreDeposited": "0x15fe0ebaa372ce015bf778ded104b7d0bca8dbdb4d3889ee9292550a7555feb2"
+  }
+}

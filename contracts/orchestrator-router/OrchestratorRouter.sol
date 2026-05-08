@@ -54,6 +54,14 @@ contract OrchestratorRouter {
     /// Non-zero means a snapshot has been taken and is awaiting completion.
     mapping(bytes32 => uint256) public pendingSnapshotAmount;
 
+    /// EVM-lane parallel of `pendingSnapshotAmount`. Keyed on the user's
+    /// EVM address directly — no `SyntheticSender.derive` indirection,
+    /// because EVM-lane users already have their own EVM identity.
+    /// A separate mapping (instead of casting `address` into `bytes32`)
+    /// avoids any ambiguity around an EVM address colliding with a
+    /// 12-leading-zero-byte Solana pubkey, however unlikely.
+    mapping(address => uint256) public pendingSnapshotAmountEvm;
+
     /// Phase 1 marker — emitted when the router has snapshotted cometAta
     /// and is awaiting the matching SPL deposit + complete call.
     event SnapshotTaken(
@@ -80,6 +88,20 @@ contract OrchestratorRouter {
     /// entry is consumed by the next `transferFromPreDeposited` call (oldest
     /// first); for POC this is acceptable because demos repeat the same amount.
     event SnapshotCancelled(bytes32 indexed userPubkey, uint256 amount);
+
+    /// EVM-lane mirrors of the three relayer-flow events. The `user` field
+    /// is the user's EVM-keypair address directly — no synthetic derivation.
+    event SnapshotTakenEvm(
+        address indexed user,
+        uint256 amount,
+        bytes32 cometAta
+    );
+    event SuppliedForUserEvm(
+        address indexed user,
+        uint256 amount,
+        bytes32 cometAta
+    );
+    event SnapshotCancelledEvm(address indexed user, uint256 amount);
 
     modifier onlyRelayer() {
         require(authorizedRelayers[msg.sender], "OR: not relayer");
@@ -175,5 +197,65 @@ contract OrchestratorRouter {
         require(prev != 0, "OR: nothing pending");
         delete pendingSnapshotAmount[userPubkey];
         emit SnapshotCancelled(userPubkey, prev);
+    }
+
+    // ────────────────────────────────────────────────────────────────────
+    // EVM-keypair overloads — mirror the three above but skip
+    // `SyntheticSender.derive`. The `user` parameter is the EVM-keypair
+    // address directly (the same identity the position lives at).
+    //
+    // Used by the EVM-lane supply flow, where the user signs T2
+    // (`unifiedToken.transfer(comet, amount)`) from their own MetaMask /
+    // wagmi wallet. T1 + T3 are still relayer-driven — same trust model.
+    // ────────────────────────────────────────────────────────────────────
+
+    /// Phase 1 (EVM lane). Records the pending intent for `user` and
+    /// snapshots cometAta at its pre-deposit balance.
+    function snapshotForPendingSupplyEvm(address user, uint256 amount)
+        external
+        onlyRelayer
+    {
+        if (amount == 0) revert ZeroAmount();
+        if (user == address(0)) revert WrongUserMapping();
+        if (!unifiedToken.isPreDepositedCaller(address(this))) {
+            revert NotPreDepositedCaller();
+        }
+        require(pendingSnapshotAmountEvm[user] == 0, "OR: pending exists");
+
+        bytes32 mint = unifiedToken.mintId();
+        bytes32 cometAta = AtaDeriver.ataForUser(address(comet), mint);
+        unifiedToken.snapshotAta(cometAta);
+        pendingSnapshotAmountEvm[user] = amount;
+        emit SnapshotTakenEvm(user, amount, cometAta);
+    }
+
+    /// Phase 2 (EVM lane). Consumes the pending intent and lands
+    /// `comet.supplyTo(user, ...)` directly — no synthetic derivation,
+    /// since `user` already is the position holder.
+    function completeSupplyForUserEvm(address user, uint256 amount)
+        external
+        onlyRelayer
+    {
+        require(
+            pendingSnapshotAmountEvm[user] == amount,
+            "OR: amount mismatch"
+        );
+        delete pendingSnapshotAmountEvm[user];
+
+        bytes32 mint = unifiedToken.mintId();
+        bytes32 cometAta = AtaDeriver.ataForUser(address(comet), mint);
+
+        comet.supplyTo(user, baseAsset, amount);
+
+        emit SuppliedForUserEvm(user, amount, cometAta);
+    }
+
+    /// Cancel a stuck EVM-lane pending intent. Same UnifiedToken-snapshot
+    /// caveat as `cancelPendingSnapshot`.
+    function cancelPendingSnapshotEvm(address user) external onlyRelayer {
+        uint256 prev = pendingSnapshotAmountEvm[user];
+        require(prev != 0, "OR: nothing pending");
+        delete pendingSnapshotAmountEvm[user];
+        emit SnapshotCancelledEvm(user, prev);
     }
 }
