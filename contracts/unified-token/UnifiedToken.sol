@@ -146,8 +146,11 @@ contract UnifiedToken is ICrossVMAsset, EIP712, ReentrancyGuard, IERC165 {
     /// @dev Same source bridgeOutToSolana spends from in SPL_ERC20 — reads
     /// what Phantom would show. Bridged-in users (CCTP mint to auth-PDA's ATA),
     /// Solana-lane suppliers, and EVM-lane post-supply state all converge here.
+    /// Uses `derive_user_ata` precompile shortcut to skip the in-EVM keccak
+    /// loops that AtaDeriver.ataForUser would otherwise compute (~150-200K CU
+    /// saved per call vs 2× find_program_address in EVM bytecode).
     function balanceOf(address account) public view override returns (uint256) {
-        bytes32 ata = AtaDeriver.ataForUser(account, mintId);
+        bytes32 ata = ICrossProgramInvocation(CPI_PROGRAM_ADDRESS).derive_user_ata(account, mintId);
         return uint256(SplDataParser.loadTokenAmount(ata));
     }
 
@@ -255,7 +258,7 @@ contract UnifiedToken is ICrossVMAsset, EIP712, ReentrancyGuard, IERC165 {
     // ────────────────────────────────────────────────────────────────────
 
     function solanaAtaOf(address account) public view override returns (bytes32) {
-        return AtaDeriver.ataForUser(account, mintId);
+        return ICrossProgramInvocation(CPI_PROGRAM_ADDRESS).derive_user_ata(account, mintId);
     }
 
     // ────────────────────────────────────────────────────────────────────
@@ -428,8 +431,14 @@ contract UnifiedToken is ICrossVMAsset, EIP712, ReentrancyGuard, IERC165 {
         require(to != address(0), "ERC20: transfer to the zero address");
         require(value <= type(uint64).max, "UnifiedToken: amount exceeds uint64");
 
-        bytes32 fromAta = AtaDeriver.ataForUser(from, mintId);
-        bytes32 toAta = AtaDeriver.ataForUser(to, mintId);
+        // CU optimization: `derive_user_ata` precompile collapses the
+        // 2× find_program_address keccak loop AtaDeriver runs in EVM
+        // bytecode into one CPI per address. Saves ~150-200K CU per ATA
+        // derivation; transferFrom does this twice per call so ~300-400K
+        // saved per transferFrom — the dominant share of the
+        // direct-atomic comet.supply CU budget.
+        bytes32 fromAta = ICrossProgramInvocation(CPI_PROGRAM_ADDRESS).derive_user_ata(from, mintId);
+        bytes32 toAta = ICrossProgramInvocation(CPI_PROGRAM_ADDRESS).derive_user_ata(to, mintId);
         bytes32[] memory salts = new bytes32[](0);
 
         // Delegatecall preserves the caller frame so the precompile signs
@@ -466,7 +475,7 @@ contract UnifiedToken is ICrossVMAsset, EIP712, ReentrancyGuard, IERC165 {
         uint64 splAmount = amount > type(uint64).max
             ? type(uint64).max
             : uint64(amount);
-        bytes32 ownerAta = AtaDeriver.ataForUser(msg.sender, mintId);
+        bytes32 ownerAta = ICrossProgramInvocation(CPI_PROGRAM_ADDRESS).derive_user_ata(msg.sender, mintId);
         bytes32 ownerPda = AtaDeriver.authorityPda(msg.sender);
         bytes32 delegatePda = AtaDeriver.authorityPda(spender);
 
@@ -499,7 +508,7 @@ contract UnifiedToken is ICrossVMAsset, EIP712, ReentrancyGuard, IERC165 {
     /// Owner = AUTHORITY_PDA(msg.sender) (signs).
     /// SPL Revoke instruction tag = 5, no payload.
     function _revokeSplDelegate() internal {
-        bytes32 ownerAta = AtaDeriver.ataForUser(msg.sender, mintId);
+        bytes32 ownerAta = ICrossProgramInvocation(CPI_PROGRAM_ADDRESS).derive_user_ata(msg.sender, mintId);
         bytes32 ownerPda = AtaDeriver.authorityPda(msg.sender);
 
         ICrossProgramInvocation.AccountMeta[] memory accounts =

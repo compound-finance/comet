@@ -71,4 +71,18 @@ contract MockCpiReentrancyAttacker {
     {
         return (uint64(0), bytes32(0), false, false, false, "");
     }
+
+    /// Stub for the `derive_user_ata` precompile. The reentrancy attack lives
+    /// in `spl_transfer_checked_v1` (where the actual SPL CPI happens, which
+    /// is where reentrancy guards must trip in production). The ATA derivation
+    /// step is NOT a re-entry vector and must not attack here — otherwise the
+    /// test path reverts before reaching spl_transfer_checked_v1 and the
+    /// reentrancy guard never gets exercised.
+    /// Returns a deterministic placeholder; tests in this file don't assert
+    /// on its value (they only assert on the reentrancy revert reason).
+    function derive_user_ata(address user, bytes32 mint)
+        external pure returns (bytes32)
+    {
+        return keccak256(abi.encodePacked(bytes("attacker-stub-ata"), user, mint));
+    }
 }

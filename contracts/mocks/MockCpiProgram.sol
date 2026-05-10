@@ -5,6 +5,16 @@ interface IUnifiedTokenForReentry {
     function transfer(address to, uint256 value) external returns (bool);
 }
 
+/// Used by `derive_user_ata` mock to delegate to MockSystemProgram so the
+/// `setAtaFor(user, mint, ata)` override map already used by existing tests
+/// continues to apply identically after the AtaDeriver → derive_user_ata
+/// swap in UnifiedToken.
+interface IMockSystemProgramForAta {
+    function getAtaFor(address user, bytes32 mint) external view returns (bytes32);
+}
+
+address constant SYSTEM_PROGRAM_ADDR = address(0xfF00000000000000000000000000000000000007);
+
 /// @title MockCpiProgram
 /// @notice Test-time stand-in for the Rome CpiProgram precompile.
 ///
@@ -131,6 +141,43 @@ contract MockCpiProgram {
         external view returns (uint64)
     {
         return accountLamports[pubkey];
+    }
+
+    /// `derive_user_ata(evm_user, mint)` — Rome user → AUTHORITY_PDA → ATA
+    /// in one CPI on real Marcus. The mock delegates to MockSystemProgram's
+    /// `getAtaFor(user, mint)` so any `setAtaFor(user, mint, ata)` overrides
+    /// already used by existing tests continue to apply byte-for-byte.
+    /// Functionally equivalent to `AtaDeriver.ataForUser(user, mint)` —
+    /// the patch is a CU optimization, NOT a behavior change.
+    function derive_user_ata(address evm_user, bytes32 mint)
+        external view returns (bytes32)
+    {
+        // Cross-call to the system-program mock at the canonical 0xff…07
+        // address. Same pubkey output as composing two find_program_address
+        // calls inline.
+        return IMockSystemProgramForAta(SYSTEM_PROGRAM_ADDR).getAtaFor(evm_user, mint);
+    }
+
+    /// `pdas_batch_derive(seedGroups, programId)` — N `find_program_address`
+    /// calls in one CPI on real Marcus. The mock mirrors MockSystemProgram's
+    /// keccak(program ++ seed1 ++ seed2 ++ ...) per group, with a uniform
+    /// bump=255 placeholder. NO ataMap override layer — `pdas_batch_derive`
+    /// is used by the approve/revoke path that derives bare authority PDAs
+    /// (not ATAs); tests for those paths assert on the seeds, not on
+    /// preregistered output overrides.
+    function pdas_batch_derive(bytes[][] memory seedGroups, bytes32 programId)
+        external pure returns (bytes32[] memory)
+    {
+        bytes32[] memory out = new bytes32[](seedGroups.length);
+        for (uint256 i = 0; i < seedGroups.length; ++i) {
+            bytes memory acc = abi.encodePacked(programId);
+            bytes[] memory seeds = seedGroups[i];
+            for (uint256 j = 0; j < seeds.length; ++j) {
+                acc = abi.encodePacked(acc, seeds[j]);
+            }
+            out[i] = keccak256(acc);
+        }
+        return out;
     }
 
     /// `spl_transfer_checked_v1(...)` — emits `SplTransferRecorded` so
