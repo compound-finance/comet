@@ -19,11 +19,13 @@ import bs58 from 'bs58';
 
 const USDC_MINT_BS58 = '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU';
 
-// Reuse from the supply-bench deploy.
+// Reuse from the supply-bench deploy. Pointing at V2 (post-derive_user_ata
+// patch, 2026-05-10) so Phase F borrow CU benchmarks the precompile-shortcut
+// path. V1 collateral Comet baseline was 1,337,653 CU (memory).
 const REUSE = {
-  cometProxyAdmin:   '0x41aE246D1D212e9E1999DC4D438bA810653c0e0E',
-  unifiedToken:      '0xe76bb4c8C0f50C75eE348E91ddd34f4043582aCC', // decimals=6
-  usdcFeed:          '0x52F2054AEB16F33b03C24910D1Ec82ca0ca0fB9d',
+  cometProxyAdmin:   '0x9A293E9acFa12Ffe05428B2550E3C41b99d804bc', // V2
+  unifiedToken:      '0xbea229c0cB57D61901bA8B01BEeF9Ea1463e6C45', // UT-v2
+  usdcFeed:          '0x815B967F47e3c2173d87c1Ff23114C00BA6766E5', // V2
 };
 
 function bs58ToBytes32(b: string): string {

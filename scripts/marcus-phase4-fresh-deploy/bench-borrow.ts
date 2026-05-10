@@ -19,9 +19,10 @@ const MARCUS_RPC = 'https://marcus.devnet.romeprotocol.xyz/';
 const SOL_RPC    = 'https://api.devnet.solana.com';
 
 const ADDR = {
-  unifiedToken: '0xe76bb4c8C0f50C75eE348E91ddd34f4043582aCC',
-  pcol:         '0x06419D33D1cfBc406Ca50EC014Ec02117742907f',
-  cometProxy:   '0x057c15b0162CC8b6242Ac22A6B9FC92B00e3c710', // collateral-aware Comet
+  // V2 (post derive_user_ata patch, 2026-05-10) — for Phase F borrow re-bench
+  unifiedToken: '0xbea229c0cB57D61901bA8B01BEeF9Ea1463e6C45', // UT-v2
+  pcol:         '0x28fBb35045Ae4e7DAE076e3c0BC6CaA371B8A75c', // PCOL-v2
+  cometProxy:   '0x454CF4E6ECA5Aa9F3168ff0b04D0FE37E942bb76', // collateral-aware Comet-v2
 };
 
 const COLLATERAL_AMOUNT = ethers.utils.parseUnits('100', 18); // 100 PCOL

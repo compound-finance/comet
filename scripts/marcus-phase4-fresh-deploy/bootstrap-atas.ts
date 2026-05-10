@@ -37,6 +37,12 @@ const TARGETS: { label: string; evmAddr: string }[] = [
   { label: 'OrchestratorRouter (decimals=6)', evmAddr: '0x02Ed3401ba0f75a2ebF4E3f724B1C115EC110914' },
   { label: 'CometProxy (collateral stack)',   evmAddr: '0x057c15b0162CC8b6242Ac22A6B9FC92B00e3c710' },
   { label: 'OrchestratorRouter (collateral)', evmAddr: '0xDD3841043b49836D7A27323fb109553CB3dD0bd0' },
+  // v2 (post derive_user_ata patch) — Phase 4 measurement deploy 2026-05-10
+  { label: 'CometProxy v2 (UT-v2 base)',       evmAddr: '0x65c88dE3f52594B9e9946685121266F1714Cc055' },
+  { label: 'OrchestratorRouter v2 (UT-v2)',    evmAddr: '0xa42Dab5d42E61B1Fa407e79075b9f52A1DB0fE98' },
+  // v2-collat (collateral-aware Comet-v2 for Phase F borrow re-bench)
+  { label: 'CometProxy v2-collat (UT-v2 base)', evmAddr: '0x454CF4E6ECA5Aa9F3168ff0b04D0FE37E942bb76' },
+  { label: 'OrchestratorRouter v2-collat',      evmAddr: '0xCDa98Ee216f254655cAa7CAb345D9db28565f109' },
 ];
 
 // Each ATA gets seeded with this much USDC to allocate it (the create
