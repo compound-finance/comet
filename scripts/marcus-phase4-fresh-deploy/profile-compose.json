@@ -1,0 +1,79 @@
+{
+  "timestamp": "2026-05-10T15:37:32.383Z",
+  "addresses": {
+    "wusdc": "0x39844f1d605a11acd87f766494291bbd11b406f4",
+    "pcol": "0x28fBb35045Ae4e7DAE076e3c0BC6CaA371B8A75c",
+    "cometProxy": "0xbF768582378a094823788a398D65B67099B2E45A",
+    "bulker": "0x8867aD6C154Ff5D9880b971653D88036da38c2c4"
+  },
+  "probes": {
+    "bulker_supply_only": {
+      "ok": true,
+      "cu": {
+        "maxCu": 658195,
+        "totalCu": 669497,
+        "sigs": [
+          "4DRXHF1j3r8esr4U8acuW6qgjD5pQg8qKdUAf8bTz7ZBK39xFMxkCqL9gtbRzKLF2y8bqgp3DdCAT78MMGEkKFHM",
+          "4LVqTboxwYxrXhyizc3VwM6CPmw5CgvPUcboWciaQjivVuPYpoyRTb73qH7suXELwDCXqaPrXUHj61fxbu7LWf6F"
+        ]
+      },
+      "tx": "0x5a8d292a4acb5ffb7e28c5f11063d7407e1eff8236e9a7269bf1020eb16a5800"
+    },
+    "bulker_withdraw_only": {
+      "ok": true,
+      "cu": {
+        "maxCu": 1066475,
+        "totalCu": 1078365,
+        "sigs": [
+          "4qf4APx3fxBcu9p7K9jWSnsRjJcMUiGw5taA28qidVcd8jVJHEVWRuBaWGraYUeZTcd8YMCiQC1ASBsHVitdLCU4",
+          "5YfaLiS7frRmBFKJ1uGT1FtQq4RWmZdXMU4joTs2KA5SNWrWCbtVAQEwGDhoxR1dGCWkYBua8HQZyTKCH6QUd1cp"
+        ]
+      },
+      "tx": "0x220d67e291a75f9bf9affc866ce308ef9e23d7076dc85d5dc9125b599e423460"
+    },
+    "bulker_2x_supply": {
+      "ok": true,
+      "cu": {
+        "maxCu": 1108658,
+        "totalCu": 1120548,
+        "sigs": [
+          "mStiosyoYZiFqFdMNvVPUhGJajNbqnSYUcdsVBhWQMy85LwveSzZLMxgw4wtzDQtoSCkT2CfgccUnP5Ee4ZpVUA",
+          "2GXPAjq7uukgpBfP2stNnEKoTGu2pahRYDfzjAAguY5Uoaacb7gK1fgkkThNrYX5SymYX91QYMRRoCsR6awNqzfM"
+        ]
+      },
+      "tx": "0x5021c37357ccb0e8b56415117416e9c07b6f32d354c5bec27e1af96032f5b877"
+    },
+    "bulker_supply_transfer": {
+      "ok": false,
+      "err": "execution reverted: "
+    },
+    "bulker_supply_withdraw": {
+      "ok": false,
+      "err": "{\"name\":\"ProviderError\",\"_stack\":\"ProviderError\\n    at HttpProvider.request (/Users/anilkumar/rome/.worktrees/compound-phase0/compound-on-rome-comet/node_modules/hardhat/src/internal/core/providers/http.ts:116:21)\\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\\n    at async EthersProviderWrapper.send (/Users/anilkumar/rome/.worktrees/compound-phase0/compound-on-rome-c"
+    },
+    "direct_supplyFrom": {
+      "ok": true,
+      "cu": {
+        "maxCu": 576144,
+        "totalCu": 588008,
+        "sigs": [
+          "AM5nSh2N6WARax663u8vxo67DXxRYuziQn93iLWFWaBxnB8eYzES5JLXG55tCtJeKYRZMJwdtom1t3Tjd5eV6UB",
+          "3ruYYk77BrMBEjNS6844b68BJqsHpwLgem9yJ8wXi7HYRotz6vgWHbqkZ2UqwweVkqq7Q6KyeYkuAWv58vY58gAD"
+        ]
+      },
+      "tx": "0x48e5db0a3a5fcf8892af972096de82658047d87ae8e82a571e21c6c9776893eb"
+    },
+    "direct_withdrawFrom": {
+      "ok": true,
+      "cu": {
+        "maxCu": 982601,
+        "totalCu": 994465,
+        "sigs": [
+          "2rothtEKcuu7dbcrethKuHgSjz2MmV9J8ADaRbuXCxMXPEihS1VFioVJJqTt9MCoPzt93q8C4J3oD2ENz5yDrjrX",
+          "5sjgwPnX4L7rwgU9BdGd4TWozSy2GaNozD6SAKtrWvD7BqYpg4SrV8XLWqpMrjbgTmuCv9kdQ65VKm3j1t5r38eG"
+        ]
+      },
+      "tx": "0x11e387d7be6243ab39b11e57544cfd214c1ae86daff743c4a4cbca3068fd0fb2"
+    }
+  }
+}

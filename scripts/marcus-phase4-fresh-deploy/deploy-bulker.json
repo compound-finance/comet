@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-05-10T15:16:20.868Z",
+  "network": "marcus",
+  "chainId": 121301,
+  "deployer": "0xe4abFBCa0FEACc65BA51602Bcbc8AA9B797830AF",
+  "bulker": "0x8867aD6C154Ff5D9880b971653D88036da38c2c4",
+  "wrappedNativeTokenArg": "0x39844f1d605a11acd87f766494291bbd11b406f4",
+  "notes": [
+    "wrappedNativeToken passed for constructor; only used by ACTION_*_NATIVE_TOKEN paths (not exercised in composed supply+borrow bench)"
+  ]
+}

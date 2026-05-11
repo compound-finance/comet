@@ -1,0 +1,50 @@
+{
+  "timestamp": "2026-05-10T15:43:36.675Z",
+  "addresses": {
+    "wusdc": "0x39844f1d605a11acd87f766494291bbd11b406f4",
+    "pcol": "0x28fBb35045Ae4e7DAE076e3c0BC6CaA371B8A75c",
+    "cometProxy": "0xbF768582378a094823788a398D65B67099B2E45A",
+    "composer": "0x3D5bAd5824c58F74ccFEf334E513530412DDd6B1"
+  },
+  "setup": {
+    "allowComposer": {
+      "ok": true,
+      "txHash": "0x3059ff5d7d7a33b093a431896181bc917243337f950b538d415714f9c64cef23",
+      "gasUsed": "1448760",
+      "sigs": [
+        "5MRUQrD6szf73uCCJ3Pdrtk5kQXEid1hWvgNv7AFoUqCR3qifWTE1VECG2EN9SMLJkA6BzdEWvLrwusnCLUfbqLp",
+        "nydHTg6ztxpTrz1daSF4a5BtBC2KsQg4isqbbmoK8jwGWSuLebFZ46zqGKM4rKJ7FyhQAgFrcukCBkQLU5dzpeY"
+      ],
+      "perSig": [
+        {
+          "sig": "5MRUQrD6szf73uCCJ3Pdrtk5kQXEid1hWvgNv7AFoUqCR3qifWTE1VECG2EN9SMLJkA6BzdEWvLrwusnCLUfbqLp",
+          "cu": 11864
+        },
+        {
+          "sig": "nydHTg6ztxpTrz1daSF4a5BtBC2KsQg4isqbbmoK8jwGWSuLebFZ46zqGKM4rKJ7FyhQAgFrcukCBkQLU5dzpeY",
+          "cu": 231458
+        }
+      ],
+      "maxCu": 231458,
+      "totalCu": 243322
+    }
+  },
+  "bench": {
+    "supplyAndBorrow": {
+      "ok": false,
+      "error": "{\"name\":\"ProviderError\",\"_stack\":\"ProviderError\\n    at HttpProvider.request (/Users/anilkumar/rome/.worktrees/compound-phase0/compound-on-rome-comet/node_modules/hardhat/src/internal/core/providers/http.ts:116:21)\\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\\n    at async EthersProviderWrapper.send (/Users/anilkumar/rome/.worktrees/compound-phase0/compound-on-rome-comet/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)\",\"code\":-32000,\"_isProviderError\":true}",
+      "txHash": null
+    },
+    "supplyAndBorrowSmall": {
+      "ok": false,
+      "error": "{\"name\":\"ProviderError\",\"_stack\":\"ProviderError\\n    at HttpProvider.request (/Users/anilkumar/rome/.worktrees/compound-phase0/compound-on-rome-comet/node_modules/hardhat/src/internal/core/providers/http.ts:116:21)\\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\\n    at async EthersProviderWrapper.send (/Users/anilkumar/rome/.worktrees/compound-phase0/compound-on-rome-comet/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)\",\"code\":-32000,\"_isProviderError\":true}",
+      "txHash": null
+    }
+  },
+  "summary": {
+    "composerComposeCU": null,
+    "composerComposeFitsAtomic": false,
+    "composerSmallCU": null,
+    "composerSmallFitsAtomic": false
+  }
+}

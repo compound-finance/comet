@@ -43,6 +43,10 @@ const TARGETS: { label: string; evmAddr: string }[] = [
   // v2-collat (collateral-aware Comet-v2 for Phase F borrow re-bench)
   { label: 'CometProxy v2-collat (UT-v2 base)', evmAddr: '0x454CF4E6ECA5Aa9F3168ff0b04D0FE37E942bb76' },
   { label: 'OrchestratorRouter v2-collat',      evmAddr: '0xCDa98Ee216f254655cAa7CAb345D9db28565f109' },
+  // Step 0 — Comet-wUSDC test deploy 2026-05-10 (vanilla Compound + wUSDC base)
+  { label: 'CometProxy-wUSDC (Step 0 verify)',  evmAddr: '0x42eB6EA38862e9F00F1E3aef9FC0bBfbd5C88215' },
+  // Step 0 ext — Comet-wUSDC-collat (PCOL collateral) 2026-05-10
+  { label: 'CometProxy-wUSDC-collat',           evmAddr: '0xbF768582378a094823788a398D65B67099B2E45A' },
 ];
 
 // Each ATA gets seeded with this much USDC to allocate it (the create

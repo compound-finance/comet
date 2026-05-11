@@ -1,0 +1,35 @@
+{
+  "timestamp": "2026-05-10T15:12:45.841Z",
+  "network": "marcus",
+  "chainId": 121301,
+  "deployer": "0xe4abFBCa0FEACc65BA51602Bcbc8AA9B797830AF",
+  "reuse": {
+    "cometProxyAdmin": "0x9A293E9acFa12Ffe05428B2550E3C41b99d804bc",
+    "usdcFeed": "0x815B967F47e3c2173d87c1Ff23114C00BA6766E5",
+    "pcol": "0x28fBb35045Ae4e7DAE076e3c0BC6CaA371B8A75c",
+    "pcolFeed": "0x5EfC024e047ECcb4AfAa12ceB25FB2ea4565e025"
+  },
+  "base": "0x39844f1d605a11acd87f766494291bbd11b406f4",
+  "addresses": {
+    "cometExt": "0x9eABB4C3E86D7a95C5A136e1E0cf12933a943aa2",
+    "cometImpl": "0x920b30C932a8404Cf77ED1E85819e8f7E55297e0",
+    "configuratorImpl": "0x574F7DCdbf1b8Fc8acD83B8E2bBFf1bE5605360e",
+    "configuratorProxy": "0xeCAFeB3D017ff71A2bb1cAF307EcA2F59B19b191",
+    "cometProxy": "0xbF768582378a094823788a398D65B67099B2E45A"
+  },
+  "txReceipts": {
+    "initializeStorage": "0xfcbe09ce1317294c64a58971eecc01e097e7a69142386497866e317a9a2fe3d6"
+  },
+  "notes": [
+    "wUSDC base + PCOL collateral. Vanilla Compound v3 — no OrchestratorRouter, no UT pre-deposit machinery."
+  ],
+  "verifications": {
+    "cometBaseToken": "0x39844f1D605a11acD87f766494291BBD11b406F4",
+    "cometNumAssets": "1",
+    "cometAsset0": {
+      "asset": "0x28fBb35045Ae4e7DAE076e3c0BC6CaA371B8A75c",
+      "priceFeed": "0x5EfC024e047ECcb4AfAa12ceB25FB2ea4565e025",
+      "scale": "1000000000000000000"
+    }
+  }
+}

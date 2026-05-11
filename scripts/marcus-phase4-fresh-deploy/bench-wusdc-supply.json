@@ -1,0 +1,46 @@
+{
+  "timestamp": "2026-05-10T14:29:52.507Z",
+  "network": "marcus",
+  "chainId": 121301,
+  "addresses": {
+    "wusdc": "0x39844f1d605a11acd87f766494291bbd11b406f4",
+    "cometProxy": "0x42eB6EA38862e9F00F1E3aef9FC0bBfbd5C88215"
+  },
+  "iterations": 1,
+  "supplyAmountRaw": "100000",
+  "setup": {},
+  "runs": [
+    {
+      "iteration": 1,
+      "steps": {
+        "supply": {
+          "txHash": "0xf03e22455d4303c1faeaa141172d58d3156dfd1d6b60d2906eaed6cb0e1c17b2",
+          "gasUsed": "15000",
+          "sigs": [
+            "4ZT4oRVcB16Ej27uQWn6Y1MfiDshEiyVDATUPqfHeWQ8ZsRixabJDj7dwp1UHPd8SQsNXGg6x9AcmTnFhLrajdgZ",
+            "53jVStL1KeLzUY8qk7wHc41HgS64ghXxNDYkoZfhaE465QvmE9zFhroxwEsmvXfbwYouYUUzXtWnzGkFcmhBWc36"
+          ],
+          "perSig": [
+            {
+              "sig": "4ZT4oRVcB16Ej27uQWn6Y1MfiDshEiyVDATUPqfHeWQ8ZsRixabJDj7dwp1UHPd8SQsNXGg6x9AcmTnFhLrajdgZ",
+              "cu": 11302,
+              "err": null
+            },
+            {
+              "sig": "53jVStL1KeLzUY8qk7wHc41HgS64ghXxNDYkoZfhaE465QvmE9zFhroxwEsmvXfbwYouYUUzXtWnzGkFcmhBWc36",
+              "cu": 869094,
+              "err": null
+            }
+          ],
+          "maxCu": 869094,
+          "totalCu": 880396
+        }
+      },
+      "summary": {
+        "maxSingleSolanaTxCU": 869094,
+        "totalCU": 880396,
+        "atomicFitsCeiling": true
+      }
+    }
+  ]
+}

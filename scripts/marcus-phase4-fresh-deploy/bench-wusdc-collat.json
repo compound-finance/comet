@@ -1,0 +1,120 @@
+{
+  "timestamp": "2026-05-10T15:22:17.091Z",
+  "network": "marcus",
+  "chainId": 121301,
+  "addresses": {
+    "wusdc": "0x39844f1d605a11acd87f766494291bbd11b406f4",
+    "pcol": "0x28fBb35045Ae4e7DAE076e3c0BC6CaA371B8A75c",
+    "cometProxy": "0xbF768582378a094823788a398D65B67099B2E45A",
+    "bulker": "0x8867aD6C154Ff5D9880b971653D88036da38c2c4"
+  },
+  "setup": {
+    "wusdcApproveComet": {
+      "txHash": "0x7bb96b1258a6504d98a1ce55ac14193e8518cdb79e0d932654c7df78b73873b9",
+      "gasUsed": "15000",
+      "sigs": [
+        "35Y79HvmCgozjFUMUcb1wfceM4PAo6saiJ5dra6kKbvqkPkx8GGA3yohExPqtvyhZDU2gCYKcC1BhnEmD5BCDaCM",
+        "3x8fp2jAV5pDv9RXVSvLN5Fi42qxy1M8HHYEaaZxJLdHRbgjLGWpbq7Q2VBXi1nH4ARR3dmwSqcDRPh9RuSkoLDk"
+      ],
+      "perSig": [
+        {
+          "sig": "35Y79HvmCgozjFUMUcb1wfceM4PAo6saiJ5dra6kKbvqkPkx8GGA3yohExPqtvyhZDU2gCYKcC1BhnEmD5BCDaCM",
+          "cu": 11302,
+          "err": null
+        },
+        {
+          "sig": "3x8fp2jAV5pDv9RXVSvLN5Fi42qxy1M8HHYEaaZxJLdHRbgjLGWpbq7Q2VBXi1nH4ARR3dmwSqcDRPh9RuSkoLDk",
+          "cu": 395562,
+          "err": null
+        }
+      ],
+      "maxCu": 395562,
+      "totalCu": 406864
+    },
+    "wusdcApproveBulker": {
+      "txHash": "0xfe15b83b2b060218559a6e13135833712cd69d148691ad9605c73b2425a020f7",
+      "gasUsed": "15000",
+      "sigs": [
+        "4RZpp7AQYaupPk6J2fZhP8jPZEYQxvryhc1nS45RC32gGDx2Stsi3nPXcL1TdATa6bpvA7atbXBjQkrMgapzmnrC",
+        "4Jp7xxMUbjzDYTw3PpHhmy2wcMzRQyPUfDsBk4NkZcEExy9wwffxsb6cqWcP55bqpHF4DdtntxcTDV1CuLzrSUkb"
+      ],
+      "perSig": [
+        {
+          "sig": "4RZpp7AQYaupPk6J2fZhP8jPZEYQxvryhc1nS45RC32gGDx2Stsi3nPXcL1TdATa6bpvA7atbXBjQkrMgapzmnrC",
+          "cu": 11302,
+          "err": null
+        },
+        {
+          "sig": "4Jp7xxMUbjzDYTw3PpHhmy2wcMzRQyPUfDsBk4NkZcEExy9wwffxsb6cqWcP55bqpHF4DdtntxcTDV1CuLzrSUkb",
+          "cu": 404570,
+          "err": null
+        }
+      ],
+      "maxCu": 404570,
+      "totalCu": 415872
+    }
+  },
+  "direct": {
+    "supplyCollateral": {
+      "txHash": "0x578d538046ca2b6b3b870e258bacc8125c17e82b202ac604ca63a480fc0b6434",
+      "gasUsed": "15000",
+      "sigs": [
+        "2XYziajo5ZGB1FzvKFtyzLZxbxHWVNr2NYkrsd9WCpE6ctfQR8uHXXmcLq3eig3aPxzARRgdpDdRhFJ3srv7xzMd",
+        "Mb1ER9Cc7ogxSfm2i4VdbfDJZyjCxWSfVCN5bSQwRXq1CLHrFCWYae2TZ3SdvrysTqJFPvYzXiWWQib8DQJZX4j"
+      ],
+      "perSig": [
+        {
+          "sig": "2XYziajo5ZGB1FzvKFtyzLZxbxHWVNr2NYkrsd9WCpE6ctfQR8uHXXmcLq3eig3aPxzARRgdpDdRhFJ3srv7xzMd",
+          "cu": 11302,
+          "err": null
+        },
+        {
+          "sig": "Mb1ER9Cc7ogxSfm2i4VdbfDJZyjCxWSfVCN5bSQwRXq1CLHrFCWYae2TZ3SdvrysTqJFPvYzXiWWQib8DQJZX4j",
+          "cu": 583946,
+          "err": null
+        }
+      ],
+      "maxCu": 583946,
+      "totalCu": 595248
+    },
+    "borrow": {
+      "txHash": "0x2a1d79c9fac04a7f313ea98d4039f2dbb2b0799b95b1da7ca84b9f9952484f49",
+      "gasUsed": "15000",
+      "sigs": [
+        "4uBCzAvYjnJHYJLj6tbgnD3vfys8fcnvmbdFz3owUHEEwK8L9c4EnJ69rUE8kvuvoCvft27kEFvCMLH89J5PRyQS",
+        "5U3xQKvSWhpgnrMxxgzRGQwsCG1qeekHFgAGgwGz3akouV1hRHb9wNJgtYprJFoWJaEMzLYkgkS2SkLPrTMyZK3D"
+      ],
+      "perSig": [
+        {
+          "sig": "4uBCzAvYjnJHYJLj6tbgnD3vfys8fcnvmbdFz3owUHEEwK8L9c4EnJ69rUE8kvuvoCvft27kEFvCMLH89J5PRyQS",
+          "cu": 11302,
+          "err": null
+        },
+        {
+          "sig": "5U3xQKvSWhpgnrMxxgzRGQwsCG1qeekHFgAGgwGz3akouV1hRHb9wNJgtYprJFoWJaEMzLYkgkS2SkLPrTMyZK3D",
+          "cu": 1005532,
+          "err": null
+        }
+      ],
+      "maxCu": 1005532,
+      "totalCu": 1016834
+    }
+  },
+  "bulker": {
+    "compose": {
+      "error": "{\"name\":\"ProviderError\",\"_stack\":\"ProviderError\\n    at HttpProvider.request (/Users/anilkumar/rome/.worktrees/compound-phase0/compound-on-rome-comet/node_modules/hardhat/src/internal/core/providers/http.ts:116:21)\\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\\n    at async EthersProviderWrapper.send (/Users/anilkumar/rome/.worktrees/compound-phase0/compound-on-rome-comet/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)\",\"code\":-32000,\"_isProviderError\":true}",
+      "txHash": null,
+      "gasUsed": "0",
+      "sigs": [],
+      "perSig": [],
+      "maxCu": 0,
+      "totalCu": 0
+    }
+  },
+  "summary": {
+    "directSupplyCollateralCU": 583946,
+    "directBorrowCU": 1005532,
+    "bulkerComposeCU": 0,
+    "bulkerFitsAtomic": true
+  }
+}
