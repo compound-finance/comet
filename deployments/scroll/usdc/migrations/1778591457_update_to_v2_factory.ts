@@ -4,15 +4,13 @@ import { DeploymentManager } from '../../../../plugins/deployment_manager/Deploy
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { exp, proposal, calldata } from '../../../../src/deploy';
 
-const USDC_COMET = '0x8D38A3d6B3c3B7d96D6536DA7Eef94A9d7dbC991';
-const WETH_COMET = '0x60F2058379716A64a7A5d29219397e79bC552194';
+const USDC_COMET = '0xB2f97c1Bd3bf02f5e74d13f02E3e26F93D77CE44';
 
-const COMET_FACTORY_V2 = '0xb07302209d25D0dA8100D0C9AC061259eEfe531a';
+const COMET_FACTORY_V2 = '0xBE1b3e95c8fE0Cb9B6E825c9F7E1bfbb7855B227';
 
-const USDC_EXT = '0x9A830d83768636eAF68E317260adE822c5f3db9D';
-const WETH_EXT = '0xCfcdeA31c11FE002d7488Bd714c630E67cf72D71';
+const USDC_EXT = '0x4DA8f56c46Dc7195FBfF1C775327C13feE7eadAd';
 
-export default migration('1778158953_update_to_v2_factory', {
+export default migration('1778591457_update_to_v2_factory', {
   async prepare(deploymentManager: DeploymentManager) {
 
     const cometUSDC = new Contract(
@@ -21,7 +19,7 @@ export default migration('1778158953_update_to_v2_factory', {
       await deploymentManager.getSigner()
     );
 
-    const lineaAssetListFactoryAddress = '0x2F4eAF29dfeeF4654bD091F7112926E108eF4Ed0';
+    const scrollAssetListFactoryAddress = '0x5404872d8f2e24b230EC9B9eC64E3855F637FB93';
 
     const extensionDelegateUSDC = new Contract(
       await cometUSDC.extensionDelegate(),
@@ -42,41 +40,11 @@ export default migration('1778158953_update_to_v2_factory', {
             utils.formatBytes32String(nameUSDC),
             utils.formatBytes32String(symbolUSDC)
           ],
-          lineaAssetListFactoryAddress
+          scrollAssetListFactoryAddress
         ]
       )
     );
 
-    const cometWETH = new Contract(
-      WETH_COMET,
-      ['function extensionDelegate() external view returns (address)'],
-      await deploymentManager.getSigner()
-    );
-
-    const extensionDelegateWETH = new Contract(
-      await cometWETH.extensionDelegate(),
-      [
-        'function name() external view returns (string)',
-        'function symbol() external view returns (string)',
-      ],
-      await deploymentManager.getSigner()
-    );
-    const nameWETH = await extensionDelegateWETH.name();
-    const symbolWETH = await extensionDelegateWETH.symbol();
-
-    console.log('WETH constructor args',
-      utils.defaultAbiCoder.encode(
-        ['(bytes32,bytes32)', 'address'],
-        [
-          [
-            utils.formatBytes32String(nameWETH),
-            utils.formatBytes32String(symbolWETH)
-          ],
-          lineaAssetListFactoryAddress
-        ]
-      )
-    );
-    
     return {};
   },
 
@@ -90,18 +58,12 @@ export default migration('1778158953_update_to_v2_factory', {
     } = await deploymentManager.getContracts();
 
     const {
-      lineaMessageService,
+      scrollMessenger,
       governor,
     } = await govDeploymentManager.getContracts();
 
-    const newFactory = await deploymentManager.existing(
-      'cometFactoryV2',
-      COMET_FACTORY_V2,
-      'linea'
-    );
-
     const setConfigurationCalldataUsdc = await calldata(
-      configurator.populateTransaction.setFactory(USDC_COMET, newFactory.address)
+      configurator.populateTransaction.setFactory(USDC_COMET, COMET_FACTORY_V2)
     );
     const setExtensionDelegateCalldataUsdc = await calldata(
       configurator.populateTransaction.setExtensionDelegate(USDC_COMET, USDC_EXT)
@@ -111,49 +73,33 @@ export default migration('1778158953_update_to_v2_factory', {
       [configurator.address, USDC_COMET]
     );
 
-    const setConfigurationCalldataWeth = await calldata(
-      configurator.populateTransaction.setFactory(WETH_COMET, newFactory.address)
-    );
-    const setExtensionDelegateCalldataWeth = await calldata(
-      configurator.populateTransaction.setExtensionDelegate(WETH_COMET, WETH_EXT)
-    );
-    const deployAndUpgradeToCalldataWeth = utils.defaultAbiCoder.encode(
-      ['address', 'address'],
-      [configurator.address, WETH_COMET]
-    );
-
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
         [
           configurator.address, configurator.address, cometAdmin.address,
-          configurator.address, configurator.address, cometAdmin.address
         ],
         [
           0, 0, 0,
-          0, 0, 0
         ],
         [
-          'setFactory(address,address)',
-          'setExtensionDelegate(address,address)',
-          'deployAndUpgradeTo(address,address)',
           'setFactory(address,address)',
           'setExtensionDelegate(address,address)',
           'deployAndUpgradeTo(address,address)',
         ],
         [
           setConfigurationCalldataUsdc, setExtensionDelegateCalldataUsdc, deployAndUpgradeToCalldataUsdc,
-          setConfigurationCalldataWeth, setExtensionDelegateCalldataWeth,  deployAndUpgradeToCalldataWeth
         ]
       ]
     );
 
     const mainnetActions = [
-      // 1. Update USDC and WETH Comet on Linea to the service patch version
+      // 1. Update USDC Comet to the service patch version
       {
-        contract: lineaMessageService,
-        signature: 'sendMessage(address,uint256,bytes)',
-        args: [bridgeReceiver.address, 0, l2ProposalData],
+        contract: scrollMessenger,
+        signature: 'sendMessage(address,uint256,bytes,uint256)',
+        args: [bridgeReceiver.address, 0, l2ProposalData, 1_000_000],
+        value: exp(0.2, 18)
       },
     ];
 
@@ -179,10 +125,8 @@ export default migration('1778158953_update_to_v2_factory', {
     const { configurator } = await deploymentManager.getContracts();
 
     expect(await configurator.factory(USDC_COMET)).to.equal(COMET_FACTORY_V2);
-    expect(await configurator.factory(WETH_COMET)).to.equal(COMET_FACTORY_V2);
 
     expect((await configurator.getConfiguration(USDC_COMET)).extensionDelegate).to.equal(USDC_EXT);
-    expect((await configurator.getConfiguration(WETH_COMET)).extensionDelegate).to.equal(WETH_EXT);
 
     const expectedMaxUtilization = exp(2, 18);
     const signer = await deploymentManager.getSigner();
@@ -202,21 +146,5 @@ export default migration('1778158953_update_to_v2_factory', {
     expect(await newCometUsdc.symbol()).to.equal('cUSDCv3');
     expect(await newCometUsdc.name()).to.equal('Compound USDC');
     expect(await newCometUsdc.extensionDelegate()).to.equal(USDC_EXT);
-
-    const newCometWeth = new Contract(
-      WETH_COMET, 
-      [
-        'function MAX_SUPPORTED_UTILIZATION() external view returns (uint256)',
-        'function symbol() external view returns (string)',
-        'function name() external view returns (string)',
-        'function extensionDelegate() external view returns (address)',
-      ],
-      signer
-    );
-
-    expect(await newCometWeth.MAX_SUPPORTED_UTILIZATION()).to.equal(expectedMaxUtilization);
-    expect(await newCometWeth.symbol()).to.equal('cWETHv3');
-    expect(await newCometWeth.name()).to.equal('Compound WETH');
-    expect(await newCometWeth.extensionDelegate()).to.equal(WETH_EXT);
   },
 });
