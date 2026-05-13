@@ -200,7 +200,12 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
 
   if (ctx.world.base.network === 'scroll' && ctx.world.base.deployment === 'usdc') {
     config.bulkerAsset = 200;
-    config.bulkerAsset1 = 200;
+    config.bulkerAsset1 = 50;
+    if(i == 1) { // tBTC
+      config.supplyCollateral = 10;
+      config.transferCollateral = 10;
+      config.withdrawCollateral = 10;
+    }
   }
 
   if (ctx.world.base.network === 'sepolia' && ctx.world.base.deployment === 'usdc') {

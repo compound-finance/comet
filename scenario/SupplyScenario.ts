@@ -1045,13 +1045,13 @@ scenario(
 
     for (let i = 0; i < MAX_ASSETS; i++) {
       if (!await isValidAssetIndex(context, i)) continue;
-      if (!await isTriviallySourceable(context, i, getConfigForScenario(context).supplyCollateral)) continue;
+      if (!await isTriviallySourceable(context, i, getConfigForScenario(context, i).supplyCollateral)) continue;
       if (await isAssetDelisted(context, i)) continue;
 
       const { asset, scale: scaleBN } = await comet.getAssetInfo(i);
       const collateralAsset = context.getAssetByAddress(asset);
       const scale = scaleBN.toBigInt();
-      const supplyCollateral = BigInt(getConfigForScenario(context).supplyCollateral) * scale;
+      const supplyCollateral = BigInt(getConfigForScenario(context, i).supplyCollateral) * scale;
 
       log(`Supplying reverts when collateral asset ${i} supply is paused`);
 
@@ -1102,13 +1102,13 @@ scenario(
 
     for (let i = 0; i < MAX_ASSETS; i++) {
       if (!await isValidAssetIndex(context, i)) continue;
-      if (!await isTriviallySourceable(context, i, getConfigForScenario(context).supplyCollateral)) continue;
+      if (!await isTriviallySourceable(context, i, getConfigForScenario(context, i).supplyCollateral)) continue;
       if (await isAssetDelisted(context, i)) continue;
 
       const { asset, scale: scaleBN } = await comet.getAssetInfo(i);
       const collateralAsset = context.getAssetByAddress(asset);
       const scale = scaleBN.toBigInt();
-      const supplyCollateral = BigInt(getConfigForScenario(context).supplyCollateral) * scale;
+      const supplyCollateral = BigInt(getConfigForScenario(context, i).supplyCollateral) * scale;
 
       log(`Supplying reverts when collateral asset ${i} supply is paused`);
 
@@ -1161,13 +1161,13 @@ scenario(
 
     for (let i = 0; i < MAX_ASSETS; i++) {
       if (!await isValidAssetIndex(context, i)) continue;
-      if (!await isTriviallySourceable(context, i, getConfigForScenario(context).supplyCollateral)) continue;
+      if (!await isTriviallySourceable(context, i, getConfigForScenario(context, i).supplyCollateral)) continue;
       if (await isAssetDelisted(context, i)) continue;
 
       const { asset, scale: scaleBN } = await comet.getAssetInfo(i);
       const collateralAsset = context.getAssetByAddress(asset);
       const scale = scaleBN.toBigInt();
-      const supplyCollateral = BigInt(getConfigForScenario(context).supplyCollateral) * scale;
+      const supplyCollateral = BigInt(getConfigForScenario(context, i).supplyCollateral) * scale;
 
       log(`Supplying reverts when collateral asset ${i} supply is paused`);
 
@@ -1227,7 +1227,7 @@ scenario('Comet#supply reverts when collateral asset is deactivated and allows t
 
     for (let i = 0; i < MAX_ASSETS; i++) {
       if (!await isValidAssetIndex(context, i)) continue;
-      if (!await isTriviallySourceable(context, i, getConfigForScenario(context).supplyCollateral)) continue;
+      if (!await isTriviallySourceable(context, i, getConfigForScenario(context, i).supplyCollateral)) continue;
       if (await isAssetDelisted(context, i)) continue;
 
       const { asset, scale: scaleBigNumber } = await comet.getAssetInfo(i);
@@ -1292,7 +1292,7 @@ scenario(
       const { asset, scale: scaleBigNumber } = await comet.getAssetInfo(i);
       const collateralAsset = context.getAssetByAddress(asset);
       const scale = scaleBigNumber.toBigInt();
-      const supplyAmount = BigInt(getConfigForScenario(context).supplyCollateral) * scale;
+      const supplyAmount = BigInt(getConfigForScenario(context, i).supplyCollateral) * scale;
 
       log(`SupplyTo reverts when collateral asset ${i} is deactivated`);
 
@@ -1379,6 +1379,15 @@ scenario(
       ).to.be.revertedWithCustomError(comet, 'CollateralAssetSupplyPaused').withArgs(i);
 
       log(`SupplyFrom is allowed when collateral asset ${i} is activated`);
+
+      // Set balance of admin
+      await context.world.deploymentManager.hre.ethers.provider.send(
+        'hardhat_setBalance',
+        [
+          admin.address,
+          '0x1000000000000000000', // 1,000 ETH
+        ]
+      );
 
       // Activate collateral asset
       await comet.connect(admin.signer).activateCollateral(i);
