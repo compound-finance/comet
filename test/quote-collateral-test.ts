@@ -230,7 +230,6 @@ describe('quoteCollateral', function () {
           {
             decimals: 18,
             initialPrice: 200,
-            liquidationFactor: exp(0.6, 18),
           },
         ])
       );
@@ -289,6 +288,11 @@ describe('quoteCollateral', function () {
       expect(quoteAmount).to.eq(expectedQuoteWithDiscount);
     });
 
+    it('pre-update: borrowCF and liquidateCF update to zero', async () => {
+      await configurator.updateAssetBorrowCollateralFactor(cometProxyAddress, quoteCollateralToken.address, 0n);
+      await configurator.updateAssetLiquidateCollateralFactor(cometProxyAddress, quoteCollateralToken.address, 0n);
+    });
+
     it('update liquidationFactor to 0 to remove discount', async () => {
       await configurator.updateAssetLiquidationFactor(cometProxyAddress, quoteCollateralToken.address, exp(0, 18));
 
@@ -329,7 +333,9 @@ describe('quoteCollateral', function () {
 
         expect(quoteAmount).to.eq(expectedQuoteWithDiscount);
 
-        // Update liquidation factor to 0 to remove discount
+        // Update liquidation factor to 0 to remove discount and borrowCF and liquidateCF to zero
+        await configurator.updateAssetBorrowCollateralFactor(cometProxyAddress, asset.address, 0n);
+        await configurator.updateAssetLiquidateCollateralFactor(cometProxyAddress, asset.address, 0n);
         await configurator.updateAssetLiquidationFactor(cometProxyAddress, asset.address, exp(0, 18));
         await proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxyAddress);
 
