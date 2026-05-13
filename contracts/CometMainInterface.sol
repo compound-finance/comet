@@ -21,6 +21,7 @@ abstract contract CometMainInterface is CometCore {
     error BorrowCFTooLarge();
     error InsufficientReserves();
     error LiquidateCFTooLarge();
+    error LiqPenaltyTooHigh();
     error NoSelfTransfer();
     error NotCollateralized();
     error NotForSale();
