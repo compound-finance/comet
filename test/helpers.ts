@@ -173,6 +173,33 @@ export type UserBasic = {
   _reserved: number;
 };
 
+export type CollateralState = {
+  tokenBalanceBefore: BigNumber;
+  totalsCollateralBefore: BigNumber;
+  collateralReservesBefore: BigNumber;
+  seizeAmount: bigint;
+  seizedValue: bigint;
+};
+
+export async function makeCollateralStates(
+  comet: CometMainInterface,
+  tokens: { [symbol: string]: FaucetToken | NonStandardFaucetFeeToken },
+  keys: string[]
+): Promise<Record<string, CollateralState>> {
+  const col: Record<string, CollateralState> = {};
+  for (const key of keys) {
+    const asset = tokens[key] as FaucetToken;
+    col[key] = {
+      tokenBalanceBefore: await asset.balanceOf(comet.address),
+      totalsCollateralBefore: (await comet.totalsCollateral(asset.address)).totalSupplyAsset,
+      collateralReservesBefore: await comet.getCollateralReserves(asset.address),
+      seizeAmount: 0n,
+      seizedValue: 0n,
+    };
+  }
+  return col;
+}
+
 export function dfn<T>(x: T | undefined | null, dflt: T): T {
   return x == undefined ? dflt : x;
 }
