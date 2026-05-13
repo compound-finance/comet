@@ -211,7 +211,33 @@ export default migration('1778158953_update_to_v2_factory', {
       },
     ];
 
-    const description = `DESCRIPTION`;
+    const description = `# Update Linea and Scroll Comets to the service patch version
+
+## Proposal summary
+
+WOOF! proposes to update Linea cUSDCv3, cWETHv3 and Scroll cUSDCv3 Comets to a new version, which <>.
+This proposal takes the governance steps recommended and necessary to update Compound III USDC and WETH markets on Linea and Scroll. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario).
+
+Detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/<>) and [forum discussion](<>).
+
+### Bytecode Repository
+
+This update is done with the use of the bytecode repository, which provides trustless and deterministic deployments.
+
+Further details on the deployment can be found in the [Bytecode Repository git](https://github.com/woof-software/bytecode-repository) and [forum discussion](https://www.comp.xyz/t/rfc-bytecode-repository-and-deployment-pipeline-modernization/6965).
+
+### Audit
+
+Both service patch Comet update and Bytecode Repository have been audited by Certora and full reports can be found here:
+
+- [Certora Comet Service Patch Audit](<>)
+- [Certora Bytecode Repository Audit](<>)
+
+## Proposal Actions
+
+The first action sets the factory to the newly deployed factory, extension delegate to the newly deployed contract and deploys and upgrades Comet to a new version on Linea.
+
+The second action sets the factory to the newly deployed factory, extension delegate to the newly deployed contract and deploys and upgrades Comet to a new version on Scroll.`;
     const txn = await deploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
