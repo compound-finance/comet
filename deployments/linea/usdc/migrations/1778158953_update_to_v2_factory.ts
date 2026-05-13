@@ -215,7 +215,18 @@ export default migration('1778158953_update_to_v2_factory', {
 
 ## Proposal summary
 
-WOOF! proposes to update Linea cUSDCv3, cWETHv3 and Scroll cUSDCv3 Comets to a new version, which <>.
+WOOF! proposes upgrading the Linea cUSDCv3, cWETHv3, and Scroll cUSDCv3 Comet markets to a new service patch version introducing several improvements and security enhancements:
+
+- Extended Pause Controls: collateral interactions can now be paused independently per collateral asset.
+- Price Feed Patch (Post-USDM incident response): skips price feed calls for assets with zero collateral factor, preventing unnecessary reverts.
+- Collateral Deactivation Mechanism: introduces a Guardian-controlled emergency mechanism to deactivate unsafe collateral assets, with reactivation requiring a governance proposal.
+- Utilization Peaking Protection: caps utilization at 200%, preventing additional borrowing when post-borrow utilization exceeds this threshold, while preserving lender withdrawals.
+- Borrow Index Fix (Empty Market): prevents borrow interest accrual in markets without active borrowers.
+- Supply Index Fix (Empty Market): ensures supply index only accrues when lenders are present.
+- Lender Illiquidity Fix in Zero-Borrow Markets: prevents reserve depletion in markets with no borrowers by capping supply rate to zero when utilization is zero and reserves are exhausted.
+- Accrue Interest on Collateral Actions (Post-USDM incident response): collateral actions (supply, withdraw, transfer) now trigger interest accrual for affected accounts.
+- Technical Improvements: includes removal of redundant arguments in supplyInternal() and optimized price caching in absorbInternal(), improving gas efficiency without affecting protocol behavior.
+
 This proposal takes the governance steps recommended and necessary to update Compound III USDC and WETH markets on Linea and Scroll. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario).
 
 Detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1118) and [forum discussion](<>).
