@@ -4,17 +4,17 @@ import { DeploymentManager } from '../../../../plugins/deployment_manager/Deploy
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { exp, proposal, calldata } from '../../../../src/deploy';
 
-const USDC_COMET = '0xB2f97c1Bd3bf02f5e74d13f02E3e26F93D77CE44';
+const USDC_COMET_SCROLL = '0xB2f97c1Bd3bf02f5e74d13f02E3e26F93D77CE44';
 
-const COMET_FACTORY_V2 = '0xBE1b3e95c8fE0Cb9B6E825c9F7E1bfbb7855B227';
+const COMET_FACTORY_V2_SCROLL = '0xBE1b3e95c8fE0Cb9B6E825c9F7E1bfbb7855B227';
 
-const USDC_EXT = '0x4DA8f56c46Dc7195FBfF1C775327C13feE7eadAd';
+const USDC_EXT_SCROLL = '0x4DA8f56c46Dc7195FBfF1C775327C13feE7eadAd';
 
 export default migration('1778591457_update_to_v2_factory', {
   async prepare(deploymentManager: DeploymentManager) {
 
     const cometUSDC = new Contract(
-      USDC_COMET,
+      USDC_COMET_SCROLL,
       ['function extensionDelegate() external view returns (address)'],
       await deploymentManager.getSigner()
     );
@@ -63,14 +63,14 @@ export default migration('1778591457_update_to_v2_factory', {
     } = await govDeploymentManager.getContracts();
 
     const setConfigurationCalldataUsdc = await calldata(
-      configurator.populateTransaction.setFactory(USDC_COMET, COMET_FACTORY_V2)
+      configurator.populateTransaction.setFactory(USDC_COMET_SCROLL, COMET_FACTORY_V2_SCROLL)
     );
     const setExtensionDelegateCalldataUsdc = await calldata(
-      configurator.populateTransaction.setExtensionDelegate(USDC_COMET, USDC_EXT)
+      configurator.populateTransaction.setExtensionDelegate(USDC_COMET_SCROLL, USDC_EXT_SCROLL)
     );
     const deployAndUpgradeToCalldataUsdc = utils.defaultAbiCoder.encode(
       ['address', 'address'],
-      [configurator.address, USDC_COMET]
+      [configurator.address, USDC_COMET_SCROLL]
     );
 
     const l2ProposalData = utils.defaultAbiCoder.encode(
@@ -99,7 +99,7 @@ export default migration('1778591457_update_to_v2_factory', {
         contract: scrollMessenger,
         signature: 'sendMessage(address,uint256,bytes,uint256)',
         args: [bridgeReceiver.address, 0, l2ProposalData, 1_000_000],
-        value: exp(0.2, 18)
+        value: exp(0.05, 18)
       },
     ];
 
@@ -124,15 +124,15 @@ export default migration('1778591457_update_to_v2_factory', {
   async verify(deploymentManager: DeploymentManager) {
     const { configurator } = await deploymentManager.getContracts();
 
-    expect(await configurator.factory(USDC_COMET)).to.equal(COMET_FACTORY_V2);
+    expect(await configurator.factory(USDC_COMET_SCROLL)).to.equal(COMET_FACTORY_V2_SCROLL);
 
-    expect((await configurator.getConfiguration(USDC_COMET)).extensionDelegate).to.equal(USDC_EXT);
+    expect((await configurator.getConfiguration(USDC_COMET_SCROLL)).extensionDelegate).to.equal(USDC_EXT_SCROLL);
 
     const expectedMaxUtilization = exp(2, 18);
     const signer = await deploymentManager.getSigner();
 
     const newCometUsdc = new Contract(
-      USDC_COMET, 
+      USDC_COMET_SCROLL, 
       [
         'function MAX_SUPPORTED_UTILIZATION() external view returns (uint256)',
         'function symbol() external view returns (string)',
@@ -145,6 +145,6 @@ export default migration('1778591457_update_to_v2_factory', {
     expect(await newCometUsdc.MAX_SUPPORTED_UTILIZATION()).to.equal(expectedMaxUtilization);
     expect(await newCometUsdc.symbol()).to.equal('cUSDCv3');
     expect(await newCometUsdc.name()).to.equal('Compound USDC');
-    expect(await newCometUsdc.extensionDelegate()).to.equal(USDC_EXT);
+    expect(await newCometUsdc.extensionDelegate()).to.equal(USDC_EXT_SCROLL);
   },
 });
