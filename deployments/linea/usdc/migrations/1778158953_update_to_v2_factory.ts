@@ -218,7 +218,7 @@ export default migration('1778158953_update_to_v2_factory', {
 WOOF! proposes to update Linea cUSDCv3, cWETHv3 and Scroll cUSDCv3 Comets to a new version, which <>.
 This proposal takes the governance steps recommended and necessary to update Compound III USDC and WETH markets on Linea and Scroll. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario).
 
-Detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/<>) and [forum discussion](<>).
+Detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1118) and [forum discussion](<>).
 
 ### Bytecode Repository
 
