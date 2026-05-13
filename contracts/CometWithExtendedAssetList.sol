@@ -455,30 +455,18 @@ contract CometWithExtendedAssetList is CometMainInterface {
      *      nothing to the liquidity calculation, making the account easier to liquidate.
      */
     function isLiquidatable(address account) override public view returns (bool) {
-        (bool liquidatable, ,) = isLiquidatableInternal(account);
-        return liquidatable;
-    }
-
-    function isLiquidatableInternal(address account) internal view returns (
-        bool liquidatable,
-        uint256 basePrice,
-        uint256[] memory collateralPrices
-    ) {
         int104 principal = userBasic[account].principal;
 
-        if (principal >= 0) return (false, basePrice, collateralPrices);
-
-        basePrice = getPrice(baseTokenPriceFeed);
+        if (principal >= 0) return false;
 
         int256 debt = signedMulPrice(
             presentValue(principal),
-            basePrice,
+            getPrice(baseTokenPriceFeed),
             uint64(baseScale)
         );
 
-        uint256 liquidity;
-        (liquidity, collateralPrices) = _getLiquidity(account, true, collateralPrices);
-        liquidatable = debt + int256(liquidity) < 0;
+        (uint256 liquidity, ) = _getLiquidity(account, true, new uint256[](0));
+        return debt + int256(liquidity) < 0;
     }
 
     /**
@@ -1241,10 +1229,12 @@ contract CometWithExtendedAssetList is CometMainInterface {
     }
 
     /**
+    * @notice The internal method which abstracts the account's collateral value calculation
     * @param account The address of the account
     * @param liquidation Whether to use liquidation factors or borrow factors in the calculation
     * @param fetchedCollateralPrices Optional array of collateral prices to use instead of fetching them from the price feeds
     * @return liquidity collateral-factor-weighted sum of collateral USD value for the account
+    * @return collateralPrices array of cached collaterals prices
     */
     function _getLiquidity(address account, bool liquidation, uint256[] memory fetchedCollateralPrices) internal view returns (uint256 liquidity, uint256[] memory collateralPrices) {
         uint16 assetsIn = userBasic[account].assetsIn;
@@ -1257,10 +1247,10 @@ contract CometWithExtendedAssetList is CometMainInterface {
             if (isInAsset(assetsIn, i, _reserved)) {
                 asset = getAssetInfo(i);
                 
-                // Skip assets that do not count toward the liquidation threshold. It avoids getPrice() call for price feed
-                // so in case if excluded asset's oracle reverts (e.g. stale, broken, decommissioned),
-                // it won't block the entire liquidation check, and won't paralyze liquidations of accounts which hold it.
                 if (liquidation) {
+                    // Skip assets that do not count toward the liquidation threshold. It avoids getPrice() call for price feed
+                    // so in case if excluded asset's oracle reverts (e.g. stale, broken, decommissioned),
+                    // it won't block the entire liquidation check, and won't paralyze liquidations of accounts which hold it.
                     if (asset.liquidateCollateralFactor == 0) continue;
                 } else {
                     // Block ALL borrow-side actions when the borrower still holds deactivated collateral.
@@ -1334,16 +1324,20 @@ contract CometWithExtendedAssetList is CometMainInterface {
     * @param account  The underwater account whose collateral and debt are being absorbed
     */
     function absorbInternal(address absorber, address account) internal {
-        (bool liquidatable, uint256 basePrice, uint256[] memory collateralPrices) = isLiquidatableInternal(account);
-        if (!liquidatable) revert NotLiquidatable();
-
+        // replicate isLiquidatable() and cache collateral prices for this function execution
+        // liquidity represents value of all collateral's weighted by LCF
+        (uint256 liquidity, uint256[] memory collateralPrices) = _getLiquidity(account, true, new uint256[](0));
+        // cache base asset price
+        uint256 basePrice = getPrice(baseTokenPriceFeed);
+        
         UserBasic memory accountUser = userBasic[account];
-        int104 oldPrincipal = accountUser.principal;
-        int256 oldBalance = presentValue(oldPrincipal);
+        uint256 debtRemainingValue = mulPrice(uint256(-presentValue(accountUser.principal)), basePrice, uint64(baseScale));
 
-        // Account's value of all collaterals weighted by BCF
+        // replicate isLiquidatable() and revert early
+        if (accountUser.principal > 0 || debtRemainingValue <= liquidity) revert NotLiquidatable();
+
+        // Account's value of all collaterals weighted by BCF - using cached prices
         (uint256 totalCollateralizedValue, ) = _getLiquidity(account, false, collateralPrices);
-        uint256 debtRemainingValue = mulPrice(uint256(-oldBalance), basePrice, uint64(baseScale));
         uint256 minDebtValue = mulPrice(baseBorrowMin, basePrice, uint64(baseScale));
         
         AssetInfo memory collateralInfo;
@@ -1359,14 +1353,11 @@ contract CometWithExtendedAssetList is CometMainInterface {
 
             collateralInfo = getAssetInfo(i);
             
-            // Skip assets with liquidationFactor == 0 — they are non-liquidatable and
-            // must not be seized during absorption. This serves three purposes:
+            // Skip non-liquidatable assets - we must not sieze collatearals with LF = 0:
             // 1. The collateral remains with the borrower: non-liquidatable assets should
-            //    not be confiscated, and their value should not offset the account's debt.
-            // 2. Avoids calling getPrice() on their price feed below: if the oracle is
-            //    disabled or reverting, it would otherwise block absorption of the entire
-            //    account, preventing liquidation even for assets that *should* be seized.
-            // 3. mulFactor(value, 0) would contribute nothing to deltaValue anyway.
+            //    not be absorbed, and their value should not offset the account's debt.
+            // 2. Avoids calling getPrice(): if the oracle is disabled or reverting,
+            //    it would otherwise block liquidation even for assets that *should* be seized.
             if (collateralInfo.liquidationFactor == 0) continue;
 
             collateralAmount = userCollateral[account][collateralInfo.asset].balance;
@@ -1381,25 +1372,22 @@ contract CometWithExtendedAssetList is CometMainInterface {
                 // target HF is reached
                 break;
             }
-            // Calculate the collateral value to seize in order to restore the account to targetHF
+            // Calculate the collateral value S to seize in order to restore the account to targetHF
             //   HF   = health factor = totalCollateralValue / debt
             //   LF   = liquidationFactor (penalty to seized collateral)
             //   LCF  = liquidateCollateralFactor
             //   BCF  = borrowCollateralFactor
             //
-            // After seizing of one collateral, debt is reduced by:   S * LF
+            // After seizing of one collateral of value S, debt is reduced by: S * LF
             // Collateralized value of user's position is reduced by: S * BCF
-            // So, expected HF after seizing collateral of value S:
-            //   HF_new = (totalCollateralValue - S * BCF) / (debt - S * LF)
-            //
-            // We want HF_new = targetHealthFactor, so:
+            // So, expected HF (which we want to be targetHF) after seizing collateral of value S:
             //   targetHF = (totalCollateralValue - S * BCF) / (debt - S * LF)
             //
             // After solving the formula for S:
             //   S = (targetHF * debt - totalCollateralValue) / (targetHF * LF - BCF)
             //
             // The denominator is always positive since with targetHF >= 1:
-            //   LF * targetHF > LF > LCF > BCF (enforced in Configurator)
+            //   LF * targetHF >= LF > LCF > BCF (enforced in Configurator)
             else {
                 wantedCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * FACTOR_SCALE
                                     / (mulFactor(collateralInfo.liquidationFactor, targetHealthFactor) - collateralInfo.borrowCollateralFactor);
@@ -1423,7 +1411,8 @@ contract CometWithExtendedAssetList is CometMainInterface {
                 }
             }
             emit AbsorbCollateral(absorber, account, collateralInfo.asset, seizedAmount, wantedCollateralValue);
-            // storage update
+            
+            // Collaterals storage update
             userCollateral[account][collateralInfo.asset].balance -= uint128(seizedAmount);
             totalsCollateral[collateralInfo.asset].totalSupplyAsset -= uint128(seizedAmount);
             updateAssetsIn(account, collateralInfo, uint128(collateralAmount), userCollateral[account][collateralInfo.asset].balance);
@@ -1432,6 +1421,9 @@ contract CometWithExtendedAssetList is CometMainInterface {
             totalCollateralizedValue -= mulFactor(wantedCollateralValue, collateralInfo.borrowCollateralFactor);
             debtRemainingValue -= seizedValue;
         }
+
+        int104 oldPrincipal = accountUser.principal;
+        int256 oldBalance = presentValue(oldPrincipal);
 
         // After the liquidation user can either have debt closed (balance == 0) or "healthy" debt (negative balance)
         int256 newBalance = -signed256(divPrice(debtRemainingValue, basePrice, uint64(baseScale)));
@@ -1503,21 +1495,8 @@ contract CometWithExtendedAssetList is CometMainInterface {
         // not sell collateral whose price it cannot verify.
         uint256 assetPriceDiscounted = getPrice(assetInfo.priceFeed);
 
-        // Only apply the store front discount for assets that participate in liquidation
-        // (i.e. liquidationFactor > 0). Assets with liquidationFactor == 0 are non-liquidatable:
-        // they are skipped during absorption (see absorbInternal) and therefore should not
-        // receive a liquidation discount when purchased via buyCollateral.
-        //
-        // Additionally, if liquidationFactor == 0 the discount math would compute
-        // discountFactor = storeFrontPriceFactor * (FACTOR_SCALE - 0) / FACTOR_SCALE
-        //                = storeFrontPriceFactor,
-        // and when storeFrontPriceFactor == FACTOR_SCALE (100%) that yields
-        // assetPrice = assetPrice * (FACTOR_SCALE - FACTOR_SCALE) / FACTOR_SCALE = 0,
-        // which would cause a division-by-zero revert in the return statement below.
-        //
-        // By skipping the discount, the protocol sells such collateral at the fair oracle
-        // price — no liquidation incentive is needed for non-liquidatable assets.
-        // Market price will be used if liquidationFactor == 0   
+        // Assets with LF == 0 are non-liquidatable: they are skipped during absorption (see absorbInternal)
+        // and therefore should not receive a liquidation discount. Market price is used isntead.
         if (assetInfo.liquidationFactor != 0) {
             // Store front discount is derived from the collateral asset's liquidationFactor and storeFrontPriceFactor
             // discount = storeFrontPriceFactor * (1e18 - liquidationFactor)
@@ -1528,7 +1507,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
         uint256 basePrice = getPrice(baseTokenPriceFeed);
         // # of collateral assets
         // = (TotalValueOfBaseAmount / DiscountedPriceOfCollateralAsset) * assetScale
-        // = ((basePrice * baseAmount / baseScale) / assetPrice) * assetScale
+        // = ((basePrice * baseAmount / baseScale) / assetPriceDiscounted) * assetScale
         return basePrice * baseAmount * assetInfo.scale / assetPriceDiscounted / baseScale;
     }
 
