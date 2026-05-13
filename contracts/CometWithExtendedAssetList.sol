@@ -1253,22 +1253,15 @@ contract CometWithExtendedAssetList is CometMainInterface {
         AssetInfo memory asset;
 
         fetchedCollateralPrices.length == 0 ? collateralPrices = new uint256[](numAssets) : collateralPrices = fetchedCollateralPrices;
-        for (uint8 i; i < numAssets; ) {
+        for (uint8 i; i < numAssets; ++i) {
             if (isInAsset(assetsIn, i, _reserved)) {
                 asset = getAssetInfo(i);
-                if (fetchedCollateralPrices.length == 0) collateralPrices[i] = getPrice(asset.priceFeed);
-
-                // Skip assets with liquidateCollateralFactor == 0 — they do not count
-                // toward the liquidation collateral threshold, so including them would
-                // add nothing to liquidity (mulFactor(value, 0) == 0).
-                // More critically, this avoids calling getPrice() for their price feed:
-                // if a non-contributing asset's oracle reverts (stale, broken, decommissioned),
-                // it would otherwise block the entire liquidation check, preventing
-                // liquidations for every account that holds that asset — even though
-                // the asset has zero influence on their liquidation status.
-                if (liquidation && asset.liquidateCollateralFactor == 0) {
-                    unchecked { ++i; } 
-                    continue;
+                
+                // Skip assets that do not count toward the liquidation threshold. It avoids getPrice() call for price feed
+                // so in case if excluded asset's oracle reverts (e.g. stale, broken, decommissioned),
+                // it won't block the entire liquidation check, and won't paralyze liquidations of accounts which hold it.
+                if (liquidation) {
+                    if (asset.liquidateCollateralFactor == 0) continue;
                 } else {
                     // Block ALL borrow-side actions when the borrower still holds deactivated collateral.
                     // This revert is intentionally broad: it prevents borrowing, withdrawing other
@@ -1281,18 +1274,15 @@ contract CometWithExtendedAssetList is CometMainInterface {
                     // under-collateralized, they are stuck and must wait for liquidation.
                     if (isCollateralDeactivated(asset.offset)) revert TokenIsDeactivated(asset.asset);
 
-                    // Skip assets with borrowCollateralFactor == 0 — they provide no
-                    // borrowing power, so mulFactor(value, 0) would add nothing to liquidity.
-                    // More critically, this avoids calling getPrice() for their price feed:
-                    // if a non-contributing asset's oracle reverts (stale, broken, decommissioned),
-                    // it would otherwise block the entire collateralization check, paralyzing
-                    // borrows and transfers for every account that holds that asset — even though
-                    // the asset has zero influence on their borrow capacity.
+                    // Mechanism to skip assets with no borrowing power. It avoids getPrice() call price feed,
+                    // so in case if excluded asset's oracle reverts (e.g. stale, broken, decommissioned),
+                    // it won't block the entire collateralization check, and won't paralyze borrows and transfers.
                     if (asset.borrowCollateralFactor == 0) { 
-                        unchecked { ++i; } 
                         continue; 
                     }
                 }
+
+                if (fetchedCollateralPrices.length == 0) collateralPrices[i] = getPrice(asset.priceFeed);
 
                 newAmount = mulPrice(
                     userCollateral[account][asset.asset].balance,
@@ -1304,7 +1294,6 @@ contract CometWithExtendedAssetList is CometMainInterface {
                     liquidation ? asset.liquidateCollateralFactor : asset.borrowCollateralFactor
                 );
             }
-            unchecked { ++i; }
         }
     }
 
