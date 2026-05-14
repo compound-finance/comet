@@ -835,7 +835,7 @@ describe('absorb', function () {
       snapshot = await takeSnapshot();
     });
 
-    describe('liquidation factor > 0', function () {
+    describe('asset can be liquidated with positive liquidation collateral factor and liquidation factor', function () {
       /*
        * This test suite verifies the standard absorption flow when liquidation factor > 0.
        *
@@ -929,7 +929,7 @@ describe('absorb', function () {
       });
     });
 
-    describe('liquidation factor = 0', function () {
+    describe('skips liquidation for asset with liquidationF = 0', function () {
       /*
        * This test suite verifies the absorption flow when liquidation factor = 0.
        *
@@ -1022,6 +1022,273 @@ describe('absorb', function () {
         // Transfer event emits only when new principal is greater than 0
         expect(newPrincipal).to.equal(0);
         expect(liquidationTx).to.not.emit(comet, 'Transfer');
+      });
+    });
+
+    describe('asset abosorbs with zero value when liquidateCF > 0 and liquidationF is positive', function () {
+      /*
+       * Covers the case where governance zeros liquidateCF but leaves liquidationFactor > 0.
+       * The key invariant: isLiquidatableInternal skips price fetching for zero-LCF assets,
+       * so assetPrices[i] stays 0. When absorbInternal seizes the collateral (LF > 0), it uses
+       * that zero price — the collateral is physically moved to reserves but contributes no value
+       * to the debt offset, so the full borrow is absorbed by protocol reserves.
+       * AbsorbCollateral fires with usdValue = 0, distinguishing this from the normal seizure path.
+       */
+      let cometBaseTokenBalanceBefore: BigNumber;
+      let cometCompBalanceBefore: BigNumber;
+      let cometCompReservesBefore: BigNumber;
+      let computedDeltaBalance: bigint;
+      let computedNewBalance: bigint;
+      let computedRepayAmount: bigint;
+
+      before(async () => {
+        await snapshot.restore();
+        cometBaseTokenBalanceBefore = await baseToken.balanceOf(comet.address);
+        cometCompBalanceBefore = await compToken.balanceOf(comet.address);
+        cometCompReservesBefore = await comet.getCollateralReserves(compToken.address);
+      });
+
+      it('borrowCollateralFactor and liquidateCollateralFactor updated to 0', async () => {
+        await configurator.updateAssetBorrowCollateralFactor(cometProxyAddress, compToken.address, 0n);
+        await configurator.updateAssetLiquidateCollateralFactor(cometProxyAddress, compToken.address, 0n);
+        await proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxyAddress);
+      });
+
+      it('liquidateCollateralFactor is 0 after upgrade', async () => {
+        expect((await comet.getAssetInfoByAddress(compToken.address)).liquidateCollateralFactor).to.equal(0);
+      });
+
+      it('liquidationFactor remains non-zero after upgrade', async () => {
+        expect((await comet.getAssetInfoByAddress(compToken.address)).liquidationFactor).to.be.gt(0);
+      });
+
+      it('alice is liquidatable with zero liquidateCollateralFactor', async () => {
+        expect(await comet.isLiquidatable(alice.address)).to.be.true;
+      });
+
+      it('absorbs undercollateralized account', async () => {
+        liquidationTx = await comet.connect(bob).absorb(bob.address, [alice.address]);
+        expect(liquidationTx).to.not.be.reverted;
+      });
+
+      it('emits AbsorbCollateral event with usdValue of 0', async () => {
+        // assetPrices[i] stays 0 because isLiquidatableInternal skips LCF=0 assets before calling getPrice()
+        // value = mulPrice(seizeAmount, 0, scale) = 0
+        expect(liquidationTx).to.emit(comet, 'AbsorbCollateral').withArgs(bob.address, alice.address, compToken.address, aliceCompSupply, 0n);
+      });
+
+      it('reduces totals supply of the asset for seized asset', async () => {
+        const totals = await comet.totalsCollateral(compToken.address);
+        expect(totals.totalSupplyAsset).to.equal(0);
+      });
+
+      it('sets user collateral balance to 0', async () => {
+        expect((await comet.userCollateral(alice.address, compToken.address)).balance).to.equal(0);
+      });
+
+      it('resets user assetsIn to 0', async () => {
+        expect((await comet.userBasic(alice.address)).assetsIn).to.equal(0);
+        expect((await comet.userBasic(alice.address))._reserved).to.equal(0);
+      });
+
+      it('deltaBalance is 0 when deltaValue is 0', () => {
+        // assetPrices[i] = 0 for LCF = 0 assets → deltaValue = 0 → deltaBalance = divPrice(0, price, scale) = 0
+        computedDeltaBalance = divPrice(0n, basePrice, baseScale);
+        expect(computedDeltaBalance).to.equal(0n);
+      });
+
+      it('new balance is clamped to 0 from the negative old borrow balance', () => {
+        // oldBalance < 0, deltaBalance = 0 → unclamped = oldBalance (still negative) → clamped to 0
+        const unclamped = oldBalance + computedDeltaBalance;
+        expect(unclamped < 0).to.be.true;
+        computedNewBalance = 0n;
+      });
+
+      it('new principal is 0 and matches stored principal', async () => {
+        const totalsBasic = await cometExt.totalsBasic();
+        newPrincipal = principalValue(computedNewBalance, totalsBasic.baseSupplyIndex, totalsBasic.baseBorrowIndex);
+        expect(newPrincipal).to.equal(0n);
+        expect((await comet.userBasic(alice.address)).principal).to.equal(0n);
+      });
+
+      it('repay amount equals the absorbed borrow', () => {
+        // repayAmount = newPrincipal - oldPrincipal = 0 - oldPrincipal = -oldPrincipal > 0
+        computedRepayAmount = newPrincipal - oldPrincipal;
+        expect(computedRepayAmount > 0n).to.be.true;
+      });
+
+      it('supply amount is 0 since new principal does not exceed 0', () => {
+        // supplyAmount = 0 when newPrincipal <= 0 (see repayAndSupplyAmount)
+        expect(newPrincipal <= 0n).to.be.true;
+      });
+
+      it('totalSupplyBase is unchanged after absorption', async () => {
+        const current = await cometExt.totalsBasic();
+        expect(current.totalSupplyBase).to.equal(totalSupplyBase);
+      });
+
+      it('totalBorrowBase is reduced by repay amount after absorption', async () => {
+        const current = await cometExt.totalsBasic();
+        expect(current.totalBorrowBase).to.equal(totalBorrowBase.toBigInt() - computedRepayAmount);
+      });
+
+      it('emits AbsorbDebt event', async () => {
+        // basePaidOut = computedNewBalance - oldBalance = 0 - oldBalance = -oldBalance (full debt absorbed by reserves)
+        const basePaidOut = computedNewBalance - oldBalance;
+        const valueOfBasePaidOut = mulPrice(basePaidOut, basePrice, baseScale);
+        expect(liquidationTx).to.emit(comet, 'AbsorbDebt').withArgs(bob.address, alice.address, basePaidOut, valueOfBasePaidOut);
+      });
+
+      it('Transfer event is not emitted', async () => {
+        expect(liquidationTx).to.not.emit(comet, 'Transfer');
+      });
+
+      it('comet base token ERC20 balance is unchanged after absorption', async () => {
+        // absorb does not transfer base tokens; debt absorption is an accounting change only
+        expect(await baseToken.balanceOf(comet.address)).to.equal(cometBaseTokenBalanceBefore);
+      });
+
+      it('comet collateral token ERC20 balance is unchanged after absorption', async () => {
+        // seized tokens remain locked in the comet contract; they are reclassified to reserves, not transferred out
+        expect(await compToken.balanceOf(comet.address)).to.equal(cometCompBalanceBefore);
+      });
+
+      it('comet collateral reserves increase by the seized amount', async () => {
+        // getCollateralReserves = balanceOf(comet) - totalsCollateral.totalSupplyAsset
+        // after seizure: totalSupplyAsset = 0, balanceOf unchanged → reserves grow by aliceCompSupply
+        expect(await comet.getCollateralReserves(compToken.address)).to.equal(cometCompReservesBefore.add(aliceCompSupply));
+      });
+    });
+
+    describe('asset ignored during absorption when liquidateCF = 0 and liquidationF = 0', function () {
+      /*
+       * Full de-listing: both liquidateCF and liquidationFactor are zero. The account is
+       * liquidatable (LCF = 0 removes all collateral coverage), but absorption skips the
+       * collateral entirely (LF = 0). The borrow is absorbed by reserves, the collateral
+       * balance remains in the user's protocol account, and assetsIn is reset to 0 — leaving
+       * the collateral stranded until governance decides how to handle it.
+       */
+      let cometBaseTokenBalanceBefore: BigNumber;
+      let cometCompBalanceBefore: BigNumber;
+      let cometCompReservesBefore: BigNumber;
+      let computedDeltaBalance: bigint;
+      let computedNewBalance: bigint;
+      let computedRepayAmount: bigint;
+
+      before(async () => {
+        await snapshot.restore();
+        cometBaseTokenBalanceBefore = await baseToken.balanceOf(comet.address);
+        cometCompBalanceBefore = await compToken.balanceOf(comet.address);
+        cometCompReservesBefore = await comet.getCollateralReserves(compToken.address);
+      });
+
+      it('borrowCollateralFactor, liquidateCollateralFactor and liquidationFactor can be updated to 0', async () => {
+        await configurator.updateAssetBorrowCollateralFactor(cometProxyAddress, compToken.address, 0n);
+        await configurator.updateAssetLiquidateCollateralFactor(cometProxyAddress, compToken.address, 0n);
+        await configurator.updateAssetLiquidationFactor(cometProxyAddress, compToken.address, 0n);
+        await proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxyAddress);
+      });
+
+      it('liquidateCollateralFactor is 0 after upgrade', async () => {
+        expect((await comet.getAssetInfoByAddress(compToken.address)).liquidateCollateralFactor).to.equal(0);
+      });
+
+      it('liquidationFactor is 0 after upgrade', async () => {
+        expect((await comet.getAssetInfoByAddress(compToken.address)).liquidationFactor).to.equal(0);
+      });
+
+      it('alice is liquidatable with zero liquidateCollateralFactor and zero liquidationFactor', async () => {
+        expect(await comet.isLiquidatable(alice.address)).to.be.true;
+      });
+
+      it('absorbs is successful', async () => {
+        liquidationTx = await comet.connect(bob).absorb(bob.address, [alice.address]);
+        expect(liquidationTx).to.not.be.reverted;
+      });
+
+      it('does not emit AbsorbCollateral event', async () => {
+        expect(liquidationTx).to.not.emit(comet, 'AbsorbCollateral');
+      });
+
+      it('does not affect user collateral balance', async () => {
+        expect((await comet.userCollateral(alice.address, compToken.address)).balance).to.equal(userCollateralBeforeAbsorption);
+      });
+
+      it('does not affect totals supply of the asset', async () => {
+        expect((await comet.totalsCollateral(compToken.address)).totalSupplyAsset).to.equal(totalsSupplyAssetBeforeAbsorption);
+      });
+
+      it('resets user assetsIn to 0 even though collateral was not seized', async () => {
+        // absorbInternal always resets assetsIn regardless of liquidationFactor
+        expect((await comet.userBasic(alice.address)).assetsIn).to.equal(0);
+        expect((await comet.userBasic(alice.address))._reserved).to.equal(0);
+      });
+
+      it('deltaBalance is 0 when deltaValue is 0', () => {
+        // asset skipped in absorbInternal (LF = 0) → deltaValue = 0 → deltaBalance = divPrice(0, price, scale) = 0
+        computedDeltaBalance = divPrice(0n, basePrice, baseScale);
+        expect(computedDeltaBalance).to.equal(0n);
+      });
+
+      it('new balance is clamped to 0 from the negative old borrow balance', () => {
+        // oldBalance < 0, deltaBalance = 0 → unclamped = oldBalance (still negative) → clamped to 0
+        const unclamped = oldBalance + computedDeltaBalance;
+        expect(unclamped < 0).to.be.true;
+        computedNewBalance = 0n;
+      });
+
+      it('new principal is 0 and matches stored principal', async () => {
+        const totalsBasic = await cometExt.totalsBasic();
+        newPrincipal = principalValue(computedNewBalance, totalsBasic.baseSupplyIndex, totalsBasic.baseBorrowIndex);
+        expect(newPrincipal).to.equal(0n);
+        expect((await comet.userBasic(alice.address)).principal).to.equal(0n);
+      });
+
+      it('repay amount equals the absorbed borrow', () => {
+        // repayAmount = newPrincipal - oldPrincipal = 0 - oldPrincipal = -oldPrincipal > 0
+        computedRepayAmount = newPrincipal - oldPrincipal;
+        expect(computedRepayAmount > 0n).to.be.true;
+      });
+
+      it('supply amount is 0 since new principal does not exceed 0', () => {
+        // supplyAmount = 0 when newPrincipal <= 0 (see repayAndSupplyAmount)
+        expect(newPrincipal <= 0n).to.be.true;
+      });
+
+      it('totalSupplyBase is unchanged after absorption', async () => {
+        const current = await cometExt.totalsBasic();
+        expect(current.totalSupplyBase).to.equal(totalSupplyBase);
+      });
+
+      it('totalBorrowBase is reduced by repay amount after absorption', async () => {
+        const current = await cometExt.totalsBasic();
+        expect(current.totalBorrowBase).to.equal(totalBorrowBase.toBigInt() - computedRepayAmount);
+      });
+
+      it('emits AbsorbDebt event', async () => {
+        // basePaidOut = computedNewBalance - oldBalance = 0 - oldBalance = -oldBalance (full debt absorbed by reserves)
+        const basePaidOut = computedNewBalance - oldBalance;
+        const valueOfBasePaidOut = mulPrice(basePaidOut, basePrice, baseScale);
+        expect(liquidationTx).to.emit(comet, 'AbsorbDebt').withArgs(bob.address, alice.address, basePaidOut, valueOfBasePaidOut);
+      });
+
+      it('Transfer event is not emitted', async () => {
+        expect(liquidationTx).to.not.emit(comet, 'Transfer');
+      });
+
+      it('comet base token ERC20 balance is unchanged after absorption', async () => {
+        // absorb does not transfer base tokens; debt absorption is an accounting change only
+        expect(await baseToken.balanceOf(comet.address)).to.equal(cometBaseTokenBalanceBefore);
+      });
+
+      it('comet collateral token ERC20 balance is unchanged after absorption', async () => {
+        // collateral was not seized; tokens remain in the protocol account, still locked in comet
+        expect(await compToken.balanceOf(comet.address)).to.equal(cometCompBalanceBefore);
+      });
+
+      it('comet collateral reserves are unchanged after absorption', async () => {
+        // no seizure occurred; getCollateralReserves = balanceOf(comet) - totalSupplyAsset remains the same
+        expect(await comet.getCollateralReserves(compToken.address)).to.equal(cometCompReservesBefore);
       });
     });
 
