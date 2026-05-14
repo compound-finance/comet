@@ -15,7 +15,7 @@ import { execSync } from 'child_process';
 import { existsSync, unlinkSync } from 'fs';
 import { CometContext } from '../context/CometContext';
 import CometAsset from '../context/CometAsset';
-import { exp } from '../../test/helpers';
+import { ethers, exp } from '../../test/helpers';
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import { ProposalState, OpenProposal } from '../context/Gov';
@@ -921,9 +921,9 @@ export async function tenderlyExecute(
 
   const exec1 = bundle[bundle.length - 1].simulation;
 
-  console.log(` >>> PROPOSAL EXECUTED  ${id} \n`);
+  console.log(` >>> PROPOSAL EXECUTED  ${id}`);
   console.log(`Simulation ${exec1.id} done, status: ${exec1.status}`);
-  console.log(`Link: https://www.tdly.co/shared/simulation/${exec1.id}`);
+  console.log(`Link: https://www.tdly.co/shared/simulation/${exec1.id} \n`);
   
   const bdms = [bdm];
   for (const dm of gdm.bridgedDeploymentManagers.values()) {
@@ -931,6 +931,18 @@ export async function tenderlyExecute(
       bdms.push(dm);
     }
   }
+
+  // make bdm contain only 1 dm per network
+  const uniqueBdms = new Map();
+  for (const dm of bdms) {
+    const chainId = dm.hre.ethers.provider.network.chainId;
+    if (!uniqueBdms.has(chainId)) {
+      uniqueBdms.set(chainId, dm);
+    }
+  }
+  bdms.length = 0;
+  bdms.push(...uniqueBdms.values());
+
 
   for (const currentBdm of bdms) {
     const chainId2 = currentBdm.hre.ethers.provider.network.chainId;
@@ -947,20 +959,26 @@ export async function tenderlyExecute(
         const timelockL2 = await currentBdm.getContractOrThrow('timelock');
         const delay = await timelockL2.delay();
         const relayMessages = loadCachedRelayMessages();
+        const executeProposalSig = ethers.utils.id('executeProposal(uint256)').substring(0, 10);
+
         const latestL2 = await currentBdm.hre.ethers.provider.getBlock('latest');
         const maxEta = Math.max(...proposals.map(p => Number(p.eta || 0))) + delay.toNumber();
-        const T0L2 = BigInt(Math.max(latestL2.timestamp, maxEta + 1));
+        const T0L2 = Math.max(latestL2.timestamp, maxEta + 1);
         const B0L2 = Number(latestL2.number) + 1;
-        
-        const simsL2 = relayMessages.map((msg, i, arr) => {
-          const isLast = i === arr.length - 1;
 
-          const timestamp = isLast
-            ? Number(T0L2) 
-            : latestL2.timestamp; 
+        let previousBlock = latestL2.number;
+        let previousTimestamp = T0L2;
+        const simsL2 = relayMessages.map((msg) => {
+          let block = previousBlock;
+          let timestamp = previousTimestamp;
 
-          const block = isLast
-            ? B0L2 : latestL2.number;
+          if (msg.callData.startsWith(executeProposalSig) && !msg.eta) {
+            block = block + 1;
+            timestamp = timestamp + delay.toNumber() + 1;
+          }
+
+          previousBlock = block;
+          previousTimestamp = timestamp;
 
           return {
             network_id: chainId2.toString(),
@@ -979,11 +997,15 @@ export async function tenderlyExecute(
 
         if (simsL2.length > 0) {
           const bundle2 = await simulateBundle(currentBdm, simsL2, Number(B0L2));
-          const sim = bundle2[bundle2.length - 1];
-          await shareSimulation(currentBdm, sim.simulation.id);
-          console.log(`\nRelayed to ${currentBdm.network}`);
-          console.log(`Simulation ${sim.simulation.id} done, status: ${sim.simulation.status}`);
-          console.log(`Link: https://www.tdly.co/shared/simulation/${sim.simulation.id}`);
+          
+          // filter from bundle every entry with simulation.input that starts with 0x0d61b519 i.e. executeProposal(uint256)
+          const filteredBundle = bundle2.filter(entry => entry.simulation.input.startsWith(executeProposalSig));
+          for (const sim of filteredBundle) {
+            await shareSimulation(currentBdm, sim.simulation.id);
+            console.log(`\nRelayed to ${currentBdm.network}`);
+            console.log(`Simulation ${sim.simulation.id} done, status: ${sim.simulation.status}`);
+            console.log(`Link: https://www.tdly.co/shared/simulation/${sim.simulation.id} \n`);
+          }
         }
       }
     }
