@@ -144,7 +144,9 @@ export default async function relayOptimismMessage(
         throw e;
       }
     } else {
-      throw new Error(`[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Unrecognized target for cross-chain message`);
+      // throw error only on last relay message and no proposal created event found
+      if(sentMessageEvents.indexOf(sentMessageEvent) === sentMessageEvents.length - 1 && openBridgedProposals.length === 0)
+        throw new Error(`[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Unrecognized target for cross-chain message`);
     }
 
     // Execute open bridged proposals now that all messages have been bridged
