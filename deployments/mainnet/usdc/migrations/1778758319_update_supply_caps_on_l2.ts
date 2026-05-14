@@ -217,19 +217,6 @@ const supplyCapConfig = {
   },
 };
 
-// const tETHArbUsdcNewCap = 0;
-// const tBTCArbUsdcNewCap = 0;
-// const ezETHArbUsdcNewCap = 102;
-// const gmxArbUsdcNewCap = 2_596;
-// const arbArbUsdcNewCap = 1_946_834;
-
-// const gmxArbUsdceNewCap = 0;
-// const arbArbUsdceNewCap = 29_851;
-
-// const tETHArbUsdtNewCap = 0;
-// const tBTCArbUsdtNewCap = 3;
-// const gmxArbUsdtNewCap = 2_729;
-// const arbArbUsdtNewCap = 454_105;
 
 export default migration('1778758319_update_supply_caps_on_l2', {
   async prepare() {
