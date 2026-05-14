@@ -18,9 +18,6 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install solc
-        run: sudo add-apt-repository ppa:ethereum/ethereum;sudo add-apt-repository ppa:ethereum/ethereum-dev;sudo apt-get update;sudo apt-get install solc
-
       - name: Install packages
         run: pip install slither-analyzer solc-select
 
