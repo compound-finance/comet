@@ -835,7 +835,7 @@ describe('absorb', function () {
       snapshot = await takeSnapshot();
     });
 
-    describe('LCF > 0 and LF > 0', function () {
+    describe('asset can be liquidated with positive liquidation collateral factor and liquidation factor', function () {
       /*
        * This test suite verifies the standard absorption flow when liquidation factor > 0.
        *
@@ -929,7 +929,7 @@ describe('absorb', function () {
       });
     });
 
-    describe('LCF > 0 and LF = 0', function () {
+    describe('skips liquidation for asset with liquidationF = 0', function () {
       /*
        * This test suite verifies the absorption flow when liquidation factor = 0.
        *
@@ -1025,7 +1025,7 @@ describe('absorb', function () {
       });
     });
 
-    describe('LCF = 0 and LF > 0', function () {
+    describe('asset abosorbs with zero value when liquidateCF > 0 and liquidationF is positive', function () {
       /*
        * Covers the case where governance zeros liquidateCF but leaves liquidationFactor > 0.
        * The key invariant: isLiquidatableInternal skips price fetching for zero-LCF assets,
@@ -1160,7 +1160,7 @@ describe('absorb', function () {
       });
     });
 
-    describe('LCF = 0 and LF = 0', function () {
+    describe('asset ignored during absorption when liquidateCF = 0 and liquidationF = 0', function () {
       /*
        * Full de-listing: both liquidateCF and liquidationFactor are zero. The account is
        * liquidatable (LCF = 0 removes all collateral coverage), but absorption skips the

@@ -1,5 +1,6 @@
 import { AssetList, AssetList__factory, AssetListFactory, AssetListFactory__factory, FaucetToken, FaucetToken__factory, SimplePriceFeed, SimplePriceFeed__factory } from 'build/types';
 import { expect, exp, makeConfigurator, ONE, makeProtocol, ethers } from './helpers';
+import { AssetInfoStructOutput } from 'build/types/AssetList';
 
 describe('asset info', function () {
   it('initializes protocol', async () => {
@@ -83,7 +84,7 @@ describe('asset info', function () {
     let priceFeed: SimplePriceFeed;
 
     // Base valid config; each test spreads this and overrides only the field(s) under test.
-    let baseAssetConfig: {
+    let collateralAssetConfig: {
       asset: string;
       priceFeed: string;
       decimals: number;
@@ -103,7 +104,7 @@ describe('asset info', function () {
       priceFeed = await (await ethers.getContractFactory('SimplePriceFeed') as SimplePriceFeed__factory).deploy(exp(1, 8), 8);
       await priceFeed.deployed();
 
-      baseAssetConfig = {
+      collateralAssetConfig = {
         asset: faucetToken.address,
         priceFeed: priceFeed.address,
         decimals: 18,
@@ -113,22 +114,22 @@ describe('asset info', function () {
         supplyCap: 10n ** 24n,
       };
 
-      assetList = await (await ethers.getContractFactory('AssetList') as AssetList__factory).deploy([baseAssetConfig]);
+      assetList = await (await ethers.getContractFactory('AssetList') as AssetList__factory).deploy([collateralAssetConfig]);
       await assetList.deployed();
     });
 
     describe('happy cases', function () {
       it('borrowCF > 0, liquidateCF > 0 and borrowCF < liquidateCF', async () => {
-        await expect(assetListFactory.createAssetList([{ ...baseAssetConfig }])).to.not.be.reverted;
+        await expect(assetListFactory.createAssetList([{ ...collateralAssetConfig }])).to.not.be.reverted;
       });
 
       it('borrowCF = 0, liquidateCF = 0', async () => {
-        await expect(assetListFactory.createAssetList([{ ...baseAssetConfig, borrowCollateralFactor: 0n, liquidateCollateralFactor: 0n }])).to.not.be.reverted;
+        await expect(assetListFactory.createAssetList([{ ...collateralAssetConfig, borrowCollateralFactor: 0n, liquidateCollateralFactor: 0n }])).to.not.be.reverted;
       });
 
       it('borrowCF > liquidateF and borrowCF < liquidateCF', async () => {
         await expect(assetListFactory.createAssetList([{
-          ...baseAssetConfig,
+          ...collateralAssetConfig,
           borrowCollateralFactor: exp(0.95, 18),
           liquidateCollateralFactor: exp(0.98, 18),
           liquidationFactor: exp(0.9, 18),
@@ -137,7 +138,7 @@ describe('asset info', function () {
 
       it('borrowCF < liquidateCF and liquidateCF > liquidateF', async () => {
         await expect(assetListFactory.createAssetList([{
-          ...baseAssetConfig,
+          ...collateralAssetConfig,
           borrowCollateralFactor: exp(0.7, 18),
           liquidateCollateralFactor: exp(0.95, 18),
           liquidationFactor: exp(0.9, 18),
@@ -146,7 +147,7 @@ describe('asset info', function () {
 
       it('borrowCF < liquidateCF < liquidateF', async () => {
         await expect(assetListFactory.createAssetList([{
-          ...baseAssetConfig,
+          ...collateralAssetConfig,
           borrowCollateralFactor: exp(0.7, 18),
           liquidateCollateralFactor: exp(0.8, 18),
           liquidationFactor: exp(0.95, 18),
@@ -154,54 +155,156 @@ describe('asset info', function () {
       });
 
       it('borrowCF = 0 and liquidateCF > 0', async () => {
-        await expect(assetListFactory.createAssetList([{ ...baseAssetConfig, borrowCollateralFactor: 0n }])).to.not.be.reverted;
+        await expect(assetListFactory.createAssetList([{ ...collateralAssetConfig, borrowCollateralFactor: 0n }])).to.not.be.reverted;
       });
 
       it('borrowCF = 0, liquidateF = 0, liquidateCF > 0', async () => {
-        await expect(assetListFactory.createAssetList([{ ...baseAssetConfig, borrowCollateralFactor: 0n, liquidationFactor: 0n }])).to.not.be.reverted;
+        await expect(assetListFactory.createAssetList([{ ...collateralAssetConfig, borrowCollateralFactor: 0n, liquidationFactor: 0n }])).to.not.be.reverted;
       });
 
       it('liquidateCF < MAX_COLLATERAL_FACTOR', async () => {
-        await expect(assetListFactory.createAssetList([{ ...baseAssetConfig, liquidateCollateralFactor: ONE - DESCALE }])).to.not.be.reverted;
+        await expect(assetListFactory.createAssetList([{ ...collateralAssetConfig, liquidateCollateralFactor: ONE - DESCALE }])).to.not.be.reverted;
       });
 
       it('liquidateCF = MAX_COLLATERAL_FACTOR', async () => {
-        await expect(assetListFactory.createAssetList([{ ...baseAssetConfig, liquidateCollateralFactor: ONE }])).to.not.be.reverted;
+        await expect(assetListFactory.createAssetList([{ ...collateralAssetConfig, liquidateCollateralFactor: ONE }])).to.not.be.reverted;
       });
 
       it('liquidateF < MAX_COLLATERAL_FACTOR', async () => {
-        await expect(assetListFactory.createAssetList([{ ...baseAssetConfig, liquidationFactor: ONE - DESCALE }])).to.not.be.reverted;
+        await expect(assetListFactory.createAssetList([{ ...collateralAssetConfig, liquidationFactor: ONE - DESCALE }])).to.not.be.reverted;
       });
 
       it('liquidateF = MAX_COLLATERAL_FACTOR', async () => {
-        await expect(assetListFactory.createAssetList([{ ...baseAssetConfig, liquidationFactor: ONE }])).to.not.be.reverted;
+        await expect(assetListFactory.createAssetList([{ ...collateralAssetConfig, liquidationFactor: ONE }])).to.not.be.reverted;
       });
     });
 
     describe('revert when', function () {
       it('borrowCF > 0, liquidateCF = 0', async () => {
-        await expect(assetListFactory.createAssetList([{ ...baseAssetConfig, liquidateCollateralFactor: 0n }]))
+        await expect(assetListFactory.createAssetList([{ ...collateralAssetConfig, liquidateCollateralFactor: 0n }]))
           .to.be.revertedWithCustomError(assetList, 'BorrowCFTooLarge');
       });
 
       it('borrowCF > 0, liquidateCF > 0 and borrowCF > liquidateCF', async () => {
-        await expect(assetListFactory.createAssetList([{ ...baseAssetConfig, borrowCollateralFactor: exp(0.9, 18), liquidateCollateralFactor: exp(0.8, 18) }]))
+        await expect(assetListFactory.createAssetList([{ ...collateralAssetConfig, borrowCollateralFactor: exp(0.9, 18), liquidateCollateralFactor: exp(0.8, 18) }]))
           .to.be.revertedWithCustomError(assetList, 'BorrowCFTooLarge');
       });
 
       it('borrowCF > 0, liquidateCF > 0 and borrowCF = liquidateCF', async () => {
-        await expect(assetListFactory.createAssetList([{ ...baseAssetConfig, borrowCollateralFactor: exp(0.8, 18), liquidateCollateralFactor: exp(0.8, 18) }]))
+        await expect(assetListFactory.createAssetList([{ ...collateralAssetConfig, borrowCollateralFactor: exp(0.8, 18), liquidateCollateralFactor: exp(0.8, 18) }]))
           .to.be.revertedWithCustomError(assetList, 'BorrowCFTooLarge');
       });
 
       it('liquidateCF > MAX_COLLATERAL_FACTOR', async () => {
-        await expect(assetListFactory.createAssetList([{ ...baseAssetConfig, borrowCollateralFactor: 0n, liquidateCollateralFactor: ONE + 1n }]))
+        await expect(assetListFactory.createAssetList([{ ...collateralAssetConfig, borrowCollateralFactor: 0n, liquidateCollateralFactor: ONE + 1n }]))
           .to.be.revertedWithCustomError(assetList, 'LiquidateCFTooLarge');
       });
 
       it('liquidateF > MAX_COLLATERAL_FACTOR', async () => {
-        await expect(assetListFactory.createAssetList([{ ...baseAssetConfig, liquidationFactor: ONE + 1n }]))
+        await expect(assetListFactory.createAssetList([{ ...collateralAssetConfig, liquidationFactor: ONE + 1n }]))
           .to.be.revertedWithCustomError(assetList, 'LiqPenaltyTooHigh');
+      });
+    });
+
+    /*
+     * When every factor is a positive integer smaller than DESCALE (1e14), truncation zeroes them
+     * all out after packing. The post-descale BorrowCFTooLarge guard is conditioned on
+     * packedBorrowCF != 0, so it short-circuits. Only the raw pre-descale checks apply.
+     * State is verified by attaching to the address returned via callStatic.
+     */
+    describe('all factors > 0 and below DESCALE — pack to zero', function () {
+      describe('happy cases', function () {
+        describe('minimum valid values: borrowCF = 1, liquidateCF = 2, liquidationFactor = 1', function () {
+          let assetInfo: AssetInfoStructOutput;
+
+          before(async () => {
+            const config = [{ ...collateralAssetConfig, borrowCollateralFactor: 1n, liquidateCollateralFactor: 2n, liquidationFactor: 1n }];
+            const address = await assetListFactory.callStatic.createAssetList(config);
+            await assetListFactory.createAssetList(config);
+            const deployedAssetList = await ethers.getContractAt('AssetList', address);
+            assetInfo = await deployedAssetList.getAssetInfo(0);
+          });
+
+          it('borrowCollateralFactor packs to zero', async () => {
+            expect(assetInfo.borrowCollateralFactor).to.equal(0n);
+          });
+
+          it('liquidateCollateralFactor packs to zero', async () => {
+            expect(assetInfo.liquidateCollateralFactor).to.equal(0n);
+          });
+
+          it('liquidationFactor packs to zero', async () => {
+            expect(assetInfo.liquidationFactor).to.equal(0n);
+          });
+        });
+
+        describe('maximum sub-DESCALE values: borrowCF = 1, liquidateCF and liquidationFactor at DESCALE - 1', function () {
+          let assetInfo: AssetInfoStructOutput;
+
+          before(async () => {
+            const config = [{ ...collateralAssetConfig, borrowCollateralFactor: 1n, liquidateCollateralFactor: DESCALE - 1n, liquidationFactor: DESCALE - 1n }];
+            const address = await assetListFactory.callStatic.createAssetList(config);
+            await assetListFactory.createAssetList(config);
+            const deployedAssetList = await ethers.getContractAt('AssetList', address);
+            assetInfo = await deployedAssetList.getAssetInfo(0);
+          });
+
+          it('borrowCollateralFactor packs to zero', async () => {
+            expect(assetInfo.borrowCollateralFactor).to.equal(0n);
+          });
+
+          it('liquidateCollateralFactor packs to zero', async () => {
+            expect(assetInfo.liquidateCollateralFactor).to.equal(0n);
+          });
+
+          it('liquidationFactor packs to zero', async () => {
+            expect(assetInfo.liquidationFactor).to.equal(0n);
+          });
+        });
+
+        describe('borrowCF just below liquidateCF: both at adjacent sub-DESCALE positions', function () {
+          let assetInfo: AssetInfoStructOutput;
+
+          before(async () => {
+            const config = [{ ...collateralAssetConfig, borrowCollateralFactor: DESCALE - 2n, liquidateCollateralFactor: DESCALE - 1n, liquidationFactor: 1n }];
+            const address = await assetListFactory.callStatic.createAssetList(config);
+            await assetListFactory.createAssetList(config);
+            const deployedAssetList = await ethers.getContractAt('AssetList', address);
+            assetInfo = await deployedAssetList.getAssetInfo(0);
+          });
+
+          it('borrowCollateralFactor packs to zero', async () => {
+            expect(assetInfo.borrowCollateralFactor).to.equal(0n);
+          });
+
+          it('liquidateCollateralFactor packs to zero', async () => {
+            expect(assetInfo.liquidateCollateralFactor).to.equal(0n);
+          });
+
+          it('liquidationFactor packs to zero', async () => {
+            expect(assetInfo.liquidationFactor).to.equal(0n);
+          });
+        });
+      });
+
+      describe('revert when', function () {
+        it('borrowCF > liquidateCF: pre-descale ordering check fires even though both pack to zero', async () => {
+          await expect(assetListFactory.createAssetList([{
+            ...collateralAssetConfig,
+            borrowCollateralFactor: 2n,
+            liquidateCollateralFactor: 1n,
+            liquidationFactor: 1n,
+          }])).to.be.revertedWithCustomError(assetList, 'BorrowCFTooLarge');
+        });
+
+        it('borrowCF = liquidateCF: pre-descale equality check fires even though both pack to zero', async () => {
+          await expect(assetListFactory.createAssetList([{
+            ...collateralAssetConfig,
+            borrowCollateralFactor: 1n,
+            liquidateCollateralFactor: 1n,
+            liquidationFactor: 1n,
+          }])).to.be.revertedWithCustomError(assetList, 'BorrowCFTooLarge');
+        });
       });
     });
 
@@ -215,7 +318,7 @@ describe('asset info', function () {
         it('both factors are exact multiples of DESCALE with a clear gap', async () => {
           // 0.9e18 → 9000 units, 0.91e18 → 9100 units after descale
           await expect(assetListFactory.createAssetList([{
-            ...baseAssetConfig,
+            ...collateralAssetConfig,
             borrowCollateralFactor: exp(0.9, 18),
             liquidateCollateralFactor: exp(0.91, 18),
           }])).to.not.be.reverted;
@@ -224,7 +327,7 @@ describe('asset info', function () {
         it('gap is exactly one DESCALE unit — minimum valid separation', async () => {
           // 9000*DESCALE → 9001*DESCALE: packed values differ by 1 unit
           await expect(assetListFactory.createAssetList([{
-            ...baseAssetConfig,
+            ...collateralAssetConfig,
             borrowCollateralFactor: exp(0.9, 18),
             liquidateCollateralFactor: exp(0.9, 18) + DESCALE,
           }])).to.not.be.reverted;
@@ -233,7 +336,7 @@ describe('asset info', function () {
         it('borrowCF just below a bin boundary, liquidateCF at that boundary', async () => {
           // borrowCF = 9000*DESCALE - 1 → truncates to bin 8999; liquidateCF = 9000*DESCALE → bin 9000
           await expect(assetListFactory.createAssetList([{
-            ...baseAssetConfig,
+            ...collateralAssetConfig,
             borrowCollateralFactor: exp(0.9, 18) - 1n,
             liquidateCollateralFactor: exp(0.9, 18),
           }])).to.not.be.reverted;
@@ -242,7 +345,7 @@ describe('asset info', function () {
         it('borrowCF inside a bin, liquidateCF at the start of the next bin', async () => {
           // borrowCF = 9000*DESCALE + 1 → bin 9000; liquidateCF = 9001*DESCALE → bin 9001
           await expect(assetListFactory.createAssetList([{
-            ...baseAssetConfig,
+            ...collateralAssetConfig,
             borrowCollateralFactor: exp(0.9, 18) + 1n,
             liquidateCollateralFactor: exp(0.9, 18) + DESCALE,
           }])).to.not.be.reverted;
@@ -251,7 +354,7 @@ describe('asset info', function () {
         it('borrowCF = 0 with liquidateCF below DESCALE — descale check is skipped', async () => {
           // Packed borrowCollateralFactor = 0 → the != 0 guard short-circuits the descale check
           await expect(assetListFactory.createAssetList([{
-            ...baseAssetConfig,
+            ...collateralAssetConfig,
             borrowCollateralFactor: 0n,
             liquidateCollateralFactor: 1n,
           }])).to.not.be.reverted;
@@ -262,7 +365,7 @@ describe('asset info', function () {
         it('gap = 1: liquidateCF is in the same bin as borrowCF after truncation', async () => {
           // 9000*DESCALE and 9000*DESCALE + 1 both truncate to 9000 → equal after descale
           await expect(assetListFactory.createAssetList([{
-            ...baseAssetConfig,
+            ...collateralAssetConfig,
             borrowCollateralFactor: exp(0.9, 18),
             liquidateCollateralFactor: exp(0.9, 18) + 1n,
           }])).to.be.revertedWithCustomError(assetList, 'BorrowCFTooLarge');
@@ -271,7 +374,7 @@ describe('asset info', function () {
         it('gap = DESCALE - 1: maximum same-bin gap — liquidateCF still truncates to the same bin', async () => {
           // 9001*DESCALE - 1 truncates to 9000, same as 9000*DESCALE
           await expect(assetListFactory.createAssetList([{
-            ...baseAssetConfig,
+            ...collateralAssetConfig,
             borrowCollateralFactor: exp(0.9, 18),
             liquidateCollateralFactor: exp(0.9, 18) + DESCALE - 1n,
           }])).to.be.revertedWithCustomError(assetList, 'BorrowCFTooLarge');
@@ -280,7 +383,7 @@ describe('asset info', function () {
         it('both values are non-zero and inside the same bin', async () => {
           // borrowCF = 9000*DESCALE + 1, liquidateCF = 9001*DESCALE - 1 → both truncate to 9000
           await expect(assetListFactory.createAssetList([{
-            ...baseAssetConfig,
+            ...collateralAssetConfig,
             borrowCollateralFactor: exp(0.9, 18) + 1n,
             liquidateCollateralFactor: exp(0.9, 18) + DESCALE - 1n,
           }])).to.be.revertedWithCustomError(assetList, 'BorrowCFTooLarge');
@@ -289,7 +392,7 @@ describe('asset info', function () {
         it('same-bin collision at a different factor magnitude', async () => {
           // 7000*DESCALE and 7000*DESCALE + 1 both truncate to 7000 → equal after descale
           await expect(assetListFactory.createAssetList([{
-            ...baseAssetConfig,
+            ...collateralAssetConfig,
             borrowCollateralFactor: exp(0.7, 18),
             liquidateCollateralFactor: exp(0.7, 18) + 1n,
           }])).to.be.revertedWithCustomError(assetList, 'BorrowCFTooLarge');
