@@ -513,6 +513,69 @@ describe('isBorrowCollateralized', function () {
           await expect(comet.isBorrowCollateralized(alice.address)).to.be.revertedWithCustomError(comet, 'TokenIsDeactivated').withArgs(collateralToken.address);
         });
       });
+
+      /*
+       * Demonstrates the two-step mitigation sequence: zeroing borrowCF first stops the
+       * external price-feed revert in isBorrowCollateralized, then deactivating the token
+       * re-reverts the function but with the protocol-controlled TokenIsDeactivated error
+       * instead of the uncontrolled external Reverted error from the broken price feed.
+       */
+      describe('zero borrowCF unblocks price feed paralysis, then deactivation re-reverts with TokenIsDeactivated', function () {
+        let cometExt: CometExt;
+        let collateralAssetIndex: number;
+
+        before(async () => {
+          await snapshot.restore();
+
+          supplyAmount = exp(10, 18);
+          borrowAmount = exp(5, 6);
+          await collateralToken.allocateTo(alice.address, supplyAmount);
+          await collateralToken.connect(alice).approve(cometProxyAddress, supplyAmount);
+          await comet.connect(alice).supply(collateralToken.address, supplyAmount);
+          await baseToken.allocateTo(cometProxyAddress, borrowAmount);
+          await comet.connect(alice).withdraw(baseToken.address, borrowAmount);
+
+          collateralAssetIndex = (await comet.getAssetInfoByAddress(collateralToken.address)).offset;
+          cometExt = comet.attach(cometProxyAddress) as CometExt;
+        });
+
+        it('isBorrowCollateralized works with the normal price feed', async () => {
+          expect(await comet.isBorrowCollateralized(alice.address)).to.be.true;
+        });
+
+        it('governance updates collateral price feed to a reverting implementation', async () => {
+          await configurator.updateAssetPriceFeed(cometProxyAddress, collateralToken.address, priceFeedWithRevert.address);
+          await proxyAdmin.deployAndUpgradeTo(configuratorProxyAddress, cometProxyAddress);
+        });
+
+        it('isBorrowCollateralized reverts when collateral price feed reverts', async () => {
+          await expect(comet.isBorrowCollateralized(alice.address)).to.be.revertedWithCustomError(priceFeedWithRevert, 'Reverted');
+        });
+
+        it('governance sets borrowCollateralFactor to 0 for the affected asset', async () => {
+          await updateAssetBorrowCollateralFactor(configurator, proxyAdmin, cometProxyAddress, collateralToken.address, 0n);
+        });
+
+        it('borrowCollateralFactor is 0 after upgrade', async () => {
+          expect((await comet.getAssetInfoByAddress(collateralToken.address)).borrowCollateralFactor).to.equal(0);
+        });
+
+        it('isBorrowCollateralized no longer reverts after borrowCF is zeroed', async () => {
+          expect(await comet.isBorrowCollateralized(alice.address)).to.be.false;
+        });
+
+        it('pause guardian deactivates the affected collateral', async () => {
+          await expect(cometExt.connect(pauseGuardian).deactivateCollateral(collateralAssetIndex)).to.not.be.reverted;
+        });
+
+        it('collateral is marked as deactivated', async () => {
+          expect(await comet.isCollateralDeactivated(collateralAssetIndex)).to.be.true;
+        });
+
+        it('isBorrowCollateralized reverts with TokenIsDeactivated after deactivation', async () => {
+          await expect(comet.isBorrowCollateralized(alice.address)).to.be.revertedWithCustomError(comet, 'TokenIsDeactivated').withArgs(collateralToken.address);
+        });
+      });
     });
   });
 });

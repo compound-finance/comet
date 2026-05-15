@@ -1,4 +1,4 @@
-import { CometProxyAdmin, CometWithExtendedAssetList, Configurator, FaucetToken, NonStandardFaucetFeeToken, PriceFeedWithRevert, PriceFeedWithRevert__factory } from 'build/types';
+import { CometExt, CometProxyAdmin, CometWithExtendedAssetList, Configurator, FaucetToken, NonStandardFaucetFeeToken, PriceFeedWithRevert, PriceFeedWithRevert__factory } from 'build/types';
 import { expect, exp, makeProtocol, makeConfigurator, ethers, updateAssetLiquidateCollateralFactor, getLiquidityWithLiquidateCF, MAX_ASSETS, takeSnapshot, SnapshotRestorer, updateAssetBorrowCollateralFactor } from './helpers';
 import { BigNumber } from 'ethers';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
@@ -200,6 +200,7 @@ describe('isLiquidatable', function () {
     // Users
     let alice: SignerWithAddress;
     let governor: SignerWithAddress;
+    let pauseGuardian: SignerWithAddress;
 
     // Values
     let supplyAmount: bigint;
@@ -233,6 +234,7 @@ describe('isLiquidatable', function () {
       tokens = protocol.tokens;
       alice = protocol.users[0];
       governor = protocol.governor;
+      pauseGuardian = protocol.pauseGuardian;
 
       // Upgrade proxy to extended asset list implementation to support many assets
       const assetListFactory = protocol.assetListFactory;
@@ -506,6 +508,129 @@ describe('isLiquidatable', function () {
         });
 
         it('isLiquidatable succeeds and position is liquidatable after liquidateCF is set to 0', async () => {
+          expect(await comet.isLiquidatable(alice.address)).to.be.true;
+        });
+      });
+
+      /*
+       * Demonstrates that token deactivation does NOT resolve price-feed paralysis in isLiquidatable,
+       * unlike isBorrowCollateralized where the deactivation check runs before getPrice().
+       * In isLiquidatable, a positive liquidateCF asset still triggers a price fetch even when
+       * deactivated, so the external Reverted error from the broken feed continues to propagate.
+       */
+      describe('token deactivation does not resolve price feed paralysis in isLiquidatable', function () {
+        let cometExt: CometExt;
+        let collateralAssetIndex: number;
+
+        before(async () => {
+          await snapshot.restore();
+
+          supplyAmount = exp(10, 18);
+          borrowAmount = exp(5, 6);
+          await collateralToken.allocateTo(alice.address, supplyAmount);
+          await collateralToken.connect(alice).approve(cometProxyAddress, supplyAmount);
+          await comet.connect(alice).supply(collateralToken.address, supplyAmount);
+          await baseToken.allocateTo(cometProxyAddress, borrowAmount);
+          await comet.connect(alice).withdraw(baseToken.address, borrowAmount);
+
+          collateralAssetIndex = (await comet.getAssetInfoByAddress(collateralToken.address)).offset;
+          cometExt = comet.attach(cometProxyAddress) as unknown as CometExt;
+        });
+
+        it('isLiquidatable works with the normal price feed', async () => {
+          expect(await comet.isLiquidatable(alice.address)).to.be.false;
+        });
+
+        it('governance updates collateral price feed to a reverting implementation', async () => {
+          await configurator.updateAssetPriceFeed(cometProxyAddress, collateralToken.address, priceFeedWithRevert.address);
+          await proxyAdmin.deployAndUpgradeTo(configuratorProxyAddress, cometProxyAddress);
+        });
+
+        it('price feed for collateral asset is now the reverting implementation', async () => {
+          expect((await comet.getAssetInfoByAddress(collateralToken.address)).priceFeed).to.equal(priceFeedWithRevert.address);
+        });
+
+        it('isLiquidatable reverts when collateral price feed reverts', async () => {
+          await expect(comet.isLiquidatable(alice.address)).to.be.revertedWithCustomError(priceFeedWithRevert, 'Reverted');
+        });
+
+        it('pause guardian deactivates the affected collateral', async () => {
+          await expect(cometExt.connect(pauseGuardian).deactivateCollateral(collateralAssetIndex)).to.not.be.reverted;
+        });
+
+        it('collateral is marked as deactivated', async () => {
+          expect(await comet.isCollateralDeactivated(collateralAssetIndex)).to.be.true;
+        });
+
+        it('isLiquidatable still reverts with Reverted after deactivation', async () => {
+          await expect(comet.isLiquidatable(alice.address)).to.be.revertedWithCustomError(priceFeedWithRevert, 'Reverted');
+        });
+      });
+
+      /*
+       * Demonstrates the full mitigation sequence when token deactivation alone is insufficient:
+       * after deactivation fails to stop the external Reverted error from the broken price feed,
+       * zeroing liquidateCF skips the price fetch entirely and resolves the paralysis.
+       */
+      describe('zeroing liquidateCF resolves price feed paralysis where token deactivation fails', function () {
+        let cometExt: CometExt;
+        let collateralAssetIndex: number;
+
+        before(async () => {
+          await snapshot.restore();
+
+          supplyAmount = exp(10, 18);
+          borrowAmount = exp(5, 6);
+          await collateralToken.allocateTo(alice.address, supplyAmount);
+          await collateralToken.connect(alice).approve(cometProxyAddress, supplyAmount);
+          await comet.connect(alice).supply(collateralToken.address, supplyAmount);
+          await baseToken.allocateTo(cometProxyAddress, borrowAmount);
+          await comet.connect(alice).withdraw(baseToken.address, borrowAmount);
+
+          collateralAssetIndex = (await comet.getAssetInfoByAddress(collateralToken.address)).offset;
+          cometExt = comet.attach(cometProxyAddress) as unknown as CometExt;
+        });
+
+        it('isLiquidatable works with the normal price feed', async () => {
+          expect(await comet.isLiquidatable(alice.address)).to.be.false;
+        });
+
+        it('governance updates collateral price feed to a reverting implementation', async () => {
+          await configurator.updateAssetPriceFeed(cometProxyAddress, collateralToken.address, priceFeedWithRevert.address);
+          await proxyAdmin.deployAndUpgradeTo(configuratorProxyAddress, cometProxyAddress);
+        });
+
+        it('price feed for collateral asset is now the reverting implementation', async () => {
+          expect((await comet.getAssetInfoByAddress(collateralToken.address)).priceFeed).to.equal(priceFeedWithRevert.address);
+        });
+
+        it('isLiquidatable reverts when collateral price feed reverts', async () => {
+          await expect(comet.isLiquidatable(alice.address)).to.be.revertedWithCustomError(priceFeedWithRevert, 'Reverted');
+        });
+
+        it('pause guardian deactivates the affected collateral', async () => {
+          await expect(cometExt.connect(pauseGuardian).deactivateCollateral(collateralAssetIndex)).to.not.be.reverted;
+        });
+
+        it('collateral is marked as deactivated', async () => {
+          expect(await comet.isCollateralDeactivated(collateralAssetIndex)).to.be.true;
+        });
+
+        it('isLiquidatable still reverts with Reverted after deactivation', async () => {
+          await expect(comet.isLiquidatable(alice.address)).to.be.revertedWithCustomError(priceFeedWithRevert, 'Reverted');
+        });
+
+        it('governance sets liquidateCollateralFactor to 0 for the affected asset', async () => {
+          // zero borrowCF first — AssetList validates borrowCF < liquidateCF
+          await updateAssetBorrowCollateralFactor(configurator, proxyAdmin, cometProxyAddress, collateralToken.address, 0n);
+          await updateAssetLiquidateCollateralFactor(configurator, proxyAdmin, cometProxyAddress, collateralToken.address, 0n, governor);
+        });
+
+        it('liquidateCollateralFactor is 0 after upgrade', async () => {
+          expect((await comet.getAssetInfoByAddress(collateralToken.address)).liquidateCollateralFactor).to.equal(0);
+        });
+
+        it('isLiquidatable no longer reverts after liquidateCF is zeroed', async () => {
           expect(await comet.isLiquidatable(alice.address)).to.be.true;
         });
       });
