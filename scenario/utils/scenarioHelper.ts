@@ -131,6 +131,11 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
     config.transferBase = 100;
     config.rewardsBase = 100;
     config.withdrawBase = 100;
+    if(i == 7) { // tETH
+      config.supplyCollateral = 2;
+      config.transferCollateral = 2;
+      config.withdrawCollateral = 2;
+    }
     if(i == 8) { // tBTC
       config.supplyCollateral = 2;
       config.transferCollateral = 2;
@@ -210,6 +215,14 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
     config.bulkerAsset1 = 10;
   }
 
+  if(ctx.world.base.network === 'mantle' && ctx.world.base.deployment === 'usde') {
+    if(i == 2) { // FBTC
+      config.supplyCollateral = 2;
+      config.transferCollateral = 2;
+      config.withdrawCollateral = 2;
+    }
+  }
+
   if (ctx.world.base.network === 'linea' && ctx.world.base.deployment === 'usdc') {
     config.bulkerAsset = 500;
     config.bulkerAsset1 = 500;
@@ -220,6 +233,7 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
 
   if (ctx.world.base.network === 'linea' && ctx.world.base.deployment === 'weth') {
     config.liquidationBase = 1000;
+    config.transferAsset1 = 2000;
     config.rewardsAsset = 1000;
     config.rewardsBase = 50;
     config.supplyCollateral = 10;

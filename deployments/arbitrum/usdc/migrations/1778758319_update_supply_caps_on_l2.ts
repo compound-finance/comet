@@ -3,7 +3,6 @@ import { Contract, utils } from 'ethers';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { exp, proposal } from '../../../../src/deploy';
-import { forkedHreForBase } from '../../../../plugins/scenario/utils/hreForBase';
 import { applyL1ToL2Alias, estimateL2Transaction } from '../../../../scenario/utils/arbitrumUtils';
 
 /*
@@ -36,31 +35,6 @@ rETH	3,750	5	0.14%	0	Rule 1
 weETH	24,000	585	2.44%	760	Rule 2 (~30% buffer)
 ezETH	12,000	447	3.73%	582	Rule 2 (~30% buffer)
 
-// Base
-
-Base USDC Comet
-Symbol	Current Cap	Supply Balance	Utilization	Proposed Cap	Rule
-tBTC	75	15	20.06%	20	Rule 2 (~33% buffer)
-
-Base WETH Comet
-Symbol	Current Cap	Supply Balance	Utilization	Proposed Cap	Rule
-wsuperOETHb	2,000	676	33.81%	811	Rule 2 (~20% buffer)
-weETH	7,500	363	4.84%	472	Rule 2 (~30% buffer)
-ezETH	1,000	182	18.23%	237	Rule 2 (~30% buffer)
-
-// Linea
-
-Linea WETH Comet
-Symbol	Current Cap	Supply Balance	Utilization	Proposed Cap	Rule
-ezETH	4,830	8	0.16%	0	Rule 1
-weETH	3,550	93	2.63%	121	Rule 2 (~30% buffer)
-
-// Mantle
-
-Mantle USDe Comet
-Symbol	Current Cap	Supply Balance	Utilization	Proposed Cap	Rule
-mETH	3,000	1,533	51.09%	1,993	Rule 2 (~30% buffer)
-FBTC	120	4	3.42%	5	Rule 2 (~25% buffer)
 */
 
 const cometConfig = {
@@ -76,24 +50,6 @@ const cometConfig = {
     },
     WETH: {
       address: '0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486',
-    },
-  },
-  Base: {
-    USDC: {
-      address: '0xb125E6687d4313864e53df431d5425969c15Eb2F',
-    },
-    WETH: {
-      address: '0x46e6b214b524310239732D51387075E0e70970bf',
-    },
-  },
-  Linea: {
-    WETH: {
-      address: '0x60F2058379716A64a7A5d29219397e79bC552194',
-    },
-  },
-  Mantle: {
-    USDe: {
-      address: '0x606174f62cd968d8e684c645080fa694c1D7786E',
     },
   },
 };
@@ -169,52 +125,6 @@ const supplyCapConfig = {
       },
     },
   },
-  Base: {
-    USDC: {
-      tBTC: {
-        newCap: 20,
-        decimals: 18,
-      },
-    },
-    WETH: {
-      wsuperOETHb: {
-        newCap: 811,
-        decimals: 18,
-      },
-      weETH: {
-        newCap: 472,
-        decimals: 18,
-      },
-      ezETH: {
-        newCap: 237,
-        decimals: 18,
-      },
-    },
-  },
-  Linea: {
-    WETH: {
-      ezETH: {
-        newCap: 0,
-        decimals: 18,
-      },
-      weETH: {
-        newCap: 121,
-        decimals: 18,
-      },
-    },
-  },
-  Mantle: {
-    USDe: {
-      mETH: {
-        newCap: 1_993,
-        decimals: 18,
-      },
-      FBTC: {
-        newCap: 5,
-        decimals: 8,
-      },
-    },
-  },
 };
 
 
@@ -223,22 +133,18 @@ export default migration('1778758319_update_supply_caps_on_l2', {
     return {};
   },
 
-  async enact(deploymentManager: DeploymentManager) {
+  async enact(deploymentManager: DeploymentManager, govDeploymentManager) {
 
     const trace = deploymentManager.tracer();
 
     const {
       timelock,
       governor,
-      baseL1CrossDomainMessenger,
       arbitrumInbox,
-      lineaMessageService,
-      mantleL1CrossDomainMessenger
-    } = await deploymentManager.getContracts();
+    } = await govDeploymentManager.getContracts();
 
     // Arbitrum
-    const arbitrumHre = await forkedHreForBase({ name: 'arbitrum-usdc', network: 'arbitrum', deployment: 'usdc' });
-    const arbitrumDm = await deploymentManager.addBridgedDeploymentManager('arbitrum', 'usdc', arbitrumHre);
+    const arbitrumDm = await govDeploymentManager.addBridgedDeploymentManager('arbitrum', 'usdc', deploymentManager.hre);
     const {
       bridgeReceiver: arbitrumBridgeReceiver,
       configurator: arbitrumConfigurator,
@@ -334,7 +240,7 @@ export default migration('1778758319_update_supply_caps_on_l2', {
     const arbitrumUsdtUpdateARBSupplyCapCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint128'], [cometConfig.Arbitrum.USDT.address, arbitrumARB.address, exp(supplyCapConfig.Arbitrum.USDT.ARB.newCap, supplyCapConfig.Arbitrum.USDT.ARB.decimals)]);
     const arbitrumUsdtDeployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [arbitrumConfigurator.address, cometConfig.Arbitrum.USDT.address]);
 
-    const arbitrumDmWeth = await deploymentManager.addBridgedDeploymentManager('arbitrum', 'weth', arbitrumHre);
+    const arbitrumDmWeth = await govDeploymentManager.addBridgedDeploymentManager('arbitrum', 'weth', deploymentManager.hre);
     const {
       rETH: arbitrumRETH,
       weETH: arbitrumWeETH,
@@ -418,168 +324,6 @@ export default migration('1778758319_update_supply_caps_on_l2', {
       arbitrumDm
     );
 
-    // Base
-    const baseHre = await forkedHreForBase({ name: 'base-usdc', network: 'base', deployment: 'usdc' });
-    const baseDmUsdc = await deploymentManager.addBridgedDeploymentManager('base', 'usdc', baseHre);
-    const {
-      bridgeReceiver : baseBridgeReceiver,
-      configurator: baseConfigurator,
-      cometAdmin: baseCometAdmin,
-      tBTC: baseTBTC,
-    } = await baseDmUsdc.getContracts();
-
-    const baseUsdcUpdateTBTCSupplyCapCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint128'], [cometConfig.Base.USDC.address, baseTBTC.address, exp(supplyCapConfig.Base.USDC.tBTC.newCap, supplyCapConfig.Base.USDC.tBTC.decimals)]);
-    const baseUsdcDeployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [baseConfigurator.address, cometConfig.Base.USDC.address]);
-
-    const baseDmWeth = await deploymentManager.addBridgedDeploymentManager('base', 'weth', baseHre);
-    const {
-      wsuperOETHb: baseSuperOETHb,
-      weETH: baseWeETH,
-      ezETH: baseEzETH,
-    } = await baseDmWeth.getContracts();
-
-    const baseWethUpdateSuperOETHbSupplyCapCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint128'], [cometConfig.Base.WETH.address, baseSuperOETHb.address, exp(supplyCapConfig.Base.WETH.wsuperOETHb.newCap, supplyCapConfig.Base.WETH.wsuperOETHb.decimals)]);
-    const baseWethUpdateWeETHSupplyCapCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint128'], [cometConfig.Base.WETH.address, baseWeETH.address, exp(supplyCapConfig.Base.WETH.weETH.newCap, supplyCapConfig.Base.WETH.weETH.decimals)]);
-    const baseWethUpdateEzETHSupplyCapCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint128'], [cometConfig.Base.WETH.address, baseEzETH.address, exp(supplyCapConfig.Base.WETH.ezETH.newCap, supplyCapConfig.Base.WETH.ezETH.decimals)]);
-    const baseWethDeployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [baseConfigurator.address, cometConfig.Base.WETH.address]);
-
-    const baseProposalData = utils.defaultAbiCoder.encode(
-      ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
-      [
-        [
-          // USDC Comet
-          baseConfigurator.address, // tBTC
-          baseCometAdmin.address,
-          // WETH Comet
-          baseConfigurator.address, // wsuperOETHb
-          baseConfigurator.address, // weETH
-          baseConfigurator.address, // ezETH
-          baseCometAdmin.address,
-        ],
-        [
-          // USDC Comet
-          0, // tBTC
-          0,
-          // WETH Comet
-          0, // wsuperOETHb
-          0, // weETH
-          0, // ezETH
-          0,
-        ],
-        [
-          // USDC Comet
-          'updateAssetSupplyCap(address,address,uint128)', // tBTC
-          'deployAndUpgradeTo(address,address)',
-          // WETH Comet
-          'updateAssetSupplyCap(address,address,uint128)', // wsuperOETHb
-          'updateAssetSupplyCap(address,address,uint128)', // weETH
-          'updateAssetSupplyCap(address,address,uint128)', // ezETH
-          'deployAndUpgradeTo(address,address)',
-        ],
-        [
-          // USDC Comet
-          baseUsdcUpdateTBTCSupplyCapCalldata,
-          baseUsdcDeployAndUpgradeToCalldata,
-          // WETH Comet
-          baseWethUpdateSuperOETHbSupplyCapCalldata,
-          baseWethUpdateWeETHSupplyCapCalldata,
-          baseWethUpdateEzETHSupplyCapCalldata,
-          baseWethDeployAndUpgradeToCalldata,
-        ],
-      ]
-    );
-
-
-    // Linea
-    const lineaHre = await forkedHreForBase({ name: 'linea-weth', network: 'linea', deployment: 'weth' });
-    const lineaDm = await deploymentManager.addBridgedDeploymentManager('linea', 'weth', lineaHre);
-    const {
-      bridgeReceiver: lineaBridgeReceiver,
-      configurator: lineaConfigurator,
-      cometAdmin: lineaCometAdmin,
-      ezETH: lineaEzETH,
-      weETH: lineaWeETH,
-    } = await lineaDm.getContracts();
-
-    const lineaWethUpdateEZETHSupplyCapCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint128'], [cometConfig.Linea.WETH.address, lineaEzETH.address, exp(supplyCapConfig.Linea.WETH.ezETH.newCap, supplyCapConfig.Linea.WETH.ezETH.decimals)]);
-    const lineaWethUpdateWeETHSupplyCapCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint128'], [cometConfig.Linea.WETH.address, lineaWeETH.address, exp(supplyCapConfig.Linea.WETH.weETH.newCap, supplyCapConfig.Linea.WETH.weETH.decimals)]);
-    const lineaDeployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [lineaConfigurator.address, cometConfig.Linea.WETH.address]);
-
-    const lineaProposalData = utils.defaultAbiCoder.encode(
-      ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
-      [
-        [
-          // WETH Comet
-          lineaConfigurator.address,
-          lineaConfigurator.address,
-          lineaCometAdmin.address,
-        ],
-        [
-          // WETH Comet
-          0,
-          0,
-          0
-        ],
-        [
-          // WETH Comet
-          'updateAssetSupplyCap(address,address,uint128)',
-          'updateAssetSupplyCap(address,address,uint128)',
-          'deployAndUpgradeTo(address,address)',
-        ],
-        [
-          // WETH Comet
-          lineaWethUpdateEZETHSupplyCapCalldata,
-          lineaWethUpdateWeETHSupplyCapCalldata,
-          lineaDeployAndUpgradeToCalldata
-        ],
-      ]
-    );
-
-    // Mantle
-    const mantleHre = await forkedHreForBase({ name: 'mantle-usde', network: 'mantle', deployment: 'usde' });
-    const mantleDm = await deploymentManager.addBridgedDeploymentManager('mantle', 'usde', mantleHre);
-    const {
-      bridgeReceiver: mantleBridgeReceiver,
-      configurator: mantleConfigurator,
-      cometAdmin: mantleCometAdmin,
-      mETH: mantleMETH,
-      FBTC: mantleFBTC,
-    } = await mantleDm.getContracts();
-
-    const mantleMETHUpdateSupplyCapCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint128'], [cometConfig.Mantle.USDe.address, mantleMETH.address, exp(supplyCapConfig.Mantle.USDe.mETH.newCap, supplyCapConfig.Mantle.USDe.mETH.decimals)]);
-    const mantleFBTCUpdateSupplyCapCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint128'], [cometConfig.Mantle.USDe.address, mantleFBTC.address, exp(supplyCapConfig.Mantle.USDe.FBTC.newCap, supplyCapConfig.Mantle.USDe.FBTC.decimals)]);
-    const mantleDeployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [mantleConfigurator.address, cometConfig.Mantle.USDe.address]);
-
-    const mantleProposalData = utils.defaultAbiCoder.encode(
-      ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
-      [
-        [
-          // USDe Comet
-          mantleConfigurator.address, // mETH
-          mantleConfigurator.address, // FBTC
-          mantleCometAdmin.address,
-        ],
-        [
-          // USDe Comet
-          0, // mETH
-          0, // FBTC
-          0,
-        ],
-        [
-          // USDe Comet
-          'updateAssetSupplyCap(address,address,uint128)', // mETH
-          'updateAssetSupplyCap(address,address,uint128)', // FBTC
-          'deployAndUpgradeTo(address,address)',
-        ],
-        [
-          // USDe Comet
-          mantleMETHUpdateSupplyCapCalldata,
-          mantleFBTCUpdateSupplyCapCalldata,
-          mantleDeployAndUpgradeToCalldata,
-        ],
-      ]
-    );
-
     const mainnetActions = [
       // 1. Arbitrum proposal USDC + USDC.e
       {
@@ -613,47 +357,9 @@ export default migration('1778758319_update_supply_caps_on_l2', {
         ],
         value: createRetryableTicketGasParams2.deposit.mul(2),
       },
-      // 3. Base proposal
-      {
-        contract: baseL1CrossDomainMessenger,
-        signature: 'sendMessage(address,bytes,uint32)',
-        args: [baseBridgeReceiver.address, baseProposalData, 3_000_000]
-      },
-      // 4. Linea proposal
-      {
-        contract: lineaMessageService,
-        signature: 'sendMessage(address,uint256,bytes)',
-        args: [lineaBridgeReceiver.address, 0, lineaProposalData],
-      },
-      // 5. Mantle proposal
-      {
-        contract: mantleL1CrossDomainMessenger,
-        signature: 'sendMessage(address,bytes,uint32)',
-        args: [mantleBridgeReceiver.address, mantleProposalData, 2_500_000],
-      },
     ];
 
-    const description = `# Supply Cap Reduction Across L2 Comets
-
-## Proposal summary
-
-WOOF! proposes to update supply caps on cUSDCv3, cUSDC.ev3, cUSDTv3 and cWETHv3 on Arbitrum, cUSDCv3 and cWETHv3 on Base, cWETHv3 on Linea and cUSDev3 on Mantle networks. This proposal takes the governance steps recommended and necessary to update Compound III markets on each network. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters are based on the [recommendations from Gauntlet](https://www.comp.xyz/t/supply-cap-reduction-across-l2-comets/7794/1).
-
-Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1120) and [forum discussion](https://www.comp.xyz/t/supply-cap-reduction-across-l2-comets/7794).
-
-
-## Proposal Actions
-
-The first action sends a message to the Arbitrum network to update supply caps on the USDC and USDC.e Comets.
-
-The second action sends a message to the Arbitrum network to update supply caps on the USDT and WETH Comets.
-
-The third action sends a message to the Base network to update supply caps on the USDC and WETH Comets.
-
-The fourth action sends a message to the Linea network to update supply caps on the WETH Comet.
-
-The fifth action sends a message to the Mantle network to update supply caps on the USDe Comet.
-`;
+    const description = `DESCRIPTION`;
 
     const txn = await deploymentManager.retry(async () =>
       trace(
@@ -672,23 +378,21 @@ The fifth action sends a message to the Mantle network to update supply caps on 
     return false;
   },
 
-  async verify(deploymentManager: DeploymentManager) {
+  async verify(deploymentManager: DeploymentManager, govDeploymentManager) {
     // Arbitrum
-    const arbitrumDm = deploymentManager.bridgedDeploymentManagers.get('arbitrum:usdc') as DeploymentManager;
-
     const {
       tETH: arbitrumTETH,
       tBTC: arbitrumTBTC,
       ezETH: arbitrumEZETH,
       GMX: arbitrumGMX,
       ARB: arbitrumARB,
-    } = await arbitrumDm.getContracts();
+    } = await deploymentManager.getContracts();
 
     // USDC Comet
     const arbitrumUsdcComet = new Contract(
       cometConfig.Arbitrum.USDC.address,
       ['function getAssetInfoByAddress(address asset) public view returns((uint8 offset, address asset, address priceFeed, uint64 scale, uint64 borrowCollateralFactor, uint64 liquidateCollateralFactor, uint64 liquidationFactor, uint128 supplyCap))'],
-      await arbitrumDm.getSigner()
+      await deploymentManager.getSigner()
     );
 
     const tETHAssetInfoUsdc = await arbitrumUsdcComet.getAssetInfoByAddress(arbitrumTETH.address);
@@ -713,7 +417,7 @@ The fifth action sends a message to the Mantle network to update supply caps on 
     const arbitrumUsdceComet = new Contract(
       cometConfig.Arbitrum.USDCe.address,
       ['function getAssetInfoByAddress(address asset) public view returns((uint8 offset, address asset, address priceFeed, uint64 scale, uint64 borrowCollateralFactor, uint64 liquidateCollateralFactor, uint64 liquidationFactor, uint128 supplyCap))'],
-      await arbitrumDm.getSigner()
+      await deploymentManager.getSigner()
     );
 
     const GMXAssetInfoUsdce = await arbitrumUsdceComet.getAssetInfoByAddress(arbitrumGMX.address);
@@ -728,7 +432,7 @@ The fifth action sends a message to the Mantle network to update supply caps on 
     const arbitrumUsdtComet = new Contract(
       cometConfig.Arbitrum.USDT.address,
       ['function getAssetInfoByAddress(address asset) public view returns((uint8 offset, address asset, address priceFeed, uint64 scale, uint64 borrowCollateralFactor, uint64 liquidateCollateralFactor, uint64 liquidationFactor, uint128 supplyCap))'],
-      await arbitrumDm.getSigner()
+      await deploymentManager.getSigner()
     );
 
     const tETHAssetInfoUsdt = await arbitrumUsdtComet.getAssetInfoByAddress(arbitrumTETH.address);
@@ -745,7 +449,7 @@ The fifth action sends a message to the Mantle network to update supply caps on 
     expect(GMXAssetInfoUsdt.supplyCap).to.equal(exp(supplyCapConfig.Arbitrum.USDT.GMX.newCap, supplyCapConfig.Arbitrum.USDT.GMX.decimals));
     expect(ARBAssetInfoUsdt.supplyCap).to.equal(exp(supplyCapConfig.Arbitrum.USDT.ARB.newCap, supplyCapConfig.Arbitrum.USDT.ARB.decimals));
 
-    const arbitrumDmWeth = deploymentManager.bridgedDeploymentManagers.get('arbitrum:weth') as DeploymentManager;
+    const arbitrumDmWeth = govDeploymentManager.bridgedDeploymentManagers.get('arbitrum:weth') as DeploymentManager;
     const {
       rETH: arbitrumRETH,
       weETH: arbitrumWeETH,
@@ -771,91 +475,5 @@ The fifth action sends a message to the Mantle network to update supply caps on 
     expect(rETHAssetInfoWeth.supplyCap).to.equal(exp(supplyCapConfig.Arbitrum.WETH.rETH.newCap, supplyCapConfig.Arbitrum.WETH.rETH.decimals));
     expect(weETHAssetInfoWeth.supplyCap).to.equal(exp(supplyCapConfig.Arbitrum.WETH.weETH.newCap, supplyCapConfig.Arbitrum.WETH.weETH.decimals));
     expect(ezETHAssetInfoWeth.supplyCap).to.equal(exp(supplyCapConfig.Arbitrum.WETH.ezETH.newCap, supplyCapConfig.Arbitrum.WETH.ezETH.decimals));
-
-    // Base
-    const baseDmUsdc = deploymentManager.bridgedDeploymentManagers.get('base:usdc') as DeploymentManager;
-    const {
-      tBTC: baseTBTC,
-    } = await baseDmUsdc.getContracts();
-
-    const baseUsdcComet = new Contract(
-      cometConfig.Base.USDC.address,
-      ['function getAssetInfoByAddress(address asset) public view returns((uint8 offset, address asset, address priceFeed, uint64 scale, uint64 borrowCollateralFactor, uint64 liquidateCollateralFactor, uint64 liquidationFactor, uint128 supplyCap))'],
-      await baseDmUsdc.getSigner()
-    );
-
-    const tBTCAssetInfoBaseUsdc = await baseUsdcComet.getAssetInfoByAddress(baseTBTC.address);
-
-    expect(tBTCAssetInfoBaseUsdc.scale).to.equal(exp(1, supplyCapConfig.Base.USDC.tBTC.decimals));
-    expect(tBTCAssetInfoBaseUsdc.supplyCap).to.equal(exp(supplyCapConfig.Base.USDC.tBTC.newCap, supplyCapConfig.Base.USDC.tBTC.decimals));
-
-    const baseDmWeth = deploymentManager.bridgedDeploymentManagers.get('base:weth') as DeploymentManager;
-    const {
-      wsuperOETHb: baseSuperOETHb,
-      weETH: baseWeETH,
-      ezETH: baseEzETH,
-    } = await baseDmWeth.getContracts();
-
-    const baseWethComet = new Contract(
-      cometConfig.Base.WETH.address,
-      ['function getAssetInfoByAddress(address asset) public view returns((uint8 offset, address asset, address priceFeed, uint64 scale, uint64 borrowCollateralFactor, uint64 liquidateCollateralFactor, uint64 liquidationFactor, uint128 supplyCap))'],
-      await baseDmWeth.getSigner()
-    );
-
-    const superOETHbAssetInfoBaseWeth = await baseWethComet.getAssetInfoByAddress(baseSuperOETHb.address);
-    const weETHAssetInfoBaseWeth = await baseWethComet.getAssetInfoByAddress(baseWeETH.address);
-    const ezETHAssetInfoBaseWeth = await baseWethComet.getAssetInfoByAddress(baseEzETH.address);
-
-    expect(superOETHbAssetInfoBaseWeth.scale).to.equal(exp(1, supplyCapConfig.Base.WETH.wsuperOETHb.decimals));
-    expect(weETHAssetInfoBaseWeth.scale).to.equal(exp(1, supplyCapConfig.Base.WETH.weETH.decimals));
-    expect(ezETHAssetInfoBaseWeth.scale).to.equal(exp(1, supplyCapConfig.Base.WETH.ezETH.decimals));
-
-    expect(superOETHbAssetInfoBaseWeth.supplyCap).to.equal(exp(supplyCapConfig.Base.WETH.wsuperOETHb.newCap, supplyCapConfig.Base.WETH.wsuperOETHb.decimals));
-    expect(weETHAssetInfoBaseWeth.supplyCap).to.equal(exp(supplyCapConfig.Base.WETH.weETH.newCap, supplyCapConfig.Base.WETH.weETH.decimals));
-    expect(ezETHAssetInfoBaseWeth.supplyCap).to.equal(exp(supplyCapConfig.Base.WETH.ezETH.newCap, supplyCapConfig.Base.WETH.ezETH.decimals));
-
-    // Linea
-    const lineaDm = deploymentManager.bridgedDeploymentManagers.get('linea:weth') as DeploymentManager;
-    const {
-      ezETH: lineaEzETH,
-      weETH: lineaWeETH,
-    } = await lineaDm.getContracts();
-
-    const lineaWethComet = new Contract(
-      cometConfig.Linea.WETH.address,
-      ['function getAssetInfoByAddress(address asset) public view returns((uint8 offset, address asset, address priceFeed, uint64 scale, uint64 borrowCollateralFactor, uint64 liquidateCollateralFactor, uint64 liquidationFactor, uint128 supplyCap))'],
-      await lineaDm.getSigner()
-    );
-
-    const ezETHAssetInfoLineaWeth = await lineaWethComet.getAssetInfoByAddress(lineaEzETH.address);
-    const weETHAssetInfoLineaWeth = await lineaWethComet.getAssetInfoByAddress(lineaWeETH.address);
-
-    expect(ezETHAssetInfoLineaWeth.scale).to.equal(exp(1, supplyCapConfig.Linea.WETH.ezETH.decimals));
-    expect(weETHAssetInfoLineaWeth.scale).to.equal(exp(1, supplyCapConfig.Linea.WETH.weETH.decimals));
-
-    expect(ezETHAssetInfoLineaWeth.supplyCap).to.equal(exp(supplyCapConfig.Linea.WETH.ezETH.newCap, supplyCapConfig.Linea.WETH.ezETH.decimals));
-    expect(weETHAssetInfoLineaWeth.supplyCap).to.equal(exp(supplyCapConfig.Linea.WETH.weETH.newCap, supplyCapConfig.Linea.WETH.weETH.decimals));
-
-    // Mantle
-    const mantleDm = deploymentManager.bridgedDeploymentManagers.get('mantle:usde') as DeploymentManager;
-    const {
-      mETH: mantleMETH,
-      FBTC: mantleFBTC,
-    } = await mantleDm.getContracts();
-
-    const mantleUsdeComet = new Contract(
-      cometConfig.Mantle.USDe.address,
-      ['function getAssetInfoByAddress(address asset) public view returns((uint8 offset, address asset, address priceFeed, uint64 scale, uint64 borrowCollateralFactor, uint64 liquidateCollateralFactor, uint64 liquidationFactor, uint128 supplyCap))'],
-      await mantleDm.getSigner()
-    );
-
-    const mETHAssetInfoMantleUsde = await mantleUsdeComet.getAssetInfoByAddress(mantleMETH.address);
-    const FBTCAssetInfoMantleUsde = await mantleUsdeComet.getAssetInfoByAddress(mantleFBTC.address);
-
-    expect(mETHAssetInfoMantleUsde.scale).to.equal(exp(1, supplyCapConfig.Mantle.USDe.mETH.decimals));
-    expect(FBTCAssetInfoMantleUsde.scale).to.equal(exp(1, supplyCapConfig.Mantle.USDe.FBTC.decimals));
-
-    expect(mETHAssetInfoMantleUsde.supplyCap).to.equal(exp(supplyCapConfig.Mantle.USDe.mETH.newCap, supplyCapConfig.Mantle.USDe.mETH.decimals));
-    expect(FBTCAssetInfoMantleUsde.supplyCap).to.equal(exp(supplyCapConfig.Mantle.USDe.FBTC.newCap, supplyCapConfig.Mantle.USDe.FBTC.decimals));
   },
 });
