@@ -581,7 +581,7 @@ export default migration('1778758319_update_supply_caps_on_l2', {
     );
 
     const mainnetActions = [
-      // Arbitrum proposal USDC + USDC.e
+      // 1. Arbitrum proposal USDC + USDC.e
       {
         contract: arbitrumInbox,
         signature: 'createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,bytes)',
@@ -597,7 +597,7 @@ export default migration('1778758319_update_supply_caps_on_l2', {
         ],
         value: createRetryableTicketGasParams1.deposit.mul(2),
       },
-      // Arbitrum proposal USDT + WETH
+      // 2. Arbitrum proposal USDT + WETH
       {
         contract: arbitrumInbox,
         signature: 'createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,bytes)',
@@ -613,19 +613,19 @@ export default migration('1778758319_update_supply_caps_on_l2', {
         ],
         value: createRetryableTicketGasParams2.deposit.mul(2),
       },
-      // Base proposal
+      // 3. Base proposal
       {
         contract: baseL1CrossDomainMessenger,
         signature: 'sendMessage(address,bytes,uint32)',
         args: [baseBridgeReceiver.address, baseProposalData, 3_000_000]
       },
-      // Linea proposal
+      // 4. Linea proposal
       {
         contract: lineaMessageService,
         signature: 'sendMessage(address,uint256,bytes)',
         args: [lineaBridgeReceiver.address, 0, lineaProposalData],
       },
-      // Mantle proposal
+      // 5. Mantle proposal
       {
         contract: mantleL1CrossDomainMessenger,
         signature: 'sendMessage(address,bytes,uint32)',
@@ -633,7 +633,27 @@ export default migration('1778758319_update_supply_caps_on_l2', {
       },
     ];
 
-    const description = `DESCRIPTION`;
+    const description = `# Supply Cap Reduction Across L2 Comets
+
+## Proposal summary
+
+WOOF! proposes to update supply caps on cUSDCv3, cUSDC.ev3, cUSDTv3 and cWETHv3 on Arbitrum, cUSDCv3 and cWETHv3 on Base, cWETHv3 on Linea and cUSDev3 on Mantle networks. This proposal takes the governance steps recommended and necessary to update a Compound III markets on each network. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters are based on the [recommendations from Gauntlet](https://www.comp.xyz/t/supply-cap-reduction-across-l2-comets/7794/1).
+
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1120) and [forum discussion](https://www.comp.xyz/t/supply-cap-reduction-across-l2-comets/7794).
+
+
+## Proposal Actions
+
+The first action sends a message to the Arbitrum network to update supply caps on the USDC and USDC.e Comets.
+
+The second action sends a message to the Arbitrum network to update supply caps on the USDT and WETH Comets.
+
+The third action sends a message to the Base network to update supply caps on the USDC and WETH Comets.
+
+The fourth action sends a message to the Linea network to update supply caps on the WETH Comet.
+
+The fifth action sends a message to the Mantle network to update supply caps on the USDe Comet.
+`;
 
     const txn = await deploymentManager.retry(async () =>
       trace(
