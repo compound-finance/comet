@@ -31,4 +31,4 @@ forge/Makefile
 .envrc
 .env.forge-temp
 
-broadcast/
+broadcast/scripts/registry-driven-deploy/state/
