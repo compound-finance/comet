@@ -34,7 +34,13 @@ jobs:
       SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
       UNICHAIN_QUICKNODE_LINK: ${{ secrets.UNICHAIN_QUICKNODE_LINK || 'https://example.invalid' }}
       LINEA_QUICKNODE_LINK: ${{ secrets.LINEA_QUICKNODE_LINK || 'https://example.invalid' }}
-      SKIP_FORK_TESTS: ${{ secrets.MAINNET_QUICKNODE_LINK == '' && 'true' || '' }}
+      # Rome fork: skip the DeploymentManager.verifyContracts itFork test.
+      # Upstream guard was secrets.MAINNET_QUICKNODE_LINK == '' but that
+      # never triggers in this fork (the secret is unset, not empty), so
+      # the test ran against the public-RPC fallback and timed out at 150s.
+      # We don't run mainnet contract verification in our CI; Rome-side
+      # checks live in the 'test' job + registry liveness probes.
+      SKIP_FORK_TESTS: "true"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

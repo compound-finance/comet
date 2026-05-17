@@ -20,8 +20,14 @@ jobs:
       - name: Install yarn
         run: yarn
 
+      # forge install (with no args) tries to refresh all submodules via
+      # "--remote" which fails on contracts/capo (branch=lst-lrt-oracles is
+      # pinned at SHA but the branch ref isn't fetched locally).
+      # actions/checkout@v4 with submodules:recursive already clones the
+      # submodules; capo is excluded from the forge test set via --no-match-path
+      # in forge/run-tests.sh so its working tree doesn't need to be live.
       - name: Install dependencies
-        run: forge install && yarn install --non-interactive --frozen-lockfile
+        run: yarn install --non-interactive --frozen-lockfile
 
       - name: Run tests
         run: bash forge/run-tests.sh

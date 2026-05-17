@@ -31,7 +31,11 @@ jobs:
       SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
       UNICHAIN_QUICKNODE_LINK: ${{ secrets.UNICHAIN_QUICKNODE_LINK || 'https://example.invalid' }}
       LINEA_QUICKNODE_LINK: ${{ secrets.LINEA_QUICKNODE_LINK || 'https://example.invalid' }}
-      SKIP_FORK_TESTS: ${{ secrets.MAINNET_QUICKNODE_LINK == '' && 'true' || '' }}
+      # Rome fork: skip the DeploymentManager.verifyContracts itFork test
+      # (upstream guard secrets.MAINNET_QUICKNODE_LINK == '' is broken;
+      # the secret is unset in our fork, not empty).  See
+      # run-unit-tests.yaml for the full reasoning.
+      SKIP_FORK_TESTS: "true"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
