@@ -187,8 +187,6 @@ describe('extended pause upgrade test', function () {
     expect(newImpl).to.not.equal(ethers.constants.AddressZero);
     expect(newImpl).to.not.equal(originalImpl);
 
-
-
     cometExt = await ethers.getContractAt('CometExtAssetList', COMET_ADDRESS) as CometExtAssetList;
 
     // Extension delegate storage snapshot
@@ -216,8 +214,6 @@ describe('extended pause upgrade test', function () {
     await impersonateAccount(pauseGuardianBefore);
     pauseGuardian = await ethers.getSigner(pauseGuardianBefore);
     await setBalance(pauseGuardianBefore, ethers.utils.parseEther('10000'));
-
-
 
     upgradeTx = await proxyAdmin.connect(governor).upgrade(COMET_ADDRESS, newImpl);
 

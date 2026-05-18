@@ -385,7 +385,7 @@ describe('quoteCollateral', function () {
 
           // Deploy a price feed that always reverts on latestRoundData
           const PriceFeedWithRevertFactory = (await ethers.getContractFactory('PriceFeedWithRevert')) as PriceFeedWithRevert__factory;
-          priceFeedWithRevert = await PriceFeedWithRevertFactory.deploy(100, 8);
+          priceFeedWithRevert = await PriceFeedWithRevertFactory.deploy();
           await priceFeedWithRevert.deployed();
         });
 
