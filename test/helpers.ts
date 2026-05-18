@@ -549,9 +549,9 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   // Deploy Comet proxy
   const CometProxy = (await ethers.getContractFactory('TransparentUpgradeableProxy')) as TransparentUpgradeableProxy__factory;
   const cometProxy = await CometProxy.deploy(
-    comet.address,
+    cometWithExtendedAssetList.address,
     proxyAdmin.address,
-    (await comet.populateTransaction.initializeStorage()).data,
+    (await cometWithExtendedAssetList.populateTransaction.initializeStorage()).data,
   );
   await cometProxy.deployed();
   const configuration = await getConfigurationForConfigurator(
@@ -564,6 +564,7 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     base,
     priceFeeds,
   );
+  configuration.extensionDelegate = extensionDelegateAssetList.address;
 
   const cometProxyWithExtendedAssetList = await CometProxy.deploy(
     cometWithExtendedAssetList.address,
@@ -595,9 +596,8 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   // Set the initial factory and configuration for Comet in Configurator
   const configuratorAsProxy = configurator.attach(configuratorProxy.address);
   await configuratorAsProxy.connect(governor).setConfiguration(cometProxy.address, configuration);
-  await configuratorAsProxy.connect(governor).setFactory(cometProxy.address, cometFactory.address);
+  await configuratorAsProxy.connect(governor).setFactory(cometProxy.address, cometFactoryWithExtendedAssetList.address);
 
-  configuration.extensionDelegate = extensionDelegateAssetList.address;
   await configuratorAsProxy.connect(governor).setConfiguration(cometProxyWithExtendedAssetList.address, configuration);
   await configuratorAsProxy.connect(governor).setFactory(cometProxyWithExtendedAssetList.address, cometFactoryWithExtendedAssetList.address);
 

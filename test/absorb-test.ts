@@ -1,5 +1,5 @@
 import { ContractTransaction, BigNumber } from 'ethers';
-import { event, expect, exp, factor, defaultAssets, makeProtocol, mulPrice, portfolio, totalsAndReserves, wait, bumpTotalsCollateral, setTotalsBasic, makeConfigurator, takeSnapshot, SnapshotRestorer, MAX_ASSETS, divPrice, presentValue, principalValue, mulFactor } from './helpers';
+import { event, expect, exp, factor, defaultAssets, makeProtocol, mulPrice, portfolio, totalsAndReserves, wait, bumpTotalsCollateral, setTotalsBasic, makeConfigurator, takeSnapshot, SnapshotRestorer, MAX_ASSETS, divPrice, presentValue, principalValue } from './helpers';
 import { ethers } from './helpers';
 import { CometExtAssetList, CometProxyAdmin, CometWithExtendedAssetList, Configurator, ConfiguratorProxy, FaucetToken, NonStandardFaucetFeeToken, PriceFeedWithRevert, PriceFeedWithRevert__factory, SimplePriceFeed } from 'build/types';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
@@ -1198,8 +1198,7 @@ describe('absorb', function () {
         await snapshot.restore();
 
         const PriceFeedWithRevert = await ethers.getContractFactory('PriceFeedWithRevert') as PriceFeedWithRevert__factory;
-        priceFeedWithRevert = await PriceFeedWithRevert.deploy(100, 8);
-        await priceFeedWithRevert.deployed();
+        priceFeedWithRevert = await PriceFeedWithRevert.deploy();
       });
 
       it('alice is liquidable', async () => {

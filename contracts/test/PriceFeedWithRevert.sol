@@ -8,7 +8,7 @@ contract PriceFeedWithRevert is AggregatorV3Interface {
 
     uint public constant override version = 1;
 
-    uint8 public immutable override decimals;
+    uint8 public constant override decimals = 8;
 
     uint80 internal roundId;
     int256 internal answer;
@@ -17,11 +17,6 @@ contract PriceFeedWithRevert is AggregatorV3Interface {
     uint80 internal answeredInRound;
 
     error Reverted();
-
-    constructor(int answer_, uint8 decimals_) {
-        answer = answer_;
-        decimals = decimals_;
-    }
 
     function setRoundData(
         uint80 roundId_,

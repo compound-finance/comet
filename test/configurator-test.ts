@@ -1,6 +1,7 @@
 import { annualize, defactor, defaultAssets, ethers, event, exp, expect, factor, makeConfigurator, Numeric, truncateDecimals, wait } from './helpers';
 import { takeSnapshot, SnapshotRestorer } from './helpers/snapshot';
 import {
+  CometExtAssetList__factory,
   CometModifiedFactory__factory,
   CometProxyAdmin,
   CometWithExtendedAssetList,
@@ -84,7 +85,8 @@ describe('configurator', function () {
     const txn = await wait(configuratorAsProxy.deploy(cometProxy.address)) as any;
     const [, newCometAddress] = txn.receipt.events.find(event => event.event === 'CometDeployed').args;
 
-    expect(event(txn, 0)).to.be.deep.equal({
+    // AssetListCreated is emitted at index 0 by AssetListFactory during CometWithExtendedAssetList deployment
+    expect(event(txn, 1)).to.be.deep.equal({
       CometDeployed: {
         cometProxy: cometProxy.address,
         newComet: newCometAddress,
@@ -93,15 +95,15 @@ describe('configurator', function () {
   });
 
   it('deploys Comet from ProxyAdmin', async () => {
-    const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
+    const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList, cometProxy } = await makeConfigurator();
 
-    expect(await proxyAdmin.getProxyImplementation(cometProxy.address)).to.be.equal(comet.address);
+    expect(await proxyAdmin.getProxyImplementation(cometProxy.address)).to.be.equal(cometWithExtendedAssetList.address);
     expect(await proxyAdmin.getProxyImplementation(configuratorProxy.address)).to.be.equal(configurator.address);
 
     await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
     const newCometAddress = await proxyAdmin.getProxyImplementation(cometProxy.address);
 
-    expect(newCometAddress).to.not.be.equal(comet.address);
+    expect(newCometAddress).to.not.be.equal(cometWithExtendedAssetList.address);
   });
 
   it('reverts if deploy is called from non-governor', async () => {
@@ -349,14 +351,22 @@ describe('configurator', function () {
     });
 
     it('sets extensionDelegate and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy, extensionDelegateAssetList, assetListFactory } = await makeConfigurator();
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-      expect((await configuratorAsProxy.getConfiguration(cometProxy.address)).extensionDelegate).to.be.equal(await comet.extensionDelegate());
+      expect((await configuratorAsProxy.getConfiguration(cometProxy.address)).extensionDelegate).to.be.equal(extensionDelegateAssetList.address);
+      expect(extensionDelegateAssetList.address).to.be.equal(await cometAsProxy.extensionDelegate());
 
-      const oldExt = await comet.extensionDelegate();
-      const newExt = ethers.constants.AddressZero;
+      const CometExtAssetListFactory = (await ethers.getContractFactory('CometExtAssetList')) as CometExtAssetList__factory;
+      const newExtDelegate = await CometExtAssetListFactory.deploy(
+        { name32: ethers.utils.formatBytes32String('New Ext'), symbol32: ethers.utils.formatBytes32String('NEWEXT') },
+        assetListFactory.address
+      );
+      await newExtDelegate.deployed();
+
+      const oldExt = await cometAsProxy.extensionDelegate();
+      const newExt = newExtDelegate.address;
       const txn = await wait(configuratorAsProxy.setExtensionDelegate(cometProxy.address, newExt));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
@@ -931,7 +941,7 @@ describe('configurator', function () {
         .to.be.equal((await comet.getAssetInfo(0)).liquidationFactor);
 
       const oldLiquidationFactor = (await configuratorAsProxy.getConfiguration(cometProxy.address)).assetConfigs[0].liquidationFactor.toBigInt();
-      const newLiquidationFactor = exp(0.5, 18);
+      const newLiquidationFactor = exp(0.94, 18);
       const txn = await wait(configuratorAsProxy.updateAssetLiquidationFactor(cometProxy.address, COMP.address, newLiquidationFactor));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
@@ -1003,12 +1013,11 @@ describe('configurator', function () {
     let cometProxyAddress: string;
     let marketAdminCometProxyAddress: string;
     
-    let minHealthFactor: BigNumber;
-
     let unauthorizedUser: SignerWithAddress;
     let marketAdmin: SignerWithAddress;
 
     let snapshot: SnapshotRestorer;
+    const minHealthFactor: bigint = exp(1.05, 18);
 
     before(async function () {
       const signers = await ethers.getSigners();
@@ -1040,7 +1049,6 @@ describe('configurator', function () {
       cometAsProxy = protocol.cometWithExtendedAssetList.attach(protocol.cometProxyWithExtendedAssetList.address);
       proxyAdmin = protocol.proxyAdmin;
       cometProxyAddress = protocol.cometProxyWithExtendedAssetList.address;
-      minHealthFactor = await cometAsProxy.MIN_TARGET_HEALTH_FACTOR();
 
       snapshot = await takeSnapshot();
     });
@@ -1142,7 +1150,7 @@ describe('configurator', function () {
       });
 
       it('health factor below minimum is configured and Comet deployment is attempted', async function () {
-        await configuratorAsProxy.setTargetHealthFactor(cometProxyAddress, minHealthFactor.sub(1));
+        await configuratorAsProxy.setTargetHealthFactor(cometProxyAddress, minHealthFactor - 1n);
         await expect(
           proxyAdmin.deployAndUpgradeTo(configuratorAsProxy.address, cometProxyAddress)
         ).to.be.revertedWithCustomError(cometAsProxy, 'BadHealthFactor');
