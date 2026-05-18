@@ -100,11 +100,31 @@ Implementation details: [PR #1122](https://github.com/compound-finance/comet/pul
     const wethCometAssetInfo = await cometWETH.getAssetInfoByAddress(rsETH.address);
     expect(wethCometAssetInfo.priceFeed).to.equal(mainnetWethPriceFeedAddress);
 
+    const priceFeedWeth = new Contract(
+      wethCometAssetInfo.priceFeed,
+      [
+        'function latestRoundData() external view returns(uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)',
+        'function decimals() external view returns (uint8)',
+      ],
+      await deploymentManager.getSigner());
+    expect(await priceFeedWeth.decimals()).to.equal(8);
+    expect((await priceFeedWeth.latestRoundData()).answer).to.not.equal(0);
+
     const wstEthComet = new Contract(MAINNET_WSTETH_COMET, [
       'function getAssetInfoByAddress(address asset) public view returns((uint8 offset, address asset, address priceFeed, uint64 scale, uint64 borrowCollateralFactor, uint64 liquidateCollateralFactor, uint64 liquidationFactor, uint128 supplyCap))',
     ], await deploymentManager.getSigner());
 
     const wstEthCometAssetInfo = await wstEthComet.getAssetInfoByAddress(rsETH.address);
     expect(wstEthCometAssetInfo.priceFeed).to.equal(mainnetWstEthPriceFeedAddress);
+
+    const priceFeedWstEth = new Contract(
+      wstEthCometAssetInfo.priceFeed,
+      [
+        'function latestRoundData() external view returns(uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)',
+        'function decimals() external view returns (uint8)',
+      ],
+      await deploymentManager.getSigner());
+    expect(await priceFeedWstEth.decimals()).to.equal(8);
+    expect((await priceFeedWstEth.latestRoundData()).answer).to.not.equal(0);
   },
 });
