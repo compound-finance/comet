@@ -206,6 +206,18 @@ export const networkConfigs: NetworkConfig[] = [
     url: 'https://marcus.devnet.romeprotocol.xyz/',
     gas: 30000000,
   },
+  {
+    network: 'hadrian',
+    chainId: 200010,
+    url: 'https://hadrian.testnet.romeprotocol.xyz/',
+    gas: 30000000,
+  },
+  {
+    network: 'aurelius',
+    chainId: 30001,
+    url: 'https://aurelius.real-testnet.romeprotocol.xyz/',
+    gas: 30000000,
+  },
 ];
 
 function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
