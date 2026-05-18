@@ -176,6 +176,7 @@ export const WHALES = {
   ],
   mantle: [
     '0x588846213A30fd36244e0ae0eBB2374516dA836C', // USDe whale
+    '0xd374a62AA68D01cdB420e17b9840706e86BC840B', // mETH whale
     '0x88a1493366D48225fc3cEFbdae9eBb23E323Ade3', // mETH whale
     '0xEe6281d94Fed46A90379F2033B6BbdcDa4EF462E', // mETH whale
     '0x651C9D1F9da787688225f49d63ad1623ba89A8D5', // FBTC whale
