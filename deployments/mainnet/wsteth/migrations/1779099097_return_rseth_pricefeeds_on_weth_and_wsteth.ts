@@ -55,18 +55,20 @@ export default migration('1779099097_return_rseth_pricefeeds_on_weth_and_wsteth'
 
     const description = `# Return rsETH Price Feeds on WETH and wstETH Markets (Mainnet)
 
-  ## Summary
+## Summary
 
-  This proposal is a follow-up to the emergency rsETH oracle migration and returns the Mainnet WETH and wstETH Comets to their prior rsETH price feed configuration.
+This proposal is a follow-up to the emergency rsETH oracle migration and returns the Mainnet WETH and wstETH Comets to their prior rsETH price feed configuration.
 
-  The earlier migration to a MinMaxConstantPriceFeed was introduced as a temporary risk-control measure after the April 18 Kelp rsETH bridge exploit. With conditions now stabilized, this proposal removes the temporary setup and restores the previous feed configuration.
+The earlier migration to a MinMaxConstantPriceFeed was introduced as a temporary risk-control measure after the April 18 Kelp rsETH bridge exploit. With conditions now stabilized, this proposal removes the temporary setup and restores the previous feed configuration.
 
-  ## Proposal Actions
+Implementation details: [PR #1122](https://github.com/compound-finance/comet/pull/1122).
 
-  1. Update the rsETH price feed on the Mainnet WETH market.
-  2. Update the rsETH price feed on the Mainnet wstETH market.
-  3. Deploy and upgrade the WETH Comet to apply the configuration change.
-  4. Deploy and upgrade the wstETH Comet to apply the configuration change.
+## Proposal Actions
+
+1. Update the rsETH price feed on the Mainnet WETH market.
+2. Update the rsETH price feed on the Mainnet wstETH market.
+3. Deploy and upgrade the WETH Comet to apply the configuration change.
+4. Deploy and upgrade the wstETH Comet to apply the configuration change.
 `;
 
     const txn = await deploymentManager.retry(async () =>
