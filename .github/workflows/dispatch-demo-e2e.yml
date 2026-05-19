@@ -1,0 +1,53 @@
+name: Dispatch demo e2e
+
+# When LiquidationRouter, Comet, or Bulker source changes land on main,
+# fire a `cross-repo-e2e` repository_dispatch to compound-on-rome-demo.
+#
+# The demo listens via `.github/workflows/e2e.yml` (its own
+# `repository_dispatch: types: [cross-repo-e2e]` trigger).
+#
+# Requires DEPLOY_APP_ID + DEPLOY_APP_PRIVATE_KEY org secrets + the
+# rome-deploys App scoped to compound-on-rome-demo with `actions:write`.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/LiquidationRouter.sol'
+      - 'contracts/Comet.sol'
+      - 'contracts/bulkers/**'
+      - 'contracts/CometInterface.sol'
+      - 'contracts/CometStorage.sol'
+
+permissions:
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mint cross-repo App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.DEPLOY_APP_ID }}
+          private-key: ${{ secrets.DEPLOY_APP_PRIVATE_KEY }}
+          owner: rome-protocol
+          repositories: |
+            compound-on-rome-demo
+
+      - name: Fire repository_dispatch → compound-on-rome-demo
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          SOURCE_SHA: ${{ github.sha }}
+          SOURCE_REPO: ${{ github.repository }}
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/rome-protocol/compound-on-rome-demo/dispatches" \
+            -f event_type="cross-repo-e2e" \
+            -f "client_payload[source_repo]=$SOURCE_REPO" \
+            -f "client_payload[source_sha]=$SOURCE_SHA" \
+            -f "client_payload[source_pr_number]=" \
+            -f "client_payload[reason]=Comet / Router / Bulker source change on main"
