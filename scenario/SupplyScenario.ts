@@ -46,7 +46,7 @@ async function testSupplyFromCollateral(context: CometContext, assetNum: number)
   const { asset: assetAddress, scale: scaleBN, supplyCap } = await comet.getAssetInfo(assetNum);
   const collateralAsset = context.getAssetByAddress(assetAddress);
   const scale = scaleBN.toBigInt();
-  const toSupply = BigInt(getConfigForScenario(context).supplyCollateral) * scale;
+  const toSupply = BigInt(getConfigForScenario(context, assetNum).supplyCollateral) * scale;
 
   expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(toSupply);
   expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(0n);

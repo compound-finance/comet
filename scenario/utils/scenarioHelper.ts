@@ -1,6 +1,6 @@
 import { CometContext } from '../context/CometContext';
 
-const config = {
+const defaultConfig = {
   bulkerBase: 1000000,
   bulkerBase1: 10,
   bulkerAsset: 5000,
@@ -35,6 +35,7 @@ const config = {
 };
 
 export function getConfigForScenario(ctx: CometContext, i?: number) {
+  const config = { ...defaultConfig };
   if (ctx.world.base.network === 'mainnet' && ctx.world.base.deployment === 'wbtc') {
     config.bulkerBase = 200;
     config.bulkerAsset = 400;
@@ -109,6 +110,11 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
     config.transferAsset1 = 100000;
     config.rewardsAsset = 100000;
     config.withdrawAsset = 100000;
+    if(i == 4) { // wUSDM
+      config.supplyCollateral = 2;
+      config.transferCollateral = 2;
+      config.withdrawCollateral = 2;
+    }
   }
 
   if (ctx.world.base.network === 'optimism' && ctx.world.base.deployment === 'usdt') {
@@ -245,13 +251,18 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
     config.liquidationBase = 250;
     config.liquidationBase1 = 350;
     config.liquidationAsset = 100;
-    config.bulkerAsset = 500;
-    config.bulkerComet = 500;
+    config.bulkerAsset = 100;
+    config.bulkerComet = 100;
     config.bulkerBorrowBase = 100;
     config.bulkerBorrowAsset = 50;
     config.supplyCollateral = 10;
     config.transferCollateral = 10;
     config.withdrawCollateral = 10;
+    if(i == 5) { // rsETH
+      config.supplyCollateral = 2;
+      config.transferCollateral = 2;
+      config.withdrawCollateral = 2;
+    }
     config.rewardsBase = 100;
     config.rewardsAsset = 250;
     config.transferBase = 100;
