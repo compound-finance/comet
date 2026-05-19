@@ -413,7 +413,7 @@ export default migration('1779114960_update_supply_caps_on_l2', {
 
 WOOF! proposes to update supply caps on cUSDCv3, cUSDTv3 and cWETHv3 on Optimism, cUSDCv3 and cUSDTv3 on Polygon, cUSDCv3 and cWETHv3 on Unichain networks. This proposal takes the governance steps recommended and necessary to update Compound III markets on each network. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters are based on the [recommendations from Gauntlet](https://www.comp.xyz/t/supply-cap-reduction-across-l2-comets/7794/1).
 
-Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1120) and [forum discussion](https://www.comp.xyz/t/supply-cap-reduction-across-l2-comets/7794).
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1124) and [forum discussion](https://www.comp.xyz/t/supply-cap-reduction-across-l2-comets/7794).
 
 
 ## Proposal Actions
