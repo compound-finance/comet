@@ -95,7 +95,7 @@ scenario(
 
     // Try to supply new token and borrow base
     const baseAssetAddress = await comet.baseToken();
-    const borrowAmount = 1000n * (await comet.baseScale()).toBigInt();
+    const borrowAmount = 100n * (await comet.baseScale()).toBigInt();
     const supplyAmount = exp(9000, 18);
 
     await maticx

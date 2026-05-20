@@ -49,10 +49,10 @@ for (let i = 0; i < MAX_ASSETS; i++) {
   scenario(
     `Comet#withdraw > collateral asset ${i}`,
     {
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, getConfigForScenario(ctx).withdrawCollateral),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, getConfigForScenario(ctx, i).withdrawCollateral),
       cometBalances: async (ctx) =>  (
         {
-          albert: { [`$asset${i}`]: getConfigForScenario(ctx).withdrawCollateral }
+          albert: { [`$asset${i}`]: getConfigForScenario(ctx, i).withdrawCollateral }
         }
       ),
     },
@@ -66,10 +66,10 @@ for (let i = 0; i < MAX_ASSETS; i++) {
   scenario(
     `Comet#withdrawFrom > collateral asset ${i}`,
     {
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, getConfigForScenario(ctx).withdrawCollateral),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, getConfigForScenario(ctx, i).withdrawCollateral),
       cometBalances: async (ctx) =>  (
         {
-          albert: { [`$asset${i}`]: getConfigForScenario(ctx).withdrawCollateral }
+          albert: { [`$asset${i}`]: getConfigForScenario(ctx, i).withdrawCollateral }
         }
       ),
     },
