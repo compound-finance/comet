@@ -438,8 +438,8 @@ The third action sends a message to the Unichain network to update supply caps o
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(): Promise<boolean> {
-    return false;
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {
