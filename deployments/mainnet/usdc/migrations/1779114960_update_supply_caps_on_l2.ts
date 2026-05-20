@@ -327,16 +327,16 @@ export default migration('1779114960_update_supply_caps_on_l2', {
       bridgeReceiver: unichainBridgeReceiver,
       configurator: unichainConfigurator,
       cometAdmin: unichainCometAdmin,
-      UNI: unichainMETH,
+      UNI: unichainUNI,
       ezETH: unichainEzETH,
       weETH: unichainWeETH,
     } = await unichainDm.getContracts();
 
-    const unichainUsdcUniUpdateSupplyCapCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint128'], [cometConfig.Unichain.USDC.address, unichainMETH.address, exp(supplyCapConfig.Unichain.USDC.UNI.newCap, supplyCapConfig.Unichain.USDC.UNI.decimals)]);
+    const unichainUsdcUniUpdateSupplyCapCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint128'], [cometConfig.Unichain.USDC.address, unichainUNI.address, exp(supplyCapConfig.Unichain.USDC.UNI.newCap, supplyCapConfig.Unichain.USDC.UNI.decimals)]);
     const unichainUsdcDeployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [unichainConfigurator.address, cometConfig.Unichain.USDC.address]);
 
-    const unichainWethUniETHUpdateSupplyCapCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint128'], [cometConfig.Unichain.WETH.address, unichainEzETH.address, exp(supplyCapConfig.Unichain.WETH.UNI.newCap, supplyCapConfig.Unichain.WETH.UNI.decimals)]);
-    const unichainWethEzEthUpdateSupplyCapCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint128'], [cometConfig.Unichain.WETH.address, unichainMETH.address, exp(supplyCapConfig.Unichain.WETH.ezETH.newCap, supplyCapConfig.Unichain.WETH.ezETH.decimals)]);
+    const unichainWethUniUpdateSupplyCapCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint128'], [cometConfig.Unichain.WETH.address, unichainUNI.address, exp(supplyCapConfig.Unichain.WETH.UNI.newCap, supplyCapConfig.Unichain.WETH.UNI.decimals)]);
+    const unichainWethEzEthUpdateSupplyCapCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint128'], [cometConfig.Unichain.WETH.address, unichainEzETH.address, exp(supplyCapConfig.Unichain.WETH.ezETH.newCap, supplyCapConfig.Unichain.WETH.ezETH.decimals)]);
     const unichainWethWeEthUpdateSupplyCapCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint128'], [cometConfig.Unichain.WETH.address, unichainWeETH.address, exp(supplyCapConfig.Unichain.WETH.weETH.newCap, supplyCapConfig.Unichain.WETH.weETH.decimals)]);
     const unichainWethDeployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [unichainConfigurator.address, cometConfig.Unichain.WETH.address]);
 
@@ -378,7 +378,7 @@ export default migration('1779114960_update_supply_caps_on_l2', {
           unichainUsdcUniUpdateSupplyCapCalldata,
           unichainUsdcDeployAndUpgradeToCalldata,
           // WETH Comet
-          unichainWethUniETHUpdateSupplyCapCalldata,
+          unichainWethUniUpdateSupplyCapCalldata,
           unichainWethEzEthUpdateSupplyCapCalldata,
           unichainWethWeEthUpdateSupplyCapCalldata,
           unichainWethDeployAndUpgradeToCalldata,
