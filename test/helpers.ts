@@ -399,26 +399,14 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   const cometWithExtendedAssetList = await CometFactoryWithExtendedAssetList.deploy(config);
   await cometWithExtendedAssetList.deployed();
 
-  // Deploy a second CometHarnessExtendedAssetList instance with configurable targetHealthFactor (default 1.05) for partial liquidation
-  const configPartialLiquidation = {
-    ...config,
-  };
-
-  const CometFactoryWithExtendedAssetListForPartial = (await ethers.getContractFactory('CometHarnessExtendedAssetList')) as CometHarnessExtendedAssetList__factory;
-  const cometWithPartialLiquidationImpl = await CometFactoryWithExtendedAssetListForPartial.deploy(configPartialLiquidation);
-  await cometWithPartialLiquidationImpl.deployed();
-
   if (opts.start) await ethers.provider.send('evm_setNextBlockTimestamp', [opts.start]);
-
   await comet.initializeStorage();
   await cometWithExtendedAssetList.initializeStorage();
-  await cometWithPartialLiquidationImpl.initializeStorage();
 
   const baseTokenBalance = opts.baseTokenBalance;
   if (baseTokenBalance) {
     const baseToken = tokens[base];
-    await wait(baseToken.allocateTo(comet.address, baseTokenBalance));
-    await wait(baseToken.allocateTo(cometWithPartialLiquidationImpl.address, baseTokenBalance));
+    await baseToken.allocateTo(comet.address, baseTokenBalance);
   }
 
   return {
@@ -430,8 +418,8 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     users,
     base,
     reward,
-    comet: (await ethers.getContractAt('CometHarnessInterface', comet.address)) as Comet,
-    cometWithExtendedAssetList: (await ethers.getContractAt('CometHarnessInterfaceExtendedAssetList', cometWithExtendedAssetList.address)) as CometWithExtendedAssetList,
+    comet: await ethers.getContractAt('CometHarnessInterface', comet.address) as Comet,
+    cometWithExtendedAssetList: await ethers.getContractAt('CometHarnessInterfaceExtendedAssetList', cometWithExtendedAssetList.address) as CometWithExtendedAssetList,
     assetListFactory: assetListFactory,
     tokens,
     unsupportedToken,
@@ -665,7 +653,7 @@ export async function makeRewards(opts: RewardsOpts = {}): Promise<Rewards> {
   return {
     opts,
     governor,
-    rewards,
+    rewards
   };
 }
 
@@ -681,14 +669,12 @@ export async function makeBulker(opts: BulkerOpts): Promise<BulkerInfo> {
 
   return {
     opts,
-    bulker,
+    bulker
   };
 }
 export async function bumpTotalsCollateral(comet: CometHarnessInterface, token: FaucetToken | NonStandardFaucetFeeToken, delta: bigint): Promise<TotalsCollateralStructOutput> {
   const t0 = await comet.totalsCollateral(token.address);
-  const t1 = Object.assign({}, t0, {
-    totalSupplyAsset: t0.totalSupplyAsset.toBigInt() + delta,
-  });
+  const t1 = Object.assign({}, t0, { totalSupplyAsset: t0.totalSupplyAsset.toBigInt() + delta });
   await token.allocateTo(comet.address, delta);
   await wait(comet.setTotalsCollateral(token.address, t1));
   return t1;
