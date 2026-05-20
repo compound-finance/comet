@@ -79,12 +79,6 @@ async function deployContracts(
     'ronin'
   );
 
-  const l2CCIPOnRamp = await deploymentManager.existing(
-    'l2CCIPOnRamp',
-    '0x02b60267bceeaFDC45005e0Fa0dd783eFeBc9F1b',
-    'ronin'
-  );
-
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec, {}, true);
 
@@ -92,7 +86,6 @@ async function deployContracts(
     ...deployed,
     bridgeReceiver,
     l2CCIPRouter,
-    l2CCIPOnRamp,
     l2CCIPOffRamp,
     l2TokenAdminRegistry,
     bulker

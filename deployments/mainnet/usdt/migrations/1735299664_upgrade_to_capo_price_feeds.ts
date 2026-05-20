@@ -1,9 +1,14 @@
 import { expect } from 'chai';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
-import { proposal, exp } from '../../../../src/deploy';
+import { proposal } from '../../../../src/deploy';
+import { Numeric } from '../../../../test/helpers';
 import { IWstETH, IRateProvider, AggregatorV3Interface } from '../../../../build/types';
 import { constants } from 'ethers';
+
+export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
+  return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
+}
 
 const WETH_ADDRESS = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 const ETH_USD_SVR_PRICE_FEED = '0xc0053f3FBcCD593758258334Dfce24C2A9A673aD';
@@ -257,11 +262,11 @@ export default migration('1735299664_upgrade_to_capo_price_feeds', {
 
 This proposal updates existing price feeds for wstETH, sFRAX, weETH, WBTC, WETH, mETH, COMP, and LINK on the USDT market on Mainnet. 
 
-## SVR summary
+SVR summery
 
 [RFP process](https://www.comp.xyz/t/oev-rfp-process-update-july-2025/6945) and community [vote](https://snapshot.box/#/s:comp-vote.eth/proposal/0x98a3873319cdb5a4c66b6f862752bdcfb40d443a5b9c2f9472188d7ed5f9f2e0) passed and decided to implement Chainlink's SVR solution for Mainnet markets, this proposal updates wstETH, WBTC, WETH, LINK, weETH, mETH, COMP price feeds to support SVR implementations.
 
-## CAPO summary
+CAPO summery
 
 CAPO is a price oracle adapter designed to support assets that grow gradually relative to a base asset - such as liquid staking tokens that accumulate yield over time. It provides a mechanism to track this expected growth while protecting downstream protocol from sudden or manipulated price spikes. wstETH, sFRAX, weETH, mETH price feeds are updated to their CAPO implementations.
 
@@ -302,7 +307,7 @@ The ninth action deploys and upgrades Comet to a new version.
   },
 
   async enacted(): Promise<boolean> {
-    return true;
+    return false;
   },
 
   async verify(deploymentManager: DeploymentManager) {
