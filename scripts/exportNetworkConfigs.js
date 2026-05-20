@@ -29,6 +29,9 @@ try {
 }
 
 function getUrl(network) {
+  if(network === 'scroll') {
+    return 'https://rpc.scroll.io';
+  }
   const config = configs.find(cfg => cfg.network === network);
   return config ? config.url : '';
 }

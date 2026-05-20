@@ -46,7 +46,7 @@ async function testSupplyFromCollateral(context: CometContext, assetNum: number)
   const { asset: assetAddress, scale: scaleBN, supplyCap } = await comet.getAssetInfo(assetNum);
   const collateralAsset = context.getAssetByAddress(assetAddress);
   const scale = scaleBN.toBigInt();
-  const toSupply = BigInt(getConfigForScenario(context).supplyCollateral) * scale;
+  const toSupply = BigInt(getConfigForScenario(context, assetNum).supplyCollateral) * scale;
 
   expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(toSupply);
   expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(0n);
@@ -406,12 +406,20 @@ scenario(
 scenario(
   'Comet#supplyFrom > repay borrow',
   {
-    tokenBalances: {
-      albert: { $base: 1010 }
-    },
-    cometBalances: {
-      betty: { $base: '<= -1000' } // in units of asset, not wei
-    },
+    tokenBalances: async (ctx) => (
+      {
+        albert: {
+          $base: getConfigForScenario(ctx).supplyBase + (0.01 * getConfigForScenario(ctx).supplyBase)
+        }
+      }
+    ),
+    cometBalances: async (ctx) => (
+      {
+        betty: {
+          $base: `<= -${getConfigForScenario(ctx).supplyBase}`
+        }
+      }
+    ),
   },
   async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
