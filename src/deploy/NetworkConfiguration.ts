@@ -166,10 +166,9 @@ function getOverridesOrConfig(
       getContractAddress(config.rewardToken, contracts, config.rewardTokenAddress) :
       undefined,
   });
-  const result = Object.entries(mapping()).reduce((acc, [k, f]) => {
+  return Object.entries(mapping()).reduce((acc, [k, f]) => {
     return { [k]: overrides[k] ?? f(config), ...acc };
   }, {});
-  return result;
 }
 
 export async function getConfiguration(
