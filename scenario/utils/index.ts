@@ -862,6 +862,7 @@ export async function tenderlyExecute(
       state_objects: statePatch,
       save: true,
       gas_price: 0,
+      gas_limit: 16_777_215,
     })),
     {
       network_id: chainId1.toString(),
@@ -873,6 +874,7 @@ export async function tenderlyExecute(
       state_objects: statePatch,
       save: true,
       gas_price: 0,
+      gas_limit: 16_777_215,
     },
     ...whales.map((w) => ({
       network_id: chainId1.toString(),
@@ -885,6 +887,7 @@ export async function tenderlyExecute(
       save: true,
       save_if_fails: true,
       gas_price: 0,
+      gas_limit: 16_777_215,
     })),
     {
       network_id: chainId1.toString(),
@@ -897,6 +900,7 @@ export async function tenderlyExecute(
       save: true,
       save_if_fails: true,
       gas_price: 0,
+      gas_limit: 16_777_215,
     },
     {
       network_id: chainId1.toString(),
@@ -909,6 +913,7 @@ export async function tenderlyExecute(
       save: true,
       save_if_fails: true,
       gas_price: 0,
+      gas_limit: 16_777_215,
     },
   ];
 
@@ -960,6 +965,7 @@ export async function tenderlyExecute(
         save: true,
         save_if_fails: true,
         gas_price: 0,
+        gas_limit: 16_777_215,
       };
     });
 
