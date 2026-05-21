@@ -1324,17 +1324,17 @@ contract CometWithExtendedAssetList is CometMainInterface {
     * @param account  The underwater account whose collateral and debt are being absorbed
     */
     function absorbInternal(address absorber, address account) internal {
+        UserBasic memory accountUser = userBasic[account];
+        if (accountUser.principal > 0) revert NotLiquidatable();
+
         // replicate isLiquidatable() and cache collateral prices for this function execution
         // liquidity represents value of all collateral's weighted by LCF
         (uint256 liquidity, uint256[] memory collateralPrices) = _getLiquidity(account, true, new uint256[](0));
         // cache base asset price
         uint256 basePrice = getPrice(baseTokenPriceFeed);
         
-        UserBasic memory accountUser = userBasic[account];
         uint256 debtRemainingValue = mulPrice(uint256(-presentValue(accountUser.principal)), basePrice, uint64(baseScale));
-
-        // replicate isLiquidatable() and revert early
-        if (accountUser.principal > 0 || debtRemainingValue <= liquidity) revert NotLiquidatable();
+        if (debtRemainingValue <= liquidity) revert NotLiquidatable();
 
         // Account's value of all collaterals weighted by BCF - using cached prices
         (uint256 totalCollateralizedValue, ) = _getLiquidity(account, false, collateralPrices);
