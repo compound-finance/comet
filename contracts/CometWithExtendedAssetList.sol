@@ -1353,7 +1353,7 @@ contract CometWithExtendedAssetList is CometMainInterface {
 
             collateralInfo = getAssetInfo(i);
             
-            // Skip non-liquidatable assets - we must not sieze collatearals with LF = 0:
+            // Skip non-liquidatable assets - we must not sieze collaterals with LF = 0:
             // 1. The collateral remains with the borrower: non-liquidatable assets should
             //    not be absorbed, and their value should not offset the account's debt.
             // 2. Avoids calling getPrice(): if the oracle is disabled or reverting,
@@ -1391,6 +1391,10 @@ contract CometWithExtendedAssetList is CometMainInterface {
             else {
                 wantedCollateralValue = (mulFactor(debtRemainingValue, targetHealthFactor) - totalCollateralizedValue) * FACTOR_SCALE
                                     / (mulFactor(collateralInfo.liquidationFactor, targetHealthFactor) - collateralInfo.borrowCollateralFactor);
+
+                // we do not want more collateral than user's debt, though we must descale the value by penalty
+                uint256 maxWantedCollateralValue = debtRemainingValue * FACTOR_SCALE / collateralInfo.liquidationFactor;
+                if (wantedCollateralValue > maxWantedCollateralValue) wantedCollateralValue = maxWantedCollateralValue;
 
                 // So, we want to seize a collateral of value calculated above.
                 //   if user has more collateral than we want, we seize only calculated value
