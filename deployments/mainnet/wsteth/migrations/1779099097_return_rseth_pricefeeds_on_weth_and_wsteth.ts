@@ -85,7 +85,7 @@ Implementation details: [PR #1122](https://github.com/compound-finance/comet/pul
   },
 
   async enacted(): Promise<boolean> {
-    return false;
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {

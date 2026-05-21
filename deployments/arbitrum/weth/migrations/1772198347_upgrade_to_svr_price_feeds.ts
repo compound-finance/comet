@@ -196,7 +196,7 @@ The first action updates rsETH price feed to the CAPO implementation and WBTC pr
   },
 
   async enacted(): Promise<boolean> {
-    return false;
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {
