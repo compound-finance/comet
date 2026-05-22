@@ -101,7 +101,7 @@ jobs:
           echo "TENDERLY_ACCESS_KEY=$TENDERLY_ACCESS_KEY"   >> "$GITHUB_ENV"
 
       - name: Seacrest
-        uses: hayesgm/seacrest@af229b0a00b73cb6fa9940a836a62fa3b918fd77
+        uses: hayesgm/seacrest@d4062fbf20853c538f0cb2e8fdc0fb6828d45d98
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ inputs.network }}"
@@ -110,7 +110,7 @@ jobs:
         if: github.event.inputs.eth_pk == ''
 
       - name: Seacrest (governance network)
-        uses: hayesgm/seacrest@af229b0a00b73cb6fa9940a836a62fa3b918fd77
+        uses: hayesgm/seacrest@d4062fbf20853c538f0cb2e8fdc0fb6828d45d98
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ vars.GOV_NETWORK }}"
