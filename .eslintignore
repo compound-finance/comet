@@ -9,3 +9,5 @@ scripts/marcus-phase3/
 scripts/marcus-phase4-fresh-deploy/
 scripts/marcus-stress/
 scripts/registry-driven-deploy/
+scripts/hadrian-cached-test/*.md
+scripts/hadrian-cached-test/*.json

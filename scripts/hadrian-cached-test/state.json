@@ -1,0 +1,28 @@
+{
+  "deployedAt": "2026-05-24T06:49:22.183Z",
+  "deployer": "0x1f4946Be340F06c46A50E65084790968aBcc48F6",
+  "network": "hadrian",
+  "chainId": 200010,
+  "baseAsset": {
+    "symbol": "wUSDC",
+    "address": "0x33fb7AD189B0A59CCAFcC3337F3a8B61e3719912",
+    "decimals": 6,
+    "priceUsd": 1,
+    "priceFeed": "0x12100AE1B9154a1D2C672A319b9BC713F58f3FCC"
+  },
+  "collateralAssets": [
+    {
+      "symbol": "wETH",
+      "address": "0x09A9B33501f2cf1E42dF14c6EcE1F7EDE8376366",
+      "decimals": 8,
+      "priceUsd": 3000,
+      "priceFeed": "0x9A480b68E233326F63655f62120b3fCd8F3B5456",
+      "borrowCollateralFactor": "0.70",
+      "liquidateCollateralFactor": "0.75"
+    }
+  ],
+  "cometProxy": "0xC6989ECe86eF2344fdbd577171944D3e4fAe1b2a",
+  "cometImpl": "0x80fe89bcE8CE845177d10124d9453f3e6A7536dD",
+  "cometExt": "0x85597A317092961e3f8a72FAEC0a786f952e8Bb4",
+  "cometProxyAdmin": "0x72B69a8d64077ba238908a1A2c71961240887cB2"
+}

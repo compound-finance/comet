@@ -1,0 +1,43 @@
+{
+  "deployedAt": "2026-05-24T07:18:03.439Z",
+  "factory": "0xca1aad95ed6b8b798fbf5366db469d46f16aca0b",
+  "deployer": "0x1f4946Be340F06c46A50E65084790968aBcc48F6",
+  "wrappers": [
+    {
+      "symbol": "wHEAT",
+      "name": "Wrapped Heat",
+      "mint": "0x2e6c588e3e4d02c9576e8648fa8dd15efad7316f12f3347151cae8db91e19a7a",
+      "wrapper": "0x09B313A5C39BA64FCc4f83F134021D7423787D1e",
+      "decimals": 9,
+      "initialSupply": "1000000000000000",
+      "skipped": false
+    },
+    {
+      "symbol": "wSALT",
+      "name": "Wrapped Salt",
+      "mint": "0x9eb9b987eb4d008787327ed42cca2bd11337223baadb66c7a6af4790d064715f",
+      "wrapper": "0x0b0AF4D452c1b8fc1270AD5A6d1d62044d412ff4",
+      "decimals": 9,
+      "initialSupply": "1000000000000000",
+      "skipped": false
+    },
+    {
+      "symbol": "wMILK",
+      "name": "Wrapped Milk",
+      "mint": "0xbcdba83ffd3a31b2aab95cea81fafffde300c428d25d34f241e7819271e7f6ef",
+      "wrapper": "0x2197cB9786bee9AfDe53FD2081973185fcd8D586",
+      "decimals": 9,
+      "initialSupply": "1000000000000000",
+      "skipped": false
+    },
+    {
+      "symbol": "wOIL",
+      "name": "Wrapped Oil",
+      "mint": "0x0fe4f79c6f6dfdbf3a158ab395cfb2c05a8f097bf677eaea0eecbb26a0614160",
+      "wrapper": "0x00449c4582598450cD7eb9fA42EE2B9424589449",
+      "decimals": 9,
+      "initialSupply": "1000000000000000",
+      "skipped": false
+    }
+  ]
+}

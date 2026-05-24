@@ -1,0 +1,59 @@
+{
+  "deployedAt": "2026-05-24T07:21:26.810Z",
+  "deployer": "0x1f4946Be340F06c46A50E65084790968aBcc48F6",
+  "network": "hadrian",
+  "chainId": 200010,
+  "baseAsset": {
+    "symbol": "wUSDC",
+    "address": "0x33fb7AD189B0A59CCAFcC3337F3a8B61e3719912",
+    "decimals": 6,
+    "priceUsd": 1,
+    "priceFeed": "0xa9E9823AA2B34379e5d8CaE7f95ee91516Ede855"
+  },
+  "collateralAssets": [
+    {
+      "symbol": "wETH",
+      "address": "0x09A9B33501f2cf1E42dF14c6EcE1F7EDE8376366",
+      "decimals": 8,
+      "priceUsd": 3000,
+      "priceFeed": "0xA3968280C40b4d61304e559A133fe35611c3f687",
+      "borrowCollateralFactor": 0.7
+    },
+    {
+      "symbol": "wHEAT",
+      "address": "0x09B313A5C39BA64FCc4f83F134021D7423787D1e",
+      "decimals": 9,
+      "priceUsd": 10,
+      "priceFeed": "0x82a2e10Fc9Ee93A14708f7Edc7120C743ECd2b6C",
+      "borrowCollateralFactor": 0.65
+    },
+    {
+      "symbol": "wSALT",
+      "address": "0x0b0AF4D452c1b8fc1270AD5A6d1d62044d412ff4",
+      "decimals": 9,
+      "priceUsd": 5,
+      "priceFeed": "0x5a79f12D08b860F5cd20ceC3702D71A91bF267D0",
+      "borrowCollateralFactor": 0.6
+    },
+    {
+      "symbol": "wMILK",
+      "address": "0x2197cB9786bee9AfDe53FD2081973185fcd8D586",
+      "decimals": 9,
+      "priceUsd": 20,
+      "priceFeed": "0x529C4762cc081c5E979beC2A0f7b66A8de758bF0",
+      "borrowCollateralFactor": 0.65
+    },
+    {
+      "symbol": "wOIL",
+      "address": "0x00449c4582598450cD7eb9fA42EE2B9424589449",
+      "decimals": 9,
+      "priceUsd": 50,
+      "priceFeed": "0xEB76d6a474624D49D7Bc4526a408522D9283eAC2",
+      "borrowCollateralFactor": 0.6
+    }
+  ],
+  "cometProxy": "0xF4f214c5C54C3F9B7BA1339e4f68cd6bd2F91736",
+  "cometImpl": "0xE4c98Fb485aB387C7F0def27bf01a63Ad3Ee63Af",
+  "cometExt": "0x394e9Da427e00BF3C74eb370D2536CD033B8c8D7",
+  "cometProxyAdmin": "0x17755dd1d9e99ab9C38496062F95285d7E7c0165"
+}
