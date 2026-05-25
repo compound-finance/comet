@@ -1,0 +1,63 @@
+{
+  "deployedAt": "2026-05-25T10:10:01.560Z",
+  "factory": "0x86149124d74ebb3aa41a19641b700e88202b6285",
+  "deployer": "0x1f4946Be340F06c46A50E65084790968aBcc48F6",
+  "network": "hadrian",
+  "chainId": 200010,
+  "wrappers": [
+    {
+      "symbol": "wBTC",
+      "name": "Wrapped BTC",
+      "mint": "0x191224d66916cc41e83d264de8baece61760c21f94a5fcd51ba7a21fcfa2ffd6",
+      "wrapper": "0xa000137fFcB2808aB6D2094c6f7Db5830c437883",
+      "decimals": 9,
+      "initialSupply": "1000000000000000",
+      "skipped": false
+    },
+    {
+      "symbol": "wHEAT",
+      "name": "Wrapped Heat",
+      "mint": "0x4f2f29d7810019bfe77869422a6927afe46660f76301ba442baf9c066d3989e3",
+      "wrapper": "0x58e78208c8EDd4b9E8e49682701512dd2Ae63dB5",
+      "decimals": 9,
+      "initialSupply": "1000000000000000",
+      "skipped": false
+    },
+    {
+      "symbol": "wSALT",
+      "name": "Wrapped Salt",
+      "mint": "0xab32c62d228ea0570d105a3c43d8c30de26dadc00a9d20b505470eb10e464109",
+      "wrapper": "0x29CC524CEab4C72b064368c3c3cbDd6F2a68b45e",
+      "decimals": 9,
+      "initialSupply": "1000000000000000",
+      "skipped": false
+    },
+    {
+      "symbol": "wMILK",
+      "name": "Wrapped Milk",
+      "mint": "0xa53262ae6091396f23ac08033d8c96d732763af0cee95235b2a07b7867c609fc",
+      "wrapper": "0x9E522120c5cC83375D6158ecdB9C99F103BDdAD9",
+      "decimals": 9,
+      "initialSupply": "1000000000000000",
+      "skipped": false
+    },
+    {
+      "symbol": "wOIL",
+      "name": "Wrapped Oil",
+      "mint": "0x8798c1482d0e13eb1c36714c06864c49ea2866d55728ebd37ba63c2ede91746a",
+      "wrapper": "0x5AadDB6957D3CA334A8634D848e61d0130cDe139",
+      "decimals": 9,
+      "initialSupply": "1000000000000000",
+      "skipped": false
+    },
+    {
+      "symbol": "wGOLD",
+      "name": "Wrapped Gold",
+      "mint": "0x8958d3fd872b78d3bd859ff599e0f8de7d9f417663e6ec613a7348efc6412bc1",
+      "wrapper": "0x585Ac6B26329A414D2b3c34E2B599620Af78A7ab",
+      "decimals": 9,
+      "initialSupply": "1000000000000000",
+      "skipped": false
+    }
+  ]
+}

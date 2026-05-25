@@ -1,0 +1,442 @@
+{
+  "runAt": "2026-05-25T10:42:02.880Z",
+  "deploymentRef": "scripts/hadrian-vanilla/state.json",
+  "cometAddress": "0xb8Ad4fd3776E356d1295E7539FCec02Da4629856",
+  "nCollats": 8,
+  "passed": 48,
+  "failed": 0,
+  "metrics": [
+    {
+      "name": "wUSDC.approve(comet, max) [signer]",
+      "wallMs": 8126,
+      "txHash": "0x338d6e664a73416f53b5fd86539e9c260107ac81bb271128d585841b02d7b5df",
+      "iterSigs": 2,
+      "totalCU": 270797,
+      "maxHeap": 39112,
+      "slotSpan": 3
+    },
+    {
+      "name": "comet.supply(wUSDC, 1000000) [signer lender]",
+      "wallMs": 3859,
+      "txHash": "0x18f0ed4d0d9922ad7ff7bc9c861849279b4246abedd7c28b5dbbac15d0cc6823",
+      "iterSigs": 2,
+      "totalCU": 907289,
+      "maxHeap": 126704,
+      "slotSpan": 3
+    },
+    {
+      "name": "fund borrower with 5 native gas",
+      "wallMs": 6585,
+      "txHash": "0xa1e3b63e63364d3e6ee1e0f6a746bb95f566cbf6d4d7aa2042ca16f98d4f5545",
+      "iterSigs": 1,
+      "totalCU": 102824,
+      "maxHeap": 11736,
+      "slotSpan": 0
+    },
+    {
+      "name": "0x9a8B4cB7…ensure_token_account(borrower)",
+      "wallMs": 6105,
+      "txHash": "0xb47cfc82d4b658b50c34b63b3bf0d313533779a487d0c00fbd8e06a35796b657",
+      "iterSigs": 1,
+      "totalCU": 172278,
+      "maxHeap": 25096,
+      "slotSpan": 0
+    },
+    {
+      "name": "0x55e4502D…ensure_token_account(borrower)",
+      "wallMs": 6603,
+      "txHash": "0x619f0e08f44aef52ac9e2e43cf3dcf98adb27d3268f7f019471f8e6fdc7d580e",
+      "iterSigs": 1,
+      "totalCU": 175271,
+      "maxHeap": 25096,
+      "slotSpan": 0
+    },
+    {
+      "name": "0x8c965F79…ensure_token_account(borrower)",
+      "wallMs": 6033,
+      "txHash": "0x8fef00cf7cdcfae02198b0f6bee0b313a6f54486f426fd26d435df3b804e4994",
+      "iterSigs": 1,
+      "totalCU": 173619,
+      "maxHeap": 25096,
+      "slotSpan": 0
+    },
+    {
+      "name": "0xa000137f…ensure_token_account(borrower)",
+      "wallMs": 6670,
+      "txHash": "0xf4a6ce8888ec7f578400cf1665a50c4ee8c01ce5202ad5cd8d6e8786d58bfc4c",
+      "iterSigs": 1,
+      "totalCU": 170762,
+      "maxHeap": 25096,
+      "slotSpan": 0
+    },
+    {
+      "name": "0x58e78208…ensure_token_account(borrower)",
+      "wallMs": 6670,
+      "txHash": "0x9fb3a2f4b329f62f51a4b67dfc284e1aaf2db08715a1c6c5ebc5ec5c4ea56234",
+      "iterSigs": 1,
+      "totalCU": 188929,
+      "maxHeap": 25096,
+      "slotSpan": 0
+    },
+    {
+      "name": "0x29CC524C…ensure_token_account(borrower)",
+      "wallMs": 6042,
+      "txHash": "0x5fb7af089f516459a703e91a57a81883d6bf1eb7812fe67232090c8de27c5869",
+      "iterSigs": 1,
+      "totalCU": 170775,
+      "maxHeap": 25096,
+      "slotSpan": 0
+    },
+    {
+      "name": "0x9E522120…ensure_token_account(borrower)",
+      "wallMs": 6082,
+      "txHash": "0xee6302da2f1d1b838d9c618642fcc017b19ce842d6e564f95b7f661b825b7102",
+      "iterSigs": 1,
+      "totalCU": 179823,
+      "maxHeap": 25096,
+      "slotSpan": 0
+    },
+    {
+      "name": "0x5AadDB69…ensure_token_account(borrower)",
+      "wallMs": 6056,
+      "txHash": "0x26c29a22a44b448ac067f4b8e19e2f05b554ebd16147e1d865e972a254c97925",
+      "iterSigs": 1,
+      "totalCU": 175262,
+      "maxHeap": 25096,
+      "slotSpan": 0
+    },
+    {
+      "name": "0x585Ac6B2…ensure_token_account(borrower)",
+      "wallMs": 6570,
+      "txHash": "0x757ae67430f94477ec94090f50993d93b0bf37695098d9a605c24a22e5c76307",
+      "iterSigs": 1,
+      "totalCU": 184421,
+      "maxHeap": 25096,
+      "slotSpan": 0
+    },
+    {
+      "name": "wETH.mint_to(borrower, 1000000)",
+      "wallMs": 7847,
+      "txHash": "0xd4815792c8398bdcf8e71df7c9766840aa34d34fba6c31170878440a5ffabaa6",
+      "iterSigs": 2,
+      "totalCU": 290421,
+      "maxHeap": 39976,
+      "slotSpan": 3
+    },
+    {
+      "name": "wSOL.mint_to(borrower, 10000000)",
+      "wallMs": 8578,
+      "txHash": "0xf82901300a54e4e3dcda58e529f0a510e156e37b27714a6c9a985cf5c5aa748f",
+      "iterSigs": 2,
+      "totalCU": 288508,
+      "maxHeap": 39976,
+      "slotSpan": 3
+    },
+    {
+      "name": "wBTC.mint_to(borrower, 1000000000)",
+      "wallMs": 7393,
+      "txHash": "0x94e9457213665d15560ab024a4642d84bff29e59186b7ce48ac485313dee672e",
+      "iterSigs": 2,
+      "totalCU": 285673,
+      "maxHeap": 38272,
+      "slotSpan": 3
+    },
+    {
+      "name": "wHEAT.mint_to(borrower, 100000000000)",
+      "wallMs": 7685,
+      "txHash": "0x6876939edb8cc9eca365f93c1107349ee0ba2a9f7c7a80e5470ab1617e596585",
+      "iterSigs": 2,
+      "totalCU": 300459,
+      "maxHeap": 38272,
+      "slotSpan": 2
+    },
+    {
+      "name": "wSALT.mint_to(borrower, 100000000000)",
+      "wallMs": 7559,
+      "txHash": "0xc4396c93ab144eb66888062b86b42ee40483991158425e008929ef28197f9b82",
+      "iterSigs": 2,
+      "totalCU": 276413,
+      "maxHeap": 38272,
+      "slotSpan": 2
+    },
+    {
+      "name": "wMILK.mint_to(borrower, 100000000000)",
+      "wallMs": 7585,
+      "txHash": "0xd41911d2b7fff9e58debfae4386d713c1e1590505268c2832fd57790946f10ab",
+      "iterSigs": 2,
+      "totalCU": 280011,
+      "maxHeap": 38272,
+      "slotSpan": 2
+    },
+    {
+      "name": "wOIL.mint_to(borrower, 100000000000)",
+      "wallMs": 7947,
+      "txHash": "0x3dbfc5e1d0f17ad1ce2f481a2f14684165c739d90e537b1b125c6a7089708e4b",
+      "iterSigs": 2,
+      "totalCU": 276457,
+      "maxHeap": 38272,
+      "slotSpan": 3
+    },
+    {
+      "name": "wGOLD.mint_to(borrower, 100000000000)",
+      "wallMs": 6868,
+      "txHash": "0x53a02d82d0fbe38c52aae08ad7c9097f60d06ee906cf35ed940da4a1e15c152b",
+      "iterSigs": 2,
+      "totalCU": 291548,
+      "maxHeap": 38272,
+      "slotSpan": 2
+    },
+    {
+      "name": "wUSDC.transfer(borrower, 10000) [repay dust]",
+      "wallMs": 7935,
+      "txHash": "0x516c0bcf88852098b8766d03a98acc06f9b289b41352a96a4e7b0f6c083c4dee",
+      "iterSigs": 2,
+      "totalCU": 294660,
+      "maxHeap": 39976,
+      "slotSpan": 3
+    },
+    {
+      "name": "wUSDC.approve(comet, max) [borrower]",
+      "wallMs": 7419,
+      "txHash": "0xb861ea4235caf4473dcb6ea09a337464def9a2d2f0e0c2ea2a3937092d195e2f",
+      "iterSigs": 2,
+      "totalCU": 302847,
+      "maxHeap": 43200,
+      "slotSpan": 2
+    },
+    {
+      "name": "wETH.approve(comet, max) [borrower]",
+      "wallMs": 7335,
+      "txHash": "0xbc0884ed7c459956027929129c187baf43bce0bf97f926a8c1547eeb07255049",
+      "iterSigs": 2,
+      "totalCU": 269206,
+      "maxHeap": 37664,
+      "slotSpan": 2
+    },
+    {
+      "name": "wSOL.approve(comet, max) [borrower]",
+      "wallMs": 7331,
+      "txHash": "0x502a6e9a89afb26f437bd6f0d353350e76bacbba088d2f00adb02611ab2d6a66",
+      "iterSigs": 2,
+      "totalCU": 267688,
+      "maxHeap": 37664,
+      "slotSpan": 2
+    },
+    {
+      "name": "wBTC.approve(comet, max) [borrower]",
+      "wallMs": 7953,
+      "txHash": "0x8f7790eb48e01955cf8016c780b16126418911efa633ec4bef6d18e69fa0f378",
+      "iterSigs": 2,
+      "totalCU": 272628,
+      "maxHeap": 37664,
+      "slotSpan": 3
+    },
+    {
+      "name": "wHEAT.approve(comet, max) [borrower]",
+      "wallMs": 7459,
+      "txHash": "0xb92db91de56f7cc4b3a45f071aea882bcd2dd330b3525946f0528cc585a50563",
+      "iterSigs": 2,
+      "totalCU": 282162,
+      "maxHeap": 37664,
+      "slotSpan": 3
+    },
+    {
+      "name": "wSALT.approve(comet, max) [borrower]",
+      "wallMs": 8277,
+      "txHash": "0x954c6c9fa0570e87cf8e06bb20a94f7b41c84679b7d9788c861ce14cf1deac7b",
+      "iterSigs": 2,
+      "totalCU": 264691,
+      "maxHeap": 37664,
+      "slotSpan": 3
+    },
+    {
+      "name": "wMILK.approve(comet, max) [borrower]",
+      "wallMs": 7930,
+      "txHash": "0xba6011acc5db49cfc290c69f6cedfa4eba960c7782a72bc11de35086778b0838",
+      "iterSigs": 2,
+      "totalCU": 275250,
+      "maxHeap": 37664,
+      "slotSpan": 3
+    },
+    {
+      "name": "wOIL.approve(comet, max) [borrower]",
+      "wallMs": 7926,
+      "txHash": "0x5ec3a79fcde0d49dbfa0926b7e167f88a4aa162c0b228dfa6b33b98ce0a43029",
+      "iterSigs": 2,
+      "totalCU": 270147,
+      "maxHeap": 37664,
+      "slotSpan": 3
+    },
+    {
+      "name": "wGOLD.approve(comet, max) [borrower]",
+      "wallMs": 7396,
+      "txHash": "0x32f3f96fc0606000ef9e7d1f3d80ba7e6c78282e5a4e7e709a90c876bac33e56",
+      "iterSigs": 2,
+      "totalCU": 274558,
+      "maxHeap": 37664,
+      "slotSpan": 2
+    },
+    {
+      "name": "comet.supply(wETH, 1000000) [borrower]",
+      "wallMs": 6927,
+      "txHash": "0x42101ee323cd7ca397104a665fba71aaa36166c407d58a5472f9a0199cd97588",
+      "iterSigs": 2,
+      "totalCU": 819849,
+      "maxHeap": 117848,
+      "slotSpan": 2
+    },
+    {
+      "name": "comet.supply(wSOL, 10000000) [borrower]",
+      "wallMs": 8015,
+      "txHash": "0xe8e36cb3757faec549705cd66b851241ed943f06eb616a0c1cad678f125823c7",
+      "iterSigs": 2,
+      "totalCU": 889697,
+      "maxHeap": 119312,
+      "slotSpan": 3
+    },
+    {
+      "name": "comet.supply(wBTC, 1000000000) [borrower]",
+      "wallMs": 7480,
+      "txHash": "0xe36c196bb7bc3aee43a61f20f308e49510b50448d091ed0e3981e4816228586a",
+      "iterSigs": 2,
+      "totalCU": 902668,
+      "maxHeap": 117736,
+      "slotSpan": 2
+    },
+    {
+      "name": "comet.supply(wHEAT, 100000000000) [borrower]",
+      "wallMs": 7422,
+      "txHash": "0xddc27338aace0d40c9639889aafd433a80fac9d71c6e5076bdbfa3ecbfb7fafc",
+      "iterSigs": 2,
+      "totalCU": 967186,
+      "maxHeap": 117832,
+      "slotSpan": 2
+    },
+    {
+      "name": "comet.supply(wSALT, 100000000000) [borrower]",
+      "wallMs": 6868,
+      "txHash": "0x02e76b29245c4f0fb233def073781193cc99266bcc9f8be24edebe0ba6672375",
+      "iterSigs": 2,
+      "totalCU": 1010689,
+      "maxHeap": 124072,
+      "slotSpan": 1
+    },
+    {
+      "name": "comet.supply(wMILK, 100000000000) [borrower]",
+      "wallMs": 7970,
+      "txHash": "0xd6db90b551532ea3a1423f4f4f0e0080768314cb7c62b517376acbcbc671411e",
+      "iterSigs": 2,
+      "totalCU": 1080685,
+      "maxHeap": 124168,
+      "slotSpan": 3
+    },
+    {
+      "name": "comet.supply(wOIL, 100000000000) [borrower]",
+      "wallMs": 8010,
+      "txHash": "0x904a1f0eb277278847562e730abb97b181b4f348bd7e25666c23f37ce9c727cd",
+      "iterSigs": 2,
+      "totalCU": 1129152,
+      "maxHeap": 124264,
+      "slotSpan": 3
+    },
+    {
+      "name": "comet.supply(wGOLD, 100000000000) [borrower]",
+      "wallMs": 7571,
+      "txHash": "0x8df45c5428affcf2437e2b423eee6d58db36e123a7747acb22ec08efe265ec4f",
+      "iterSigs": 2,
+      "totalCU": 1199068,
+      "maxHeap": 124360,
+      "slotSpan": 2
+    },
+    {
+      "name": "comet.withdraw(wUSDC, 100000) [8-collat borrow]",
+      "wallMs": 18160,
+      "txHash": "0x231650f7758df15943b2c30cdb91a61f0db5a1379e43725b086dda60841a7cd8",
+      "iterSigs": 33,
+      "totalCU": 4754902,
+      "maxHeap": 62502,
+      "slotSpan": 5
+    },
+    {
+      "name": "comet.supply(wUSDC, 105000) [repay]",
+      "wallMs": 8198,
+      "txHash": "0x1fe7eca7235bca206e9495c5b68df7169b5dcaf81b9b9cfddfe0b16ff16663a4",
+      "iterSigs": 2,
+      "totalCU": 907065,
+      "maxHeap": 123104,
+      "slotSpan": 3
+    },
+    {
+      "name": "comet.withdraw(wETH, 1000000) [borrower]",
+      "wallMs": 7852,
+      "txHash": "0x910915afcc62848c197855c00f66e6f971ae629476e1569127aac940b572e833",
+      "iterSigs": 2,
+      "totalCU": 570219,
+      "maxHeap": 86304,
+      "slotSpan": 3
+    },
+    {
+      "name": "comet.withdraw(wSOL, 10000000) [borrower]",
+      "wallMs": 7487,
+      "txHash": "0xc92864a5a016310f831db31721c4aa84edc36f6bf6f4566632de0c189eef48f7",
+      "iterSigs": 2,
+      "totalCU": 632195,
+      "maxHeap": 86400,
+      "slotSpan": 2
+    },
+    {
+      "name": "comet.withdraw(wBTC, 1000000000) [borrower]",
+      "wallMs": 7963,
+      "txHash": "0xc1d7574b0f95c23e7494de8169c22070c5aed0c26f3d0be8d57b928770f4aadb",
+      "iterSigs": 2,
+      "totalCU": 684515,
+      "maxHeap": 89568,
+      "slotSpan": 3
+    },
+    {
+      "name": "comet.withdraw(wHEAT, 100000000000) [borrower]",
+      "wallMs": 7967,
+      "txHash": "0x5868f5d161a049c64b60bbcf0e2ae99e4faffd81cd0a056dc073b72c89120504",
+      "iterSigs": 2,
+      "totalCU": 761877,
+      "maxHeap": 89664,
+      "slotSpan": 3
+    },
+    {
+      "name": "comet.withdraw(wSALT, 100000000000) [borrower]",
+      "wallMs": 7433,
+      "txHash": "0x5c3d71f7e2450d7d703c1007fb31eec27b871b786007ed420616a5b6723bcab2",
+      "iterSigs": 2,
+      "totalCU": 795839,
+      "maxHeap": 89760,
+      "slotSpan": 2
+    },
+    {
+      "name": "comet.withdraw(wMILK, 100000000000) [borrower]",
+      "wallMs": 7960,
+      "txHash": "0xd60f279975f6abdaabe07d19cffec7ba14e1226bd6eb039385ace4f0d733b1ae",
+      "iterSigs": 2,
+      "totalCU": 872015,
+      "maxHeap": 96000,
+      "slotSpan": 3
+    },
+    {
+      "name": "comet.withdraw(wOIL, 100000000000) [borrower]",
+      "wallMs": 8176,
+      "txHash": "0x819826985ef21924d3cd4f4a2621b7fd325ec333bde044a5d99fa294b91aac8c",
+      "iterSigs": 2,
+      "totalCU": 916023,
+      "maxHeap": 96096,
+      "slotSpan": 3
+    },
+    {
+      "name": "comet.withdraw(wGOLD, 100000000000) [borrower]",
+      "wallMs": 8059,
+      "txHash": "0x339b2de9d41186daaa4fafffdfe7c9478363581e8dcc37b997f73e92ebeff435",
+      "iterSigs": 2,
+      "totalCU": 990768,
+      "maxHeap": 96192,
+      "slotSpan": 4
+    }
+  ]
+}

@@ -1,0 +1,113 @@
+{
+  "deployedAt": "2026-05-25T10:12:44.650Z",
+  "deployer": "0x1f4946Be340F06c46A50E65084790968aBcc48F6",
+  "network": "hadrian",
+  "chainId": 200010,
+  "shape": "vanilla-no-proxy",
+  "baseAsset": {
+    "symbol": "wUSDC",
+    "address": "0x9a8B4cB7326033d72cA393c6b4C0d7Fb904Fa900",
+    "decimals": 6,
+    "priceUsd": 1,
+    "priceFeed": "0xFf1adC858a6e16aD146b020da1CBfa5891a76f97",
+    "priceFeedSource": "oracle-gateway-v2:pyth-pull"
+  },
+  "collateralAssets": [
+    {
+      "symbol": "wETH",
+      "address": "0x55e4502D799938582bC2A15771ACC6a4d2928273",
+      "decimals": 8,
+      "priceUsd": 3000,
+      "priceFeed": "0xbE869FCA226545927E671E60F32720dB9dEc5980",
+      "priceFeedSource": "oracle-gateway-v2:pyth-pull",
+      "borrowCollateralFactor": 0.7,
+      "liquidateCollateralFactor": 0.75,
+      "liquidationFactor": 0.95
+    },
+    {
+      "symbol": "wSOL",
+      "address": "0x8c965F79b3d9bb95C12687E533FD5490b9c251cC",
+      "decimals": 9,
+      "priceUsd": 150,
+      "priceFeed": "0x63C28E0adE03B38e32b9cD85f2dD9B9fbB89185F",
+      "priceFeedSource": "oracle-gateway-v2:pyth-pull",
+      "borrowCollateralFactor": 0.65,
+      "liquidateCollateralFactor": 0.7,
+      "liquidationFactor": 0.95
+    },
+    {
+      "symbol": "wBTC",
+      "address": "0xa000137fFcB2808aB6D2094c6f7Db5830c437883",
+      "decimals": 9,
+      "priceUsd": 60000,
+      "priceFeed": "0x7e35f232C8f1cB0eDE5BEddb8Ebe7110C29a6E81",
+      "priceFeedSource": "oracle-gateway-v2:pyth-pull",
+      "borrowCollateralFactor": 0.7,
+      "liquidateCollateralFactor": 0.75,
+      "liquidationFactor": 0.95
+    },
+    {
+      "symbol": "wHEAT",
+      "address": "0x58e78208c8EDd4b9E8e49682701512dd2Ae63dB5",
+      "decimals": 9,
+      "priceUsd": 1,
+      "priceFeed": "0xFf1adC858a6e16aD146b020da1CBfa5891a76f97",
+      "priceFeedSource": "oracle-gateway-v2:pyth-pull",
+      "borrowCollateralFactor": 0.6,
+      "liquidateCollateralFactor": 0.65,
+      "liquidationFactor": 0.95
+    },
+    {
+      "symbol": "wSALT",
+      "address": "0x29CC524CEab4C72b064368c3c3cbDd6F2a68b45e",
+      "decimals": 9,
+      "priceUsd": 1,
+      "priceFeed": "0xFf1adC858a6e16aD146b020da1CBfa5891a76f97",
+      "priceFeedSource": "oracle-gateway-v2:pyth-pull",
+      "borrowCollateralFactor": 0.6,
+      "liquidateCollateralFactor": 0.65,
+      "liquidationFactor": 0.95
+    },
+    {
+      "symbol": "wMILK",
+      "address": "0x9E522120c5cC83375D6158ecdB9C99F103BDdAD9",
+      "decimals": 9,
+      "priceUsd": 1,
+      "priceFeed": "0xFf1adC858a6e16aD146b020da1CBfa5891a76f97",
+      "priceFeedSource": "oracle-gateway-v2:pyth-pull",
+      "borrowCollateralFactor": 0.6,
+      "liquidateCollateralFactor": 0.65,
+      "liquidationFactor": 0.95
+    },
+    {
+      "symbol": "wOIL",
+      "address": "0x5AadDB6957D3CA334A8634D848e61d0130cDe139",
+      "decimals": 9,
+      "priceUsd": 1,
+      "priceFeed": "0xFf1adC858a6e16aD146b020da1CBfa5891a76f97",
+      "priceFeedSource": "oracle-gateway-v2:pyth-pull",
+      "borrowCollateralFactor": 0.6,
+      "liquidateCollateralFactor": 0.65,
+      "liquidationFactor": 0.95
+    },
+    {
+      "symbol": "wGOLD",
+      "address": "0x585Ac6B26329A414D2b3c34E2B599620Af78A7ab",
+      "decimals": 9,
+      "priceUsd": 1,
+      "priceFeed": "0xFf1adC858a6e16aD146b020da1CBfa5891a76f97",
+      "priceFeedSource": "oracle-gateway-v2:pyth-pull",
+      "borrowCollateralFactor": 0.6,
+      "liquidateCollateralFactor": 0.65,
+      "liquidationFactor": 0.95
+    }
+  ],
+  "cometExt": "0xcbAD179B44E9FD1c1331F79B89Ea89fAEFeCD1BE",
+  "comet": "0xb8Ad4fd3776E356d1295E7539FCec02Da4629856",
+  "bulker": "0x19B018BA78A7adE15E49F34aBD9FE5ae82D70542",
+  "liquidationRouter": null,
+  "sources": {
+    "wrapperFactoryV6": "0x86149124d74ebb3aa41a19641b700e88202b6285",
+    "oracleGatewayV2Factory": "0x9be249718c5c066d98fead6bfbb214ca0787f870"
+  }
+}

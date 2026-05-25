@@ -175,19 +175,19 @@ async function main() {
 
   console.log(`\n--- Phase 1: approve Comet ---`);
   await step(`${COLL.symbol}.approve(comet, max)`, async () => {
-    const tx = await collToken.approve(COMET, MaxUint256, { gasLimit: 30_000_000 });
+    const tx = await collToken.approve(COMET, MaxUint256);
     await tx.wait();
     return tx.hash;
   });
   await step(`${BASE.symbol}.approve(comet, max)`, async () => {
-    const tx = await baseToken.approve(COMET, MaxUint256, { gasLimit: 30_000_000 });
+    const tx = await baseToken.approve(COMET, MaxUint256);
     await tx.wait();
     return tx.hash;
   });
 
   console.log(`\n--- Phase 2: supply collateral (cached wETH) ---`);
   await step(`comet.supply(${COLL.symbol}, ${COLL_SUPPLY})`, async () => {
-    const tx = await comet.supply(COLL.address, COLL_SUPPLY, { gasLimit: 30_000_000 });
+    const tx = await comet.supply(COLL.address, COLL_SUPPLY);
     await tx.wait();
     return tx.hash;
   });
@@ -196,7 +196,7 @@ async function main() {
 
   console.log(`\n--- Phase 3: supply base liquidity (cached wUSDC, lender) ---`);
   await step(`comet.supply(${BASE.symbol}, ${BASE_LEND})`, async () => {
-    const tx = await comet.supply(BASE.address, BASE_LEND, { gasLimit: 30_000_000 });
+    const tx = await comet.supply(BASE.address, BASE_LEND);
     await tx.wait();
     return tx.hash;
   });
@@ -210,7 +210,7 @@ async function main() {
   // Need to make sure we have enough lender-side liquidity in the Comet — we
   // just supplied 5000 raw wUSDC, of which we're "borrowing" 1000 raw.
   await step(`comet.withdraw(${BASE.symbol}, ${BASE_BORROW}) [borrow]`, async () => {
-    const tx = await comet.withdraw(BASE.address, BASE_BORROW, { gasLimit: 30_000_000 });
+    const tx = await comet.withdraw(BASE.address, BASE_BORROW);
     await tx.wait();
     return tx.hash;
   });
@@ -220,7 +220,7 @@ async function main() {
   console.log(`\n--- Phase 5: repay (supply back the borrowed base) ---`);
   await step(`comet.supply(${BASE.symbol}, ${BASE_BORROW} + dust) [repay]`, async () => {
     // Supply enough to clear the borrow + any tiny interest accrual
-    const tx = await comet.supply(BASE.address, BASE_BORROW.add(10), { gasLimit: 30_000_000 });
+    const tx = await comet.supply(BASE.address, BASE_BORROW.add(10));
     await tx.wait();
     return tx.hash;
   });
@@ -231,7 +231,7 @@ async function main() {
 
   console.log(`\n--- Phase 6: withdraw collateral (cached wETH) ---`);
   await step(`comet.withdraw(${COLL.symbol}, ${COLL_SUPPLY})`, async () => {
-    const tx = await comet.withdraw(COLL.address, COLL_SUPPLY, { gasLimit: 30_000_000 });
+    const tx = await comet.withdraw(COLL.address, COLL_SUPPLY);
     await tx.wait();
     return tx.hash;
   });
@@ -245,7 +245,7 @@ async function main() {
       console.log(`(0 cBase remaining — nothing to withdraw)`);
       return;
     }
-    const tx = await comet.withdraw(BASE.address, remaining, { gasLimit: 30_000_000 });
+    const tx = await comet.withdraw(BASE.address, remaining);
     await tx.wait();
     return tx.hash;
   });
@@ -268,7 +268,7 @@ async function main() {
   // 8a. Lender (signer) supplies a lot of base
   const LENDER_SUPPLY = ethers.BigNumber.from('10000');
   await step(`comet.supply(${BASE.symbol}, ${LENDER_SUPPLY}) [lender]`, async () => {
-    const tx = await comet.supply(BASE.address, LENDER_SUPPLY, { gasLimit: 30_000_000 });
+    const tx = await comet.supply(BASE.address, LENDER_SUPPLY);
     await tx.wait();
     return tx.hash;
   });
@@ -278,7 +278,6 @@ async function main() {
     const tx = await signer.sendTransaction({
       to: borrower.address,
       value: ethers.utils.parseEther('0.01'),
-      gasLimit: 5_000_000,
     });
     await tx.wait();
     return tx.hash;
@@ -291,7 +290,7 @@ async function main() {
       ['function ensure_token_account(address) returns (bytes32)'],
       signer,
     );
-    const tx = await wrapper.ensure_token_account(borrower.address, { gasLimit: 30_000_000 });
+    const tx = await wrapper.ensure_token_account(borrower.address);
     await tx.wait();
     return tx.hash;
   });
@@ -301,7 +300,7 @@ async function main() {
       ['function ensure_token_account(address) returns (bytes32)'],
       signer,
     );
-    const tx = await wrapper.ensure_token_account(borrower.address, { gasLimit: 30_000_000 });
+    const tx = await wrapper.ensure_token_account(borrower.address);
     await tx.wait();
     return tx.hash;
   });
@@ -312,12 +311,12 @@ async function main() {
   const BORROWER_COLL = ethers.BigNumber.from('100'); // 100 raw = ~$0.003
   const BORROWER_BASE_DUST = ethers.BigNumber.from('100'); // 100 raw wUSDC for repay interest dust
   await step(`fund borrower with ${BORROWER_COLL} ${COLL.symbol}`, async () => {
-    const tx = await collToken.transfer(borrower.address, BORROWER_COLL, { gasLimit: 30_000_000 });
+    const tx = await collToken.transfer(borrower.address, BORROWER_COLL);
     await tx.wait();
     return tx.hash;
   });
   await step(`fund borrower with ${BORROWER_BASE_DUST} ${BASE.symbol} (repay dust)`, async () => {
-    const tx = await baseToken.transfer(borrower.address, BORROWER_BASE_DUST, { gasLimit: 30_000_000 });
+    const tx = await baseToken.transfer(borrower.address, BORROWER_BASE_DUST);
     await tx.wait();
     return tx.hash;
   });
@@ -325,7 +324,7 @@ async function main() {
   // 8e. Borrower approves Comet for wETH (so Comet can pull collateral)
   const collTokenAsBorrower = collToken.connect(borrower);
   await step(`${COLL.symbol}.approve(comet, max) [borrower]`, async () => {
-    const tx = await (collTokenAsBorrower as any).approve(COMET, MaxUint256, { gasLimit: 30_000_000 });
+    const tx = await (collTokenAsBorrower as any).approve(COMET, MaxUint256);
     await tx.wait();
     return tx.hash;
   });
@@ -333,7 +332,7 @@ async function main() {
   // 8f. Borrower supplies wETH as collateral
   const cometAsBorrower = comet.connect(borrower);
   await step(`comet.supply(${COLL.symbol}, ${BORROWER_COLL}) [borrower]`, async () => {
-    const tx = await (cometAsBorrower as any).supply(COLL.address, BORROWER_COLL, { gasLimit: 30_000_000 });
+    const tx = await (cometAsBorrower as any).supply(COLL.address, BORROWER_COLL);
     await tx.wait();
     return tx.hash;
   });
@@ -343,7 +342,7 @@ async function main() {
   // At wUSDC $1 + 6 decimals: $0.0021 = 2100 raw wUSDC.
   const BORROW_AMT = ethers.BigNumber.from('1000'); // 1000 raw wUSDC = $0.001 (well within capacity)
   await step(`comet.withdraw(${BASE.symbol}, ${BORROW_AMT}) [borrower → TRUE borrow]`, async () => {
-    const tx = await (cometAsBorrower as any).withdraw(BASE.address, BORROW_AMT, { gasLimit: 30_000_000 });
+    const tx = await (cometAsBorrower as any).withdraw(BASE.address, BORROW_AMT);
     await tx.wait();
     return tx.hash;
   });
@@ -353,12 +352,12 @@ async function main() {
   // 8h. Borrower repays: supply back the borrowed base + a tiny dust for interest
   const baseTokenAsBorrower = baseToken.connect(borrower);
   await step(`${BASE.symbol}.approve(comet, max) [borrower]`, async () => {
-    const tx = await (baseTokenAsBorrower as any).approve(COMET, MaxUint256, { gasLimit: 30_000_000 });
+    const tx = await (baseTokenAsBorrower as any).approve(COMET, MaxUint256);
     await tx.wait();
     return tx.hash;
   });
   await step(`comet.supply(${BASE.symbol}, ${BORROW_AMT}.add(10)) [borrower repay]`, async () => {
-    const tx = await (cometAsBorrower as any).supply(BASE.address, BORROW_AMT.add(10), { gasLimit: 30_000_000 });
+    const tx = await (cometAsBorrower as any).supply(BASE.address, BORROW_AMT.add(10));
     await tx.wait();
     return tx.hash;
   });
@@ -367,7 +366,7 @@ async function main() {
 
   // 8i. Borrower withdraws their wETH collateral
   await step(`comet.withdraw(${COLL.symbol}, ${BORROWER_COLL}) [borrower]`, async () => {
-    const tx = await (cometAsBorrower as any).withdraw(COLL.address, BORROWER_COLL, { gasLimit: 30_000_000 });
+    const tx = await (cometAsBorrower as any).withdraw(COLL.address, BORROWER_COLL);
     await tx.wait();
     return tx.hash;
   });

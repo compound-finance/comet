@@ -46,7 +46,7 @@ async function ensureAtaIfCached(asset: string, recipient: string, signer: any) 
     ['function ensure_token_account(address) returns (bytes32)'],
     signer,
   );
-  const tx = await wrapper.ensure_token_account(recipient, { gasLimit: 30_000_000 });
+  const tx = await wrapper.ensure_token_account(recipient);
   await tx.wait();
   console.log(`    ${asset} → ${recipient}: ATA warmed`);
 }
@@ -62,19 +62,19 @@ async function main() {
   // matches what the registry-driven deploy uses for `priceFeedKind: simple`.
   console.log('\n[1/8] Deploy SimplePriceFeed(wUSDC, $1)...');
   const SimplePriceFeed = await ethers.getContractFactory('contracts/test/SimplePriceFeed.sol:SimplePriceFeed');
-  const usdcFeed = await SimplePriceFeed.deploy(PRICE_WUSDC, 8, { gasLimit: 50_000_000 });
+  const usdcFeed = await SimplePriceFeed.deploy(PRICE_WUSDC, 8);
   await usdcFeed.deployed();
   console.log(`      usdcFeed:  ${usdcFeed.address}`);
 
   console.log('\n[1b/8] Deploy SimplePriceFeed(wETH, $3000)...');
-  const wethFeed = await SimplePriceFeed.deploy(PRICE_WETH, 8, { gasLimit: 50_000_000 });
+  const wethFeed = await SimplePriceFeed.deploy(PRICE_WETH, 8);
   await wethFeed.deployed();
   console.log(`      wethFeed:  ${wethFeed.address}`);
 
   // ─── 2. CometProxyAdmin ─────────────────────────────────────────
   console.log('\n[2/8] Deploy CometProxyAdmin...');
   const CometProxyAdmin = await ethers.getContractFactory('contracts/CometProxyAdmin.sol:CometProxyAdmin');
-  const cpa = await CometProxyAdmin.deploy(admin.address, { gasLimit: 100_000_000 });
+  const cpa = await CometProxyAdmin.deploy(admin.address);
   await cpa.deployed();
   console.log(`      CometProxyAdmin:  ${cpa.address}`);
 
@@ -85,7 +85,7 @@ async function main() {
     name32:   ethers.utils.formatBytes32String('Comp cached-wUSDC test'),
     symbol32: ethers.utils.formatBytes32String('cwUSDC-cached'),
   };
-  const cometExt = await CometExt.deploy(extConfig, { gasLimit: 100_000_000 });
+  const cometExt = await CometExt.deploy(extConfig);
   await cometExt.deployed();
   console.log(`      CometExt:  ${cometExt.address}`);
 
@@ -125,7 +125,7 @@ async function main() {
     ],
   };
   const Comet = await ethers.getContractFactory('contracts/Comet.sol:Comet');
-  const cometImpl = await Comet.deploy(cometConfig, { gasLimit: 500_000_000 });
+  const cometImpl = await Comet.deploy(cometConfig);
   await cometImpl.deployed();
   console.log(`      Comet impl:  ${cometImpl.address}`);
 
@@ -138,14 +138,13 @@ async function main() {
     cometImpl.address,
     cpa.address,
     '0x',
-    { gasLimit: 200_000_000 },
   );
   await cometProxy.deployed();
   console.log(`      CometProxy:  ${cometProxy.address}`);
 
   // ─── 6. initializeStorage on the comet proxy ────────────────────
   console.log('\n[6/8] Call initializeStorage on proxy...');
-  const initTx = await Comet.attach(cometProxy.address).initializeStorage({ gasLimit: 30_000_000 });
+  const initTx = await Comet.attach(cometProxy.address).initializeStorage();
   await initTx.wait();
   console.log(`      tx: ${initTx.hash}`);
 
