@@ -9,6 +9,7 @@ import { Environment } from 'hardhat/internal/core/runtime-environment';
 import { ForkSpec } from '../World';
 import { HttpNetworkUserConfig } from 'hardhat/types';
 import { EthereumProvider } from 'hardhat/types/provider';
+import { networkConfigs } from '../../../hardhat.config';
 
 /*
 mimics https://github.com/nomiclabs/hardhat/blob/master/packages/hardhat-core/src/internal/lib/hardhat-lib.ts
@@ -91,6 +92,12 @@ function getBlockRollback(base: ForkSpec) {
     return 25;
 }
 
+let activeMigration = false;
+
+export function migrationStarted() {
+  activeMigration = true;
+}
+
 export async function forkedHreForBase(base: ForkSpec): Promise<HardhatRuntimeEnvironment> {
   const ctx: HardhatContext = HardhatContext.getHardhatContext();
 
@@ -103,16 +110,21 @@ export async function forkedHreForBase(base: ForkSpec): Promise<HardhatRuntimeEn
 
   const baseNetwork = networks[base.network] as HttpNetworkUserConfig;
 
-  const provider = new ethers.providers.JsonRpcProvider(baseNetwork.url);
-  if(baseNetwork.url)
+  const providerUrl = (() => {
+    if (activeMigration){
+      return networkConfigs.find(c => c.network === base.network)?.url;
+    }
+    return baseNetwork.url;
+  })();
+  const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+  if(providerUrl)
     console.log(`Forking from network: ${base.network} at block number: ${await provider.getBlockNumber() - (getBlockRollback(base) || 0)}`);
 
   // noNetwork otherwise
-  if (!base.blockNumber && baseNetwork.url && getBlockRollback(base) !== undefined)
+  if (!base.blockNumber && providerUrl && getBlockRollback(base) !== undefined)
     base.blockNumber = await provider.getBlockNumber() - getBlockRollback(base); // arbitrary number of blocks to go back
 
   if (getBlockRollback(base) === 0) {
-    const provider = new ethers.providers.JsonRpcProvider(baseNetwork.url);
     const block = await provider.getBlockNumber();
     base.blockNumber = block - 1;
   }
@@ -126,7 +138,7 @@ export async function forkedHreForBase(base: ForkSpec): Promise<HardhatRuntimeEn
     ...{
       forking: {
         enabled: true,
-        url: baseNetwork.url,
+        url: providerUrl,
         httpHeaders: {},
         ...(base.blockNumber && { blockNumber: base.blockNumber }),
       },

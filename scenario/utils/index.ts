@@ -12,10 +12,10 @@ import {
   utils,
 } from 'ethers';
 import { execSync } from 'child_process';
-import { existsSync } from 'fs';
+import { existsSync, unlinkSync } from 'fs';
 import { CometContext } from '../context/CometContext';
 import CometAsset from '../context/CometAsset';
-import { exp } from '../../test/helpers';
+import { ethers, exp } from '../../test/helpers';
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import { ProposalState, OpenProposal } from '../context/Gov';
@@ -488,172 +488,213 @@ async function redeployRenzoOracle(dm: DeploymentManager) {
   }
 }
 
-const tokens = new Map<string, string>([
-  ['WETH', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'],
-  ['LINK', '0x514910771AF9Ca656af840dff83E8264EcF986CA'],
+const tokens = [
+  ['mainnet', 'WETH', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'],
+  ['mainnet', 'LINK', '0x514910771AF9Ca656af840dff83E8264EcF986CA'],
+  ['mainnet', 'GHO', '0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f'],
+  ['ronin', 'WETH', '0xc99a6a985ed2cac1ef41640596c5a5f9f4e19ef5'],
+  ['ronin', 'WRON', '0xe514d9deb7966c8be0ca922de8a064264ea6bcd4'],
+  ['ronin', 'LINK', '0x3902228d6a3d2dc44731fd9d45fee6a61c722d0b'],
+];
+
+const dest = new Map<string, string>([
+  ['ronin', '6916147374840168594'],
+  ['mainnet', '5009297550715157269'],
 ]);
 
-const dest = new Map<string, string>([['ronin', '6916147374840168594']]);
+export async function updateCCIPStats(
+  dm: DeploymentManager,
+  tenderlyLogs?: any[]
+) {
+  const config = [
+    {
+      network: 'mainnet',
+      commitStore: '0x2aa101bf99caef7fc1355d4c493a1fe187a007ce',
+      priceRegistry: '0x8c9b2Efb7c64C394119270bfecE7f54763b958Ad'
+    },
+    {
+      network: 'ronin',
+      commitStore: '0x28c66d9693b2634b2f3b170f6d9584eec2f72ff0',
+      priceRegistry: '0xefCEa3CFA330adcDdeCe99219C57fd45cd166ac1'
+    }
+  ];
+  const { commitStore, priceRegistry } = config.find(c => c.network === dm.network) || {};
+  if (!commitStore || !priceRegistry) {
+    console.log(`No CCIP config for network ${dm.network}, skipping CCIP stats update.`);
+    return;
+  }
+  const abi = [
+    {
+      inputs: [
+        {
+          components: [
+            {
+              components: [
+                {
+                  internalType: 'address',
+                  name: 'sourceToken',
+                  type: 'address',
+                },
+                {
+                  internalType: 'uint224',
+                  name: 'usdPerToken',
+                  type: 'uint224',
+                },
+              ],
+              internalType: 'struct TokenPriceUpdate[]',
+              name: 'tokenPriceUpdates',
+              type: 'tuple[]',
+            },
+            {
+              components: [
+                {
+                  internalType: 'uint64',
+                  name: 'destChainSelector',
+                  type: 'uint64',
+                },
+                {
+                  internalType: 'uint224',
+                  name: 'usdPerUnitGas',
+                  type: 'uint224',
+                },
+              ],
+              internalType: 'struct GasPriceUpdate[]',
+              name: 'gasPriceUpdates',
+              type: 'tuple[]',
+            },
+          ],
+          internalType: 'struct PriceUpdates',
+          name: 'priceUpdates',
+          type: 'tuple',
+        },
+      ],
+      name: 'updatePrices',
+      outputs: [],
+      stateMutability: 'nonpayable',
+      type: 'function',
+    },
+    {
+      inputs: [
+        {
+          internalType: 'uint64',
+          name: 'destChainSelector',
+          type: 'uint64',
+        },
+      ],
+      name: 'getDestinationChainGasPrice',
+      outputs: [
+        {
+          components: [
+            {
+              internalType: 'uint224',
+              name: 'value',
+              type: 'uint224',
+            },
+            {
+              internalType: 'uint32',
+              name: 'timestamp',
+              type: 'uint32',
+            },
+          ],
+          internalType: 'struct TimestampedPackedUint224',
+          name: '',
+          type: 'tuple',
+        },
+      ],
+      stateMutability: 'view',
+      type: 'function',
+    },
+    {
+      inputs: [
+        {
+          internalType: 'address',
+          name: 'token',
+          type: 'address',
+        },
+      ],
+      name: 'getTokenPrice',
+      outputs: [
+        {
+          components: [
+            {
+              internalType: 'uint224',
+              name: 'value',
+              type: 'uint224',
+            },
+            {
+              internalType: 'uint32',
+              name: 'timestamp',
+              type: 'uint32',
+            },
+          ],
+          internalType: 'struct TimestampedPackedUint224',
+          name: '',
+          type: 'tuple',
+        },
+      ],
+      stateMutability: 'view',
+      type: 'function',
+    },
+  ];
 
-async function updateCCIPStats(dm: DeploymentManager) {
-  if (dm.network === 'mainnet') {
-    const commitStore = '0x2aa101bf99caef7fc1355d4c493a1fe187a007ce';
+  await dm.hre.network.provider.request({
+    method: 'hardhat_impersonateAccount',
+    params: [commitStore],
+  });
 
-    const priceRegistry = '0x8c9b2Efb7c64C394119270bfecE7f54763b958Ad';
-    const abi = [
-      {
-        inputs: [
-          {
-            components: [
-              {
-                components: [
-                  {
-                    internalType: 'address',
-                    name: 'sourceToken',
-                    type: 'address',
-                  },
-                  {
-                    internalType: 'uint224',
-                    name: 'usdPerToken',
-                    type: 'uint224',
-                  },
-                ],
-                internalType: 'struct TokenPriceUpdate[]',
-                name: 'tokenPriceUpdates',
-                type: 'tuple[]',
-              },
-              {
-                components: [
-                  {
-                    internalType: 'uint64',
-                    name: 'destChainSelector',
-                    type: 'uint64',
-                  },
-                  {
-                    internalType: 'uint224',
-                    name: 'usdPerUnitGas',
-                    type: 'uint224',
-                  },
-                ],
-                internalType: 'struct GasPriceUpdate[]',
-                name: 'gasPriceUpdates',
-                type: 'tuple[]',
-              },
-            ],
-            internalType: 'struct PriceUpdates',
-            name: 'priceUpdates',
-            type: 'tuple',
-          },
-        ],
-        name: 'updatePrices',
-        outputs: [],
-        stateMutability: 'nonpayable',
-        type: 'function',
-      },
-      {
-        inputs: [
-          {
-            internalType: 'uint64',
-            name: 'destChainSelector',
-            type: 'uint64',
-          },
-        ],
-        name: 'getDestinationChainGasPrice',
-        outputs: [
-          {
-            components: [
-              {
-                internalType: 'uint224',
-                name: 'value',
-                type: 'uint224',
-              },
-              {
-                internalType: 'uint32',
-                name: 'timestamp',
-                type: 'uint32',
-              },
-            ],
-            internalType: 'struct TimestampedPackedUint224',
-            name: '',
-            type: 'tuple',
-          },
-        ],
-        stateMutability: 'view',
-        type: 'function',
-      },
-      {
-        inputs: [
-          {
-            internalType: 'address',
-            name: 'token',
-            type: 'address',
-          },
-        ],
-        name: 'getTokenPrice',
-        outputs: [
-          {
-            components: [
-              {
-                internalType: 'uint224',
-                name: 'value',
-                type: 'uint224',
-              },
-              {
-                internalType: 'uint32',
-                name: 'timestamp',
-                type: 'uint32',
-              },
-            ],
-            internalType: 'struct TimestampedPackedUint224',
-            name: '',
-            type: 'tuple',
-          },
-        ],
-        stateMutability: 'view',
-        type: 'function',
-      },
-    ];
+  await dm.hre.network.provider.request({
+    method: 'hardhat_setBalance',
+    params: [commitStore, '0x56bc75e2d63100000'],
+  });
+  const commitStoreSigner = await dm.hre.ethers.getSigner(commitStore);
 
-    await dm.hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [commitStore],
-    });
+  const registryContract = new Contract(
+    priceRegistry,
+    abi,
+    dm.hre.ethers.provider
+  );
 
-    await dm.hre.network.provider.request({
-      method: 'hardhat_setBalance',
-      params: [commitStore, '0x56bc75e2d63100000'],
-    });
-    const commitStoreSigner = await dm.hre.ethers.getSigner(commitStore);
+  const tokenPrices = [];
+  const gasPrices = [];
+  for (const [network,, address] of tokens) {
+    if(network !== dm.network) continue;
+    const price = await registryContract.getTokenPrice(address);
+    tokenPrices.push([address, price.value]);
+  }
 
-    const registryContract = new Contract(
+  for (const [, chainSelector] of dest) {
+    try {
+      const price = await registryContract.getDestinationChainGasPrice(chainSelector);
+      gasPrices.push([chainSelector, price.value]);
+    } catch (e) {
+      continue;
+    }
+  }
+
+  if(tenderlyLogs) {
+    dm.stashRelayMessage(
       priceRegistry,
-      abi,
-      dm.hre.ethers.provider
-    );
-
-    const tokenPrices = [];
-    const gasPrices = [];
-    for (const [, address] of tokens) {
-      const price = await registryContract.getTokenPrice(address);
-      tokenPrices.push([address, price.value]);
-    }
-    for (const [, address] of dest) {
-      const price = await registryContract.getDestinationChainGasPrice(address);
-      gasPrices.push([address, price.value]);
-    }
-
-    const tx0 = await commitStoreSigner.sendTransaction({
-      to: priceRegistry,
-      data: registryContract.interface.encodeFunctionData('updatePrices', [
+      registryContract.interface.encodeFunctionData('updatePrices', [
         {
           tokenPriceUpdates: tokenPrices,
           gasPriceUpdates: gasPrices,
         },
       ]),
-    });
-
-    await tx0.wait();
+      commitStore
+    );
   }
+
+  const tx0 = await commitStoreSigner.sendTransaction({
+    to: priceRegistry,
+    data: registryContract.interface.encodeFunctionData('updatePrices', [
+      {
+        tokenPriceUpdates: tokenPrices,
+        gasPriceUpdates: gasPrices,
+      },
+    ]),
+  });
+
+  await tx0.wait();
 }
 
 const REDSTONE_FEEDS = {
@@ -821,6 +862,7 @@ export async function tenderlyExecute(
       state_objects: statePatch,
       save: true,
       gas_price: 0,
+      gas_limit: 16_777_215,
     })),
     {
       network_id: chainId1.toString(),
@@ -832,6 +874,7 @@ export async function tenderlyExecute(
       state_objects: statePatch,
       save: true,
       gas_price: 0,
+      gas_limit: 16_777_215,
     },
     ...whales.map((w) => ({
       network_id: chainId1.toString(),
@@ -844,6 +887,7 @@ export async function tenderlyExecute(
       save: true,
       save_if_fails: true,
       gas_price: 0,
+      gas_limit: 16_777_215,
     })),
     {
       network_id: chainId1.toString(),
@@ -856,6 +900,7 @@ export async function tenderlyExecute(
       save: true,
       save_if_fails: true,
       gas_price: 0,
+      gas_limit: 16_777_215,
     },
     {
       network_id: chainId1.toString(),
@@ -868,10 +913,9 @@ export async function tenderlyExecute(
       save: true,
       save_if_fails: true,
       gas_price: 0,
+      gas_limit: 16_777_215,
     },
   ];
-
-  const chainId2 = bdm.hre.ethers.provider.network.chainId;
 
   console.log(`\n========================== TENDERLY ==========================\n`);
 
@@ -882,61 +926,93 @@ export async function tenderlyExecute(
 
   const exec1 = bundle[bundle.length - 1].simulation;
 
-  console.log(` >>> PROPOSAL EXECUTED  ${id} \n`);
+  console.log(` >>> PROPOSAL EXECUTED  ${id}`);
   console.log(`Simulation ${exec1.id} done, status: ${exec1.status}`);
-  console.log(`Link: https://www.tdly.co/shared/simulation/${exec1.id}`);
-  let proposals;
-  if (chainId1 !== chainId2) {
-    proposals = await relayMessage(gdm, bdm, parseFloat(B0.toString()),  bundle[bundle.length - 1].transaction.transaction_info.logs);
-    
-    debug(`Proposals relayed: ${proposals.length}`);
-    const timelockL2 = await bdm.getContractOrThrow('timelock');
-    const delay = await timelockL2.delay();
-    const relayMessages = loadCachedRelayMessages();
-    const latestL2 = await bdm.hre.ethers.provider.getBlock('latest');
-    const maxEta = Math.max(...proposals.map(p => Number(p.eta || 0))) + delay.toNumber();
-    const T0L2 = BigInt(Math.max(latestL2.timestamp, maxEta + 1));
-    const B0L2 = Number(latestL2.number) + 1;
-    const simsL2 = relayMessages.map((msg, i, arr) => {
-      const isLast = i === arr.length - 1;
-    
-      const timestamp = isLast
-        ? Number(T0L2) 
-        : latestL2.timestamp; 
-    
-      const block = isLast
-        ? B0L2 : latestL2.number;
-      
-      return {
-        network_id: chainId2.toString(),
-        from: msg.signer,
-        to: msg.messanger,
-        block_number: Number(block),
-        block_header: {
-          timestamp: gdm.hre.ethers.utils.hexlify(Number(timestamp))
-        },
-        input: msg.callData,
-        save: true,
-        save_if_fails: true,
-        gas_price: 0,
-      };
-    });
+  console.log(`Link: https://www.tdly.co/shared/simulation/${exec1.id} \n`);
   
-  
-    while (!simsL1[0]) {
-      simsL1.shift();
-      if (simsL1.length == 0) {
-        break;
-      }
+  const bdms = [bdm];
+  for (const dm of gdm.bridgedDeploymentManagers.values()) {
+    if (!bdms.includes(dm)) {
+      bdms.push(dm);
     }
+  }
 
-    if (simsL2.length > 0) {
-      const bundle2 = await simulateBundle(bdm, simsL2, Number(B0L2));
-      console.log(` >>> PROPOSAL RELAYED ${id} \n`);
-      const sim = bundle2[bundle2.length - 1];
-      await shareSimulation(bdm, sim.simulation.id);
-      console.log(`Simulation ${sim.simulation.id} done, status: ${sim.simulation.status}`);
-      console.log(`Link: https://www.tdly.co/shared/simulation/${sim.simulation.id}`);
+  // make bdm contain only 1 dm per network
+  const uniqueBdms = new Map();
+  for (const dm of bdms) {
+    const chainId = dm.hre.ethers.provider.network.chainId;
+    if (!uniqueBdms.has(chainId)) {
+      uniqueBdms.set(chainId, dm);
+    }
+  }
+  bdms.length = 0;
+  bdms.push(...uniqueBdms.values());
+
+
+  for (const currentBdm of bdms) {
+    const chainId2 = currentBdm.hre.ethers.provider.network.chainId;
+    let proposals;
+    if (chainId1 !== chainId2) {
+      const relayPath = path.resolve(__dirname, '../../cache/relay.json');
+      if (existsSync(relayPath)) unlinkSync(relayPath);
+
+      proposals = await relayMessage(gdm, currentBdm, parseFloat(B0.toString()), bundle[bundle.length - 1].transaction.transaction_info.logs);
+
+      debug(`Proposals relayed to ${currentBdm.network}: ${proposals?.length ?? 0}`);
+      
+      if (proposals && proposals.length > 0) {
+        const timelockL2 = await currentBdm.getContractOrThrow('timelock');
+        const delay = await timelockL2.delay();
+        const relayMessages = loadCachedRelayMessages();
+        const executeProposalSig = ethers.utils.id('executeProposal(uint256)').substring(0, 10);
+
+        const latestL2 = await currentBdm.hre.ethers.provider.getBlock('latest');
+        const maxEta = Math.max(...proposals.map(p => Number(p.eta || 0))) + delay.toNumber();
+        const T0L2 = Math.max(latestL2.timestamp, maxEta + 1);
+        const B0L2 = Number(latestL2.number) + 1;
+
+        let previousBlock = latestL2.number;
+        let previousTimestamp = T0L2;
+        const simsL2 = relayMessages.map((msg) => {
+          let block = previousBlock;
+          let timestamp = previousTimestamp;
+
+          if (msg.callData.startsWith(executeProposalSig) && !msg.eta) {
+            block = block + 1;
+            timestamp = timestamp + delay.toNumber() + 1;
+          }
+
+          previousBlock = block;
+          previousTimestamp = timestamp;
+
+          return {
+            network_id: chainId2.toString(),
+            from: msg.signer,
+            to: msg.messenger,
+            block_number: Number(block),
+            block_header: {
+              timestamp: currentBdm.hre.ethers.utils.hexlify(Number(timestamp))
+            },
+            input: msg.callData,
+            save: true,
+            save_if_fails: true,
+            gas_price: 0,
+          };
+        });
+
+        if (simsL2.length > 0) {
+          const bundle2 = await simulateBundle(currentBdm, simsL2, Number(B0L2));
+          
+          // filter from bundle every entry with simulation.input that starts with 0x0d61b519 i.e. executeProposal(uint256)
+          const filteredBundle = bundle2.filter(entry => entry.simulation.input.startsWith(executeProposalSig));
+          for (const sim of filteredBundle) {
+            await shareSimulation(currentBdm, sim.simulation.id);
+            console.log(`\nRelayed to ${currentBdm.network}`);
+            console.log(`Simulation ${sim.simulation.id} done, status: ${sim.simulation.status}`);
+            console.log(`Link: https://www.tdly.co/shared/simulation/${sim.simulation.id} \n`);
+          }
+        }
+      }
     }
   }
 
@@ -948,29 +1024,73 @@ async function simulateBundle(
   simulations: any[],
   blockNumber: number = 0
 ): Promise<any> {
-  const { username, project, accessKey } = (dm.hre.config as any).tenderly;
-  const body = {
-    simulations,
-    block_number: blockNumber,
-    simulation_type: 'full',
-    save: true,
-  };
+  const rollingStateChanges = {};
+  const results = [];
 
-  const result = await axios.post(
-    `https://api.tenderly.co/api/v1/account/${username}/project/${project}/simulate-bundle`,
-    body,
-    {
-      headers: {
-        'X-Access-Key': accessKey,
-        'Content-Type': 'application/json',
-      },
+  for (const sim of simulations) {
+    const project = 'comet';
+    const username = process.env.TENDERLY_USERNAME || '';
+    const accessKey = process.env.TENDERLY_ACCESS_KEY || '';
+
+    // Merge rolling state changes with simulation's own state_objects
+    const stateObjects = sim.state_objects 
+      ? { ...rollingStateChanges, ...sim.state_objects }
+      : rollingStateChanges;
+
+    const body = {
+      simulations: [{
+        ...sim,
+        state_objects: stateObjects,
+        block_number: sim.block_number || blockNumber,
+        simulation_type: 'full',
+        save: true,
+        save_if_fails: true,
+      }]
+    };
+
+    const result = await axios.post(
+      `https://api.tenderly.co/api/v1/account/${username}/project/${project}/simulate-bundle`,
+      body,
+      {
+        headers: {
+          'X-Access-Key': accessKey,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    // Extract and accumulate state changes from state_diff
+    const simResult = result.data.simulation_results[0];
+    if (simResult?.transaction?.transaction_info?.call_trace?.state_diff) {
+      const stateDiff = simResult.transaction.transaction_info.call_trace.state_diff;
+
+      // state_diff is an array of objects with { address, raw: [...] }
+      for (const stateDiffEntry of stateDiff) {
+        const address = stateDiffEntry.address;
+
+        if (!rollingStateChanges[address]) {
+          rollingStateChanges[address] = { storage: {} };
+        }
+
+        if (stateDiffEntry.raw && Array.isArray(stateDiffEntry.raw)) {
+          for (const change of stateDiffEntry.raw) {
+            // Each change has: { address, key, original, dirty }
+            rollingStateChanges[address].storage[change.key] = change.dirty;
+          }
+        }
+      }
     }
-  );
-  return result.data.simulation_results;
+
+    results.push(simResult);
+  }
+  
+  return results;
 }
 
 async function shareSimulation(dm: DeploymentManager, simulationId: string) {
-  const { username, project, accessKey } = (dm.hre.config as any).tenderly;
+  const project = 'comet';
+  const username = process.env.TENDERLY_USERNAME || '';
+  const accessKey = process.env.TENDERLY_ACCESS_KEY || '';
   return axios.post(
     `https://api.tenderly.co/api/v1/account/${username}/project/${project}/simulations/${simulationId}/share`,
     {},
@@ -1089,7 +1209,12 @@ export async function executeOpenProposal(
     console.log(`Updating CCIP prices...`);
     await updateCCIPStats(dm);
 
-    await governor.execute(id, { gasPrice: 0, gasLimit: 120000000 });
+    const tx = await governor.execute(id, { gasPrice: 0, gasLimit: 120000000 });
+    const receipt = await tx.wait();
+
+    if(receipt.gasUsed.toNumber() >= 16_777_215) {
+      throw new Error('Execution may have failed due to hitting gas limit');
+    }
   }
 
   await redeployRenzoOracle(dm);
@@ -1427,25 +1552,26 @@ export async function executeOpenProposalAndRelay(
     await governanceDeploymentManager.hre.ethers.provider.getBlockNumber();
   await executeOpenProposal(governanceDeploymentManager, openProposal);
   console.log(`Executed proposal ${openProposal.id} on ${governanceDeploymentManager.network}, checking if relay to ${bridgeDeploymentManager.network} is needed...`);
-  await mockAllRedstoneOracles(bridgeDeploymentManager);
   console.log(`All Redstone oracles on ${bridgeDeploymentManager.network} are mocked`);
-  if (
-    await isBridgeProposal(
-      governanceDeploymentManager,
-      bridgeDeploymentManager,
-      openProposal
-    )
-  ) {
-    await relayMessage(
-      governanceDeploymentManager,
-      bridgeDeploymentManager,
-      startingBlockNumber
-    );
-  } else {
-    console.log(
-      `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Proposal ${openProposal.id} doesn't target bridge; not relaying`
-    );
-    return;
+  const bridgeManagers = await isBridgeProposal(
+    governanceDeploymentManager,
+    bridgeDeploymentManager,
+    openProposal
+  );
+  for (const bridgeManager of bridgeManagers) {
+    await mockAllRedstoneOracles(bridgeManager);
+    if (bridgeManager) {
+      await relayMessage(
+        governanceDeploymentManager,
+        bridgeManager,
+        startingBlockNumber
+      );
+    } else {
+      console.log(
+        `[${governanceDeploymentManager.network} -> ${bridgeManager.network}] Proposal ${openProposal.id} doesn't target bridge; not relaying`
+      );
+      return;
+    }
   }
 }
 
