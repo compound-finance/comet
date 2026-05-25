@@ -174,9 +174,9 @@ export default async function relayOptimismMessage(
         `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
       );
     }
-
-    return openBridgedProposals;
   }
+
+  return openBridgedProposals;
 }
 
 export async function simulateL2ToL1TokenBridging(
