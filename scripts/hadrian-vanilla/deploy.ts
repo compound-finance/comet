@@ -124,7 +124,7 @@ async function main() {
   const wGOLD = findFresh('wGOLD');
 
   // ── Full collat list (in deploy order) ─────────────────────────
-  type Collat = { symbol: string; address: string; decimals: number };
+  type Collat = { symbol: string, address: string, decimals: number };
   const collats: Collat[] = [
     { symbol: 'wETH',  address: V6_WETH, decimals: 8 },
     { symbol: 'wSOL',  address: V6_WSOL, decimals: 9 },

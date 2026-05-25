@@ -68,7 +68,7 @@ export async function deployContract<T>(
  * derived gasLimit.  Useful for ETH transfers and direct calldata sends.
  */
 export async function sendTx(
-  signer: { sendTransaction: (tx: any) => Promise<any>; estimateGas: (tx: any) => Promise<BigNumber> },
+  signer: { sendTransaction: (tx: any) => Promise<any>, estimateGas: (tx: any) => Promise<BigNumber> },
   tx: Record<string, unknown>,
 ): Promise<any> {
   if (tx.gasLimit !== undefined) {
