@@ -57,7 +57,7 @@ jobs:
       LINEA_QUICKNODE_LINK: ${{ secrets.LINEA_QUICKNODE_LINK }}
     steps:
       - name: Seacrest
-        uses: hayesgm/seacrest@d4062fbf20853c538f0cb2e8fdc0fb6828d45d98
+        uses: hayesgm/seacrest@1578d5b4cf165e97e11d3debf039db09a497211f
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ inputs.network }}"
@@ -66,7 +66,7 @@ jobs:
         if: github.event.inputs.eth_pk == ''
 
       - name: Seacrest (governance network)
-        uses: hayesgm/seacrest@d4062fbf20853c538f0cb2e8fdc0fb6828d45d98
+        uses: hayesgm/seacrest@1578d5b4cf165e97e11d3debf039db09a497211f
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ vars.GOV_NETWORK }}"
