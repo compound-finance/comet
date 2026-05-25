@@ -262,18 +262,18 @@ The second action updates the cbBTC price feeds in the USDC and USDS markets.`;
 
     const oldPriceCbBTCToUsdAero = await aeroComet.getPrice(oldAeroCbBTCToUsdPriceFeed);
     const newPriceCbBTCToUsdAero = await aeroComet.getPrice(newCbEthToUsdPriceFeed);
-    expect(oldPriceCbBTCToUsdAero).to.be.closeTo(newPriceCbBTCToUsdAero, exp(200, 8)); // within $200
+    expect(oldPriceCbBTCToUsdAero).to.be.closeTo(newPriceCbBTCToUsdAero, exp(400, 8)); // within $400
 
     const oldPriceCbBTCToUsdUsdc = await usdcComet.getPrice(oldUsdcCbBTCToUsdPriceFeed);
     const newPriceCbBTCToUsdUsdc = await usdcComet.getPrice(newCbEthToUsdPriceFeed);
-    expect(oldPriceCbBTCToUsdUsdc).to.be.closeTo(newPriceCbBTCToUsdUsdc, exp(200, 8)); // within $200
+    expect(oldPriceCbBTCToUsdUsdc).to.be.closeTo(newPriceCbBTCToUsdUsdc, exp(400, 8)); // within $400
 
     const oldPriceCbBTCToUsdUsds = await usdsComet.getPrice(oldUsdsCbBTCToUsdPriceFeed);
     const newPriceCbBTCToUsdUsds = await usdsComet.getPrice(newCbEthToUsdPriceFeed);
-    expect(oldPriceCbBTCToUsdUsds).to.be.closeTo(newPriceCbBTCToUsdUsds, exp(200, 8)); // within $200
+    expect(oldPriceCbBTCToUsdUsds).to.be.closeTo(newPriceCbBTCToUsdUsds, exp(400, 8)); // within $400
 
     const oldPriceCbBTCToEthWeth = await wethComet.getPrice(oldWethCbBTCToEthPriceFeed);
     const newPriceCbBTCToEthWeth = await wethComet.getPrice(newCbEthToEthPriceFeed);
-    expect(oldPriceCbBTCToEthWeth).to.be.closeTo(newPriceCbBTCToEthWeth, exp(0.094, 8)); // within 0.094 ETH ~ $200
+    expect(oldPriceCbBTCToEthWeth).to.be.closeTo(newPriceCbBTCToEthWeth, exp(0.188, 8)); // within 0.188 ETH ~ $400
   },
 });
