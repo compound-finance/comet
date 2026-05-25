@@ -1,7 +1,7 @@
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
-import { BigNumber, ethers, utils } from 'ethers';
+import { BigNumber, ethers, utils, Contract } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { OpenBridgedProposal } from '../context/Gov';
 import { applyL1ToL2Alias, isTenderlyLog } from './index';
@@ -148,32 +148,32 @@ export default async function relayOptimismMessage(
       if(sentMessageEvents.indexOf(sentMessageEvent) === sentMessageEvents.length - 1 && openBridgedProposals.length === 0)
         throw new Error(`[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Unrecognized target for cross-chain message`);
     }
+  }
 
-    // Execute open bridged proposals now that all messages have been bridged
-    for (let proposal of openBridgedProposals) {
-      const { eta, id } = proposal;
-      // Fast forward l2 time
-      await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
+  // Execute open bridged proposals now that all messages have been bridged
+  for (let proposal of openBridgedProposals) {
+    const { eta, id } = proposal;
+    // Fast forward l2 time
+    await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
 
-      // Execute queued proposal
-      await setNextBaseFeeToZero(bridgeDeploymentManager);
+    // Execute queued proposal
+    await setNextBaseFeeToZero(bridgeDeploymentManager);
 
-      if (tenderlyLogs) {
-        const callData = bridgeReceiver.interface.encodeFunctionData('executeProposal', [id]);
-        const signer = await bridgeDeploymentManager.getSigner();
+    if (tenderlyLogs) {
+      const callData = bridgeReceiver.interface.encodeFunctionData('executeProposal', [id]);
+      const signer = await bridgeDeploymentManager.getSigner();
 
-        bridgeDeploymentManager.stashRelayMessage(
-          bridgeReceiver.address,
-          callData,
-          signer.address
-        );
-      } else {
-        await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
-      }
-      console.log(
-        `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
+      bridgeDeploymentManager.stashRelayMessage(
+        bridgeReceiver.address,
+        callData,
+        signer.address
       );
+    } else {
+      await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
     }
+    console.log(
+      `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
+    );
   }
 
   return openBridgedProposals;
@@ -182,8 +182,7 @@ export default async function relayOptimismMessage(
 export async function simulateL2ToL1TokenBridging(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
-  tenderlyLogs?: any[],
-  proposalId?: BigNumber
+  tenderlyLogs?: any[]
 ) {
   if(tenderlyLogs) {
     return;
@@ -212,14 +211,11 @@ export async function simulateL2ToL1TokenBridging(
   });
 
   const bridgeERC20ToSignature = 'bridgeERC20To(address,address,address,uint256,uint32,bytes)';
+  const depositForBurnSignature = 'depositForBurn(uint256,uint32,bytes32,address,bytes32,uint256,uint32)';
 
   for (const event of proposalCreatedEvents) {
     const decodedEvent = bridgeReceiver.interface.parseLog(event);
-    const { id, signatures, calldatas } = decodedEvent.args;
-
-    if (proposalId && id.toString() !== proposalId.toString()) {
-      continue;
-    }
+    const { signatures, calldatas } = decodedEvent.args;
 
     for (let i = 0; i < signatures.length; i++) {
       if (signatures[i] === bridgeERC20ToSignature) {
@@ -238,24 +234,6 @@ export async function simulateL2ToL1TokenBridging(
           OPTIMISM_L1_PORTAL,
           utils.hexZeroPad('0x32', 32),
           utils.hexZeroPad(l2CrossDomainMessenger.address, 32)
-        ]);
-
-        // Set deposits[_localToken][_remoteToken] on L1StandardBridge so finalizeBridgeERC20 won't underflow
-        // deposits mapping is at base slot 2 in L1StandardBridge storage layout
-        // In finalizeBridgeERC20 context: _localToken = remoteToken (L1), _remoteToken = localToken (L2)
-        const depositsBaseSlot = 2;
-        const innerSlot = utils.keccak256(
-          utils.defaultAbiCoder.encode(['address', 'uint256'], [remoteToken, depositsBaseSlot])
-        );
-        const depositsSlot = utils.keccak256(
-          utils.defaultAbiCoder.encode(['address', 'bytes32'], [localToken, innerSlot])
-        );
-
-        console.log(`Setting deposits[${remoteToken}][${localToken}] to ${amount.toString()} at slot ${depositsSlot} on ${optimismL1Bridge.address}`);
-        await governanceDeploymentManager.hre.network.provider.send('hardhat_setStorageAt', [
-          optimismL1Bridge.address,
-          depositsSlot,
-          utils.hexZeroPad(amount.toHexString(), 32)
         ]);
 
         await governanceDeploymentManager.hre.network.provider.send('hardhat_setStorageAt', [
@@ -284,6 +262,50 @@ export async function simulateL2ToL1TokenBridging(
           utils.hexZeroPad('0x32', 32),
           utils.hexZeroPad('0xdead', 32)
         ]);
+      }
+
+      // Look for L2→L1 CCTP depositForBurn calls (Circle CCTP bridge, e.g. native USDC)
+      if (signatures[i] === depositForBurnSignature) {
+        const [amount, , mintRecipientBytes32, burnToken] = utils.defaultAbiCoder.decode(
+          ['uint256', 'uint32', 'bytes32', 'address', 'bytes32', 'uint256', 'uint32'],
+          calldatas[i]
+        );
+
+        const mintRecipient = utils.getAddress('0x' + utils.hexlify(mintRecipientBytes32).slice(-40));
+
+        try {
+          // L2
+          const l2CCTPTokenMessenger = await bridgeDeploymentManager.getContractOrThrow('CCTPMessageTransmitter');
+          // Resolve L1 token via CCTP TokenMinter: burnToken (L2) → localToken (L1)
+          const l1CCTPTokenMessenger = await governanceDeploymentManager.getContractOrThrow('CCTPTokenMessenger');
+          const tokenMinterAddress = await l1CCTPTokenMessenger.localMinter();
+          const L1TokenMinter = new Contract(
+            tokenMinterAddress,
+            ['function mint(uint32 sourceDomain, bytes32 burnToken, address recipientOne, address recipientTwo, uint256 amountOne, uint256 amountTwo) returns (address)'],
+            await governanceDeploymentManager.getSigner()
+          );
+          const l1CCTPTokenMessengerSigner = await impersonateAddress(
+            governanceDeploymentManager,
+            l1CCTPTokenMessenger.address
+          );
+          await governanceDeploymentManager.hre.network.provider.send('hardhat_setBalance', [
+            l1CCTPTokenMessengerSigner.address,
+            '0x1000000000000000000',
+          ]);
+          const sourceDomain = await l2CCTPTokenMessenger.localDomain();
+          const mintTx = await L1TokenMinter.connect(l1CCTPTokenMessengerSigner).mint(
+            sourceDomain,
+            utils.hexZeroPad(burnToken, 32),
+            mintRecipient,
+            L1TokenMinter.address, // mint to the token minter first, since some tokens (e.g. USDC) have a cap on max amount per mint, and the token minter can then transfer to the recipient
+            amount,
+            1
+          );
+          console.log('Simulated CCTP mint transaction:', mintTx.hash);
+          await mintTx.wait();
+        } catch (e) {
+          console.log(`Warning: Could not simulate CCTP L2→L1 bridging for depositForBurn: ${e.message}`);
+        }
       }
     }
   }
