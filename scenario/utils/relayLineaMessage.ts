@@ -276,6 +276,7 @@ export default async function relayLineaMessage(
       `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
     );
   }
+
   return openBridgedProposals;
 }
 

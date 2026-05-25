@@ -160,5 +160,6 @@ export default async function relayMantleMessage(
       `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
     );
   }
+
   return openBridgedProposals;
 }
