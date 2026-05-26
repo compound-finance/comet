@@ -83,6 +83,7 @@ export class DeploymentManager {
         throw new Error(`Must provide hre to bridge to a different network deployment manager`);
       }
       const dm = new DeploymentManager(network, deployment, hre ?? this.hre, { writeCacheToDisk: true });
+      await dm.loadContractsFromExistingCache();
       await dm.spider();
       this.bridgedDeploymentManagers.set(key, dm);
     }
