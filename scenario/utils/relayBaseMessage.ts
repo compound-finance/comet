@@ -1,7 +1,7 @@
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
-import { BigNumber, ethers } from 'ethers';
+import { BigNumber, ethers, utils } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { OpenBridgedProposal } from '../context/Gov';
 import { applyL1ToL2Alias, isTenderlyLog } from './index';
@@ -142,7 +142,7 @@ export default async function relayBaseMessage(
       }
     } else if (target === bridgeReceiver.address) {
       // Cross-chain message passing
-      if (!tenderlyLogs && relayMessageTxn) {
+      if (relayMessageTxn) {
         const proposalCreatedEvent = relayMessageTxn.events.find(
           (event) => event.address === bridgeReceiver.address
         );
@@ -154,28 +154,9 @@ export default async function relayBaseMessage(
         openBridgedProposals.push({ id, eta });
       }
     } else {
-      throw new Error(
-        `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Unrecognized target for cross-chain message`
-      );
-    }
-  }
-
-  // Handle proposal creation for tenderly
-  if (tenderlyLogs) {
-    // We need to check for ProposalCreated events since we don't get them in the loop above
-    const proposalFilter = bridgeReceiver.filters.ProposalCreated();
-    const proposalEvents = await bridgeDeploymentManager.hre.ethers.provider.getLogs({
-      fromBlock: 'latest',
-      toBlock: 'latest',
-      address: bridgeReceiver.address,
-      topics: proposalFilter.topics
-    });
-
-    for (let event of proposalEvents) {
-      const {
-        args: { id, eta },
-      } = bridgeReceiver.interface.parseLog(event);
-      openBridgedProposals.push({ id, eta });
+      // throw error only on last relay message and no proposal created event found
+      if(sentMessageEvents.indexOf(sentMessageEvent) === sentMessageEvents.length - 1 && openBridgedProposals.length === 0)
+        throw new Error(`[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Unrecognized target for cross-chain message`);
     }
   }
 
@@ -207,4 +188,94 @@ export default async function relayBaseMessage(
   }
 
   return openBridgedProposals;
+}
+
+export async function simulateL2ToL1TokenBridging(
+  governanceDeploymentManager: DeploymentManager,
+  bridgeDeploymentManager: DeploymentManager,
+  tenderlyLogs?: any[]
+) {
+  if(tenderlyLogs) {
+    return;
+  }
+  console.log('Simulating L2→L1 token bridging for any executed Base proposals...');
+
+  // L2 contracts
+  const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
+  const baseL2Bridge = await bridgeDeploymentManager.getContractOrThrow('l2StandardBridge');
+  const l2CrossDomainMessenger = await bridgeDeploymentManager.getContractOrThrow('l2CrossDomainMessenger');
+
+  // L1 contracts
+  const baseL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow('baseL1CrossDomainMessenger');
+  const baseL1Bridge = await governanceDeploymentManager.getContractOrThrow('baseL1StandardBridge');
+  const BASE_L1_PORTAL = '0x49048044D57e1C92A77f79988d21Fa8fAF74E97e';
+
+  // Parse recent ProposalCreated events to find actions that bridge tokens from L2 to L1
+  // ProposalCreated(address indexed rootMessageSender, uint256 id, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 eta)
+  console.log('Fetching recent ProposalCreated events from BridgeReceiver...');
+  const latestBlockNumber = await bridgeDeploymentManager.hre.ethers.provider.getBlockNumber();
+  const proposalCreatedEvents = await bridgeDeploymentManager.hre.ethers.provider.getLogs({
+    fromBlock: latestBlockNumber - 1000, // look back 1000 blocks for ProposalCreated events, which should be sufficient to cover any recent proposals given typical block times on Base
+    toBlock: 'latest',
+    address: bridgeReceiver.address,
+    topics: [utils.id('ProposalCreated(address,uint256,address[],uint256[],string[],bytes[],uint256)')]
+  });
+
+  const bridgeERC20ToSignature = 'bridgeERC20To(address,address,address,uint256,uint32,bytes)';
+
+  for (const event of proposalCreatedEvents) {
+    const decodedEvent = bridgeReceiver.interface.parseLog(event);
+    const { signatures, calldatas } = decodedEvent.args;
+
+
+    for (let i = 0; i < signatures.length; i++) {
+      if (signatures[i] === bridgeERC20ToSignature) {
+        const [localToken, remoteToken, to, amount, , extraData] = utils.defaultAbiCoder.decode(
+          ['address', 'address', 'address', 'uint256', 'uint32', 'bytes'],
+          calldatas[i]
+        );
+
+        console.log(`Simulating L2→L1 bridgeERC20To: ${amount.toString()} of ${remoteToken} to ${to}`);
+
+        console.log('Setting up L1 state to simulate finalizeBridgeERC20...');
+        console.log('Base L1 Portal address:', BASE_L1_PORTAL);
+        console.log('Overriding slot', utils.hexZeroPad('0x32', 32));
+        console.log('l2CrossDomainMessenger:', utils.hexZeroPad(l2CrossDomainMessenger.address, 32));
+        await governanceDeploymentManager.hre.network.provider.send('hardhat_setStorageAt', [
+          BASE_L1_PORTAL,
+          utils.hexZeroPad('0x32', 32),
+          utils.hexZeroPad(l2CrossDomainMessenger.address, 32)
+        ]);
+
+        await governanceDeploymentManager.hre.network.provider.send('hardhat_setStorageAt', [
+          baseL1CrossDomainMessenger.address,
+          '0xcc',
+          utils.hexZeroPad(baseL2Bridge.address, 32)
+        ]);
+
+        const domainMessengerSigner = await impersonateAddress(
+          governanceDeploymentManager,
+          baseL1CrossDomainMessenger.address
+        );
+
+        await governanceDeploymentManager.hre.network.provider.send('hardhat_setBalance', [
+          domainMessengerSigner.address,
+          ethers.utils.hexStripZeros(ethers.utils.parseEther('1').toHexString()),
+        ]);
+
+        await (
+          await baseL1Bridge.connect(domainMessengerSigner).finalizeBridgeERC20(
+            remoteToken, localToken, bridgeReceiver.address, to, amount, extraData,
+            { gasPrice: 0, gasLimit: 2_500_000 }
+          )
+        ).wait();
+
+        await governanceDeploymentManager.hre.network.provider.send('hardhat_setStorageAt', [
+          BASE_L1_PORTAL,
+          utils.hexZeroPad('0x32', 32),
+          utils.hexZeroPad('0xdead', 32)
+        ]);
+      }
+    }
+  }
 }

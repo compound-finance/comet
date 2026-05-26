@@ -56,14 +56,19 @@ const relationConfigMap: RelationConfigMap = {
             // This is a workaround for contracts that don't work in Hardhat fork
 
             // invalid opcode when calling symbol()
+            // Arbitrum-specific known contract mappings
             if (address === '0xd09acb80c1e8f2291862c4978a008791c9167003') {
               return 'tETH';
             }
             if (address === '0x5a7facb970d094b6c7ff1df0ea68d99e6e73cbff') {
               return 'weETH';
             }
-            if (address.toLowerCase() === '0x87eee96d50fb761ad85b1c982d28a042169d61b1') {
+            if (address === '0x87eee96d50fb761ad85b1c982d28a042169d61b1') {
               return 'wrsETH';
+            }
+            // Mantle-specific known contract mapping
+            if (address === '0xcda86a272531e8640cd7f1a92c01839911b90bb0') {
+              return 'mETH';
             }
 
             throw new Error(`Failed to get symbol for token ${token.address}: ${e.message}`);
@@ -96,6 +101,10 @@ const relationConfigMap: RelationConfigMap = {
             }
             if (address === '0x87eee96d50fb761ad85b1c982d28a042169d61b1') {
               return 'wrsETH:priceFeed';
+            }
+            // Known contract mapping for Mantle
+            if (address === '0xcda86a272531e8640cd7f1a92c01839911b90bb0') {
+              return 'mETH:priceFeed';
             }
             
             throw new Error(`Failed to get symbol for token ${assets[i].address}: ${e.message}`);
