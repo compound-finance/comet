@@ -241,8 +241,8 @@ Further details on the deployment can be found in the [Bytecode Repository git](
 
 Both service patch Comet update and Bytecode Repository have been audited by Certora and full reports can be found here:
 
-- [Certora Comet Service Patch Audit](<>)
-- [Certora Bytecode Repository Audit](<>)
+- [Certora Comet Service Patch Audit](https://www.certora.com/reports/comet-service-patch)
+- [Certora Bytecode Repository Audit](https://www.certora.com/reports/compound-bytecoderepository)
 
 ## Proposal Actions
 
