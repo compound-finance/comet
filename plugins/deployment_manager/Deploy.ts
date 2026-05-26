@@ -129,6 +129,7 @@ export async function deploy<C extends Contract>(
     via: 'artifacts',
     address: contract.address,
     constructorArguments: deployArgs,
+    contract: `contracts/${contractFile}:${contractName}`,
   };
 
   await retry(async () => {
