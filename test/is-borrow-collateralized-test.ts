@@ -150,7 +150,6 @@ describe('isBorrowCollateralized', function () {
    * unpriceable collateral.
    */
   describe('isBorrowCollateralized semantics across borrowCollateralFactor values', function () {
-    // Snapshot
     let snapshot: SnapshotRestorer;
 
     // Configurator and protocol
@@ -377,11 +376,6 @@ describe('isBorrowCollateralized', function () {
 
           // Capture the current (normal) price feed for the collateral token
           originalPriceFeed = (await comet.getAssetInfoByAddress(collateralToken.address)).priceFeed;
-
-          // Deploy a price feed that always reverts on latestRoundData
-          const PriceFeedWithRevertFactory = (await ethers.getContractFactory('PriceFeedWithRevert')) as PriceFeedWithRevert__factory;
-          priceFeedWithRevert = await PriceFeedWithRevertFactory.deploy(100, 8);
-          await priceFeedWithRevert.deployed();
         });
 
         it('sanity check: isBorrowCollateralized works with the normal price feed', async () => {

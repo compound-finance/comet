@@ -181,7 +181,6 @@ describe('isLiquidatable', function () {
    * protocol paralysis while ensuring undercollateralized positions can still be liquidated.
    */
   describe('isLiquidatable semantics across liquidateCollateralFactor values', function () {
-    // Snapshot
     let snapshot: SnapshotRestorer;
 
     // Configurator and protocol
@@ -403,24 +402,13 @@ describe('isLiquidatable', function () {
       });
     }
 
-    /*
-     * Edge cases around price feeds and isLiquidatable.
-     *
-     * These tests simulate a governance action that replaces a collateral asset's price feed
-     * with a feed that always reverts on `latestRoundData` (PriceFeedWithRevert). This mirrors
-     * the "price feed paralysis" scenario exercised in the absorb and quoteCollateral tests,
-     * but focused on `isLiquidatable`:
-     *
-     * 1. With the normal price feed, isLiquidatable should succeed for Alice's position.
-     * 2. After governance updates the asset's price feed to PriceFeedWithRevert, isLiquidatable
-     *    should revert with the `Reverted` custom error, since it calls getPrice(asset.priceFeed)
-     *    while iterating over collateral assets.
-     * 3. When governance restores the original (non-reverting) price feed, isLiquidatable
-     *    should succeed again, showing that the paralysis is solely caused by the reverting feed.
-     */
     describe('edge cases', function () {
+      /*
+       * Tests two resolution paths for price-feed paralysis in isLiquidatable: restoring the
+       * original feed, and setting liquidateCF to 0. Each path proves that the Reverted error
+       * from a broken feed can be unblocked without restoring the feed itself.
+       */
       describe('revert on price feed side', function () {
-        let priceFeedWithRevert: PriceFeedWithRevert;
         let originalPriceFeed: string;
 
         before(async () => {
@@ -441,11 +429,6 @@ describe('isLiquidatable', function () {
 
           // Capture the current (normal) price feed for the collateral token
           originalPriceFeed = (await comet.getAssetInfoByAddress(collateralToken.address)).priceFeed;
-
-          // Deploy a price feed that always reverts on latestRoundData
-          const PriceFeedWithRevertFactory = (await ethers.getContractFactory('PriceFeedWithRevert')) as PriceFeedWithRevert__factory;
-          priceFeedWithRevert = await PriceFeedWithRevertFactory.deploy(100, 8);
-          await priceFeedWithRevert.deployed();
         });
 
         it('sanity check: isLiquidatable works with the normal price feed', async () => {
