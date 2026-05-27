@@ -111,7 +111,7 @@ WOOF! proposes to update Mainnet cWETHv3, cWBTCv3 and cwstETHv3 Comet markets to
 
 This proposal takes the governance steps recommended and necessary to update Compound III WETH, WBTC and wstETH markets on Mainnet. Simulations have confirmed the market's readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario).
 
-Detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1125) and [forum discussion](<>).
+Detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1128) and [forum discussion](<>).
 
 ### Bytecode Repository
 
