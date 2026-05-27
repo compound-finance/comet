@@ -1,4 +1,4 @@
-import { CometProxyAdmin, CometWithExtendedAssetList, Configurator, FaucetToken, NonStandardFaucetFeeToken, PriceFeedWithRevert, PriceFeedWithRevert__factory } from 'build/types';
+import { CometExt, CometProxyAdmin, CometWithExtendedAssetList, Configurator, FaucetToken, NonStandardFaucetFeeToken, PriceFeedWithRevert, PriceFeedWithRevert__factory } from 'build/types';
 import { expect, exp, makeProtocol, makeConfigurator, ethers, updateAssetLiquidateCollateralFactor, getLiquidityWithLiquidateCF, MAX_ASSETS, takeSnapshot, SnapshotRestorer, updateAssetBorrowCollateralFactor } from './helpers';
 import { BigNumber } from 'ethers';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
@@ -181,7 +181,6 @@ describe('isLiquidatable', function () {
    * protocol paralysis while ensuring undercollateralized positions can still be liquidated.
    */
   describe('isLiquidatable semantics across liquidateCollateralFactor values', function () {
-    // Snapshot
     let snapshot: SnapshotRestorer;
 
     // Configurator and protocol
@@ -190,6 +189,7 @@ describe('isLiquidatable', function () {
     let configuratorProxyAddress: string;
     let proxyAdmin: CometProxyAdmin;
     let cometProxyAddress: string;
+    let priceFeedWithRevert: PriceFeedWithRevert;
 
     // Tokens
     let baseSymbol: string;
@@ -200,6 +200,7 @@ describe('isLiquidatable', function () {
     // Users
     let alice: SignerWithAddress;
     let governor: SignerWithAddress;
+    let pauseGuardian: SignerWithAddress;
 
     // Values
     let supplyAmount: bigint;
@@ -233,6 +234,7 @@ describe('isLiquidatable', function () {
       tokens = protocol.tokens;
       alice = protocol.users[0];
       governor = protocol.governor;
+      pauseGuardian = protocol.pauseGuardian;
 
       // Upgrade proxy to extended asset list implementation to support many assets
       const assetListFactory = protocol.assetListFactory;
@@ -254,6 +256,10 @@ describe('isLiquidatable', function () {
       await proxyAdmin.deployAndUpgradeTo(configuratorProxyAddress, cometProxyAddress);
 
       liquidateCF = (await comet.getAssetInfoByAddress(collateralToken.address)).liquidateCollateralFactor.toBigInt();
+
+      // Deploy a price feed that always reverts on latestRoundData
+      const PriceFeedWithRevertFactory = (await ethers.getContractFactory('PriceFeedWithRevert')) as PriceFeedWithRevert__factory;
+      priceFeedWithRevert = await PriceFeedWithRevertFactory.deploy(100, 8);
 
       snapshot = await takeSnapshot();
 
@@ -396,24 +402,13 @@ describe('isLiquidatable', function () {
       });
     }
 
-    /*
-     * Edge cases around price feeds and isLiquidatable.
-     *
-     * These tests simulate a governance action that replaces a collateral asset's price feed
-     * with a feed that always reverts on `latestRoundData` (PriceFeedWithRevert). This mirrors
-     * the "price feed paralysis" scenario exercised in the absorb and quoteCollateral tests,
-     * but focused on `isLiquidatable`:
-     *
-     * 1. With the normal price feed, isLiquidatable should succeed for Alice's position.
-     * 2. After governance updates the asset's price feed to PriceFeedWithRevert, isLiquidatable
-     *    should revert with the `Reverted` custom error, since it calls getPrice(asset.priceFeed)
-     *    while iterating over collateral assets.
-     * 3. When governance restores the original (non-reverting) price feed, isLiquidatable
-     *    should succeed again, showing that the paralysis is solely caused by the reverting feed.
-     */
     describe('edge cases', function () {
+      /*
+       * Tests two resolution paths for price-feed paralysis in isLiquidatable: restoring the
+       * original feed, and setting liquidateCF to 0. Each path proves that the Reverted error
+       * from a broken feed can be unblocked without restoring the feed itself.
+       */
       describe('revert on price feed side', function () {
-        let priceFeedWithRevert: PriceFeedWithRevert;
         let originalPriceFeed: string;
 
         before(async () => {
@@ -434,11 +429,6 @@ describe('isLiquidatable', function () {
 
           // Capture the current (normal) price feed for the collateral token
           originalPriceFeed = (await comet.getAssetInfoByAddress(collateralToken.address)).priceFeed;
-
-          // Deploy a price feed that always reverts on latestRoundData
-          const PriceFeedWithRevertFactory = (await ethers.getContractFactory('PriceFeedWithRevert')) as PriceFeedWithRevert__factory;
-          priceFeedWithRevert = await PriceFeedWithRevertFactory.deploy(100, 8);
-          await priceFeedWithRevert.deployed();
         });
 
         it('sanity check: isLiquidatable works with the normal price feed', async () => {
@@ -469,6 +459,179 @@ describe('isLiquidatable', function () {
 
         it('isLiquidatable works again after restoring the normal price feed', async () => {
           expect(await comet.isLiquidatable(alice.address)).to.be.false;
+        });
+      });
+
+      /*
+       * Demonstrates that setting liquidateCollateralFactor to 0 resolves price-feed paralysis:
+       * once governance zeros a reverting asset's liquidateCF, isLiquidatable skips that asset's
+       * getPrice() call entirely and returns normally instead of reverting.
+       */
+      describe('zero liquidateCF resolves price feed paralysis in isLiquidatable', function () {
+        before(async () => {
+          await snapshot.restore();
+
+          supplyAmount = exp(10, 18);
+          borrowAmount = exp(5, 6);
+          await collateralToken.allocateTo(alice.address, supplyAmount);
+          await collateralToken.connect(alice).approve(cometProxyAddress, supplyAmount);
+          await comet.connect(alice).supply(collateralToken.address, supplyAmount);
+          await baseToken.allocateTo(cometProxyAddress, borrowAmount);
+          await comet.connect(alice).withdraw(baseToken.address, borrowAmount);
+        });
+
+        it('isLiquidatable works with the normal price feed', async () => {
+          expect(await comet.isLiquidatable(alice.address)).to.be.false;
+        });
+
+        it('governance updates collateral price feed to a reverting implementation', async () => {
+          await configurator.updateAssetPriceFeed(cometProxyAddress, collateralToken.address, priceFeedWithRevert.address);
+          await proxyAdmin.deployAndUpgradeTo(configuratorProxyAddress, cometProxyAddress);
+        });
+
+        it('price feed for collateral asset is now the reverting implementation', async () => {
+          expect((await comet.getAssetInfoByAddress(collateralToken.address)).priceFeed).to.equal(priceFeedWithRevert.address);
+        });
+
+        it('isLiquidatable reverts when collateral price feed reverts', async () => {
+          await expect(comet.isLiquidatable(alice.address)).to.be.revertedWithCustomError(priceFeedWithRevert, 'Reverted');
+        });
+
+        it('governance sets liquidateCollateralFactor to 0 for the affected asset', async () => {
+          // set borrowCF to 0 first, as we have check in AssetList BCF < LCF
+          await updateAssetBorrowCollateralFactor(configurator, proxyAdmin, cometProxyAddress, collateralToken.address, 0n);
+          await updateAssetLiquidateCollateralFactor(configurator, proxyAdmin, cometProxyAddress, collateralToken.address, 0n, governor);
+        });
+
+        it('liquidateCollateralFactor is 0 after upgrade', async () => {
+          expect((await comet.getAssetInfoByAddress(collateralToken.address)).liquidateCollateralFactor).to.equal(0);
+        });
+
+        it('isLiquidatable succeeds and position is liquidatable after liquidateCF is set to 0', async () => {
+          expect(await comet.isLiquidatable(alice.address)).to.be.true;
+        });
+      });
+
+      /*
+       * Demonstrates that token deactivation does NOT resolve price-feed paralysis in isLiquidatable,
+       * unlike isBorrowCollateralized where the deactivation check runs before getPrice().
+       * In isLiquidatable, a positive liquidateCF asset still triggers a price fetch even when
+       * deactivated, so the external Reverted error from the broken feed continues to propagate.
+       */
+      describe('token deactivation does not resolve price feed paralysis in isLiquidatable', function () {
+        let cometExt: CometExt;
+        let collateralAssetIndex: number;
+
+        before(async () => {
+          await snapshot.restore();
+
+          supplyAmount = exp(10, 18);
+          borrowAmount = exp(5, 6);
+          await collateralToken.allocateTo(alice.address, supplyAmount);
+          await collateralToken.connect(alice).approve(cometProxyAddress, supplyAmount);
+          await comet.connect(alice).supply(collateralToken.address, supplyAmount);
+          await baseToken.allocateTo(cometProxyAddress, borrowAmount);
+          await comet.connect(alice).withdraw(baseToken.address, borrowAmount);
+
+          collateralAssetIndex = (await comet.getAssetInfoByAddress(collateralToken.address)).offset;
+          cometExt = comet.attach(cometProxyAddress) as unknown as CometExt;
+        });
+
+        it('isLiquidatable works with the normal price feed', async () => {
+          expect(await comet.isLiquidatable(alice.address)).to.be.false;
+        });
+
+        it('governance updates collateral price feed to a reverting implementation', async () => {
+          await configurator.updateAssetPriceFeed(cometProxyAddress, collateralToken.address, priceFeedWithRevert.address);
+          await proxyAdmin.deployAndUpgradeTo(configuratorProxyAddress, cometProxyAddress);
+        });
+
+        it('price feed for collateral asset is now the reverting implementation', async () => {
+          expect((await comet.getAssetInfoByAddress(collateralToken.address)).priceFeed).to.equal(priceFeedWithRevert.address);
+        });
+
+        it('isLiquidatable reverts when collateral price feed reverts', async () => {
+          await expect(comet.isLiquidatable(alice.address)).to.be.revertedWithCustomError(priceFeedWithRevert, 'Reverted');
+        });
+
+        it('pause guardian deactivates the affected collateral', async () => {
+          await expect(cometExt.connect(pauseGuardian).deactivateCollateral(collateralAssetIndex)).to.not.be.reverted;
+        });
+
+        it('collateral is marked as deactivated', async () => {
+          expect(await comet.isCollateralDeactivated(collateralAssetIndex)).to.be.true;
+        });
+
+        it('isLiquidatable still reverts with Reverted after deactivation', async () => {
+          await expect(comet.isLiquidatable(alice.address)).to.be.revertedWithCustomError(priceFeedWithRevert, 'Reverted');
+        });
+      });
+
+      /*
+       * Demonstrates the full mitigation sequence when token deactivation alone is insufficient:
+       * after deactivation fails to stop the external Reverted error from the broken price feed,
+       * zeroing liquidateCF skips the price fetch entirely and resolves the paralysis.
+       */
+      describe('zeroing liquidateCF resolves price feed paralysis where token deactivation fails', function () {
+        let cometExt: CometExt;
+        let collateralAssetIndex: number;
+
+        before(async () => {
+          await snapshot.restore();
+
+          supplyAmount = exp(10, 18);
+          borrowAmount = exp(5, 6);
+          await collateralToken.allocateTo(alice.address, supplyAmount);
+          await collateralToken.connect(alice).approve(cometProxyAddress, supplyAmount);
+          await comet.connect(alice).supply(collateralToken.address, supplyAmount);
+          await baseToken.allocateTo(cometProxyAddress, borrowAmount);
+          await comet.connect(alice).withdraw(baseToken.address, borrowAmount);
+
+          collateralAssetIndex = (await comet.getAssetInfoByAddress(collateralToken.address)).offset;
+          cometExt = comet.attach(cometProxyAddress) as unknown as CometExt;
+        });
+
+        it('isLiquidatable works with the normal price feed', async () => {
+          expect(await comet.isLiquidatable(alice.address)).to.be.false;
+        });
+
+        it('governance updates collateral price feed to a reverting implementation', async () => {
+          await configurator.updateAssetPriceFeed(cometProxyAddress, collateralToken.address, priceFeedWithRevert.address);
+          await proxyAdmin.deployAndUpgradeTo(configuratorProxyAddress, cometProxyAddress);
+        });
+
+        it('price feed for collateral asset is now the reverting implementation', async () => {
+          expect((await comet.getAssetInfoByAddress(collateralToken.address)).priceFeed).to.equal(priceFeedWithRevert.address);
+        });
+
+        it('isLiquidatable reverts when collateral price feed reverts', async () => {
+          await expect(comet.isLiquidatable(alice.address)).to.be.revertedWithCustomError(priceFeedWithRevert, 'Reverted');
+        });
+
+        it('pause guardian deactivates the affected collateral', async () => {
+          await expect(cometExt.connect(pauseGuardian).deactivateCollateral(collateralAssetIndex)).to.not.be.reverted;
+        });
+
+        it('collateral is marked as deactivated', async () => {
+          expect(await comet.isCollateralDeactivated(collateralAssetIndex)).to.be.true;
+        });
+
+        it('isLiquidatable still reverts with Reverted after deactivation', async () => {
+          await expect(comet.isLiquidatable(alice.address)).to.be.revertedWithCustomError(priceFeedWithRevert, 'Reverted');
+        });
+
+        it('governance sets liquidateCollateralFactor to 0 for the affected asset', async () => {
+          // zero borrowCF first — AssetList validates borrowCF < liquidateCF
+          await updateAssetBorrowCollateralFactor(configurator, proxyAdmin, cometProxyAddress, collateralToken.address, 0n);
+          await updateAssetLiquidateCollateralFactor(configurator, proxyAdmin, cometProxyAddress, collateralToken.address, 0n, governor);
+        });
+
+        it('liquidateCollateralFactor is 0 after upgrade', async () => {
+          expect((await comet.getAssetInfoByAddress(collateralToken.address)).liquidateCollateralFactor).to.equal(0);
+        });
+
+        it('isLiquidatable no longer reverts after liquidateCF is zeroed', async () => {
+          expect(await comet.isLiquidatable(alice.address)).to.be.true;
         });
       });
     });
