@@ -84,7 +84,7 @@ const {
   REMOTE_ACCOUNTS = ''
 } = process.env;
 
-function* deriveAccounts(pk: string, n: number = 10) {
+function* deriveAccounts(pk: string, n: number = 20) {
   for (let i = 0; i < n; i++){
     if(!pk.startsWith('0x')) pk = '0x' + pk;
     yield (BigInt(pk) + BigInt(i)).toString(16);
@@ -197,7 +197,7 @@ export const networkConfigs: NetworkConfig[] = [
   {
     network: 'scroll',
     chainId: 534352,
-    url: 'https://scroll.drpc.org',
+    url: 'https://scroll-mainnet.gateway.tenderly.co',
   },
 ];
 
