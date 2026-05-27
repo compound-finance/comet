@@ -3,6 +3,7 @@ import { Contract, utils } from 'ethers';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { exp, proposal, calldata } from '../../../../src/deploy';
+import { forkedHreForBase } from '../../../../plugins/scenario/utils/hreForBase';
 
 const USDC_COMET_LINEA = '0x8D38A3d6B3c3B7d96D6536DA7Eef94A9d7dbC991';
 const WETH_COMET_LINEA = '0x60F2058379716A64a7A5d29219397e79bC552194';
@@ -19,10 +20,6 @@ const USDC_COMET_SCROLL = '0xB2f97c1Bd3bf02f5e74d13f02E3e26F93D77CE44';
 const COMET_FACTORY_V2_SCROLL = '0xBE1b3e95c8fE0Cb9B6E825c9F7E1bfbb7855B227';
 
 const USDC_EXT_SCROLL = '0x4DA8f56c46Dc7195FBfF1C775327C13feE7eadAd';
-
-const BRIDGE_RECEIVER_SCROLL = '0xC6bf5A64896D679Cf89843DbeC6c0f5d3C9b610D';
-const COMET_ADMIN_SCROLL = '0x87A27b91f4130a25E9634d23A5B8E05e342bac50';
-const CONFIGURATOR_SCROLL = '0xECAB0bEEa3e5DEa0c35d3E69468EAC20098032D7';
 
 export default migration('1778158953_update_to_v2_factory', {
   async prepare(
@@ -98,9 +95,9 @@ export default migration('1778158953_update_to_v2_factory', {
     const trace = deploymentManager.tracer();
 
     const {
-      bridgeReceiver,
-      cometAdmin,
-      configurator,
+      bridgeReceiver: lineaBridgeReceiver,
+      cometAdmin: lineaCometAdmin,
+      configurator: lineaConfigurator,
     } = await deploymentManager.getContracts();
 
     const {
@@ -116,33 +113,33 @@ export default migration('1778158953_update_to_v2_factory', {
     );
 
     const setConfigurationCalldataUsdcLinea = await calldata(
-      configurator.populateTransaction.setFactory(USDC_COMET_LINEA, newFactory.address)
+      lineaConfigurator.populateTransaction.setFactory(USDC_COMET_LINEA, newFactory.address)
     );
     const setExtensionDelegateCalldataUsdcLinea = await calldata(
-      configurator.populateTransaction.setExtensionDelegate(USDC_COMET_LINEA, USDC_EXT_LINEA)
+      lineaConfigurator.populateTransaction.setExtensionDelegate(USDC_COMET_LINEA, USDC_EXT_LINEA)
     );
     const deployAndUpgradeToCalldataUsdcLinea = utils.defaultAbiCoder.encode(
       ['address', 'address'],
-      [configurator.address, USDC_COMET_LINEA]
+      [lineaConfigurator.address, USDC_COMET_LINEA]
     );
 
     const setConfigurationCalldataWethLinea = await calldata(
-      configurator.populateTransaction.setFactory(WETH_COMET_LINEA, newFactory.address)
+      lineaConfigurator.populateTransaction.setFactory(WETH_COMET_LINEA, newFactory.address)
     );
     const setExtensionDelegateCalldataWethLinea = await calldata(
-      configurator.populateTransaction.setExtensionDelegate(WETH_COMET_LINEA, WETH_EXT_LINEA)
+      lineaConfigurator.populateTransaction.setExtensionDelegate(WETH_COMET_LINEA, WETH_EXT_LINEA)
     );
     const deployAndUpgradeToCalldataWethLinea = utils.defaultAbiCoder.encode(
       ['address', 'address'],
-      [configurator.address, WETH_COMET_LINEA]
+      [lineaConfigurator.address, WETH_COMET_LINEA]
     );
 
     const l2ProposalDataLinea = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
         [
-          configurator.address, configurator.address, cometAdmin.address,
-          configurator.address, configurator.address, cometAdmin.address
+          lineaConfigurator.address, lineaConfigurator.address, lineaCometAdmin.address,
+          lineaConfigurator.address, lineaConfigurator.address, lineaCometAdmin.address
         ],
         [
           0, 0, 0,
@@ -164,22 +161,30 @@ export default migration('1778158953_update_to_v2_factory', {
     );
 
     // Scroll    
+    const scrollHre = await forkedHreForBase({ name: 'scroll-usdc', network: 'scroll', deployment: 'usdc' });
+    const scrollDm = await govDeploymentManager.addBridgedDeploymentManager('scroll', 'usdc', scrollHre);
+    const {
+      bridgeReceiver: scrollBridgeReceiver,
+      configurator: scrollConfigurator,
+      cometAdmin: scrollCometAdmin,
+    } = await scrollDm.getContracts();
+
     const setConfigurationCalldataUsdcScroll = await calldata(
-      configurator.populateTransaction.setFactory(USDC_COMET_SCROLL, COMET_FACTORY_V2_SCROLL)
+      scrollConfigurator.populateTransaction.setFactory(USDC_COMET_SCROLL, COMET_FACTORY_V2_SCROLL)
     );
     const setExtensionDelegateCalldataUsdcScroll = await calldata(
-      configurator.populateTransaction.setExtensionDelegate(USDC_COMET_SCROLL, USDC_EXT_SCROLL)
+      scrollConfigurator.populateTransaction.setExtensionDelegate(USDC_COMET_SCROLL, USDC_EXT_SCROLL)
     );
     const deployAndUpgradeToCalldataUsdcScroll = utils.defaultAbiCoder.encode(
       ['address', 'address'],
-      [configurator.address, USDC_COMET_SCROLL]
+      [scrollConfigurator.address, USDC_COMET_SCROLL]
     );
 
     const l2ProposalDataScroll = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
         [
-          CONFIGURATOR_SCROLL, CONFIGURATOR_SCROLL, COMET_ADMIN_SCROLL,
+          scrollConfigurator.address, scrollConfigurator.address, scrollCometAdmin.address,
         ],
         [
           0, 0, 0,
@@ -200,13 +205,13 @@ export default migration('1778158953_update_to_v2_factory', {
       {
         contract: lineaMessageService,
         signature: 'sendMessage(address,uint256,bytes)',
-        args: [bridgeReceiver.address, 0, l2ProposalDataLinea],
+        args: [lineaBridgeReceiver.address, 0, l2ProposalDataLinea],
       },
       // 2. Update USDC Comet to the service patch version
       {
         contract: scrollMessenger,
         signature: 'sendMessage(address,uint256,bytes,uint256)',
-        args: [BRIDGE_RECEIVER_SCROLL, 0, l2ProposalDataScroll, 1_000_000],
+        args: [scrollBridgeReceiver.address, 0, l2ProposalDataScroll, 1_000_000],
         value: exp(0.05, 18)
       },
     ];
@@ -266,14 +271,16 @@ The second action sets the factory to the newly deployed factory, extension dele
     return false;
   },
 
-  async verify(deploymentManager: DeploymentManager) {
-    const { configurator } = await deploymentManager.getContracts();
+  async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager): Promise<void> {
+    const {
+      configurator: lineaConfigurator,
+    } = await deploymentManager.getContracts();
 
-    expect(await configurator.factory(USDC_COMET_LINEA)).to.equal(COMET_FACTORY_V2_LINEA);
-    expect(await configurator.factory(WETH_COMET_LINEA)).to.equal(COMET_FACTORY_V2_LINEA);
+    expect(await lineaConfigurator.factory(USDC_COMET_LINEA)).to.equal(COMET_FACTORY_V2_LINEA);
+    expect(await lineaConfigurator.factory(WETH_COMET_LINEA)).to.equal(COMET_FACTORY_V2_LINEA);
 
-    expect((await configurator.getConfiguration(USDC_COMET_LINEA)).extensionDelegate).to.equal(USDC_EXT_LINEA);
-    expect((await configurator.getConfiguration(WETH_COMET_LINEA)).extensionDelegate).to.equal(WETH_EXT_LINEA);
+    expect((await lineaConfigurator.getConfiguration(USDC_COMET_LINEA)).extensionDelegate).to.equal(USDC_EXT_LINEA);
+    expect((await lineaConfigurator.getConfiguration(WETH_COMET_LINEA)).extensionDelegate).to.equal(WETH_EXT_LINEA);
 
     const expectedMaxUtilization = exp(2, 18);
     const signer = await deploymentManager.getSigner();
@@ -309,5 +316,31 @@ The second action sets the factory to the newly deployed factory, extension dele
     expect(await newCometWeth.symbol()).to.equal('cWETHv3');
     expect(await newCometWeth.name()).to.equal('Compound WETH');
     expect(await newCometWeth.extensionDelegate()).to.equal(WETH_EXT_LINEA);
+  
+    
+    // Scroll
+    const scrollDm = govDeploymentManager.bridgedDeploymentManagers.get('scroll:usdc') as DeploymentManager;
+    const {
+      configurator: scrollConfigurator,
+    } = await scrollDm.getContracts();
+
+    expect(await scrollConfigurator.factory(USDC_COMET_SCROLL)).to.equal(COMET_FACTORY_V2_SCROLL);
+    expect((await scrollConfigurator.getConfiguration(USDC_COMET_SCROLL)).extensionDelegate).to.equal(USDC_EXT_SCROLL);
+
+    const newCometUsdcScroll = new Contract(
+      USDC_COMET_SCROLL, 
+      [
+        'function MAX_SUPPORTED_UTILIZATION() external view returns (uint256)',
+        'function symbol() external view returns (string)',
+        'function name() external view returns (string)',
+        'function extensionDelegate() external view returns (address)',
+      ],
+      signer
+    );
+
+    expect(await newCometUsdcScroll.MAX_SUPPORTED_UTILIZATION()).to.equal(expectedMaxUtilization);
+    expect(await newCometUsdcScroll.symbol()).to.equal('cUSDCv3');
+    expect(await newCometUsdcScroll.name()).to.equal('Compound USDC');
+    expect(await newCometUsdcScroll.extensionDelegate()).to.equal(USDC_EXT_SCROLL);
   },
 });

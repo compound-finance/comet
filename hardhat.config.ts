@@ -197,7 +197,7 @@ export const networkConfigs: NetworkConfig[] = [
   {
     network: 'scroll',
     chainId: 534352,
-    url: 'https://scroll.drpc.org',
+    url: 'https://scroll-mainnet.gateway.tenderly.co',
   },
 ];
 

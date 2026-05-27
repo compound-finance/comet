@@ -36,7 +36,7 @@ export function getBlockscoutUrl(network: string): string {
 export async function getBlockscoutRPCUrl(network: string): Promise<string> {
   let host = {
     'unichain': `${process.env.UNICHAIN_QUICKNODE_LINK}`.replace('https://', ''),
-    'scroll': `rpc.scroll.io`,
+    'scroll': `scroll-mainnet.gateway.tenderly.co`,
   }[network];
 
   if (!host) {
