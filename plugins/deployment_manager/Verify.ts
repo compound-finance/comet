@@ -6,7 +6,7 @@ import { BuildFile } from './Types';
 import { debug } from './Utils';
 
 export type VerifyArgs =
-  | { via: 'artifacts', address: string, constructorArguments: any }
+  | { via: 'artifacts', address: string, constructorArguments: any, contract?: string }
   | { via: 'buildfile', contract: Contract, buildFile: BuildFile, deployArgs: any[] };
 
 export type VerificationStrategy = 'none' | 'eager' | 'lazy';
@@ -25,6 +25,7 @@ export async function verifyContract(
       await hre.run('verify:verify', {
         address: verifyArgs.address,
         constructorArguments: verifyArgs.constructorArguments,
+        ...(verifyArgs.contract !== undefined && { contract: verifyArgs.contract }),
       });
     } else if (verifyArgs.via === 'buildfile') {
       address = verifyArgs.contract.address;
