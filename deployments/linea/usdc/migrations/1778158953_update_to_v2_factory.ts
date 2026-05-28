@@ -261,15 +261,16 @@ The second action sets the factory to the newly deployed factory, extension dele
     expect(await scrollConfigurator.factory(USDC_COMET_SCROLL)).to.equal(COMET_FACTORY_V2_SCROLL);
     expect((await scrollConfigurator.getConfiguration(USDC_COMET_SCROLL)).extensionDelegate).to.equal(USDC_EXT_SCROLL);
 
+    const scrollSigner = await scrollDm.getSigner();
     const newCometUsdcScroll = new Contract(
-      USDC_COMET_SCROLL, 
+      USDC_COMET_SCROLL,
       [
         'function MAX_SUPPORTED_UTILIZATION() external view returns (uint256)',
         'function symbol() external view returns (string)',
         'function name() external view returns (string)',
         'function extensionDelegate() external view returns (address)',
       ],
-      signer
+      scrollSigner
     );
 
     expect(await newCometUsdcScroll.MAX_SUPPORTED_UTILIZATION()).to.equal(expectedMaxUtilization);
