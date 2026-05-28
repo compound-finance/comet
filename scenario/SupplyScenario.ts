@@ -1,11 +1,12 @@
 import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately, expectBase, expectRevertCustom, expectRevertMatches, getExpectedBaseBalance, getInterest, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS, UINT256_MAX } from './utils';
+import { expectApproximately, expectBase, expectRevertCustom, expectRevertMatches, getExpectedBaseBalance, getInterest, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS, UINT256_MAX, fundAccount, usesAssetList, isAssetDelisted, supportsExtendedPause } from './utils';
 import { ContractReceipt } from 'ethers';
 import { matchesDeployment } from './utils';
 import { exp } from '../test/helpers';
 import { ethers } from 'hardhat';
 import { getConfigForScenario } from './utils/scenarioHelper';
+import { log } from 'console';
 
 // XXX introduce a SupplyCapConstraint to separately test the happy path and revert path instead
 // of testing them conditionally
@@ -46,7 +47,7 @@ async function testSupplyFromCollateral(context: CometContext, assetNum: number)
   const { asset: assetAddress, scale: scaleBN, supplyCap } = await comet.getAssetInfo(assetNum);
   const collateralAsset = context.getAssetByAddress(assetAddress);
   const scale = scaleBN.toBigInt();
-  const toSupply = BigInt(getConfigForScenario(context).supplyCollateral) * scale;
+  const toSupply = BigInt(getConfigForScenario(context, assetNum).supplyCollateral) * scale;
 
   expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(toSupply);
   expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(0n);
@@ -406,12 +407,20 @@ scenario(
 scenario(
   'Comet#supplyFrom > repay borrow',
   {
-    tokenBalances: {
-      albert: { $base: 1010 }
-    },
-    cometBalances: {
-      betty: { $base: '<= -1000' } // in units of asset, not wei
-    },
+    tokenBalances: async (ctx) => (
+      {
+        albert: {
+          $base: getConfigForScenario(ctx).supplyBase + (0.01 * getConfigForScenario(ctx).supplyBase)
+        }
+      }
+    ),
+    cometBalances: async (ctx) => (
+      {
+        betty: {
+          $base: `<= -${getConfigForScenario(ctx).supplyBase}`
+        }
+      }
+    ),
   },
   async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
@@ -699,4 +708,701 @@ scenario(
   }
 );
 
-// XXX enforce supply cap
+scenario(
+  'Comet#supply reverts when base supply is paused',
+  {
+    filter: async (ctx: CometContext) => {
+      return await isValidAssetIndex(ctx, 0) &&
+      await isTriviallySourceable(ctx, 0, getConfigForScenario(ctx).transferBase) &&
+      await usesAssetList(ctx) &&
+      !(await isAssetDelisted(ctx, 0)) &&
+      await supportsExtendedPause(ctx);
+    },
+    tokenBalances: async (ctx: CometContext) => (
+      {
+        albert: { $base: getConfigForScenario(ctx).transferBase }
+      }
+    ),
+  },
+  async ({ comet, actors }, context, world) => {
+    const { albert, pauseGuardian } = actors;
+    const baseAssetAddress = await comet.baseToken();
+    const baseAsset = context.getAssetByAddress(baseAssetAddress);
+    const scale = (await comet.baseScale()).toBigInt();
+
+    // Fund pause guardian account for gas fees
+    await fundAccount(world, pauseGuardian);
+
+    // Pause base supply
+    await comet.connect(pauseGuardian.signer).pauseBaseSupply(true);
+
+    await baseAsset.approve(albert, comet.address);
+    await expectRevertCustom(
+      albert.supplyAsset({
+        asset: baseAsset.address,
+        amount: BigInt(getConfigForScenario(context).transferBase) * scale,
+      }),
+      'BaseSupplyPaused()'
+    );
+  }
+);
+
+scenario(
+  'Comet#supply reverts when collateral supply is paused',
+  {
+    filter: async (ctx: CometContext) => {
+      return await isValidAssetIndex(ctx, 0) &&
+      await isTriviallySourceable(ctx, 0, getConfigForScenario(ctx).supplyCollateral) &&
+      await usesAssetList(ctx) &&
+      !(await isAssetDelisted(ctx, 0)) &&
+      await supportsExtendedPause(ctx);
+    },
+    tokenBalances: async (ctx: CometContext) => (
+      {
+        albert: { $asset0: getConfigForScenario(ctx).supplyCollateral }
+      }
+    ),
+  },
+  async ({ comet, actors }, context, world) => {
+    const { albert, pauseGuardian } = actors;
+    const { asset, scale: scaleBN } = await comet.getAssetInfo(0);
+    const collateralAsset = context.getAssetByAddress(asset);
+    const scale = scaleBN.toBigInt();
+
+
+    // Fund pause guardian account for gas fees
+    await fundAccount(world, pauseGuardian);
+
+    // Pause collateral supply
+    await comet.connect(pauseGuardian.signer).pauseCollateralSupply(true);
+
+    await collateralAsset.approve(albert, comet.address);
+    await expectRevertCustom(
+      albert.supplyAsset({
+        asset: collateralAsset.address,
+        amount: BigInt(getConfigForScenario(context).supplyCollateral) * scale,
+      }),
+      'CollateralSupplyPaused()'
+    );
+  }
+);
+
+scenario(
+  'Comet#supplyTo reverts when base supply is paused',
+  {
+    filter: async (ctx: CometContext) => {
+      return await isValidAssetIndex(ctx, 0) &&
+      await isTriviallySourceable(ctx, 0, getConfigForScenario(ctx).transferBase) &&
+      await usesAssetList(ctx) &&
+      !(await isAssetDelisted(ctx, 0)) &&
+      await supportsExtendedPause(ctx);
+    },
+    tokenBalances: async (ctx: CometContext) => (
+      {
+        albert: { $base: getConfigForScenario(ctx).transferBase }
+      }
+    ),
+  },
+  async ({ comet, actors }, context, world) => {
+    const { albert, betty, pauseGuardian } = actors;
+    const baseAssetAddress = await comet.baseToken();
+    const baseAsset = context.getAssetByAddress(baseAssetAddress);
+    const scale = (await comet.baseScale()).toBigInt();
+
+
+    // Fund pause guardian account for gas fees
+    await fundAccount(world, pauseGuardian);
+
+    // Pause base supply
+    await comet.connect(pauseGuardian.signer).pauseBaseSupply(true);
+
+    await baseAsset.approve(albert, comet.address);
+    await expectRevertCustom(
+      comet.connect(albert.signer).supplyTo(betty.address, baseAsset.address, BigInt(getConfigForScenario(context).transferBase) * scale),
+      'BaseSupplyPaused()'
+    );
+  }
+);
+
+scenario(
+  'Comet#supplyTo reverts when collateral supply is paused',
+  {
+    filter: async (ctx: CometContext) => {
+      return await isValidAssetIndex(ctx, 0) &&
+      await isTriviallySourceable(ctx, 0, getConfigForScenario(ctx).supplyCollateral) &&
+      await usesAssetList(ctx) &&
+      !(await isAssetDelisted(ctx, 0)) &&
+      await supportsExtendedPause(ctx);
+    },
+    tokenBalances: async (ctx: CometContext) => (
+      {
+        albert: { $asset0: getConfigForScenario(ctx).supplyCollateral }
+      }
+    ),
+  },
+  async ({ comet, actors }, context, world) => {
+    const { albert, betty, pauseGuardian } = actors;
+    const { asset, scale: scaleBN } = await comet.getAssetInfo(0);
+    const collateralAsset = context.getAssetByAddress(asset);
+    const scale = scaleBN.toBigInt();
+
+
+    // Fund pause guardian account for gas fees
+    await fundAccount(world, pauseGuardian);
+
+    // Pause collateral supply
+    await comet.connect(pauseGuardian.signer).pauseCollateralSupply(true);
+
+    await collateralAsset.approve(albert, comet.address);
+    await expectRevertCustom(
+      comet.connect(albert.signer).supplyTo(betty.address, collateralAsset.address, BigInt(getConfigForScenario(context).supplyCollateral) * scale),
+      'CollateralSupplyPaused()'
+    );
+  }
+);
+
+scenario(
+  'Comet#supplyTo reverts when specific collateral asset supply is paused',
+  {
+    filter: async (ctx: CometContext) => {
+      return await isValidAssetIndex(ctx, 0) &&
+      await isTriviallySourceable(ctx, 0, getConfigForScenario(ctx).supplyCollateral) &&
+      await usesAssetList(ctx) &&
+      !(await isAssetDelisted(ctx, 0)) &&
+      await supportsExtendedPause(ctx);
+    },
+    tokenBalances: async (ctx: CometContext) => (
+      {
+        albert: { $asset0: getConfigForScenario(ctx).supplyCollateral }
+      }
+    ),
+  },
+  async ({ comet, actors }, context, world) => {
+    const { albert, betty, pauseGuardian } = actors;
+    const { asset, scale: scaleBN } = await comet.getAssetInfo(0);
+    const collateralAsset = context.getAssetByAddress(asset);
+    const scale = scaleBN.toBigInt();
+
+    // Fund pause guardian account for gas fees
+    await fundAccount(world, pauseGuardian);
+
+    // Pause specific collateral asset supply
+    await comet.connect(pauseGuardian.signer).pauseCollateralAssetSupply(0, true);
+
+    await collateralAsset.approve(albert, comet.address);
+    await expect(
+      comet.connect(albert.signer).supplyTo(
+        betty.address,
+        collateralAsset.address,
+        BigInt(getConfigForScenario(context).supplyCollateral) * scale),
+    ).to.be.revertedWithCustomError(comet, 'CollateralAssetSupplyPaused').withArgs(0);
+  }
+);
+
+scenario(
+  'Comet#supplyFrom reverts when base supply is paused',
+  {
+    filter: async (ctx: CometContext) => {
+      return await isValidAssetIndex(ctx, 0) &&
+      await isTriviallySourceable(ctx, 0, getConfigForScenario(ctx).transferBase) &&
+      await usesAssetList(ctx) &&
+      !(await isAssetDelisted(ctx, 0)) &&
+      await supportsExtendedPause(ctx);
+    },
+    tokenBalances: async (ctx: CometContext) => (
+      {
+        albert: { $base: getConfigForScenario(ctx).transferBase }
+      }
+    ),
+  },
+  async ({ comet, actors }, context, world) => {
+    const { albert, betty, charles, pauseGuardian } = actors;
+    const baseAssetAddress = await comet.baseToken();
+    const baseAsset = context.getAssetByAddress(baseAssetAddress);
+    const scale = (await comet.baseScale()).toBigInt();
+
+
+    await baseAsset.approve(albert, comet.address);
+    await albert.allow(charles, true);
+
+    // Fund pause guardian account for gas fees
+    await fundAccount(world, pauseGuardian);
+
+    // Pause base supply
+    await comet.connect(pauseGuardian.signer).pauseBaseSupply(true);
+
+    await expectRevertCustom(
+      charles.supplyAssetFrom({
+        src: albert.address,
+        dst: betty.address,
+        asset: baseAsset.address,
+        amount: BigInt(getConfigForScenario(context).transferBase) * scale,
+      }),
+      'BaseSupplyPaused()'
+    );
+  }
+);
+
+scenario(
+  'Comet#supplyFrom reverts when collateral supply is paused',
+  {
+    filter: async (ctx: CometContext) => {
+      return await isValidAssetIndex(ctx, 0) &&
+      await isTriviallySourceable(ctx, 0, getConfigForScenario(ctx).supplyCollateral) &&
+      await usesAssetList(ctx) &&
+      !(await isAssetDelisted(ctx, 0)) &&
+      await supportsExtendedPause(ctx);
+    },
+    tokenBalances: async (ctx: CometContext) => (
+      {
+        albert: { $asset0: getConfigForScenario(ctx).supplyCollateral }
+      }
+    ),
+  },
+  async ({ comet, actors }, context, world) => {
+    const { albert, betty, charles, pauseGuardian } = actors;
+    const { asset, scale: scaleBN } = await comet.getAssetInfo(0);
+    const collateralAsset = context.getAssetByAddress(asset);
+    const scale = scaleBN.toBigInt();
+
+
+    await collateralAsset.approve(albert, comet.address);
+    await albert.allow(charles, true);
+
+    // Fund pause guardian account for gas fees
+    await fundAccount(world, pauseGuardian);
+
+    // Pause collateral supply
+    await comet.connect(pauseGuardian.signer).pauseCollateralSupply(true);
+
+    await expectRevertCustom(
+      charles.supplyAssetFrom({
+        src: albert.address,
+        dst: betty.address,
+        asset: collateralAsset.address,
+        amount: BigInt(getConfigForScenario(context).supplyCollateral) * scale,
+      }),
+      'CollateralSupplyPaused()'
+    );
+  }
+);
+
+scenario(
+  'Comet#supplyFrom reverts when specific collateral asset supply is paused',
+  {
+    filter: async (ctx: CometContext) => {
+      return await isValidAssetIndex(ctx, 0) &&
+      await isTriviallySourceable(ctx, 0, getConfigForScenario(ctx).supplyCollateral) &&
+      await usesAssetList(ctx) &&
+      !(await isAssetDelisted(ctx, 0)) &&
+      await supportsExtendedPause(ctx);
+    },
+    tokenBalances: async (ctx: CometContext) => (
+      {
+        albert: { $asset0: getConfigForScenario(ctx).supplyCollateral }
+      }
+    ),
+  },
+  async ({ comet, actors }, context, world) => {
+    const { albert, betty, charles, pauseGuardian } = actors;
+    const { asset, scale: scaleBN } = await comet.getAssetInfo(0);
+    const collateralAsset = context.getAssetByAddress(asset);
+    const scale = scaleBN.toBigInt();
+
+
+    await collateralAsset.approve(albert, comet.address);
+    await albert.allow(charles, true);
+
+    // Fund pause guardian account for gas fees
+    await fundAccount(world, pauseGuardian);
+
+    // Pause specific collateral asset supply
+    await comet.connect(pauseGuardian.signer).pauseCollateralAssetSupply(0, true);
+
+    await expect(
+      charles.supplyAssetFrom({
+        src: albert.address,
+        dst: betty.address,
+        asset: collateralAsset.address,
+        amount: BigInt(getConfigForScenario(context).supplyCollateral) * scale,
+      }),
+    ).to.be.revertedWithCustomError(comet, 'CollateralAssetSupplyPaused').withArgs(0);
+  }
+);
+
+scenario(
+  'Comet#supply reverts when collateral asset supply is paused and allows to supply when unpaused',
+  {
+    filter: async (ctx: CometContext) => {
+      return await usesAssetList(ctx) && await supportsExtendedPause(ctx);
+    },
+  },
+  async ({ comet, actors }, context, world) => {
+    const { albert, pauseGuardian } = actors;
+
+    // Fund pause guardian account for gas fees
+    await fundAccount(world, pauseGuardian);
+
+    for (let i = 0; i < MAX_ASSETS; i++) {
+      if (!await isValidAssetIndex(context, i)) continue;
+      if (!await isTriviallySourceable(context, i, getConfigForScenario(context, i).supplyCollateral)) continue;
+      if (await isAssetDelisted(context, i)) continue;
+
+      const { asset, scale: scaleBN } = await comet.getAssetInfo(i);
+      const collateralAsset = context.getAssetByAddress(asset);
+      const scale = scaleBN.toBigInt();
+      const supplyCollateral = BigInt(getConfigForScenario(context, i).supplyCollateral) * scale;
+
+      log(`Supplying reverts when collateral asset ${i} supply is paused`);
+
+      // Source collateral asset
+      await context.sourceTokens(supplyCollateral, collateralAsset.address, albert.address);
+
+      // Pause specific collateral asset supply at index i
+      await comet.connect(pauseGuardian.signer).pauseCollateralAssetSupply(i, true);
+
+      await collateralAsset.approve(albert, comet.address);
+      await expect(
+        albert.supplyAsset({
+          asset: collateralAsset.address,
+          amount: supplyCollateral,
+        })
+      ).to.be.revertedWithCustomError(comet, 'CollateralAssetSupplyPaused').withArgs(i);
+
+      log(`Supplying is allowed when collateral asset ${i} supply is unpaused`);
+
+      // Unpause specific collateral asset supply at index i
+      await comet.connect(pauseGuardian.signer).pauseCollateralAssetSupply(i, false);
+
+      await albert.safeSupplyAsset({
+        asset: collateralAsset.address,
+        amount: supplyCollateral,
+      });
+
+      expect(await comet.collateralBalanceOf(
+        albert.address, 
+        collateralAsset.address
+      )).to.be.equal(supplyCollateral);
+    }
+  }
+);
+
+scenario(
+  'Comet#supplyTo reverts when collateral asset supply is paused and allows to supply when unpaused',
+  {
+    filter: async (ctx: CometContext) => {
+      return await usesAssetList(ctx) && await supportsExtendedPause(ctx);
+    },
+  },
+  async ({ comet, actors }, context, world) => {
+    const { albert, betty, pauseGuardian } = actors;
+
+    // Fund pause guardian account for gas fees
+    await fundAccount(world, pauseGuardian);
+
+    for (let i = 0; i < MAX_ASSETS; i++) {
+      if (!await isValidAssetIndex(context, i)) continue;
+      if (!await isTriviallySourceable(context, i, getConfigForScenario(context, i).supplyCollateral)) continue;
+      if (await isAssetDelisted(context, i)) continue;
+
+      const { asset, scale: scaleBN } = await comet.getAssetInfo(i);
+      const collateralAsset = context.getAssetByAddress(asset);
+      const scale = scaleBN.toBigInt();
+      const supplyCollateral = BigInt(getConfigForScenario(context, i).supplyCollateral) * scale;
+
+      log(`Supplying reverts when collateral asset ${i} supply is paused`);
+
+      // Source collateral asset
+      await context.sourceTokens(supplyCollateral, collateralAsset.address, albert.address);
+
+      // Pause specific collateral asset supply at index i
+      await comet.connect(pauseGuardian.signer).pauseCollateralAssetSupply(i, true);
+
+      await collateralAsset.approve(albert, comet.address);
+      await expect(
+        albert.supplyAssetTo({
+          dst: betty.address,
+          asset: collateralAsset.address,
+          amount: supplyCollateral,
+        })
+      ).to.be.revertedWithCustomError(comet, 'CollateralAssetSupplyPaused').withArgs(i);
+
+      log(`Supplying is allowed when collateral asset ${i} supply is unpaused`);
+
+      // Unpause specific collateral asset supply at index i
+      await comet.connect(pauseGuardian.signer).pauseCollateralAssetSupply(i, false);
+
+      await albert.safeSupplyAssetTo({
+        dst: betty.address,
+        asset: collateralAsset.address,
+        amount: supplyCollateral,
+      });
+
+      expect(await comet.collateralBalanceOf(
+        betty.address, 
+        collateralAsset.address
+      )).to.be.equal(supplyCollateral);
+    }
+  }
+);
+
+scenario(
+  'Comet#supplyFrom reverts when collateral asset supply is paused and allows to supply when unpaused',
+  {
+    filter: async (ctx: CometContext) => {
+      return await usesAssetList(ctx) && await supportsExtendedPause(ctx);
+    },
+  },
+  async ({ comet, actors }, context, world) => {
+    const { albert, betty, pauseGuardian } = actors;
+
+    // Fund pause guardian account for gas fees
+    await fundAccount(world, pauseGuardian);
+
+    for (let i = 0; i < MAX_ASSETS; i++) {
+      if (!await isValidAssetIndex(context, i)) continue;
+      if (!await isTriviallySourceable(context, i, getConfigForScenario(context, i).supplyCollateral)) continue;
+      if (await isAssetDelisted(context, i)) continue;
+
+      const { asset, scale: scaleBN } = await comet.getAssetInfo(i);
+      const collateralAsset = context.getAssetByAddress(asset);
+      const scale = scaleBN.toBigInt();
+      const supplyCollateral = BigInt(getConfigForScenario(context, i).supplyCollateral) * scale;
+
+      log(`Supplying reverts when collateral asset ${i} supply is paused`);
+
+      // Source collateral asset
+      await context.sourceTokens(supplyCollateral, collateralAsset.address, albert.address);
+
+      // Pause specific collateral asset supply at index i
+      await comet.connect(pauseGuardian.signer).pauseCollateralAssetSupply(i, true);
+
+      await collateralAsset.approve(albert, comet.address);
+      await albert.allow(betty, true);
+
+      await expect(
+        betty.supplyAssetFrom({
+          src: albert.address,
+          dst: betty.address,
+          asset: collateralAsset.address,
+          amount: supplyCollateral,
+        })
+      ).to.be.revertedWithCustomError(comet, 'CollateralAssetSupplyPaused').withArgs(i);
+
+      log(`Supplying is allowed when collateral asset ${i} supply is unpaused`);
+
+      // Unpause specific collateral asset supply at index i
+      await comet.connect(pauseGuardian.signer).pauseCollateralAssetSupply(i, false);
+
+      await betty.safeSupplyAssetFrom({
+        src: albert.address,
+        dst: betty.address,
+        asset: collateralAsset.address,
+        amount: supplyCollateral,
+      });
+
+      expect(await comet.collateralBalanceOf(
+        betty.address, 
+        collateralAsset.address
+      )).to.be.equal(supplyCollateral);
+    }
+  }
+);
+
+
+/*//////////////////////////////////////////////////////////////
+                    DEACTIVATE/ACTIVATE COLLATERALS
+//////////////////////////////////////////////////////////////*/
+
+scenario('Comet#supply reverts when collateral asset is deactivated and allows to supply when activated',
+  {
+    filter: async (ctx: CometContext) => {
+      return await usesAssetList(ctx) && await supportsExtendedPause(ctx);
+    },
+  }, async ({ comet, actors }, context, world) => {
+    const { admin, pauseGuardian, albert } = actors;
+
+    // Fund pause guardian account for gas fees
+    await fundAccount(world, pauseGuardian);
+
+    for (let i = 0; i < MAX_ASSETS; i++) {
+      if (!await isValidAssetIndex(context, i)) continue;
+      if (!await isTriviallySourceable(context, i, getConfigForScenario(context, i).supplyCollateral)) continue;
+      if (await isAssetDelisted(context, i)) continue;
+
+      const { asset, scale: scaleBigNumber } = await comet.getAssetInfo(i);
+      const collateralAsset = context.getAssetByAddress(asset);
+      const scale = scaleBigNumber.toBigInt();
+      const supplyAmount = BigInt(getConfigForScenario(context, i).supplyCollateral) * scale;
+
+      log(`Supply reverts when collateral asset ${i} is deactivated`);
+
+      // Source collateral asset
+      await context.sourceTokens(supplyAmount, collateralAsset.address, albert.address);
+
+      // Approve the asset for supply
+      await collateralAsset.approve(albert, comet.address);
+
+      // Deactivate collateral asset
+      await comet.connect(pauseGuardian.signer).deactivateCollateral(i);
+
+      await expect(
+        albert.safeSupplyAsset({
+          asset: asset,
+          amount: supplyAmount,
+        })
+      ).to.be.revertedWithCustomError(comet, 'CollateralAssetSupplyPaused').withArgs(i);
+
+      log(`Supply is allowed when collateral asset ${i} is activated`);
+
+      // Activate collateral asset
+      await comet.connect(admin.signer).activateCollateral(i);
+
+      await albert.safeSupplyAsset({
+        asset: collateralAsset.address,
+        amount: supplyAmount,
+      });
+
+      expect(await comet.collateralBalanceOf(
+        albert.address, 
+        collateralAsset.address
+      )).to.be.equal(supplyAmount);
+    }
+  }
+);
+
+scenario(
+  'Comet#supplyTo reverts when collateral asset is deactivated and allows to supply when activated',
+  {
+    filter: async (ctx: CometContext) => {
+      return await usesAssetList(ctx) && await supportsExtendedPause(ctx);
+    },
+  },
+  async ({ comet, actors }, context, world) => {
+    const { admin, pauseGuardian, albert, betty } = actors;
+
+    // Fund pause guardian account for gas fees
+    await fundAccount(world, pauseGuardian);
+
+    for (let i = 0; i < MAX_ASSETS; i++) {
+      if (!await isValidAssetIndex(context, i)) continue;
+      if (!await isTriviallySourceable(context, i, getConfigForScenario(context, i).supplyCollateral)) continue;
+      if (await isAssetDelisted(context, i)) continue;
+
+      const { asset, scale: scaleBigNumber } = await comet.getAssetInfo(i);
+      const collateralAsset = context.getAssetByAddress(asset);
+      const scale = scaleBigNumber.toBigInt();
+      const supplyAmount = BigInt(getConfigForScenario(context, i).supplyCollateral) * scale;
+
+      log(`SupplyTo reverts when collateral asset ${i} is deactivated`);
+
+      // Source collateral asset
+      await context.sourceTokens(supplyAmount, collateralAsset.address, albert.address);
+
+      // Approve the asset for supply
+      await collateralAsset.approve(albert, comet.address);
+
+      // Deactivate collateral asset
+      await comet.connect(pauseGuardian.signer).deactivateCollateral(i);
+
+      await expect(
+        albert.safeSupplyAssetTo({
+          dst: betty.address,
+          asset: collateralAsset.address,
+          amount: supplyAmount,
+        })
+      ).to.be.revertedWithCustomError(comet, 'CollateralAssetSupplyPaused').withArgs(i);
+
+      log(`SupplyTo is allowed when collateral asset ${i} is activated`);
+
+      // Activate collateral asset
+      await comet.connect(admin.signer).activateCollateral(i);
+
+      await albert.safeSupplyAssetTo({
+        dst: betty.address,
+        asset: collateralAsset.address,
+        amount: supplyAmount,
+      });
+
+      expect(await comet.collateralBalanceOf(
+        betty.address, 
+        collateralAsset.address
+      )).to.be.equal(supplyAmount);
+    }
+  }
+);
+
+scenario(
+  'Comet#supplyFrom reverts when collateral asset is deactivated and allows to supply when activated',
+  {
+    filter: async (ctx: CometContext) => {
+      return await usesAssetList(ctx) && await supportsExtendedPause(ctx);
+    },
+  },
+  async ({ comet, actors }, context, world) => {
+    const { admin, pauseGuardian, albert, betty } = actors;
+
+    // Fund pause guardian account for gas fees
+    await fundAccount(world, pauseGuardian);
+
+    // Allow betty to act on behalf of albert
+    await albert.allow(betty, true);
+
+    for (let i = 0; i < MAX_ASSETS; i++) {
+      if (!await isValidAssetIndex(context, i)) continue;
+      if (!await isTriviallySourceable(context, i, getConfigForScenario(context, i).supplyCollateral)) continue;
+      if (await isAssetDelisted(context, i)) continue;
+
+      const { asset, scale: scaleBigNumber } = await comet.getAssetInfo(i);
+      const collateralAsset = context.getAssetByAddress(asset);
+      const scale = scaleBigNumber.toBigInt();
+      const supplyAmount = BigInt(getConfigForScenario(context, i).supplyCollateral) * scale;
+
+      log(`SupplyFrom reverts when collateral asset ${i} is deactivated`);
+
+      // Source collateral asset
+      await context.sourceTokens(supplyAmount, collateralAsset.address, albert.address);
+
+      // Approve the asset for supply
+      await collateralAsset.approve(albert, comet.address);
+
+      // Deactivate collateral asset
+      await comet.connect(pauseGuardian.signer).deactivateCollateral(i);
+
+      await expect(
+        betty.supplyAssetFrom({
+          src: albert.address,
+          dst: betty.address,
+          asset: collateralAsset.address,
+          amount: supplyAmount,
+        })
+      ).to.be.revertedWithCustomError(comet, 'CollateralAssetSupplyPaused').withArgs(i);
+
+      log(`SupplyFrom is allowed when collateral asset ${i} is activated`);
+
+      // Set balance of admin
+      await context.world.deploymentManager.hre.ethers.provider.send(
+        'hardhat_setBalance',
+        [
+          admin.address,
+          '0x1000000000000000000', // 1,000 ETH
+        ]
+      );
+
+      // Activate collateral asset
+      await comet.connect(admin.signer).activateCollateral(i);
+
+      await betty.safeSupplyAssetFrom({
+        src: albert.address,
+        dst: betty.address,
+        asset: collateralAsset.address,
+        amount: supplyAmount,
+      });
+
+      expect(await comet.collateralBalanceOf(
+        betty.address, 
+        collateralAsset.address
+      )).to.be.equal(supplyAmount);
+    }
+  }
+);
