@@ -41,14 +41,8 @@ export default migration('1778158953_update_to_v2_factory', {
       governor,
     } = await govDeploymentManager.getContracts();
 
-    const newFactory = await deploymentManager.existing(
-      'cometFactoryV2',
-      COMET_FACTORY_V2_LINEA,
-      'linea'
-    );
-
-    const setConfigurationCalldataUsdcLinea = await calldata(
-      lineaConfigurator.populateTransaction.setFactory(USDC_COMET_LINEA, newFactory.address)
+    const setFactoryCalldataUsdcLinea = await calldata(
+      lineaConfigurator.populateTransaction.setFactory(USDC_COMET_LINEA, COMET_FACTORY_V2_LINEA)
     );
     const setExtensionDelegateCalldataUsdcLinea = await calldata(
       lineaConfigurator.populateTransaction.setExtensionDelegate(USDC_COMET_LINEA, USDC_EXT_LINEA)
@@ -58,8 +52,8 @@ export default migration('1778158953_update_to_v2_factory', {
       [lineaConfigurator.address, USDC_COMET_LINEA]
     );
 
-    const setConfigurationCalldataWethLinea = await calldata(
-      lineaConfigurator.populateTransaction.setFactory(WETH_COMET_LINEA, newFactory.address)
+    const setFactoryCalldataWethLinea = await calldata(
+      lineaConfigurator.populateTransaction.setFactory(WETH_COMET_LINEA, COMET_FACTORY_V2_LINEA)
     );
     const setExtensionDelegateCalldataWethLinea = await calldata(
       lineaConfigurator.populateTransaction.setExtensionDelegate(WETH_COMET_LINEA, WETH_EXT_LINEA)
@@ -89,8 +83,8 @@ export default migration('1778158953_update_to_v2_factory', {
           'deployAndUpgradeTo(address,address)',
         ],
         [
-          setConfigurationCalldataUsdcLinea, setExtensionDelegateCalldataUsdcLinea, deployAndUpgradeToCalldataUsdcLinea,
-          setConfigurationCalldataWethLinea, setExtensionDelegateCalldataWethLinea,  deployAndUpgradeToCalldataWethLinea
+          setFactoryCalldataUsdcLinea, setExtensionDelegateCalldataUsdcLinea, deployAndUpgradeToCalldataUsdcLinea,
+          setFactoryCalldataWethLinea, setExtensionDelegateCalldataWethLinea,  deployAndUpgradeToCalldataWethLinea
         ]
       ]
     );
@@ -104,7 +98,7 @@ export default migration('1778158953_update_to_v2_factory', {
       cometAdmin: scrollCometAdmin,
     } = await scrollDm.getContracts();
 
-    const setConfigurationCalldataUsdcScroll = await calldata(
+    const setFactoryCalldataUsdcScroll = await calldata(
       scrollConfigurator.populateTransaction.setFactory(USDC_COMET_SCROLL, COMET_FACTORY_V2_SCROLL)
     );
     const setExtensionDelegateCalldataUsdcScroll = await calldata(
@@ -130,7 +124,7 @@ export default migration('1778158953_update_to_v2_factory', {
           'deployAndUpgradeTo(address,address)',
         ],
         [
-          setConfigurationCalldataUsdcScroll, setExtensionDelegateCalldataUsdcScroll, deployAndUpgradeToCalldataUsdcScroll,
+          setFactoryCalldataUsdcScroll, setExtensionDelegateCalldataUsdcScroll, deployAndUpgradeToCalldataUsdcScroll,
         ]
       ]
     );
@@ -218,7 +212,7 @@ The second action sets the factory to the newly deployed factory, extension dele
     expect((await lineaConfigurator.getConfiguration(WETH_COMET_LINEA)).extensionDelegate).to.equal(WETH_EXT_LINEA);
 
     const expectedMaxUtilization = exp(2, 18);
-    const signer = await deploymentManager.getSigner();
+    const lineaSigner = await deploymentManager.getSigner();
 
     const newCometUsdc = new Contract(
       USDC_COMET_LINEA, 
@@ -228,7 +222,7 @@ The second action sets the factory to the newly deployed factory, extension dele
         'function name() external view returns (string)',
         'function extensionDelegate() external view returns (address)',
       ],
-      signer
+      lineaSigner
     );
 
     expect(await newCometUsdc.MAX_SUPPORTED_UTILIZATION()).to.equal(expectedMaxUtilization);
@@ -244,7 +238,7 @@ The second action sets the factory to the newly deployed factory, extension dele
         'function name() external view returns (string)',
         'function extensionDelegate() external view returns (address)',
       ],
-      signer
+      lineaSigner
     );
 
     expect(await newCometWeth.MAX_SUPPORTED_UTILIZATION()).to.equal(expectedMaxUtilization);
