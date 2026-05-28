@@ -8,86 +8,21 @@ import { forkedHreForBase } from '../../../../plugins/scenario/utils/hreForBase'
 const USDC_COMET_LINEA = '0x8D38A3d6B3c3B7d96D6536DA7Eef94A9d7dbC991';
 const WETH_COMET_LINEA = '0x60F2058379716A64a7A5d29219397e79bC552194';
 
-const COMET_FACTORY_V2_LINEA = '0xb07302209d25D0dA8100D0C9AC061259eEfe531a';
+const COMET_FACTORY_V2_LINEA = '0x74a241aA5E2C0D62Ac267fC481790f3474ED5aAF';
 
-const USDC_EXT_LINEA = '0x9A830d83768636eAF68E317260adE822c5f3db9D';
-const WETH_EXT_LINEA = '0xCfcdeA31c11FE002d7488Bd714c630E67cf72D71';
+const USDC_EXT_LINEA = '0xBC7B80c97b560e83A229a6417Ed4fC2d75Fc1209';
+const WETH_EXT_LINEA = '0x78eE842Bf092CaAa68dE542A8b1d1BF337EAD33F';
 
 ////
 
 const USDC_COMET_SCROLL = '0xB2f97c1Bd3bf02f5e74d13f02E3e26F93D77CE44';
 
-const COMET_FACTORY_V2_SCROLL = '0xBE1b3e95c8fE0Cb9B6E825c9F7E1bfbb7855B227';
+const COMET_FACTORY_V2_SCROLL = '0xF27F2346d71FfA71B769Ab781B7587b8238090Fd';
 
-const USDC_EXT_SCROLL = '0x4DA8f56c46Dc7195FBfF1C775327C13feE7eadAd';
+const USDC_EXT_SCROLL = '0x987Fddf251FC26Cbf29Ea76666058EddAa14230D';
 
 export default migration('1778158953_update_to_v2_factory', {
-  async prepare(
-    // deploymentManager: DeploymentManager
-  ) {
-
-    // const cometUSDC = new Contract(
-    //   USDC_COMET_LINEA,
-    //   ['function extensionDelegate() external view returns (address)'],
-    //   await deploymentManager.getSigner()
-    // );
-
-    // const lineaAssetListFactoryAddress = '0x2F4eAF29dfeeF4654bD091F7112926E108eF4Ed0';
-
-    // const extensionDelegateUSDC = new Contract(
-    //   await cometUSDC.extensionDelegate(),
-    //   [
-    //     'function name() external view returns (string)',
-    //     'function symbol() external view returns (string)',
-    //   ],
-    //   await deploymentManager.getSigner()
-    // );
-    // const nameUSDC = await extensionDelegateUSDC.name();
-    // const symbolUSDC = await extensionDelegateUSDC.symbol();
-
-    // console.log('USDC constructor args',
-    //   utils.defaultAbiCoder.encode(
-    //     ['tuple(bytes32,bytes32)', 'address'],
-    //     [
-    //       [
-    //         utils.formatBytes32String(nameUSDC),
-    //         utils.formatBytes32String(symbolUSDC)
-    //       ],
-    //       lineaAssetListFactoryAddress
-    //     ]
-    //   )
-    // );
-
-    // const cometWETH = new Contract(
-    //   WETH_COMET_LINEA,
-    //   ['function extensionDelegate() external view returns (address)'],
-    //   await deploymentManager.getSigner()
-    // );
-
-    // const extensionDelegateWETH = new Contract(
-    //   await cometWETH.extensionDelegate(),
-    //   [
-    //     'function name() external view returns (string)',
-    //     'function symbol() external view returns (string)',
-    //   ],
-    //   await deploymentManager.getSigner()
-    // );
-    // const nameWETH = await extensionDelegateWETH.name();
-    // const symbolWETH = await extensionDelegateWETH.symbol();
-
-    // console.log('WETH constructor args',
-    //   utils.defaultAbiCoder.encode(
-    //     ['(bytes32,bytes32)', 'address'],
-    //     [
-    //       [
-    //         utils.formatBytes32String(nameWETH),
-    //         utils.formatBytes32String(symbolWETH)
-    //       ],
-    //       lineaAssetListFactoryAddress
-    //     ]
-    //   )
-    // );
-    
+  async prepare() {
     return {};
   },
 
@@ -316,8 +251,7 @@ The second action sets the factory to the newly deployed factory, extension dele
     expect(await newCometWeth.symbol()).to.equal('cWETHv3');
     expect(await newCometWeth.name()).to.equal('Compound WETH');
     expect(await newCometWeth.extensionDelegate()).to.equal(WETH_EXT_LINEA);
-  
-    
+
     // Scroll
     const scrollDm = govDeploymentManager.bridgedDeploymentManagers.get('scroll:usdc') as DeploymentManager;
     const {

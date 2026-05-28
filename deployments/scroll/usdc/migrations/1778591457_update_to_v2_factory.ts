@@ -6,45 +6,12 @@ import { exp, proposal, calldata } from '../../../../src/deploy';
 
 const USDC_COMET_SCROLL = '0xB2f97c1Bd3bf02f5e74d13f02E3e26F93D77CE44';
 
-const COMET_FACTORY_V2_SCROLL = '0xBE1b3e95c8fE0Cb9B6E825c9F7E1bfbb7855B227';
+const COMET_FACTORY_V2_SCROLL = '0xF27F2346d71FfA71B769Ab781B7587b8238090Fd';
 
-const USDC_EXT_SCROLL = '0x4DA8f56c46Dc7195FBfF1C775327C13feE7eadAd';
+const USDC_EXT_SCROLL = '0x987Fddf251FC26Cbf29Ea76666058EddAa14230D';
 
 export default migration('1778591457_update_to_v2_factory', {
-  async prepare(deploymentManager: DeploymentManager) {
-
-    const cometUSDC = new Contract(
-      USDC_COMET_SCROLL,
-      ['function extensionDelegate() external view returns (address)'],
-      await deploymentManager.getSigner()
-    );
-
-    const scrollAssetListFactoryAddress = '0x5404872d8f2e24b230EC9B9eC64E3855F637FB93';
-
-    const extensionDelegateUSDC = new Contract(
-      await cometUSDC.extensionDelegate(),
-      [
-        'function name() external view returns (string)',
-        'function symbol() external view returns (string)',
-      ],
-      await deploymentManager.getSigner()
-    );
-    const nameUSDC = await extensionDelegateUSDC.name();
-    const symbolUSDC = await extensionDelegateUSDC.symbol();
-
-    console.log('USDC constructor args',
-      utils.defaultAbiCoder.encode(
-        ['tuple(bytes32,bytes32)', 'address'],
-        [
-          [
-            utils.formatBytes32String(nameUSDC),
-            utils.formatBytes32String(symbolUSDC)
-          ],
-          scrollAssetListFactoryAddress
-        ]
-      )
-    );
-
+  async prepare() {
     return {};
   },
 
