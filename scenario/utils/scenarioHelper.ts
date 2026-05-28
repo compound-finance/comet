@@ -219,6 +219,8 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
   if (ctx.world.base.network === 'scroll' && ctx.world.base.deployment === 'usdc') {
     config.bulkerAsset = 200;
     config.bulkerAsset1 = 50;
+    config.liquidationBase = 1000;
+    config.liquidationAsset = 2;
     if(i == 1) { // tBTC
       config.supplyCollateral = 10;
       config.transferCollateral = 10;

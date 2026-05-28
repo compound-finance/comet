@@ -1233,7 +1233,7 @@ scenario('Comet#supply reverts when collateral asset is deactivated and allows t
       const { asset, scale: scaleBigNumber } = await comet.getAssetInfo(i);
       const collateralAsset = context.getAssetByAddress(asset);
       const scale = scaleBigNumber.toBigInt();
-      const supplyAmount = BigInt(getConfigForScenario(context).supplyCollateral) * scale;
+      const supplyAmount = BigInt(getConfigForScenario(context, i).supplyCollateral) * scale;
 
       log(`Supply reverts when collateral asset ${i} is deactivated`);
 
@@ -1286,7 +1286,7 @@ scenario(
 
     for (let i = 0; i < MAX_ASSETS; i++) {
       if (!await isValidAssetIndex(context, i)) continue;
-      if (!await isTriviallySourceable(context, i, getConfigForScenario(context).supplyCollateral)) continue;
+      if (!await isTriviallySourceable(context, i, getConfigForScenario(context, i).supplyCollateral)) continue;
       if (await isAssetDelisted(context, i)) continue;
 
       const { asset, scale: scaleBigNumber } = await comet.getAssetInfo(i);
@@ -1350,13 +1350,13 @@ scenario(
 
     for (let i = 0; i < MAX_ASSETS; i++) {
       if (!await isValidAssetIndex(context, i)) continue;
-      if (!await isTriviallySourceable(context, i, getConfigForScenario(context).supplyCollateral)) continue;
+      if (!await isTriviallySourceable(context, i, getConfigForScenario(context, i).supplyCollateral)) continue;
       if (await isAssetDelisted(context, i)) continue;
 
       const { asset, scale: scaleBigNumber } = await comet.getAssetInfo(i);
       const collateralAsset = context.getAssetByAddress(asset);
       const scale = scaleBigNumber.toBigInt();
-      const supplyAmount = BigInt(getConfigForScenario(context).supplyCollateral) * scale;
+      const supplyAmount = BigInt(getConfigForScenario(context, i).supplyCollateral) * scale;
 
       log(`SupplyFrom reverts when collateral asset ${i} is deactivated`);
 

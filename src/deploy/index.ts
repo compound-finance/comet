@@ -177,6 +177,7 @@ export const WHALES = {
     '0xaaaaAAAACB71BF2C8CaE522EA5fa455571A74106', // USDC whale
     '0x5B1322eeb46240b02e20062b8F0F9908d525B09c', // wstETH whale
     '0x7fA3dC8729b7D56dC36651D01aB4a27e882fDCF1', // wstETH whale
+    `0xf610A9dfB7C89644979b4A0f27063E9e7d7Cda32`, // wstETH whale
   ],
   optimism: [
     '0x2A82Ae142b2e62Cb7D10b55E323ACB1Cab663a26', // OP whale
