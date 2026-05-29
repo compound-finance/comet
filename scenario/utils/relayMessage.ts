@@ -1,9 +1,9 @@
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import relayPolygonMessage from './relayPolygonMessage';
-import { relayArbitrumMessage, relayArbitrumCCTPMint } from './relayArbitrumMessage';
-import relayBaseMessage from './relayBaseMessage';
+import { relayArbitrumMessage, relayArbitrumCCTPMint, simulateL2ToL1TokenBridging } from './relayArbitrumMessage';
+import relayBaseMessage,{ simulateL2ToL1TokenBridging as simulateBaseL2ToL1TokenBridging} from './relayBaseMessage';
 import relayLineaMessage from './relayLineaMessage';
-import relayOptimismMessage from './relayOptimismMessage';
+import relayOptimismMessage, { simulateL2ToL1TokenBridging as simulateOptimismL2ToL1TokenBridging } from './relayOptimismMessage';
 import relayMantleMessage from './relayMantleMessage';
 import { relayUnichainMessage, relayUnichainCCTPMint } from './relayUnichainMessage';
 import relayScrollMessage from './relayScrollMessage';
@@ -16,23 +16,36 @@ export default async function relayMessage(
   tenderlyLogs?: any[]
 ) {
   const bridgeNetwork = bridgeDeploymentManager.network;
-  console.log(`Relaying messages from ${bridgeNetwork} -> ${governanceDeploymentManager.network}`);
+  if(bridgeNetwork === governanceDeploymentManager.network) return; // no need to relay if the proposal is on the same network
+  console.log(`Relaying messages from ${governanceDeploymentManager.network} -> ${bridgeNetwork}`);
   let proposal;
   switch (bridgeNetwork) {
     case 'base':
-      return await relayBaseMessage(
+      proposal = await relayBaseMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber,
         tenderlyLogs
       );
+      await simulateBaseL2ToL1TokenBridging(
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
+        tenderlyLogs
+      );
+      return proposal;
     case 'optimism':
-      return await relayOptimismMessage(
+      proposal = await relayOptimismMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber,
         tenderlyLogs
       );
+      await simulateOptimismL2ToL1TokenBridging(
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
+        tenderlyLogs
+      );
+      return proposal;
     case 'mantle':
       return await relayMantleMessage(
         governanceDeploymentManager,
@@ -72,6 +85,11 @@ export default async function relayMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber,
+        tenderlyLogs
+      );
+      await simulateL2ToL1TokenBridging(
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
         tenderlyLogs
       );
       return proposal;
