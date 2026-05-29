@@ -6,7 +6,7 @@ import { OpenBridgedProposal } from '../context/Gov';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import { isTenderlyLog } from './index';
 
-const LINEA_SETTER_ROLE_ACCOUNT = '0xc1C6B09D1eB6fCA0fF3cA11027E5Bc4AeDb47F67';
+const LINEA_SETTER_ROLE_ACCOUNT = '0x2b0F9C76970975aec03784EFd763623757EF7652';
 
 export default async function relayLineaMessage(
   governanceDeploymentManager: DeploymentManager,
@@ -245,9 +245,9 @@ export default async function relayLineaMessage(
       // Add the proposal to the list of open bridged proposals to be executed after all the messages have been relayed
       openBridgedProposals.push({ id, eta });
     } else {
-      throw new Error(
-        `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Unrecognized target for cross-chain message`
-      );
+      // throw error only on last relay message and no proposal created event found
+      if(messageSentEvents.indexOf(messageSentEvent) === messageSentEvents.length - 1 && openBridgedProposals.length === 0)
+        throw new Error(`[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Unrecognized target for cross-chain message`);
     }
   }
 
@@ -276,6 +276,7 @@ export default async function relayLineaMessage(
       `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
     );
   }
+
   return openBridgedProposals;
 }
 

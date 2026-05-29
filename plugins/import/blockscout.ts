@@ -10,6 +10,7 @@ export interface Result {
 export function getBlockscoutApiUrl(network: string): string {
   let host = {
     'unichain': 'unichain.blockscout.com',
+    'scroll': 'scrollscan.com'
   }[network];
 
   if (!host) {
@@ -22,6 +23,7 @@ export function getBlockscoutApiUrl(network: string): string {
 export function getBlockscoutUrl(network: string): string {
   let host = {
     'unichain': 'unichain.blockscout.com',
+    'scroll': 'scrollscan.com'
   }[network];
 
   if (!host) {
@@ -33,7 +35,8 @@ export function getBlockscoutUrl(network: string): string {
 
 export async function getBlockscoutRPCUrl(network: string): Promise<string> {
   let host = {
-    'unichain': `${process.env.UNICHAIN_QUICKNODE_LINK}`.replace('https://', '')
+    'unichain': `${process.env.UNICHAIN_QUICKNODE_LINK}`.replace('https://', ''),
+    'scroll': `scroll-mainnet.gateway.tenderly.co`,
   }[network];
 
   if (!host) {

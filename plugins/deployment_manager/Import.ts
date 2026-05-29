@@ -23,7 +23,7 @@ export async function fetchAndCacheContract(
   return buildFile;
 }
 
-const blockScoutNetworks = ['unichain'];
+const blockScoutNetworks = ['unichain', 'scroll'];
 
 // Wrapper for pulling contract data from Etherscan
 export async function importContract(
@@ -44,7 +44,7 @@ export async function importContract(
       console.warn(`Import failed for ${network}@${address} (${e.message}), retrying in ${retryDelay / 1000}s; ${retries} retries left`);
   
       await new Promise(ok => setTimeout(ok, retryDelay));
-      return importContract(network, address, retries - 1, retryDelay * 2);
+      return importContract(network, address, retries - 1, retryDelay * 2 > 10000 ? 10000 : retryDelay * 2);
     }
   }
 
@@ -61,7 +61,7 @@ export async function importContract(
     console.warn(`Import failed for ${network}@${address} (${e.message}), retrying in ${retryDelay / 1000}s; ${retries} retries left`);
 
     await new Promise(ok => setTimeout(ok, retryDelay));
-    return importContract(network, address, retries - 1, retryDelay * 2);
+    return importContract(network, address, retries - 1, retryDelay * 2 > 10000 ? 10000 : retryDelay * 2);
   }
 }
 
