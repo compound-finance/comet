@@ -8,15 +8,14 @@ const USDC_COMET = '0xc3d688B66703497DAA19211EEdff47f25384cdc3';
 const USDS_COMET = '0x5D409e56D886231aDAf00c8775665AD0f9897b56';
 const USDT_COMET = '0x3Afdc9BCA9213A35503b077a6072F3D0d5AB0840';
 
-const COMET_FACTORY_V2 = '0x219E8039359C1ED650c7280bA87251E282288f7F';
+const COMET_FACTORY_V2 = '0x298aC0E463cEAd4aaA73fb91Df7C639A8eFBd9c4';
 
-const USDC_EXT = '0x048A6eAB0Abeb779fFC837De2c646D130828b005';
-const USDT_EXT = '0x2EB48177ac6060924E5E7B55A38365fD48ea799D';
-const USDS_EXT = '0x1b21Fb4127f7cC1b643c9d0AcC7BC7e91878ee2c';
+const USDC_EXT = '0xdaBeB59FC033a8dD37A115909F7a007A5b32f0AC';
+const USDT_EXT = '0xf9C05b867cFb7A0C8165a6cf90e5c37545BBe774';
+const USDS_EXT = '0xeB94c962B30287aCa15608dcD7165729d9d29221';
 
-export default migration('1777547599_update_usd_based_to_v2_factory', {
+export default migration('1780051404_update_usd_based_to_v2_factory', {
   async prepare() {
-
     return {};
   },
 
@@ -30,18 +29,12 @@ export default migration('1777547599_update_usd_based_to_v2_factory', {
       configurator,
     } = await deploymentManager.getContracts();
 
-    const newFactory = await deploymentManager.existing(
-      'cometFactoryV2',
-      COMET_FACTORY_V2,
-      'mainnet'
-    );
-
     const mainnetActions = [
       // 1. Update USDC Comet factory to a new one
       {
         contract: configurator,
         signature: 'setFactory(address,address)',
-        args: [USDC_COMET, newFactory.address],
+        args: [USDC_COMET, COMET_FACTORY_V2],
       },
       // 2. Set service patch version of the extension delegate for the USDC Comet
       {
@@ -59,7 +52,7 @@ export default migration('1777547599_update_usd_based_to_v2_factory', {
       {
         contract: configurator,
         signature: 'setFactory(address,address)',
-        args: [USDT_COMET, newFactory.address],
+        args: [USDT_COMET, COMET_FACTORY_V2],
       },
       // 5. Set service patch version of the extension delegate for the USDT Comet
       {
@@ -77,7 +70,7 @@ export default migration('1777547599_update_usd_based_to_v2_factory', {
       {
         contract: configurator,
         signature: 'setFactory(address,address)',
-        args: [USDS_COMET, newFactory.address],
+        args: [USDS_COMET, COMET_FACTORY_V2],
       },
       // 8. Set service patch version of the extension delegate for the USDS Comet
       {
@@ -111,7 +104,7 @@ WOOF! proposes to update Mainnet cUSDCv3, cUSDTv3 and cUSDSv3 Comet markets to a
 
 This proposal takes the governance steps recommended and necessary to update Compound III USDS, USDT and USDS markets on Mainnet. Simulations have confirmed the market's readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario).
 
-Detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1125) and [forum discussion](<>).
+Detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1125).
 
 ### Bytecode Repository
 
@@ -166,6 +159,12 @@ The ninth proposal action deploys and upgrades the USDS Comet to the new service
 
   async verify(deploymentManager: DeploymentManager) {
     const { configurator } = await deploymentManager.getContracts();
+    const newCometAbi = [
+      'function MAX_SUPPORTED_UTILIZATION() external view returns (uint256)',
+      'function symbol() external view returns (string)',
+      'function name() external view returns (string)',
+      'function extensionDelegate() external view returns (address)',
+    ];
 
     expect(await configurator.factory(USDC_COMET)).to.equal(COMET_FACTORY_V2);
     expect(await configurator.factory(USDT_COMET)).to.equal(COMET_FACTORY_V2);
@@ -178,48 +177,21 @@ The ninth proposal action deploys and upgrades the USDS Comet to the new service
     const expectedMaxUtilization = exp(2, 18);
     const signer = await deploymentManager.getSigner();
 
-    const newCometUsdc = new Contract(
-      USDC_COMET,
-      [
-        'function MAX_SUPPORTED_UTILIZATION() external view returns (uint256)',
-        'function symbol() external view returns (string)',
-        'function name() external view returns (string)',
-        'function extensionDelegate() external view returns (address)',
-      ],
-      signer
-    );
+    const newCometUsdc = new Contract(USDC_COMET, newCometAbi, signer);
 
     expect(await newCometUsdc.MAX_SUPPORTED_UTILIZATION()).to.equal(expectedMaxUtilization);
     expect(await newCometUsdc.symbol()).to.equal('cUSDCv3');
     expect(await newCometUsdc.name()).to.equal('Compound USDC');
     expect(await newCometUsdc.extensionDelegate()).to.equal(USDC_EXT);
 
-    const newCometUsdt = new Contract(
-      USDT_COMET,
-      [
-        'function MAX_SUPPORTED_UTILIZATION() external view returns (uint256)',
-        'function symbol() external view returns (string)',
-        'function name() external view returns (string)',
-        'function extensionDelegate() external view returns (address)',
-      ],
-      signer
-    );
+    const newCometUsdt = new Contract(USDT_COMET, newCometAbi, signer);
 
     expect(await newCometUsdt.MAX_SUPPORTED_UTILIZATION()).to.equal(expectedMaxUtilization);
     expect(await newCometUsdt.symbol()).to.equal('cUSDTv3');
     expect(await newCometUsdt.name()).to.equal('Compound USDT');
     expect(await newCometUsdt.extensionDelegate()).to.equal(USDT_EXT);
 
-    const newCometUsds = new Contract(
-      USDS_COMET,
-      [
-        'function MAX_SUPPORTED_UTILIZATION() external view returns (uint256)',
-        'function symbol() external view returns (string)',
-        'function name() external view returns (string)',
-        'function extensionDelegate() external view returns (address)',
-      ],
-      signer
-    );
+    const newCometUsds = new Contract(USDS_COMET, newCometAbi, signer);
 
     expect(await newCometUsds.MAX_SUPPORTED_UTILIZATION()).to.equal(expectedMaxUtilization);
     expect(await newCometUsds.symbol()).to.equal('cUSDSv3');
