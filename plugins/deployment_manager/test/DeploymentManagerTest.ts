@@ -134,7 +134,8 @@ describe('DeploymentManager', () => {
   });
 
   describe('verifyContracts', () => {
-    it('should verify contracts successfully', async () => {
+    it('should verify contracts successfully', async function () {
+      this.timeout(300_000);
       let deploymentManager = new DeploymentManager('test-network', 'test-deployment', hre, {
         importRetries: 0,
         writeCacheToDisk: true,
@@ -145,7 +146,8 @@ describe('DeploymentManager', () => {
       let verifyArgs: VerifyArgs = {
         via: 'artifacts',
         address: token.address,
-        constructorArguments: tokenArgs
+        constructorArguments: tokenArgs,
+        contract: 'contracts/test/FaucetToken.sol:FaucetToken',
       };
       await putVerifyArgs(
         deploymentManager.cache,

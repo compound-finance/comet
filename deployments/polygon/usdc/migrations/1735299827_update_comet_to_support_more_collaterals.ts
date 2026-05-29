@@ -17,13 +17,15 @@ export default migration('1735299827_update_comet_to_support_more_collaterals', 
     const _assetListFactory = await deploymentManager.deploy(
       'assetListFactory',
       'AssetListFactory.sol',
-      []
+      [],
+      true
     );
 
     const cometFactoryWithExtendedAssetList = await deploymentManager.deploy(
       'cometFactoryWithExtendedAssetList',
       'CometFactoryWithExtendedAssetList.sol',
-      []
+      [],
+      true
     );
     const {
       comet
@@ -77,6 +79,7 @@ export default migration('1735299827_update_comet_to_support_more_collaterals', 
       ],
       true
     );
+
     return {
       cometFactoryWithExtendedAssetList: cometFactoryWithExtendedAssetList.address,
       newCometExtUSDC: _newCometExtUSDC.address,
@@ -89,7 +92,6 @@ export default migration('1735299827_update_comet_to_support_more_collaterals', 
     newCometExtUSDC,
     newCometExtUSDT
   }) {
-
     const trace = deploymentManager.tracer();
     const {
       comet,
@@ -112,7 +114,6 @@ export default migration('1735299827_update_comet_to_support_more_collaterals', 
       ['address', 'address'],
       [configurator.address, comet.address]
     );
-
 
     const setFactoryCalldataUSDT = await calldata(
       configurator.populateTransaction.setFactory(USDT_COMET, cometFactoryWithExtendedAssetList)
@@ -160,21 +161,33 @@ export default migration('1735299827_update_comet_to_support_more_collaterals', 
       },
     ];
 
-    const description = '# Update USDC and USDT Comets on Polygon to support more collaterals\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to update 2 Comets to a new version, which supports up to 24 collaterals. This proposal takes the governance steps recommended and necessary to update Compound III USDT and USDC markets on Polygon. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario).\n\nDetailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/904) and [forum discussion](https://www.comp.xyz/t/increase-amount-of-collaterals-in-comet/5465).\n\n\n## Proposal Actions\n\nThe first action sets the factory to the newly deployed factory, extension delegate to the newly deployed contract and deploys and upgrades Comet to a new version for all 2 comets: cUSDTv3 and cUSDCv3.';
+    const description = `# Update USDC and USDT Comets on Polygon to support more collaterals
+
+## Proposal summary
+
+WOOF! proposes to update both Polygon Comets to a new version, which supports up to 24 collaterals. This proposal takes the governance steps recommended and necessary to update Compound III USDT and USDC markets on Polygon. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario).
+
+Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1071) and [forum discussion](https://www.comp.xyz/t/increase-amount-of-collaterals-in-comet/5465).
+
+## Proposal Actions
+
+The first action sets the factory to the newly deployed factory, extension delegate to the newly deployed contract and deploys and upgrades Comet to a new version for all 2 comets: cUSDTv3 and cUSDCv3.`;
+
     const txn = await deploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
-      )
+      ), 0, 300_000
     );
 
+
     const event = txn.events.find(
-      (event) => event.event === 'ProposalCreated'
+      (event: { event: string }) => event.event === 'ProposalCreated'
     );
     const [proposalId] = event.args;
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(): Promise<boolean> {
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
     return true;
   },
 
@@ -193,6 +206,16 @@ export default migration('1735299827_update_comet_to_support_more_collaterals', 
 
     expect(assetListAddress).to.not.be.equal(ethers.constants.AddressZero);
     expect(await comet.extensionDelegate()).to.be.equal(newCometExtAddressUSDC);
+    
+    const extensionDelegateUSDC = new Contract(
+      await comet.extensionDelegate(),
+      [
+        'function name() external view returns (string)',
+        'function symbol() external view returns (string)',
+      ],
+      await deploymentManager.getSigner()
+    );
+    expect(await extensionDelegateUSDC.name()).to.be.equal('Compound USDC');
 
     const cometNewUSDT = new Contract(
       USDT_COMET,
@@ -207,5 +230,14 @@ export default migration('1735299827_update_comet_to_support_more_collaterals', 
 
     expect(assetListAddressUSDT).to.not.be.equal(ethers.constants.AddressZero);
     expect(await cometNewUSDT.extensionDelegate()).to.be.equal(newCometExtAddressUSDT);
+    const extensionDelegateUSDT = new Contract(
+      await cometNewUSDT.extensionDelegate(),
+      [
+        'function name() external view returns (string)',
+        'function symbol() external view returns (string)',
+      ],
+      await deploymentManager.getSigner()
+    );
+    expect(await extensionDelegateUSDT.name()).to.be.equal('Compound USDT');
   },
 });
