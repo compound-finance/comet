@@ -90,7 +90,7 @@ export default migration('1779290648_update_non_usd_based_to_v2_factory', {
 
 ## Proposal summary
 
-WOOF! proposes to update Mainnet cWETHv3, cWBTCv3 and cwstETHv3 Comet markets to a new service patch version introducing several improvements and security enhancements:
+WOOF! proposes to update Mainnet cWETHv3, cWBTCv3 and cWstETHv3 Comet markets to a new service patch version introducing several improvements and security enhancements:
 
 - Extended Pause Controls: collateral interactions can now be paused independently per collateral asset.
 - Price Feed Patch (Post-USDM incident response): skips price feed calls for assets with zero collateral factor, preventing unnecessary reverts.
