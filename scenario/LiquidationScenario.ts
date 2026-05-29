@@ -212,7 +212,7 @@ scenario(
   {
     filter: async (ctx) => !matchesDeployment(ctx, [
       { network: 'base', deployment: 'usds' },
-      { network: 'ronin' },
+      { network: 'ronin', deployment: 'weth' },
     ]),
     tokenBalances: async (ctx) => (
       {
