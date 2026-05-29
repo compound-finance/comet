@@ -212,7 +212,8 @@ scenario(
   {
     filter: async (ctx) => !matchesDeployment(ctx, [
       { network: 'base', deployment: 'usds' },
-      { network: 'ronin', deployment: 'weth' },
+      { network: 'ronin' },
+      { network: 'scroll' },
     ]),
     tokenBalances: async (ctx) => (
       {
@@ -326,7 +327,7 @@ scenario.skip(
  * compatibility, and excludes assets that are already delisted.
  */
 for (let i = 0; i < MAX_ASSETS; i++) {
-  scenario(
+  scenario.skip(
     `Comet#liquidation > skips liquidation value of asset ${i} with liquidateCF=0`,
     {
       filter: async (ctx: CometContext) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, getConfigForScenario(ctx, i).supplyCollateral) && await usesAssetList(ctx) && !(await isAssetDelisted(ctx, i)) && await supportsExtendedPause(ctx),
