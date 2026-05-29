@@ -859,13 +859,13 @@ scenario(
 
     for (let i = 0; i < MAX_ASSETS; i++) {
       if (!await isValidAssetIndex(context, i)) continue;
-      if (!await isTriviallySourceable(context, i, getConfigForScenario(context).transferCollateral)) continue;
+      if (!await isTriviallySourceable(context, i, getConfigForScenario(context, i).transferCollateral)) continue;
       if (await isAssetDelisted(context, i)) continue;
 
       const { asset, scale: scaleBN } = await comet.getAssetInfo(i);
       const collateralAsset = context.getAssetByAddress(asset);
       const scale = scaleBN.toBigInt();
-      const transferCollateral = BigInt(getConfigForScenario(context).transferCollateral) * scale;
+      const transferCollateral = BigInt(getConfigForScenario(context, i).transferCollateral) * scale;
 
       log(`Transferring reverts when collateral asset ${i} transfer is paused`);
 
@@ -934,13 +934,13 @@ scenario(
 
     for (let i = 0; i < MAX_ASSETS; i++) {
       if (!await isValidAssetIndex(context, i)) continue;
-      if (!await isTriviallySourceable(context, i, getConfigForScenario(context).transferCollateral)) continue;
+      if (!await isTriviallySourceable(context, i, getConfigForScenario(context, i).transferCollateral)) continue;
       if (await isAssetDelisted(context, i)) continue;
 
       const { asset, scale: scaleBN } = await comet.getAssetInfo(i);
       const collateralAsset = context.getAssetByAddress(asset);
       const scale = scaleBN.toBigInt();
-      const transferCollateral = BigInt(getConfigForScenario(context).transferCollateral) * scale;
+      const transferCollateral = BigInt(getConfigForScenario(context, i).transferCollateral) * scale;
 
       log(`Transferring reverts when collateral asset ${i} transfer is paused`);
 
@@ -985,7 +985,7 @@ scenario(
         src: albert.address,
         dst: betty.address,
         asset: collateralAsset.address,
-        amount: BigInt(getConfigForScenario(context).transferCollateral) * scale,
+        amount: BigInt(getConfigForScenario(context, i).transferCollateral) * scale,
       });
 
       // Get balances after transfer
@@ -1021,13 +1021,13 @@ scenario(
 
     for (let i = 0; i < MAX_ASSETS; i++) {
       if (!await isValidAssetIndex(context, i)) continue;
-      if (!await isTriviallySourceable(context, i, getConfigForScenario(context).transferCollateral)) continue;
+      if (!await isTriviallySourceable(context, i, getConfigForScenario(context, i).transferCollateral)) continue;
       if (await isAssetDelisted(context, i)) continue;
 
       const { asset, scale: scaleBN } = await comet.getAssetInfo(i);
       const collateralAsset = context.getAssetByAddress(asset);
       const scale = scaleBN.toBigInt();
-      const transferAmount = BigInt(getConfigForScenario(context).transferCollateral) * scale;
+      const transferAmount = BigInt(getConfigForScenario(context, i).transferCollateral) * scale;
 
       log(`TransferFrom reverts when collateral asset ${i} is deactivated`);
 
@@ -1097,13 +1097,13 @@ scenario(
 
     for (let i = 0; i < MAX_ASSETS; i++) {
       if (!await isValidAssetIndex(context, i)) continue;
-      if (!await isTriviallySourceable(context, i, getConfigForScenario(context).transferCollateral)) continue;
+      if (!await isTriviallySourceable(context, i, getConfigForScenario(context, i).transferCollateral)) continue;
       if (await isAssetDelisted(context, i)) continue;
 
       const { asset, scale: scaleBN } = await comet.getAssetInfo(i);
       const collateralAsset = context.getAssetByAddress(asset);
       const scale = scaleBN.toBigInt();
-      const transferAmount = BigInt(getConfigForScenario(context).transferCollateral) * scale;
+      const transferAmount = BigInt(getConfigForScenario(context, i).transferCollateral) * scale;
 
       log(`Transfer reverts when collateral asset ${i} is deactivated`);
 
