@@ -10,13 +10,12 @@ const WSTETH_COMET = '0x3D0bb1ccaB520A66e607822fC55BC921738fAFE3';
 
 const COMET_FACTORY_V2 = '0x219E8039359C1ED650c7280bA87251E282288f7F';
 
-const WETH_EXT = '';
-const WBTC_EXT = '';
-const WSTETH_EXT = '';
+const WETH_EXT = '0x970325D751a57E73f403043Db3239b8E7AFe69A0';
+const WBTC_EXT = '0x639dd5d4C8Ce13e1F9c4B906843731C10DC6536a';
+const WSTETH_EXT = '0x476C39817f6a68c306EE55E38595E1584C507249';
 
 export default migration('1779290648_update_non_usd_based_to_v2_factory', {
   async prepare() {
-
     return {};
   },
 
@@ -30,18 +29,12 @@ export default migration('1779290648_update_non_usd_based_to_v2_factory', {
       configurator,
     } = await deploymentManager.getContracts();
 
-    const newFactory = await deploymentManager.existing(
-      'cometFactoryV2',
-      COMET_FACTORY_V2,
-      'mainnet'
-    );
-
     const mainnetActions = [
       // 1. Update WETH Comet factory to a new one
       {
         contract: configurator,
         signature: 'setFactory(address,address)',
-        args: [WETH_COMET, newFactory.address],
+        args: [WETH_COMET, COMET_FACTORY_V2],
       },
       // 2. Set service patch version of the extension delegate for the WETH Comet
       {
@@ -59,7 +52,7 @@ export default migration('1779290648_update_non_usd_based_to_v2_factory', {
       {
         contract: configurator,
         signature: 'setFactory(address,address)',
-        args: [WBTC_COMET, newFactory.address],
+        args: [WBTC_COMET, COMET_FACTORY_V2],
       },
       // 5. Set service patch version of the extension delegate for the WBTC Comet
       {
@@ -77,7 +70,7 @@ export default migration('1779290648_update_non_usd_based_to_v2_factory', {
       {
         contract: configurator,
         signature: 'setFactory(address,address)',
-        args: [WSTETH_COMET, newFactory.address],
+        args: [WSTETH_COMET, COMET_FACTORY_V2],
       },
       // 8. Set service patch version of the extension delegate for the wstETH Comet
       {
@@ -111,7 +104,7 @@ WOOF! proposes to update Mainnet cWETHv3, cWBTCv3 and cwstETHv3 Comet markets to
 
 This proposal takes the governance steps recommended and necessary to update Compound III WETH, WBTC and wstETH markets on Mainnet. Simulations have confirmed the market's readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario).
 
-Detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1128) and [forum discussion](<>).
+Detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/1128).
 
 ### Bytecode Repository
 
@@ -222,7 +215,7 @@ The ninth proposal action deploys and upgrades the wstETH Comet to the new servi
     );
 
     expect(await newCometWsteth.MAX_SUPPORTED_UTILIZATION()).to.equal(expectedMaxUtilization);
-    expect(await newCometWsteth.symbol()).to.equal('cwstETHv3');
+    expect(await newCometWsteth.symbol()).to.equal('cWstETHv3');
     expect(await newCometWsteth.name()).to.equal('Compound wstETH');
     expect(await newCometWsteth.extensionDelegate()).to.equal(WSTETH_EXT);
   },
