@@ -68,6 +68,8 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
   if (ctx.world.base.network === 'mainnet' && ctx.world.base.deployment === 'weth') {
     config.liquidationNumerator = 60;
     config.liquidationBase = 10000;
+    config.rewardsAsset = 100;
+    config.rewardsBase = 10;
   }
 
   if (ctx.world.base.network === 'mainnet' && ctx.world.base.deployment === 'usdc') {
