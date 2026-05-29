@@ -200,7 +200,7 @@ scenario(
 
     // XXX 70 seconds?!
     expectApproximately(await albert.getCometBaseBalance(), amountTransferred, getInterest(amountTransferred, borrowRate, BigInt(getConfigForScenario(context).interestSeconds)) + 2n);
-    expectApproximately(await betty.getCometBaseBalance(), -amountTransferred, getInterest(amountTransferred, borrowRate, BigInt(getConfigForScenario(context).interestSeconds)) + 2n);
+    expectApproximately(await betty.getCometBaseBalance(), -(amountTransferred), getInterest(amountTransferred, borrowRate, BigInt(getConfigForScenario(context).interestSeconds)) + 2n);
 
     await albert.allow(betty, true);
 
