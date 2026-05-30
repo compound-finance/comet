@@ -14,7 +14,7 @@ contract SimpleTimelock {
     address public admin;
     mapping (bytes32 => bool) public queuedTransactions;
 
-    // For GovernorBravo initiation and compatability
+    // For GovernorBravo initiation and compatibility
     uint public constant proposalCount = 1;
     uint public constant delay = 0;
     uint public constant GRACE_PERIOD = 14 days;
@@ -28,7 +28,7 @@ contract SimpleTimelock {
     receive() external payable {}
 
     function acceptAdmin() external {
-        return; // Note: not used, just for GovernorBravo compatability
+        return; // Note: not used, just for GovernorBravo compatibility
     }
 
     function setAdmin(address newAdmin) external {
