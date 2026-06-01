@@ -217,7 +217,14 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
 
   if (ctx.world.base.network === 'scroll' && ctx.world.base.deployment === 'usdc') {
     config.bulkerAsset = 200;
-    config.bulkerAsset1 = 200;
+    config.bulkerAsset1 = 50;
+    config.liquidationBase = 1000;
+    config.liquidationAsset = 2;
+    if(i == 1) { // tBTC
+      config.supplyCollateral = 10;
+      config.transferCollateral = 10;
+      config.withdrawCollateral = 10;
+    }
   }
 
   if (ctx.world.base.network === 'sepolia' && ctx.world.base.deployment === 'usdc') {
@@ -233,8 +240,8 @@ export function getConfigForScenario(ctx: CometContext, i?: number) {
   }
 
   if (ctx.world.base.network === 'linea' && ctx.world.base.deployment === 'usdc') {
-    config.bulkerAsset = 500;
-    config.bulkerAsset1 = 500;
+    config.bulkerAsset = 10;
+    config.bulkerAsset1 = 15;
     config.supplyCollateral = 10;
     config.transferCollateral = 10;
     config.withdrawCollateral = 10;    

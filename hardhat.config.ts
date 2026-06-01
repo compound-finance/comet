@@ -3,7 +3,6 @@ import 'dotenv/config';
 import { HardhatUserConfig, subtask, task } from 'hardhat/config';
 import '@compound-finance/hardhat-import';
 import '@nomiclabs/hardhat-etherscan';
-import '@tenderly/hardhat-tenderly';
 import '@nomiclabs/hardhat-ethers';
 import '@typechain/hardhat';
 import 'hardhat-chai-matchers';
@@ -85,7 +84,7 @@ const {
   REMOTE_ACCOUNTS = ''
 } = process.env;
 
-function* deriveAccounts(pk: string, n: number = 10) {
+function* deriveAccounts(pk: string, n: number = 20) {
   for (let i = 0; i < n; i++){
     if(!pk.startsWith('0x')) pk = '0x' + pk;
     yield (BigInt(pk) + BigInt(i)).toString(16);
@@ -198,7 +197,7 @@ export const networkConfigs: NetworkConfig[] = [
   {
     network: 'scroll',
     chainId: 534352,
-    url: 'https://scroll.drpc.org',
+    url: 'https://scroll-mainnet.gateway.tenderly.co',
   },
 ];
 
@@ -702,13 +701,6 @@ const config: HardhatUserConfig = {
         auxiliaryBase: 'mainnet'
       },
     ],
-  },
-
-  tenderly: {
-    project: 'comet',
-    username: process.env.TENDERLY_USERNAME || '',
-    accessKey: process.env.TENDERLY_ACCESS_KEY || '',
-    privateVerification: false,
   },
 
   mocha: {
