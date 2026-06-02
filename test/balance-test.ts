@@ -2,7 +2,7 @@ import { expect, makeProtocol, setTotalsBasic } from './helpers';
 
 describe('totalBorrow', function () {
   it('has correct totalBorrow', async () => {
-    const { comet } = await makeProtocol();
+    const { cometWithExtendedAssetList : comet } = await makeProtocol();
     await setTotalsBasic(comet, {
       baseBorrowIndex: 2e15,
       totalBorrowBase: 50e6,
@@ -13,7 +13,7 @@ describe('totalBorrow', function () {
 
 describe('borrowBalanceOf', function () {
   it('returns borrow amount (when principal amount is negative)', async () => {
-    const { comet, users: [user] } = await makeProtocol();
+    const { cometWithExtendedAssetList : comet, users: [user] } = await makeProtocol();
     await setTotalsBasic(comet, {
       baseSupplyIndex: 2e15,
       baseBorrowIndex: 3e15,
@@ -24,7 +24,7 @@ describe('borrowBalanceOf', function () {
   });
 
   it('returns 0 when principal amount is positive', async () => {
-    const { comet, users: [user] } = await makeProtocol();
+    const { cometWithExtendedAssetList : comet, users: [user] } = await makeProtocol();
     await setTotalsBasic(comet, {
       baseSupplyIndex: 2e15,
       baseBorrowIndex: 3e15,

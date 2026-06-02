@@ -62,7 +62,6 @@ describe('RelationConfig', () => {
       },
     };
 
-    expect(await getRelationConfig(hre.config.deploymentManager, 'fuji', 'dai')).to.eql(testBaseRelations);
     expect(await getRelationConfig(hre.config.deploymentManager, 'test-network', 'test-deployment')).to.eql(testRelRelations);
   });
 

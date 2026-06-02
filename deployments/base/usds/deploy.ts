@@ -64,7 +64,7 @@ async function deployContracts(
   const bridgeReceiver = await deploymentManager.fromDep('bridgeReceiver', 'base', 'usdbc');
 
   // Deploy Comet
-  const deployed = await deployComet(deploymentManager, deploySpec, {}, true);
+  const deployed = await deployComet(deploymentManager, deploySpec);
 
   // XXX We will need to deploy a new bulker only if need to support wstETH
 

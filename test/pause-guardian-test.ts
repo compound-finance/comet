@@ -2,7 +2,7 @@ import { Comet, expect, event, makeProtocol, wait } from './helpers';
 
 describe('Pause Guardian', function () {
   it('Should pause supply', async function () {
-    const { comet } = await makeProtocol();
+    const { cometWithExtendedAssetList: comet } = await makeProtocol();
     await assertNoActionsArePaused(comet);
 
     const txn = await wait(comet.pause(true, false, false, false, false));
@@ -24,7 +24,7 @@ describe('Pause Guardian', function () {
   });
 
   it('Should pause transfer', async function () {
-    const { comet } = await makeProtocol();
+    const { cometWithExtendedAssetList: comet } = await makeProtocol();
     await assertNoActionsArePaused(comet);
 
     const txn = await wait(comet.pause(false, true, false, false, false));
@@ -46,7 +46,7 @@ describe('Pause Guardian', function () {
   });
 
   it('Should pause withdraw', async function () {
-    const { comet } = await makeProtocol();
+    const { cometWithExtendedAssetList: comet } = await makeProtocol();
     await assertNoActionsArePaused(comet);
 
     const txn = await wait(comet.pause(false, false, true, false, false));
@@ -68,7 +68,7 @@ describe('Pause Guardian', function () {
   });
 
   it('Should pause absorb', async function () {
-    const { comet } = await makeProtocol();
+    const { cometWithExtendedAssetList: comet } = await makeProtocol();
     await assertNoActionsArePaused(comet);
 
     const txn = await wait(comet.pause(false, false, false, true, false));
@@ -90,7 +90,7 @@ describe('Pause Guardian', function () {
   });
 
   it('Should pause buy', async function () {
-    const { comet } = await makeProtocol();
+    const { cometWithExtendedAssetList: comet } = await makeProtocol();
     await assertNoActionsArePaused(comet);
 
     const txn = await wait(comet.pause(false, false, false, false, true));
@@ -112,7 +112,7 @@ describe('Pause Guardian', function () {
   });
 
   it('Should unpause', async function () {
-    const { comet } = await makeProtocol();
+    const { cometWithExtendedAssetList: comet } = await makeProtocol();
     await assertNoActionsArePaused(comet);
 
     const txn1 = await wait(comet.pause(true, true, true, true, true));
@@ -143,7 +143,7 @@ describe('Pause Guardian', function () {
   });
 
   it('Should pause when called by governor', async function () {
-    const { comet, governor } = await makeProtocol();
+    const { cometWithExtendedAssetList: comet, governor } = await makeProtocol();
     await assertNoActionsArePaused(comet);
 
     await comet.connect(governor).pause(true, true, true, true, true);
@@ -152,7 +152,7 @@ describe('Pause Guardian', function () {
   });
 
   it('Should pause when called by pause guardian', async function () {
-    const { comet, pauseGuardian } = await makeProtocol();
+    const { cometWithExtendedAssetList: comet, pauseGuardian } = await makeProtocol();
     await assertNoActionsArePaused(comet);
 
     await comet.connect(pauseGuardian).pause(true, true, true, true, true);
@@ -161,7 +161,7 @@ describe('Pause Guardian', function () {
   });
 
   it('Should revert if not called by governor or pause guardian', async function () {
-    const { comet, users } = await makeProtocol();
+    const { cometWithExtendedAssetList: comet, users } = await makeProtocol();
     await expect(
       comet.connect(users[0]).pause(true, true, true, true, true)
     ).to.be.revertedWith("custom error 'Unauthorized()'");

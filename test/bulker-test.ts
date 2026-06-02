@@ -6,7 +6,7 @@ import { FaucetWETH__factory, NonStandardFaucetToken__factory } from '../build/t
 describe('bulker', function () {
   it('supply base asset', async () => {
     const protocol = await makeProtocol({});
-    const { comet, tokens: { USDC, WETH }, users: [alice] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens: { USDC, WETH }, users: [alice] } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
@@ -27,7 +27,7 @@ describe('bulker', function () {
 
   it('supply collateral asset', async () => {
     const protocol = await makeProtocol({});
-    const { comet, tokens: { COMP, WETH }, users: [alice] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens: { COMP, WETH }, users: [alice] } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
@@ -124,7 +124,7 @@ describe('bulker', function () {
 
   it('supply collateral asset to a different account', async () => {
     const protocol = await makeProtocol({});
-    const { comet, tokens: { COMP, WETH }, users: [alice, bob] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens: { COMP, WETH }, users: [alice, bob] } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
@@ -150,7 +150,7 @@ describe('bulker', function () {
         WETH: { factory: await ethers.getContractFactory('FaucetWETH') as FaucetWETH__factory }
       })
     });
-    const { comet, tokens: { WETH }, users: [alice] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens: { WETH }, users: [alice] } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
@@ -170,7 +170,7 @@ describe('bulker', function () {
         WETH: { factory: await ethers.getContractFactory('FaucetWETH') as FaucetWETH__factory }
       })
     });
-    const { comet, tokens: { WETH }, users: [alice] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens: { WETH }, users: [alice] } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
@@ -193,7 +193,7 @@ describe('bulker', function () {
         WETH: { factory: await ethers.getContractFactory('FaucetWETH') as FaucetWETH__factory }
       })
     });
-    const { comet, tokens: { WETH }, users: [alice] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens: { WETH }, users: [alice] } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
@@ -219,7 +219,7 @@ describe('bulker', function () {
       borrowInterestRateBase: 0,
       borrowInterestRateSlopeLow: 0,
     });
-    const { comet, tokens: { USDC, WETH }, users: [alice] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens: { USDC, WETH }, users: [alice] } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
@@ -256,7 +256,7 @@ describe('bulker', function () {
         WETH: { factory: await ethers.getContractFactory('FaucetWETH') as FaucetWETH__factory }
       })
     });
-    const { comet, tokens: { WETH }, users: [alice] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens: { WETH }, users: [alice] } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
@@ -271,7 +271,7 @@ describe('bulker', function () {
 
   it('transfer base asset', async () => {
     const protocol = await makeProtocol({});
-    const { comet, tokens: { USDC, WETH }, users: [alice, bob] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens: { USDC, WETH }, users: [alice, bob] } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
@@ -291,7 +291,7 @@ describe('bulker', function () {
 
   it('transfer collateral asset', async () => {
     const protocol = await makeProtocol({});
-    const { comet, tokens: { COMP, WETH }, users: [alice, bob] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens: { COMP, WETH }, users: [alice, bob] } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
@@ -311,7 +311,7 @@ describe('bulker', function () {
 
   it('withdraw base asset', async () => {
     const protocol = await makeProtocol({});
-    const { comet, tokens: { USDC, WETH }, users: [alice] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens: { USDC, WETH }, users: [alice] } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
@@ -337,7 +337,7 @@ describe('bulker', function () {
 
   it('withdraw collateral asset', async () => {
     const protocol = await makeProtocol({});
-    const { comet, tokens: { COMP, WETH }, users: [alice] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens: { COMP, WETH }, users: [alice] } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
@@ -444,7 +444,7 @@ describe('bulker', function () {
 
   it('withdraw collateral asset to a different account', async () => {
     const protocol = await makeProtocol({});
-    const { comet, tokens: { COMP, WETH }, users: [alice, bob] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens: { COMP, WETH }, users: [alice, bob] } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
@@ -475,7 +475,7 @@ describe('bulker', function () {
         WETH: { factory: await ethers.getContractFactory('FaucetWETH') as FaucetWETH__factory }
       })
     });
-    const { comet, tokens: { WETH }, users: [alice], governor } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens: { WETH }, users: [alice], governor } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
@@ -509,7 +509,7 @@ describe('bulker', function () {
         WETH: { factory: await ethers.getContractFactory('FaucetWETH') as FaucetWETH__factory }
       })
     });
-    const { comet, tokens: { WETH }, users: [alice], governor } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens: { WETH }, users: [alice], governor } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
@@ -539,7 +539,7 @@ describe('bulker', function () {
         WETH: { factory: await ethers.getContractFactory('FaucetWETH') as FaucetWETH__factory }
       })
     });
-    const { comet, tokens: { WETH }, users: [alice], governor } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens: { WETH }, users: [alice], governor } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
@@ -567,7 +567,7 @@ describe('bulker', function () {
       baseMinForRewards: 10e6,
     });
     const {
-      comet,
+      cometWithExtendedAssetList : comet,
       governor,
       tokens: { USDC, COMP, WETH },
       users: [alice],
@@ -597,7 +597,7 @@ describe('bulker', function () {
 
   it('reverts on supply asset if no permission granted to bulker', async () => {
     const protocol = await makeProtocol({});
-    const { comet, tokens: { USDC, WETH }, users: [alice] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens: { USDC, WETH }, users: [alice] } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
@@ -608,7 +608,7 @@ describe('bulker', function () {
 
   it('reverts on transfer asset if no permission granted to bulker', async () => {
     const protocol = await makeProtocol({});
-    const { comet, tokens: { COMP, WETH }, users: [alice, bob] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens: { COMP, WETH }, users: [alice, bob] } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
@@ -619,7 +619,7 @@ describe('bulker', function () {
 
   it('reverts on withdraw asset if no permission granted to bulker', async () => {
     const protocol = await makeProtocol({});
-    const { comet, tokens: { COMP, WETH }, users: [alice] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens: { COMP, WETH }, users: [alice] } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
@@ -634,7 +634,7 @@ describe('bulker', function () {
         WETH: { factory: await ethers.getContractFactory('FaucetWETH') as FaucetWETH__factory }
       })
     });
-    const { comet, tokens: { WETH }, users: [alice] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens: { WETH }, users: [alice] } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
@@ -789,7 +789,7 @@ describe('bulker', function () {
 describe('bulker multiple actions', function () {
   it('supply collateral + borrow base asset', async () => {
     const protocol = await makeProtocol({});
-    const { comet, tokens: { USDC, COMP, WETH }, users: [alice] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens: { USDC, COMP, WETH }, users: [alice] } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
@@ -829,7 +829,7 @@ describe('bulker multiple actions', function () {
         WETH: { factory: await ethers.getContractFactory('FaucetWETH') as FaucetWETH__factory }
       })
     });
-    const { comet, tokens: { WETH }, users: [alice, bob] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens: { WETH }, users: [alice, bob] } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 

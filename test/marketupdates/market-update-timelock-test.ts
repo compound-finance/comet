@@ -46,7 +46,7 @@ describe('MarketUpdateTimelock', function() {
 
     const {
       configuratorProxy,
-      cometProxy,
+      cometProxyWithExtendedAssetList: cometProxy,
       users: [bob],
     } = await makeConfigurator();
 
@@ -123,7 +123,7 @@ describe('MarketUpdateTimelock', function() {
     const {
       configuratorProxy,
       configurator,
-      cometProxy,
+      cometProxyWithExtendedAssetList: cometProxy,
       users: [bob],
     } = await makeConfigurator();
 
@@ -255,7 +255,7 @@ describe('MarketUpdateTimelock', function() {
     const {
       configuratorProxy,
       configurator,
-      cometProxy,
+      cometProxyWithExtendedAssetList: cometProxy,
       users: [bob],
     } = await makeConfigurator();
 

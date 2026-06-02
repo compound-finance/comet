@@ -41,7 +41,7 @@ describe('Configurator', function() {
     const {
       configurator,
       configuratorProxy,
-      cometProxy,
+      cometProxyWithExtendedAssetList: cometProxy,
     } = await makeConfigurator({
       governor: governorTimelockSigner,
       marketAdminPermissionCheckerContract: marketAdminPermissionCheckerContract
@@ -115,7 +115,7 @@ describe('Configurator', function() {
     const {
       configurator,
       configuratorProxy,
-      cometProxy,
+      cometProxyWithExtendedAssetList: cometProxy,
       users: [alice],
     } = await makeConfigurator({
       governor: governorTimelockSigner,
@@ -146,7 +146,7 @@ describe('Configurator', function() {
     const {
       configurator,
       configuratorProxy,
-      cometProxy,
+      cometProxyWithExtendedAssetList: cometProxy,
     } = await makeConfigurator({
       governor: governorTimelockSigner,
       marketAdminPermissionCheckerContract: marketAdminPermissionCheckerContract
@@ -182,7 +182,7 @@ describe('Configurator', function() {
     const {
       configurator,
       configuratorProxy,
-      cometProxy,
+      cometProxyWithExtendedAssetList: cometProxy,
     } = await makeConfigurator({
       governor: governorTimelockSigner,
     });
@@ -230,7 +230,7 @@ describe('Configurator', function() {
     const {
       configurator,
       configuratorProxy,
-      cometProxy,
+      cometProxyWithExtendedAssetList: cometProxy,
       users: [alice],
     } = await makeConfigurator({
       governor: governorTimelockSigner,
@@ -260,7 +260,7 @@ describe('Configurator', function() {
     const {
       configurator,
       configuratorProxy,
-      cometProxy,
+      cometProxyWithExtendedAssetList: cometProxy,
     } = await makeConfigurator({
       governor: governorTimelockSigner,
       marketAdminPermissionCheckerContract: marketAdminPermissionCheckerContract

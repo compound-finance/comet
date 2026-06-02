@@ -117,7 +117,7 @@ async function deployContracts(
   );
 
   // Deploy Comet
-  const deployed = await deployComet(deploymentManager, deploySpec, {}, true);
+  const deployed = await deployComet(deploymentManager, deploySpec);
   const { comet } = deployed;
 
   // Deploy Bulker

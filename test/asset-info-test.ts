@@ -3,12 +3,12 @@ import { ethers } from 'hardhat';
 import {
   SimplePriceFeed__factory,
   FaucetToken__factory,
-  CometHarness__factory
+  CometHarnessExtendedAssetList__factory
 } from '../build/types';
 
 describe('asset info', function () {
   it('initializes protocol', async () => {
-    const { comet, tokens } = await makeProtocol({
+    const { cometWithExtendedAssetList : comet, tokens } = await makeProtocol({
       assets: {
         USDC: {},
         ASSET1: {},
@@ -20,7 +20,7 @@ describe('asset info', function () {
 
     const cometNumAssets = await comet.numAssets();
     const cometMaxAssets = await comet.maxAssets();
-    expect(cometMaxAssets).to.be.equal(15);
+    expect(cometMaxAssets).to.be.equal(24);
     expect(cometNumAssets).to.be.equal(3);
 
     const assetInfo00 = await comet.getAssetInfo(0);
@@ -59,6 +59,15 @@ describe('asset info', function () {
       ASSET14: {},
       ASSET15: {},
       ASSET16: {},
+      ASSET17: {},
+      ASSET18: {},
+      ASSET19: {},
+      ASSET20: {},
+      ASSET21: {},
+      ASSET22: {},
+      ASSET23: {},
+      ASSET24: {},
+      ASSET25: {},
     };
     const base = 'USDC';
     const PriceFeedFactory = (await ethers.getContractFactory('SimplePriceFeed')) as SimplePriceFeed__factory;
@@ -117,14 +126,14 @@ describe('asset info', function () {
         return acc;
       }, []),
     };
-    const CometFactory = (await ethers.getContractFactory('CometHarness')) as CometHarness__factory;
+    const CometFactory = (await ethers.getContractFactory('CometHarnessExtendedAssetList')) as CometHarnessExtendedAssetList__factory;
     await expect(
       CometFactory.deploy(config)
     ).to.be.revertedWith("custom error 'TooManyAssets()'");
   });
 
   it('reverts if index is greater than numAssets', async () => {
-    const { comet } = await makeProtocol();
+    const { cometWithExtendedAssetList : comet } = await makeProtocol();
     await expect(comet.getAssetInfo(3)).to.be.revertedWith("custom error 'BadAsset()'");
   });
 

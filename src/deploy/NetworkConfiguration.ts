@@ -1,4 +1,4 @@
-import { AssetConfigStruct } from '../../build/types/Comet';
+import { AssetConfigStruct } from '../../build/types/CometWithExtendedAssetList';
 import { ConfigurationStruct } from '../../build/types/Configurator';
 import { ProtocolConfiguration } from './index';
 import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
@@ -166,9 +166,10 @@ function getOverridesOrConfig(
       getContractAddress(config.rewardToken, contracts, config.rewardTokenAddress) :
       undefined,
   });
-  return Object.entries(mapping()).reduce((acc, [k, f]) => {
+  const result = Object.entries(mapping()).reduce((acc, [k, f]) => {
     return { [k]: overrides[k] ?? f(config), ...acc };
   }, {});
+  return result;
 }
 
 export async function getConfiguration(

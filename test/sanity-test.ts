@@ -2,7 +2,7 @@ import { ethers, expect, makeProtocol } from './helpers';
 
 describe('getNow', function () {
   it('reverts if timestamp overflows', async () => {
-    const { comet } = await makeProtocol();
+    const { cometWithExtendedAssetList: comet } = await makeProtocol();
     await ethers.provider.send('evm_mine', [2**40]);
     await expect(comet.getNow()).to.be.revertedWith("custom error 'TimestampTooLarge()'");
     await ethers.provider.send('hardhat_reset', []); // dont break downstream tests...

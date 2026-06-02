@@ -66,13 +66,6 @@ async function main() {
         hre.ethers.provider, // a normal ethers.js provider, to perform gas estimations and nonce lookups
         authSigner, // ethers.js signer wallet, only for signing request payloads, not transactions
       );
-    } else if (network === 'sepolia') {
-      flashbotsProvider = await FlashbotsBundleProvider.create(
-        hre.ethers.provider, // a normal ethers.js provider, to perform gas estimations and nonce lookups
-        authSigner, // ethers.js signer wallet, only for signing request payloads, not transactions
-        'https://relay-sepolia.flashbots.net',
-        'sepolia'
-      );
     } else {
       throw new Error(`Unsupported network: ${network}`);
     }

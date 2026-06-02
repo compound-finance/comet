@@ -3,7 +3,7 @@ import { expect, makeProtocol, setTotalsBasic } from './helpers';
 describe('getReserves', function () {
   it('calculates 0 reserves', async () => {
     const protocol = await makeProtocol({base: 'USDC'});
-    const { comet, tokens } = protocol;
+    const { cometWithExtendedAssetList: comet, tokens } = protocol;
     const { USDC } = tokens;
     await USDC.allocateTo(comet.address, 100);
 
@@ -21,7 +21,7 @@ describe('getReserves', function () {
 
   it('calculates positive reserves', async () => {
     const protocol = await makeProtocol({base: 'USDC'});
-    const { comet, tokens } = protocol;
+    const { cometWithExtendedAssetList: comet, tokens } = protocol;
     const { USDC } = tokens;
     await USDC.allocateTo(comet.address, 100);
 
@@ -39,15 +39,15 @@ describe('getReserves', function () {
 
   it('calculates negative reserves', async () => {
     const protocol = await makeProtocol({base: 'USDC'});
-    const { comet } = protocol;
+    const { cometWithExtendedAssetList: comet } = protocol;
 
     // Protocol holds no USDC
 
     await setTotalsBasic(comet, {
       baseSupplyIndex: 2e15,
-      baseBorrowIndex: 3e15,
+      baseBorrowIndex: 0,
       totalSupplyBase: 50n,
-      totalBorrowBase: 0n,
+      totalBorrowBase: 1n,
     });
 
     const reserves = await comet.getReserves();

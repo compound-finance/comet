@@ -2,7 +2,7 @@ import { ethers, expect, makeProtocol } from './helpers';
 
 describe('updateAssetsIn', function () {
   it("adds asset to user's asset list when initialUserBalance=0 and finalUserBalance>0", async () => {
-    const { comet, tokens } = await makeProtocol();
+    const { cometWithExtendedAssetList: comet, tokens } = await makeProtocol();
     const [_governor, _pauseGuardian, user] = await ethers.getSigners();
     const compAddress = tokens['COMP'].address;
     const wethAddress = tokens['WETH'].address;
@@ -25,7 +25,7 @@ describe('updateAssetsIn', function () {
   });
 
   it('works for up to 12 assets', async () => {
-    const { comet, tokens, users } = await makeProtocol({
+    const { cometWithExtendedAssetList: comet, tokens, users } = await makeProtocol({
       assets: {
         USDC: {},
         ASSET1: {},
@@ -50,7 +50,7 @@ describe('updateAssetsIn', function () {
   });
 
   it('does not change state when both initialUserBalance and finalUserBalance are 0', async () => {
-    const { comet, tokens } = await makeProtocol();
+    const { cometWithExtendedAssetList: comet, tokens } = await makeProtocol();
     const [_governor, _pauseGuardian, user] = await ethers.getSigners();
     const compAddress = tokens['COMP'].address;
 
@@ -62,7 +62,7 @@ describe('updateAssetsIn', function () {
   });
 
   it('does not change state when both initialUserBalance and finalUserBalance > 0', async () => {
-    const { comet, tokens } = await makeProtocol();
+    const { cometWithExtendedAssetList: comet, tokens } = await makeProtocol();
     const [_governor, _pauseGuardian, user] = await ethers.getSigners();
     const wethAddress = tokens['WETH'].address;
 
@@ -76,7 +76,7 @@ describe('updateAssetsIn', function () {
   });
 
   it('removes asset from asset list when initialUserBalance > 0 and finalUserBalance=0', async () => {
-    const { comet, tokens } = await makeProtocol();
+    const { cometWithExtendedAssetList: comet, tokens } = await makeProtocol();
     const [_governor, _pauseGuardian, user] = await ethers.getSigners();
     const compAddress = tokens['COMP'].address;
 
@@ -93,7 +93,7 @@ describe('updateAssetsIn', function () {
   });
 
   it('reverts for non-existent asset address', async () => {
-    const { comet } = await makeProtocol();
+    const { cometWithExtendedAssetList: comet } = await makeProtocol();
     const [_governor, pauseGuardian, user] = await ethers.getSigners();
 
     const erroneousAssetAddress = pauseGuardian.address;

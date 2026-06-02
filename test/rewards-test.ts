@@ -5,7 +5,7 @@ describe('CometRewards', () => {
   describe('claim + supply', () => {
     it('can construct and claim rewards for owner with upscale', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { USDC, COMP },
         users: [alice],
@@ -41,7 +41,7 @@ describe('CometRewards', () => {
 
     it('can construct and claim rewards for owner with downscale', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { USDC, COMP },
         users: [alice],
@@ -79,7 +79,7 @@ describe('CometRewards', () => {
 
     it('can construct and claim rewards for owner with same scale', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { USDC, COMP },
         users: [alice],
@@ -117,7 +117,7 @@ describe('CometRewards', () => {
 
     it('does not overpay when claiming more than once', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { USDC, COMP },
         users: [alice],
@@ -144,7 +144,7 @@ describe('CometRewards', () => {
 
     it('fails if comet instance is already configured', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { COMP },
       } = await makeProtocol({
@@ -159,7 +159,7 @@ describe('CometRewards', () => {
 
     it('fails if comet instance is not configured', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         users: [alice],
       } = await makeProtocol();
@@ -174,7 +174,7 @@ describe('CometRewards', () => {
 
     it('fails if not enough rewards in the pool to transfer', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { USDC, COMP },
         users: [alice],
@@ -200,7 +200,7 @@ describe('CometRewards', () => {
   describe('claimTo + borrow', () => {
     it('can construct and claim rewards to target with upscale', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { USDC, COMP, WBTC },
         users: [alice, bob],
@@ -242,7 +242,7 @@ describe('CometRewards', () => {
 
     it('can construct and claim rewards to target with downscale', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { USDC, COMP, WBTC },
         users: [alice, bob],
@@ -277,7 +277,7 @@ describe('CometRewards', () => {
 
     it('can construct and claim rewards to target with same scale', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { USDC, COMP, WBTC },
         users: [alice, bob],
@@ -312,7 +312,7 @@ describe('CometRewards', () => {
 
     it('does not allow claiming more than once', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { USDC, COMP, WBTC },
         users: [alice, bob],
@@ -345,7 +345,7 @@ describe('CometRewards', () => {
 
     it('fails if comet instance is not configured', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         users: [alice, bob],
       } = await makeProtocol();
@@ -362,7 +362,7 @@ describe('CometRewards', () => {
 
     it('fails if not enough rewards in the pool to transfer', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { USDC, COMP, WBTC },
         users: [alice, bob],
@@ -390,7 +390,7 @@ describe('CometRewards', () => {
 
     it('fails if caller is not permitted to claim rewards for owner', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { COMP },
         users: [alice],
@@ -410,7 +410,7 @@ describe('CometRewards', () => {
   describe('getRewardOwed', () => {
     it('can construct and calculate rewards for owner with upscale', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { USDC, COMP },
         users: [alice],
@@ -441,7 +441,7 @@ describe('CometRewards', () => {
 
     it('can construct and calculate rewards for owner with downscale', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { USDC, COMP },
         users: [alice],
@@ -474,7 +474,7 @@ describe('CometRewards', () => {
 
     it('can construct and calculate rewards for owner with same scale', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { USDC, COMP },
         users: [alice],
@@ -507,7 +507,7 @@ describe('CometRewards', () => {
 
     it('returns 0 owed if user already claimed', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { USDC, COMP },
         users: [alice],
@@ -538,7 +538,7 @@ describe('CometRewards', () => {
 
     it('fails if comet instance is not configured', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         users: [alice],
       } = await makeProtocol();
@@ -555,7 +555,7 @@ describe('CometRewards', () => {
   describe('setRewardConfig', () => {
     it('allows governor to set rewards token with upscale', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { COMP },
       } = await makeProtocol();
@@ -571,7 +571,7 @@ describe('CometRewards', () => {
 
     it('allows governor to set rewards token with downscale', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { COMP },
       } = await makeProtocol({
@@ -591,7 +591,7 @@ describe('CometRewards', () => {
 
     it('allows governor to set rewards token with same scale', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { COMP },
       } = await makeProtocol({
@@ -611,7 +611,7 @@ describe('CometRewards', () => {
 
     it('does not allow anyone but governor to set config', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { COMP },
         users: [alice],
@@ -631,7 +631,7 @@ describe('CometRewards', () => {
   describe('withdrawToken', () => {
     it('allows governor to withdraw funds added', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { COMP },
         users: [alice],
@@ -647,7 +647,7 @@ describe('CometRewards', () => {
 
     it('does not allow anyone but governor to withdraw', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { COMP },
         users: [alice],
@@ -669,7 +669,7 @@ describe('CometRewards', () => {
   describe('setRewardsClaimed', () => {
     it('allows governor to set rewards claimed', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { COMP },
         users: [alice, bob],
@@ -704,7 +704,7 @@ describe('CometRewards', () => {
 
     it('can be used to zero out retroactive rewards for users', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { COMP, USDC },
         users: [alice],
@@ -745,7 +745,7 @@ describe('CometRewards', () => {
 
     it('reverts if addresses and claimedAmounts have different lengths', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { COMP },
         users: [alice],
@@ -760,7 +760,7 @@ describe('CometRewards', () => {
 
     it('does not allow anyone but governor to set rewards claimed', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { COMP },
         users: [alice],
@@ -779,7 +779,7 @@ describe('CometRewards', () => {
   describe('transferGovernor', () => {
     it('allows governor to transfer governor', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { COMP },
         users: [alice],
@@ -799,7 +799,7 @@ describe('CometRewards', () => {
 
     it('does not allow anyone but governor to transfer governor', async () => {
       const {
-        comet,
+        cometWithExtendedAssetList: comet,
         governor,
         tokens: { COMP },
         users: [alice],
@@ -840,7 +840,7 @@ for (const { multiplier } of TEST_CASES) {
     describe('claim + supply', () => {
       it('can construct and claim rewards for owner with upscale', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { USDC, COMP },
           users: [alice]
@@ -887,7 +887,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('can construct and claim rewards for owner with downscale', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { USDC, COMP },
           users: [alice]
@@ -933,7 +933,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('can construct and claim rewards for owner with upscale with small rescale factor', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { USDC, COMP },
           users: [alice]
@@ -979,7 +979,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('can construct and claim rewards for owner with downscale with small rescale factor', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { USDC, COMP },
           users: [alice]
@@ -1025,7 +1025,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('can construct and claim rewards for owner with same scale', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { USDC, COMP },
           users: [alice]
@@ -1071,7 +1071,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('does not overpay when claiming more than once', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { USDC, COMP },
           users: [alice]
@@ -1103,7 +1103,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('fails if comet instance is already configured', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { COMP }
         } = await makeProtocol({
@@ -1121,7 +1121,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('fails if comet instance is not configured', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           users: [alice]
         } = await makeProtocol();
@@ -1135,7 +1135,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('fails if not enough rewards in the pool to transfer', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { USDC, COMP },
           users: [alice]
@@ -1163,7 +1163,7 @@ for (const { multiplier } of TEST_CASES) {
     describe('claimTo + borrow', () => {
       it('can construct and claim rewards to target with upscale', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { USDC, COMP, WBTC },
           users: [alice, bob]
@@ -1212,7 +1212,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('can construct and claim rewards to target with downscale', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { USDC, COMP, WBTC },
           users: [alice, bob]
@@ -1257,7 +1257,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('can construct and claim rewards to target with same scale', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { USDC, COMP, WBTC },
           users: [alice, bob]
@@ -1302,7 +1302,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('does not allow claiming more than once', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { USDC, COMP, WBTC },
           users: [alice, bob]
@@ -1344,7 +1344,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('fails if comet instance is not configured', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           users: [alice, bob]
         } = await makeProtocol();
@@ -1359,7 +1359,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('fails if not enough rewards in the pool to transfer', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { USDC, COMP, WBTC },
           users: [alice, bob]
@@ -1388,7 +1388,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('fails if caller is not permitted to claim rewards for owner', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { COMP },
           users: [alice]
@@ -1410,7 +1410,7 @@ for (const { multiplier } of TEST_CASES) {
     describe('getRewardOwed', () => {
       it('can construct and calculate rewards for owner with upscale', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { USDC, COMP },
           users: [alice]
@@ -1453,7 +1453,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('can construct and calculate rewards for owner with downscale', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { USDC, COMP },
           users: [alice]
@@ -1495,7 +1495,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('can construct and calculate rewards for owner with upscale with small rescale factor', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { USDC, COMP },
           users: [alice]
@@ -1537,7 +1537,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('can construct and calculate rewards for owner with downscale with small rescale factor', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { USDC, COMP },
           users: [alice]
@@ -1579,7 +1579,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('can construct and calculate rewards for owner with same scale', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { USDC, COMP },
           users: [alice]
@@ -1621,7 +1621,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('returns 0 owed if user already claimed', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { USDC, COMP },
           users: [alice]
@@ -1660,7 +1660,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('fails if comet instance is not configured', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           users: [alice]
         } = await makeProtocol();
@@ -1676,7 +1676,7 @@ for (const { multiplier } of TEST_CASES) {
     describe('setRewardConfig', () => {
       it('allows governor to set rewards token with upscale', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { COMP }
         } = await makeProtocol({
@@ -1702,7 +1702,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('allows governor to set rewards token with downscale', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { COMP }
         } = await makeProtocol({
@@ -1728,7 +1728,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('allows governor to set rewards token with upscale with small rescale factor', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { COMP }
         } = await makeProtocol({
@@ -1754,7 +1754,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('allows governor to set rewards token with downscale with small rescale factor', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { COMP }
         } = await makeProtocol({
@@ -1780,7 +1780,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('allows governor to set rewards token with same scale', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { COMP }
         } = await makeProtocol({
@@ -1806,7 +1806,7 @@ for (const { multiplier } of TEST_CASES) {
 
       it('does not allow anyone but governor to set config', async () => {
         const {
-          comet,
+          cometWithExtendedAssetList: comet,
           governor,
           tokens: { COMP },
           users: [alice]

@@ -4,7 +4,7 @@ import { writeEnacted } from '../../plugins/deployment_manager/Enacted';
 import { HardhatRuntimeEnvironment, HardhatConfig } from 'hardhat/types';
 import { DeploymentManager, VerifyArgs } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
-import hreForBase from '../../plugins/scenario/utils/hreForBase';
+import hreForBase, { migrationStarted} from '../../plugins/scenario/utils/hreForBase';
 
 // TODO: Don't depend on scenario's hreForBase
 async function getForkEnv(env: HardhatRuntimeEnvironment, deployment: string): Promise<HardhatRuntimeEnvironment> {
@@ -248,6 +248,7 @@ task('migrate', 'Runs migration')
         governanceDm = dm;
       }
 
+      migrationStarted();
       if (impersonate && !simulate) {
         throw new Error('Cannot impersonate an address if not simulating a migration. Please specify --simulate to simulate.');
       } else if (impersonate && simulate) {
@@ -376,6 +377,7 @@ task('deploy_and_migrate', 'Runs deploy and migration')
         governanceDm = dm;
       }
 
+      migrationStarted();
       if (impersonate && !simulate) {
         throw new Error('Cannot impersonate an address if not simulating a migration. Please specify --simulate to simulate.');
       } else if (impersonate && simulate) {

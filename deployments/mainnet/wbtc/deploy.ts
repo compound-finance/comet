@@ -28,7 +28,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const bulker = await deploymentManager.fromDep('bulker', 'mainnet', 'weth');
 
   // Deploy Comet
-  const deployed = await deployComet(deploymentManager, deploySpec, {}, true);
+  const deployed = await deployComet(deploymentManager, deploySpec);
 
   return {
     ...deployed,

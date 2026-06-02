@@ -2,7 +2,7 @@ import { ethers, event, expect, makeProtocol, wait } from './helpers';
 
 describe('allow', function () {
   it('isAllowed defaults to false', async () => {
-    const { comet } = await makeProtocol();
+    const { cometWithExtendedAssetList : comet } = await makeProtocol();
     const [_admin, user, manager] = await ethers.getSigners();
     const userAddress = user.address;
     const managerAddress = manager.address;
@@ -11,7 +11,7 @@ describe('allow', function () {
   });
 
   it('allows a user to authorize a manager', async () => {
-    const { comet } = await makeProtocol();
+    const { cometWithExtendedAssetList : comet } = await makeProtocol();
     const [_admin, user, manager] = await ethers.getSigners();
     const userAddress = user.address;
     const managerAddress = manager.address;
@@ -29,7 +29,7 @@ describe('allow', function () {
   });
 
   it('allows a user to rescind authorization', async () => {
-    const { comet } = await makeProtocol();
+    const { cometWithExtendedAssetList : comet } = await makeProtocol();
     const [_admin, user, manager] = await ethers.getSigners();
     const userAddress = user.address;
     const managerAddress = manager.address;
@@ -53,17 +53,17 @@ describe('allow', function () {
 
 describe('hasPermission', function () {
   it('is true for self', async () => {
-    const { comet, users: [alice] } = await makeProtocol();
+    const { cometWithExtendedAssetList : comet, users: [alice] } = await makeProtocol();
     expect(await comet.hasPermission(alice.address, alice.address)).to.be.true;
   });
 
   it('is false by default for others', async () => {
-    const { comet, users: [alice, bob] } = await makeProtocol();
+    const { cometWithExtendedAssetList : comet, users: [alice, bob] } = await makeProtocol();
     expect(await comet.hasPermission(alice.address, bob.address)).to.be.false;
   });
 
   it('is true when user is allowed', async () => {
-    const { comet, users: [alice, bob] } = await makeProtocol();
+    const { cometWithExtendedAssetList : comet, users: [alice, bob] } = await makeProtocol();
     await comet.connect(alice).allow(bob.address, true);
     expect(await comet.hasPermission(alice.address, bob.address)).to.be.true;
   });

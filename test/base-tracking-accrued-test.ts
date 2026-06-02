@@ -5,7 +5,7 @@ describe('baseTrackingAccrued', function() {
     const start = (await getBlock()).timestamp + 100;
 
     const {
-      comet, tokens, users: [alice]
+      cometWithExtendedAssetList : comet, tokens, users: [alice]
     } = await makeProtocol({
       base: 'USDC',
       trackingIndexScale: 1e15,
@@ -43,7 +43,7 @@ describe('baseTrackingAccrued', function() {
 
   it('updates with precision up to 6 decimal places', async () => {
     const {
-      comet, tokens, users: [alice]
+      cometWithExtendedAssetList : comet, tokens, users: [alice]
     } = await makeProtocol({
       base: 'USDC',
       trackingIndexScale: 1e15,
@@ -74,7 +74,7 @@ describe('baseTrackingAccrued', function() {
 
   it('rounds down to zero for values below 6 decimal places', async () => {
     const {
-      comet, tokens, users: [alice]
+      cometWithExtendedAssetList : comet, tokens, users: [alice]
     } = await makeProtocol({
       base: 'USDC',
       trackingIndexScale: 1e15,
@@ -103,7 +103,7 @@ describe('baseTrackingAccrued', function() {
 
   it('acrrues at a greater number of decimals, but preserves 6', async () => {
     const {
-      comet, tokens, users: [alice]
+      cometWithExtendedAssetList : comet, tokens, users: [alice]
     } = await makeProtocol({
       base: 'USDC',
       trackingIndexScale: 1e15,
@@ -136,7 +136,7 @@ describe('baseTrackingAccrued', function() {
 
   it('accrues correctly when base token has more than 6 decimals', async () => {
     const {
-      comet, tokens, users: [alice]
+      cometWithExtendedAssetList : comet, tokens, users: [alice]
     } = await makeProtocol({
       base: 'WETH',
       trackingIndexScale: 1e15,
@@ -169,7 +169,7 @@ describe('baseTrackingAccrued', function() {
     const start = (await getBlock()).timestamp + 100;
 
     const {
-      comet, tokens, users: [alice]
+      cometWithExtendedAssetList : comet, tokens, users: [alice]
     } = await makeProtocol({
       base: 'USDC',
       trackingIndexScale: 1e15,

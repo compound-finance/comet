@@ -1,14 +1,15 @@
 import { ethers, exp, expect, makeProtocol, ONE } from './helpers';
 import {
-  CometExt__factory,
-  CometHarness__factory,
+  AssetListFactory__factory,
+  CometExtAssetList__factory,
+  CometHarnessExtendedAssetList__factory,
   FaucetToken__factory,
   SimplePriceFeed__factory,
 } from '../build/types';
 
 describe('constructor', function () {
   it('sets the baseBorrowMin', async function () {
-    const { comet } = await makeProtocol({
+    const { cometWithExtendedAssetList: comet } = await makeProtocol({
       baseBorrowMin: exp(100, 6)
     });
     expect(await comet.baseBorrowMin()).to.eq(exp(100, 6));
@@ -18,11 +19,15 @@ describe('constructor', function () {
     const [governor, pauseGuardian] = await ethers.getSigners();
 
     // extension delegate
-    const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
+    const AssetListFactory = (await ethers.getContractFactory('AssetListFactory')) as AssetListFactory__factory;
+    const assetListFactory = await AssetListFactory.deploy();
+    await assetListFactory.deployed();
+
+    const CometExtFactory = (await ethers.getContractFactory('CometExtAssetList')) as CometExtAssetList__factory;
     const extensionDelegate = await CometExtFactory.deploy({
       name32: ethers.utils.formatBytes32String('Compound Comet'),
       symbol32: ethers.utils.formatBytes32String('📈BASE')
-    });
+    }, assetListFactory.address);
     await extensionDelegate.deployed();
 
     // tokens
@@ -51,7 +56,7 @@ describe('constructor', function () {
       priceFeeds[asset] = priceFeed;
     }
 
-    const CometFactory = (await ethers.getContractFactory('CometHarness')) as CometHarness__factory;
+    const CometFactory = (await ethers.getContractFactory('CometHarnessExtendedAssetList')) as CometHarnessExtendedAssetList__factory;
     await expect(CometFactory.deploy({
       governor: governor.address,
       pauseGuardian: pauseGuardian.address,
@@ -138,7 +143,7 @@ describe('constructor', function () {
   });
 
   it('reverts if initializeStorage is called after initialization', async () => {
-    const { comet } = await makeProtocol();
+    const { cometWithExtendedAssetList: comet } = await makeProtocol();
     await expect(
       comet.initializeStorage()
     ).to.be.revertedWith("custom error 'AlreadyInitialized()'");
@@ -147,7 +152,7 @@ describe('constructor', function () {
   it('is not possible to create a perSecondInterestRateSlopeLow above FACTOR_SCALE', async () => {
     const uint64Max = BigInt(2 ** 64) - 1n;
 
-    const { comet } = await makeProtocol({
+    const { cometWithExtendedAssetList: comet } = await makeProtocol({
       supplyInterestRateSlopeLow: uint64Max,
       borrowInterestRateSlopeLow: uint64Max
     });

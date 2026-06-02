@@ -44,7 +44,6 @@ const envVar = {
   OPTIMISM_QUICKNODE_LINK: getUrl('optimism'),
   SCROLL_RPC_URL: getUrl('scroll'),
   BASE_QUICKNODE_LINK: getUrl('base'),
-  SEPOLIA_RPC_URL: getUrl('sepolia'),
   MANTLE_QUICKNODE_LINK: getUrl('mantle'),
 };
 

@@ -1,11 +1,12 @@
 import { annualize, defactor, defaultAssets, ethers, event, exp, expect, factor, makeConfigurator, Numeric, truncateDecimals, wait } from './helpers';
 import {
+  CometExtAssetList__factory,
   CometModifiedFactory__factory,
   MarketAdminPermissionChecker__factory,
   SimplePriceFeed__factory,
   SimpleTimelock__factory
 } from '../build/types';
-import { AssetInfoStructOutput } from '../build/types/CometHarnessInterface';
+import { AssetInfoStructOutput } from '../build/types/CometHarnessInterfaceExtendedAssetList';
 import { ConfigurationStructOutput } from '../build/types/Configurator';
 import { BigNumber } from 'ethers';
 
@@ -73,13 +74,19 @@ function expectAssetConfigsToMatch(
 
 describe('configurator', function () {
   it('deploys Comet', async () => {
-    const { configurator, configuratorProxy, cometProxy } = await makeConfigurator();
+    const { configurator, configuratorProxy, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
     const txn = await wait(configuratorAsProxy.deploy(cometProxy.address)) as any;
-    const [, newCometAddress] = txn.receipt.events.find(event => event.event === 'CometDeployed').args;
+    const cometDeployedEvent = txn.receipt.events.find((receiptEvent) => receiptEvent.event === 'CometDeployed');
+    const [, newCometAddress] = cometDeployedEvent.args;
 
-    expect(event(txn, 0)).to.be.deep.equal({
+    expect({
+      CometDeployed: {
+        cometProxy: cometDeployedEvent.args.cometProxy,
+        newComet: newCometAddress,
+      }
+    }).to.be.deep.equal({
       CometDeployed: {
         cometProxy: cometProxy.address,
         newComet: newCometAddress,
@@ -88,7 +95,7 @@ describe('configurator', function () {
   });
 
   it('deploys Comet from ProxyAdmin', async () => {
-    const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
+    const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
     expect(await proxyAdmin.getProxyImplementation(cometProxy.address)).to.be.equal(comet.address);
     expect(await proxyAdmin.getProxyImplementation(configuratorProxy.address)).to.be.equal(configurator.address);
@@ -100,7 +107,7 @@ describe('configurator', function () {
   });
 
   it('reverts if deploy is called from non-governor', async () => {
-    const { configuratorProxy, proxyAdmin, cometProxy, users: [alice], governor } = await makeConfigurator();
+    const { configuratorProxy, proxyAdmin, cometProxyWithExtendedAssetList: cometProxy, users: [alice], governor } = await makeConfigurator();
 
     const MarketAdminPermissionCheckerFactory = (await ethers.getContractFactory(
       'MarketAdminPermissionChecker'
@@ -117,7 +124,7 @@ describe('configurator', function () {
   });
 
   it('e2e governance actions from timelock', async () => {
-    const { governor, configurator, configuratorProxy, proxyAdmin, cometProxy, users: [alice] } = await makeConfigurator();
+    const { governor, configurator, configuratorProxy, proxyAdmin, cometProxyWithExtendedAssetList: cometProxy, users: [alice] } = await makeConfigurator();
 
     const TimelockFactory = (await ethers.getContractFactory(
       'SimpleTimelock'
@@ -206,7 +213,7 @@ describe('configurator', function () {
     });
 
     it('sets Configuration for a Comet proxy with an existing configuration', async () => {
-      const { configurator, configuratorProxy, cometProxy } = await makeConfigurator({
+      const { configurator, configuratorProxy, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator({
         assets: {
           USDC: { initial: 1e6, decimals: 6 },
         }
@@ -230,7 +237,7 @@ describe('configurator', function () {
     });
 
     it('reverts when setting Configuration and changing baseToken for a Comet proxy with an existing configuration', async () => {
-      const { configurator, configuratorProxy, cometProxy, tokens } = await makeConfigurator();
+      const { configurator, configuratorProxy, cometProxyWithExtendedAssetList: cometProxy, tokens } = await makeConfigurator();
       const { COMP } = tokens;
 
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
@@ -243,7 +250,7 @@ describe('configurator', function () {
     });
 
     it('reverts when setting Configuration and changing trackingIndexScale for a Comet proxy with an existing configuration', async () => {
-      const { configurator, configuratorProxy, cometProxy } = await makeConfigurator();
+      const { configurator, configuratorProxy, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
       const oldConfiguration = await configuratorAsProxy.getConfiguration(cometProxy.address);
@@ -255,7 +262,7 @@ describe('configurator', function () {
     });
 
     it('reverts when setting bad Configuration for a Comet proxy with an existing configuration', async () => {
-      const { configurator, configuratorProxy, cometProxy } = await makeConfigurator();
+      const { configurator, configuratorProxy, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
       const oldConfiguration = await configuratorAsProxy.getConfiguration(cometProxy.address);
@@ -267,7 +274,7 @@ describe('configurator', function () {
     });
 
     it('sets governor and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy, users: [alice] } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy, users: [alice] } = await makeConfigurator();
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
@@ -291,7 +298,7 @@ describe('configurator', function () {
     });
 
     it('sets pauseGuardian and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy, users: [alice] } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy, users: [alice] } = await makeConfigurator();
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
@@ -315,7 +322,7 @@ describe('configurator', function () {
     });
 
     it('sets baseTokenPriceFeed and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
@@ -344,14 +351,31 @@ describe('configurator', function () {
     });
 
     it('sets extensionDelegate and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
+      const {
+        configurator,
+        configuratorProxy,
+        proxyAdmin,
+        assetListFactory,
+        cometWithExtendedAssetList: comet,
+        cometProxyWithExtendedAssetList: cometProxy,
+      } = await makeConfigurator();
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
       expect((await configuratorAsProxy.getConfiguration(cometProxy.address)).extensionDelegate).to.be.equal(await comet.extensionDelegate());
 
+      const CometExtAssetListFactory = (await ethers.getContractFactory('CometExtAssetList')) as CometExtAssetList__factory;
+      const newExtensionDelegateContract = await CometExtAssetListFactory.deploy(
+        {
+          name32: ethers.utils.formatBytes32String('Test Comet'),
+          symbol32: ethers.utils.formatBytes32String('tCOMET')
+        },
+        assetListFactory.address
+      );
+      await newExtensionDelegateContract.deployed();
+
       const oldExt = await comet.extensionDelegate();
-      const newExt = ethers.constants.AddressZero;
+      const newExt = newExtensionDelegateContract.address;
       const txn = await wait(configuratorAsProxy.setExtensionDelegate(cometProxy.address, newExt));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
@@ -368,7 +392,7 @@ describe('configurator', function () {
     });
 
     it('sets supplyKink and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
@@ -392,7 +416,7 @@ describe('configurator', function () {
     });
 
     it('sets supplyPerYearInterestRateSlopeLow and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
@@ -418,7 +442,7 @@ describe('configurator', function () {
     });
 
     it('sets supplyPerYearInterestRateSlopeHigh and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
@@ -444,7 +468,7 @@ describe('configurator', function () {
     });
 
     it('sets supplyPerYearInterestRateBase and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
@@ -470,7 +494,7 @@ describe('configurator', function () {
     });
 
     it('sets borrowKink and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
@@ -494,7 +518,7 @@ describe('configurator', function () {
     });
 
     it('sets borrowPerYearInterestRateSlopeLow and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
@@ -520,7 +544,7 @@ describe('configurator', function () {
     });
 
     it('sets borrowPerYearInterestRateSlopeHigh and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
@@ -546,7 +570,7 @@ describe('configurator', function () {
     });
 
     it('sets borrowPerYearInterestRateBase and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
@@ -572,7 +596,7 @@ describe('configurator', function () {
     });
 
     it('sets storeFrontPriceFactor and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator({
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator({
         assets: {
           USDC: { decimals: 6, },
           COMP: {
@@ -605,7 +629,7 @@ describe('configurator', function () {
     });
 
     it('sets baseTrackingSupplySpeed and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
@@ -629,7 +653,7 @@ describe('configurator', function () {
     });
 
     it('sets baseTrackingBorrowSpeed and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
@@ -653,7 +677,7 @@ describe('configurator', function () {
     });
 
     it('sets baseMinForRewards and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
@@ -677,7 +701,7 @@ describe('configurator', function () {
     });
 
     it('sets baseBorrowMin and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
@@ -701,7 +725,7 @@ describe('configurator', function () {
     });
 
     it('sets targetReserves and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
@@ -725,7 +749,7 @@ describe('configurator', function () {
     });
 
     it('adds asset and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy, unsupportedToken } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy, unsupportedToken } = await makeConfigurator();
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
@@ -756,7 +780,7 @@ describe('configurator', function () {
     });
 
     it('updates asset and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy, tokens } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy, tokens } = await makeConfigurator();
       const { COMP } = tokens;
 
       const cometAsProxy = comet.attach(cometProxy.address);
@@ -798,7 +822,7 @@ describe('configurator', function () {
     });
 
     it('updates asset priceFeed and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy, tokens, priceFeeds } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy, tokens, priceFeeds } = await makeConfigurator();
       const { COMP } = tokens;
 
       const cometAsProxy = comet.attach(cometProxy.address);
@@ -825,7 +849,7 @@ describe('configurator', function () {
     });
 
     it('updates asset borrowCollateralFactor and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy, tokens } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy, tokens } = await makeConfigurator();
       const { COMP } = tokens;
 
       const cometAsProxy = comet.attach(cometProxy.address);
@@ -852,7 +876,7 @@ describe('configurator', function () {
     });
 
     it('updates asset liquidateCollateralFactor and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy, tokens } = await makeConfigurator({
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy, tokens } = await makeConfigurator({
         assets: defaultAssets({}, {
           COMP: { borrowCF: exp(0.5, 18) }
         })
@@ -883,7 +907,7 @@ describe('configurator', function () {
     });
 
     it('updates asset liquidationFactor and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy, tokens } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy, tokens } = await makeConfigurator();
       const { COMP } = tokens;
 
       const cometAsProxy = comet.attach(cometProxy.address);
@@ -910,7 +934,7 @@ describe('configurator', function () {
     });
 
     it('updates asset supplyCap and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy, tokens } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometWithExtendedAssetList: comet, cometProxyWithExtendedAssetList: cometProxy, tokens } = await makeConfigurator();
       const { COMP } = tokens;
 
       const cometAsProxy = comet.attach(cometProxy.address);
@@ -937,7 +961,7 @@ describe('configurator', function () {
     });
 
     it('reverts if updating a non-existent asset', async () => {
-      const { configurator, configuratorProxy, cometProxy } = await makeConfigurator();
+      const { configurator, configuratorProxy, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
 
@@ -947,7 +971,7 @@ describe('configurator', function () {
     });
 
     it('reverts if setter is called from non-governor', async () => {
-      const { configuratorProxy, configurator, cometProxy, users: [alice] } = await makeConfigurator();
+      const { configuratorProxy, configurator, cometProxyWithExtendedAssetList: cometProxy, users: [alice] } = await makeConfigurator();
 
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
       await expect(

@@ -19,7 +19,6 @@ library ChainAddresses {
         BASE,
         SCROLL,
         OPTIMISM,
-        MAINNET_SEPOLIA,
         LINEA,
         RONIN,
         UNICHAIN,
@@ -263,8 +262,6 @@ library ChainAddresses {
             return Chain.SCROLL;
         } else if(chainId == 10) {
             return Chain.OPTIMISM;
-        } else if(chainId == 11155111) {
-            return Chain.MAINNET_SEPOLIA;
         } else if(chainId == 5000) {
             return Chain.MANTLE;
         } else {

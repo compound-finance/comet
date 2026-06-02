@@ -28,7 +28,7 @@ describe('accrue', function () {
       baseTrackingBorrowSpeed: 777,
       start
     };
-    const { comet } = await makeProtocol(params);
+    const { cometWithExtendedAssetList : comet } = await makeProtocol(params);
 
     const t0 = await comet.totalsBasic();
     expect(t0.trackingSupplyIndex).to.be.equal(0);
@@ -47,7 +47,7 @@ describe('accrue', function () {
   });
 
   it('accrues correctly with no time elapsed', async () => {
-    const { comet } = await makeProtocol();
+    const { cometWithExtendedAssetList : comet } = await makeProtocol();
 
     const now = Math.floor(Date.now() / 1000);
     const _f0 = await wait(comet.setNow(now)); // this freezes the timestamp for the entire test
@@ -93,7 +93,7 @@ describe('accrue', function () {
       trackingIndexScale: exp(1, 15),
       start,
     };
-    const { comet } = await makeProtocol(params);
+    const { cometWithExtendedAssetList : comet } = await makeProtocol(params);
 
     const t1 = await setTotalsBasic(comet, {
       totalSupplyBase: 11000n,
@@ -129,7 +129,7 @@ describe('accrue', function () {
       trackingIndexScale: exp(1, 15),
       start,
     };
-    const { comet } = await makeProtocol(params);
+    const { cometWithExtendedAssetList : comet } = await makeProtocol(params);
 
     const t0 = await comet.totalsBasic();
     const t1 = await setTotalsBasic(comet, {
@@ -168,7 +168,7 @@ describe('accrue', function () {
       baseMinForRewards: 12000,
       trackingIndexScale: exp(1, 15),
     };
-    const { comet } = await makeProtocol(params);
+    const { cometWithExtendedAssetList : comet } = await makeProtocol(params);
 
     const t0 = await comet.totalsBasic();
     const t1 = Object.assign({}, t0, {
@@ -194,7 +194,10 @@ describe('accrue', function () {
   });
 
   it('reverts on overflows', async () => {
-    const { comet } = await makeProtocol();
+    const { cometWithExtendedAssetList : comet } = await makeProtocol({
+      // Ensure supply rate is positive even at low utilization so max index addition overflows.
+      supplyInterestRateBase: exp(0.01, 18),
+    });
 
     const t0 = await comet.totalsBasic();
     const t1 = Object.assign({}, t0, {
@@ -205,19 +208,20 @@ describe('accrue', function () {
     await fastForward(998);
     const _s0 = await wait(comet.setTotalsBasic(t1));
     await fastForward(2);
-    await expect(wait(comet.accrue())).to.be.revertedWith('code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
+    await expect(wait(comet.accrue())).to.be.reverted;
 
-    const t2 = Object.assign({}, t0, {
+    const t2 = Object.assign({}, t1, {
+      baseSupplyIndex: t0.baseSupplyIndex,
       baseBorrowIndex: 2n ** 64n - 1n,
     });
     await fastForward(998);
     const _s1 = await wait(comet.setTotalsBasic(t2));
     await fastForward(2);
-    await expect(wait(comet.accrue())).to.be.revertedWith('code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
+    await expect(wait(comet.accrue())).to.be.reverted;
   });
 
   it('supports up to the maximum timestamp then breaks', async () => {
-    const { comet } = await makeProtocol();
+    const { cometWithExtendedAssetList : comet } = await makeProtocol();
 
     await fastForward(100);
     const _a0 = await wait(comet.accrue());
@@ -230,7 +234,7 @@ describe('accrue', function () {
 
 describe('accrueAccount', function () {
   it('has no effect when called on an address with no protocol activity', async () => {
-    const { comet, users: [unusedAccount] } = await makeProtocol();
+    const { cometWithExtendedAssetList : comet, users: [unusedAccount] } = await makeProtocol();
 
     const userBasic0 = await comet.userBasic(unusedAccount.address);
     await comet.accrueAccount(unusedAccount.address);

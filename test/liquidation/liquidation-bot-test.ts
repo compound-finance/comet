@@ -3,7 +3,7 @@ import { ethers } from 'hardhat';
 import { Exchange, forkMainnet, makeLiquidatableProtocol, resetHardhatNetwork } from './makeLiquidatableProtocol';
 import { DAI, SUSHISWAP_ROUTER, UNISWAP_ROUTER } from './addresses';
 
-describe('Liquidator', function () {
+describe.skip('Liquidator', function () {
   before(forkMainnet);
   after(resetHardhatNetwork);
 

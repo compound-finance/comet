@@ -12,10 +12,8 @@ env:
   ETHERSCAN_KEY_FOR_ARBITRUM: ${{ secrets.ETHERSCAN_KEY_FOR_ARBITRUM }}
   ETHERSCAN_KEY_FOR_POLYGON: ${{ secrets.ETHERSCAN_KEY_FOR_POLYGON }}
   ETHERSCAN_KEY_FOR_LINEA: ${{ secrets.ETHERSCAN_KEY_FOR_LINEA }}
-  SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
   INFURA_KEY: ${{ secrets.INFURA_KEY }}
   MAINNET_QUICKNODE_LINK: ${{ secrets.MAINNET_QUICKNODE_LINK }}
-  SEPOLIA_QUICKNODE_LINK: ${{ secrets.SEPOLIA_QUICKNODE_LINK }}
   RONIN_QUICKNODE_LINK: ${{ secrets.RONIN_QUICKNODE_LINK }}
   POLYGON_QUICKNODE_LINK: ${{ secrets.POLYGON_QUICKNODE_LINK }}
   OPTIMISM_QUICKNODE_LINK: ${{ secrets.OPTIMISM_QUICKNODE_LINK }}
@@ -87,7 +85,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        bases: [ development, mainnet, mainnet-weth, mainnet-wbtc, mainnet-usdt, mainnet-wsteth, mainnet-usds, sepolia-usdc, sepolia-weth, fuji, polygon, polygon-usdt, arbitrum-usdc.e, arbitrum-usdc, arbitrum-weth, arbitrum-usdt, base-usdbc, base-weth, base-usdc, base-aero, base-usds, optimism-usdc, optimism-usdt, optimism-weth, mantle-usde, linea-usdc, linea-weth, scroll-usdc, ronin-weth, ronin-wron, unichain-usdc, unichain-weth]
+        bases: [ development, mainnet, mainnet-weth, mainnet-wbtc, mainnet-usdt, mainnet-wsteth, mainnet-usds, polygon, polygon-usdt, arbitrum-usdc.e, arbitrum-usdc, arbitrum-weth, arbitrum-usdt, base-usdbc, base-weth, base-usdc, base-aero, base-usds, optimism-usdc, optimism-usdt, optimism-weth, mantle-usde, linea-usdc, linea-weth, scroll-usdc, ronin-weth, ronin-wron, unichain-usdc, unichain-weth]
     name: Run scenarios
     runs-on: ubuntu-latest
     steps:

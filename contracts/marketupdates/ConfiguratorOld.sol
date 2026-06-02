@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
-import "./../CometFactory.sol";
+import "./../CometFactoryWithExtendedAssetList.sol";
 import "./../CometConfiguration.sol";
 import "./../ConfiguratorStorage.sol";
 
@@ -336,7 +336,7 @@ contract ConfiguratorOld is ConfiguratorStorage {
      * @dev Note: Callable by anyone
      */
     function deploy(address cometProxy) external returns (address) {
-        address newComet = CometFactory(factory[cometProxy]).clone(configuratorParams[cometProxy]);
+        address newComet = CometFactoryWithExtendedAssetList(factory[cometProxy]).clone(configuratorParams[cometProxy]);
         emit CometDeployed(cometProxy, newComet);
         return newComet;
     }

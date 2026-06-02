@@ -86,7 +86,7 @@ describe('MarketUpdateProposer', function() {
 
     const {
       configuratorProxy,
-      cometProxy,
+      cometProxyWithExtendedAssetList: cometProxy,
       users: [alice],
     } = await makeConfigurator();
 
@@ -143,7 +143,7 @@ describe('MarketUpdateProposer', function() {
       marketUpdateMultiSig,
     } = await makeMarketAdmin();
 
-    const { configuratorProxy, cometProxy } = await makeConfigurator();
+    const { configuratorProxy, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
     let setSupplyKinkCalldata = ethers.utils.defaultAbiCoder.encode(
       ['address', 'uint64'],
@@ -183,7 +183,7 @@ describe('MarketUpdateProposer', function() {
       marketUpdateMultiSig,
     } = await makeMarketAdmin();
 
-    const { configuratorProxy, cometProxy } = await makeConfigurator();
+    const { configuratorProxy, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
     let setSupplyKinkCalldata = ethers.utils.defaultAbiCoder.encode(
       ['address', 'uint64'],
@@ -228,7 +228,7 @@ describe('MarketUpdateProposer', function() {
       marketUpdateMultiSig,
     } = await makeMarketAdmin();
 
-    const { configuratorProxy, cometProxy } = await makeConfigurator();
+    const { configuratorProxy, cometProxyWithExtendedAssetList: cometProxy } = await makeConfigurator();
 
     let setSupplyKinkCalldata = ethers.utils.defaultAbiCoder.encode(
       ['address', 'uint64'],
@@ -468,7 +468,7 @@ describe('MarketUpdateProposer', function() {
         marketUpdateProposalGuardianSigner,
       } = await makeMarketAdmin();
   
-      const { configuratorProxy, cometProxy, users: [alice] } = await makeConfigurator();
+      const { configuratorProxy, cometProxyWithExtendedAssetList: cometProxy, users: [alice] } = await makeConfigurator();
       
       expect(await marketUpdateProposerContract.marketAdmin()).to.be.equal(
         marketUpdateMultiSig.address
@@ -546,7 +546,7 @@ describe('MarketUpdateProposer', function() {
       const {
         configuratorProxy,
         configurator,
-        cometProxy,
+        cometProxyWithExtendedAssetList: cometProxy,
         users: [bob],
       } = await makeConfigurator(
         { governor: governorTimelockSigner, marketAdminPermissionCheckerContract: marketAdminPermissionCheckerContract }
@@ -623,7 +623,7 @@ describe('MarketUpdateProposer', function() {
         marketUpdateProposalGuardianSigner,
       } = await makeMarketAdmin();
   
-      const { configuratorProxy, cometProxy, users: [bob] } = await makeConfigurator();
+      const { configuratorProxy, cometProxyWithExtendedAssetList: cometProxy, users: [bob] } = await makeConfigurator();
       
       expect(await marketUpdateProposerContract.marketAdmin()).to.be.equal(
         marketUpdateMultiSig.address

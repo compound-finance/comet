@@ -6,12 +6,9 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
   BaseBulker,
   BaseBulker__factory,
-  CometExt,
-  CometExt__factory,
   CometExtAssetList,
   CometExtAssetList__factory,
-  CometHarness__factory,
-  CometHarnessInterface as Comet,
+  CometHarnessInterfaceExtendedAssetList as Comet,
   CometRewards,
   CometRewards__factory,
   EvilToken__factory,
@@ -26,14 +23,13 @@ import {
   ConfiguratorProxy__factory,
   CometProxyAdmin,
   CometProxyAdmin__factory,
-  CometFactory,
-  CometFactory__factory,
   CometFactoryWithExtendedAssetList,
   CometFactoryWithExtendedAssetList__factory,
   Configurator,
   Configurator__factory,
-  CometHarnessInterface,
+  CometHarnessInterfaceExtendedAssetList,
   CometInterface,
+  CometMainInterface,
   NonStandardFaucetFeeToken,
   NonStandardFaucetFeeToken__factory,
   AssetListFactory,
@@ -44,7 +40,13 @@ import {
 } from '../build/types';
 import { BigNumber } from 'ethers';
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
-import { TotalsBasicStructOutput, TotalsCollateralStructOutput } from '../build/types/CometHarness';
+import { TotalsBasicStructOutput, TotalsCollateralStructOutput } from '../build/types/CometHarnessExtendedAssetList';
+
+// Snapshot
+export { takeSnapshot, SnapshotRestorer } from './helpers/snapshot';
+
+// Network helpers
+export * from './helpers/network-helpers';
 
 export { Comet, ethers, expect, hre };
 
@@ -77,7 +79,7 @@ export type ProtocolOpts = {
   symbol?: string;
   governor?: SignerWithAddress;
   pauseGuardian?: SignerWithAddress;
-  extensionDelegate?: CometExt;
+  extensionDelegateAssetList?: CometExtAssetList;
   base?: string;
   reward?: string;
   supplyKink?: Numeric;
@@ -103,12 +105,10 @@ export type Protocol = {
   opts: ProtocolOpts;
   governor: SignerWithAddress;
   pauseGuardian: SignerWithAddress;
-  extensionDelegate: CometExt;
   extensionDelegateAssetList: CometExtAssetList;
   users: SignerWithAddress[];
   base: string;
   reward: string;
-  comet: Comet;
   cometWithExtendedAssetList: CometWithExtendedAssetList;
   assetListFactory: AssetListFactory;
   tokens: {
@@ -124,9 +124,7 @@ export type ConfiguratorAndProtocol = {
   configurator: Configurator;
   configuratorProxy: ConfiguratorProxy;
   proxyAdmin: CometProxyAdmin;
-  cometFactory: CometFactory;
   cometFactoryWithExtendedAssetList: CometFactoryWithExtendedAssetList;
-  cometProxy: TransparentUpgradeableProxy;
   cometProxyWithExtendedAssetList: TransparentUpgradeableProxy;
 } & Protocol;
 
@@ -149,6 +147,19 @@ export type BulkerOpts = {
 export type BulkerInfo = {
   opts: BulkerOpts;
   bulker: BaseBulker;
+};
+
+export type UserCollateral = {
+  balance: BigNumber;
+  _reserved: BigNumber;
+};
+
+export type UserBasic = {
+  principal: BigNumber;
+  baseTrackingIndex: BigNumber;
+  baseTrackingAccrued: BigNumber;
+  assetsIn: number;
+  _reserved: number;
 };
 
 export function dfn<T>(x: T | undefined | null, dflt: T): T {
@@ -175,14 +186,70 @@ export function defactor(f: bigint | BigNumber): number {
 // Truncates a factor to a certain number of decimals
 export function truncateDecimals(factor: bigint | BigNumber, decimals = 4) {
   const descaleFactor = factorScale / exp(1, decimals);
-  return toBigInt(factor) / descaleFactor * descaleFactor;
+  return (toBigInt(factor) / descaleFactor) * descaleFactor;
 }
 
 export function mulPrice(n: bigint, price: bigint | BigNumber, fromScale: bigint | BigNumber): bigint {
-  return n * toBigInt(price) / toBigInt(fromScale);
+  return (n * toBigInt(price)) / toBigInt(fromScale);
 }
 
-function toBigInt(f: bigint | BigNumber): bigint {
+export function mulFactor(n: bigint, factor: bigint):bigint {
+  return n * factor / factorScale;
+}
+
+export function divPrice(n: bigint, price: bigint | BigNumber, toScale: bigint | BigNumber): bigint {
+  return (n * toBigInt(toScale)) / toBigInt(price);
+}
+
+const BASE_INDEX_SCALE = 10n ** 15n;
+
+export function presentValueSupply(baseSupplyIndex: bigint | BigNumber, principalValue: bigint | BigNumber): bigint {
+  const principal = toBigInt(principalValue);
+  const index = toBigInt(baseSupplyIndex);
+  return principal * index / BASE_INDEX_SCALE;
+}
+
+function presentValueBorrow(baseBorrowIndex: bigint | BigNumber, principalValue: bigint | BigNumber): bigint {
+  const principal = toBigInt(principalValue);
+  const index = toBigInt(baseBorrowIndex);
+  return principal * index / BigInt(BASE_INDEX_SCALE);
+}
+
+export function presentValue(
+  principalValue: bigint | BigNumber,
+  baseSupplyIndex: bigint | BigNumber,
+  baseBorrowIndex: bigint | BigNumber
+): bigint {
+  const principal = toBigInt(principalValue);
+  if (principal >= 0n) {
+    return presentValueSupply(baseSupplyIndex, principal);
+  } else {
+    return -presentValueBorrow(baseBorrowIndex, -principal);
+  }
+}
+
+function principalValueSupply(baseSupplyIndex: bigint, presentValue: bigint): bigint {
+  return (presentValue * BigInt(BASE_INDEX_SCALE)) / baseSupplyIndex;
+}
+
+function principalValueBorrow(baseBorrowIndex: bigint, presentValue: bigint): bigint {
+  return (presentValue * BigInt(BASE_INDEX_SCALE) + baseBorrowIndex - 1n) / baseBorrowIndex;
+}
+
+export  function principalValue(
+  presentValue: bigint | BigNumber,
+  baseSupplyIndex: bigint | BigNumber,
+  baseBorrowIndex: bigint | BigNumber
+): bigint {
+  const pv = toBigInt(presentValue);
+  if (pv >= 0n) {
+    return principalValueSupply(toBigInt(baseSupplyIndex), pv);
+  } else {
+    return -principalValueBorrow(toBigInt(baseBorrowIndex), -pv);
+  }
+}
+
+export function toBigInt(f: bigint | BigNumber): bigint {
   if (typeof f === 'bigint') {
     return f;
   } else {
@@ -200,25 +267,41 @@ export function toYears(seconds: number, secondsPerYear = 31536000): number {
 
 export function defaultAssets(overrides = {}, perAssetOverrides = {}) {
   return {
-    COMP: Object.assign({
-      initial: 1e7,
-      decimals: 18,
-      initialPrice: 175,
-    }, overrides, perAssetOverrides['COMP'] || {}),
-    USDC: Object.assign({
-      initial: 1e6,
-      decimals: 6,
-    }, overrides, perAssetOverrides['USDC'] || {}),
-    WETH: Object.assign({
-      initial: 1e4,
-      decimals: 18,
-      initialPrice: 3000,
-    }, overrides, perAssetOverrides['WETH'] || {}),
-    WBTC: Object.assign({
-      initial: 1e3,
-      decimals: 8,
-      initialPrice: 41000,
-    }, overrides, perAssetOverrides['WBTC'] || {}),
+    COMP: Object.assign(
+      {
+        initial: 1e7,
+        decimals: 18,
+        initialPrice: 175,
+      },
+      overrides,
+      perAssetOverrides['COMP'] || {}
+    ),
+    USDC: Object.assign(
+      {
+        initial: 1e6,
+        decimals: 6,
+      },
+      overrides,
+      perAssetOverrides['USDC'] || {}
+    ),
+    WETH: Object.assign(
+      {
+        initial: 1e4,
+        decimals: 18,
+        initialPrice: 3000,
+      },
+      overrides,
+      perAssetOverrides['WETH'] || {}
+    ),
+    WBTC: Object.assign(
+      {
+        initial: 1e3,
+        decimals: 8,
+        initialPrice: 41000,
+      },
+      overrides,
+      perAssetOverrides['WBTC'] || {}
+    ),
   };
 }
 
@@ -226,6 +309,10 @@ export const factorDecimals = 18;
 export const factorScale = factor(1);
 export const ONE = factorScale;
 export const ZERO = factor(0);
+export const ZERO_ADDRESS = ethers.constants.AddressZero;
+export const DEFAULT_PRICEFEED_DECIMALS = 8;
+export const MAX_ASSETS = 24;
+export const MAX_SUPPORTED_UTILIZATION = exp(2, 18);
 
 export async function getBlock(n?: number, ethers_ = ethers): Promise<Block> {
   const blockNumber = n == undefined ? await ethers_.provider.getBlockNumber() : n;
@@ -252,8 +339,8 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     priceFeeds[asset] = priceFeed;
   }
 
-  const name32 = ethers.utils.formatBytes32String((opts.name || 'Compound Comet'));
-  const symbol32 = ethers.utils.formatBytes32String((opts.symbol || '📈BASE'));
+  const name32 = ethers.utils.formatBytes32String(opts.name || 'Compound Comet');
+  const symbol32 = ethers.utils.formatBytes32String(opts.symbol || '📈BASE');
   const governor = opts.governor || signers[0];
   const pauseGuardian = opts.pauseGuardian || signers[1];
   const users = signers.slice(2); // guaranteed to not be governor or pause guardian
@@ -284,7 +371,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     const name = config.name || symbol;
     const factory = config.factory || FaucetFactory;
     let token;
-    token = (tokens[symbol] = await factory.deploy(initial, name, decimals, symbol));
+    token = tokens[symbol] = await factory.deploy(initial, name, decimals, symbol);
     await token.deployed();
   }
 
@@ -292,20 +379,19 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
 
   const AssetListFactory = (await ethers.getContractFactory('AssetListFactory')) as AssetListFactory__factory;
   const assetListFactory = await AssetListFactory.deploy();
-  await assetListFactory.deployed();
+  await assetListFactory.deployed();  
 
-  let extensionDelegate = opts.extensionDelegate;
-  if (extensionDelegate === undefined) {
-    const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
-    extensionDelegate = await CometExtFactory.deploy({ name32, symbol32 });
-    await extensionDelegate.deployed();
+  let extensionDelegateAssetList = opts.extensionDelegateAssetList;
+  if (extensionDelegateAssetList === undefined) {
+    const CometExtFactory = (await ethers.getContractFactory('CometExtAssetList')) as CometExtAssetList__factory;
+    extensionDelegateAssetList = await CometExtFactory.deploy({ name32, symbol32 }, assetListFactory.address);
+    await extensionDelegateAssetList.deployed();
   }
 
-  const CometFactory = (await ethers.getContractFactory('CometHarness')) as CometHarness__factory;
   const config = {
     governor: governor.address,
     pauseGuardian: pauseGuardian.address,
-    extensionDelegate: extensionDelegate.address,
+    extensionDelegate: extensionDelegateAssetList.address,
     baseToken: tokens[base].address,
     baseTokenPriceFeed: priceFeeds[base].address,
     supplyKink,
@@ -332,15 +418,12 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
           borrowCollateralFactor: dfn(config.borrowCF, ONE - 1n),
           liquidateCollateralFactor: dfn(config.liquidateCF, ONE),
           liquidationFactor: dfn(config.liquidationFactor, ONE),
-          supplyCap: dfn(config.supplyCap, exp(100, dfn(config.decimals, 18))),
+          supplyCap: dfn(config.supplyCap, exp(150000, dfn(config.decimals, 18))),
         });
       }
       return acc;
     }, []),
   };
-  const comet = await CometFactory.deploy(config);
-  await comet.deployed();
-
   config.assetConfigs = Object.entries(assets).reduce((acc, [symbol, config], _i) => {
     if (symbol != base) {
       acc.push({
@@ -350,44 +433,33 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
         borrowCollateralFactor: dfn(config.borrowCF, ONE - 1n),
         liquidateCollateralFactor: dfn(config.liquidateCF, ONE),
         liquidationFactor: dfn(config.liquidationFactor, ONE),
-        supplyCap: dfn(config.supplyCap, exp(100, dfn(config.decimals, 18))),
+        supplyCap: dfn(config.supplyCap, exp(150000, dfn(config.decimals, 18))),
       });
     }
     return acc;
   }, []);
-  let extensionDelegateAssetList = opts.extensionDelegate;
-  if (extensionDelegateAssetList === undefined) {
-    const CometExtFactory = (await ethers.getContractFactory('CometExtAssetList')) as CometExtAssetList__factory;
-    extensionDelegateAssetList = await CometExtFactory.deploy({ name32, symbol32 }, assetListFactory.address);
-    await extensionDelegateAssetList.deployed();
-  }
-  config.extensionDelegate = extensionDelegateAssetList.address;
   const CometFactoryWithExtendedAssetList = (await ethers.getContractFactory('CometHarnessExtendedAssetList')) as CometHarnessExtendedAssetList__factory;
 
   const cometWithExtendedAssetList = await CometFactoryWithExtendedAssetList.deploy(config);
   await cometWithExtendedAssetList.deployed();
 
   if (opts.start) await ethers.provider.send('evm_setNextBlockTimestamp', [opts.start]);
-  await comet.initializeStorage();
-
   await cometWithExtendedAssetList.initializeStorage();
 
   const baseTokenBalance = opts.baseTokenBalance;
   if (baseTokenBalance) {
     const baseToken = tokens[base];
-    await wait(baseToken.allocateTo(comet.address, baseTokenBalance));
+    await wait(baseToken.allocateTo(cometWithExtendedAssetList.address, baseTokenBalance));
   }
 
   return {
     opts,
     governor,
     pauseGuardian,
-    extensionDelegate,
     extensionDelegateAssetList: extensionDelegateAssetList as CometExtAssetList,
     users,
     base,
     reward,
-    comet: await ethers.getContractAt('CometHarnessInterface', comet.address) as Comet,
     cometWithExtendedAssetList: await ethers.getContractAt('CometHarnessInterfaceExtendedAssetList', cometWithExtendedAssetList.address) as CometWithExtendedAssetList,
     assetListFactory: assetListFactory,
     tokens,
@@ -398,10 +470,10 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
 
 export async function getConfigurationForConfigurator(
   opts: ProtocolOpts,
-  comet: CometHarnessInterface,
+  cometWithExtendedAssetList: CometHarnessInterfaceExtendedAssetList,
   governor: SignerWithAddress,
   pauseGuardian: SignerWithAddress,
-  extensionDelegate: CometExt,
+  extensionDelegateAssetList: CometExtAssetList,
   tokens: {
     [p: string]: FaucetToken | NonStandardFaucetFeeToken;
   },
@@ -419,19 +491,15 @@ export async function getConfigurationForConfigurator(
   const borrowPerYearInterestRateBase = dfn(opts.borrowInterestRateBase, exp(0.005, 18));
   const borrowPerYearInterestRateSlopeLow = dfn(opts.borrowInterestRateSlopeLow, exp(0.1, 18));
   const borrowPerYearInterestRateSlopeHigh = dfn(opts.borrowInterestRateSlopeHigh, exp(3, 18));
-  const storeFrontPriceFactor = await comet.storeFrontPriceFactor();
-  const trackingIndexScale = await comet.trackingIndexScale();
-  const baseTrackingSupplySpeed = await comet.baseTrackingSupplySpeed();
-  const baseTrackingBorrowSpeed = await comet.baseTrackingBorrowSpeed();
-  const baseMinForRewards = await comet.baseMinForRewards();
-  const baseBorrowMin = await comet.baseBorrowMin();
-  const targetReserves = await comet.targetReserves();
+  const storeFrontPriceFactor = await cometWithExtendedAssetList.storeFrontPriceFactor();
+  const trackingIndexScale = await cometWithExtendedAssetList.trackingIndexScale();
+  const baseTrackingSupplySpeed = await cometWithExtendedAssetList.baseTrackingSupplySpeed();
+  const baseTrackingBorrowSpeed = await cometWithExtendedAssetList.baseTrackingBorrowSpeed();
+  const baseMinForRewards = await cometWithExtendedAssetList.baseMinForRewards();
+  const baseBorrowMin = await cometWithExtendedAssetList.baseBorrowMin();
+  const targetReserves = await cometWithExtendedAssetList.targetReserves();
 
   // Deploy CometFactory
-  const CometFactoryFactory = (await ethers.getContractFactory('CometFactory')) as CometFactory__factory;
-  const cometFactory = await CometFactoryFactory.deploy();
-  await cometFactory.deployed();
-
   const CometFactoryWithExtendedAssetListFactory = (await ethers.getContractFactory('CometFactoryWithExtendedAssetList')) as CometFactoryWithExtendedAssetList__factory;
   const cometFactoryWithExtendedAssetList = await CometFactoryWithExtendedAssetListFactory.deploy();
   await cometFactoryWithExtendedAssetList.deployed();
@@ -443,7 +511,7 @@ export async function getConfigurationForConfigurator(
   const configuration = {
     governor: governor.address,
     pauseGuardian: pauseGuardian.address,
-    extensionDelegate: extensionDelegate.address,
+    extensionDelegate: extensionDelegateAssetList.address,
     baseToken: tokens[base].address,
     baseTokenPriceFeed: priceFeeds[base].address,
     supplyKink,
@@ -470,7 +538,7 @@ export async function getConfigurationForConfigurator(
           borrowCollateralFactor: dfn(config.borrowCF, ONE - 1n),
           liquidateCollateralFactor: dfn(config.liquidateCF, ONE),
           liquidationFactor: dfn(config.liquidationFactor, ONE),
-          supplyCap: dfn(config.supplyCap, exp(100, dfn(config.decimals, 18))),
+          supplyCap: dfn(config.supplyCap, exp(150000, dfn(config.decimals, 18))),
         });
       }
       return acc;
@@ -484,13 +552,11 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   const {
     governor,
     pauseGuardian,
-    extensionDelegate,
+    extensionDelegateAssetList,
     users,
     base,
     reward,
-    comet,
     cometWithExtendedAssetList,
-    extensionDelegateAssetList,
     assetListFactory,
     tokens,
     unsupportedToken,
@@ -505,17 +571,17 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   // Deploy Comet proxy
   const CometProxy = (await ethers.getContractFactory('TransparentUpgradeableProxy')) as TransparentUpgradeableProxy__factory;
   const cometProxy = await CometProxy.deploy(
-    comet.address,
+    cometWithExtendedAssetList.address,
     proxyAdmin.address,
-    (await comet.populateTransaction.initializeStorage()).data,
+    (await cometWithExtendedAssetList.populateTransaction.initializeStorage()).data,
   );
   await cometProxy.deployed();
   const configuration = await getConfigurationForConfigurator(
     opts,
-    comet,
+    cometWithExtendedAssetList,
     governor,
     pauseGuardian,
-    extensionDelegate,
+    extensionDelegateAssetList,
     tokens,
     base,
     priceFeeds,
@@ -529,10 +595,6 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   await cometProxyWithExtendedAssetList.deployed();
 
   // Deploy CometFactory
-  const CometFactoryFactory = (await ethers.getContractFactory('CometFactory')) as CometFactory__factory;
-  const cometFactory = await CometFactoryFactory.deploy();
-  await cometFactory.deployed();
-
   const CometFactoryWithExtendedAssetListFactory = (await ethers.getContractFactory('CometFactoryWithExtendedAssetList')) as CometFactoryWithExtendedAssetList__factory;
   const cometFactoryWithExtendedAssetList = await CometFactoryWithExtendedAssetListFactory.deploy();
   await cometFactoryWithExtendedAssetList.deployed();
@@ -545,18 +607,11 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   // Deploy Configurator proxy
   const initializeCalldata = (await configurator.populateTransaction.initialize(governor.address)).data;
   const ConfiguratorProxy = (await ethers.getContractFactory('ConfiguratorProxy')) as ConfiguratorProxy__factory;
-  const configuratorProxy = await ConfiguratorProxy.deploy(
-    configurator.address,
-    proxyAdmin.address,
-    initializeCalldata,
-  );
+  const configuratorProxy = await ConfiguratorProxy.deploy(configurator.address, proxyAdmin.address, initializeCalldata);
   await configuratorProxy.deployed();
 
   // Set the initial factory and configuration for Comet in Configurator
   const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-  await configuratorAsProxy.connect(governor).setConfiguration(cometProxy.address, configuration);
-  await configuratorAsProxy.connect(governor).setFactory(cometProxy.address, cometFactory.address);
-
   configuration.extensionDelegate = extensionDelegateAssetList.address;
   await configuratorAsProxy.connect(governor).setConfiguration(cometProxyWithExtendedAssetList.address, configuration);
   await configuratorAsProxy.connect(governor).setFactory(cometProxyWithExtendedAssetList.address, cometFactoryWithExtendedAssetList.address);
@@ -583,20 +638,16 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     opts,
     governor,
     pauseGuardian,
-    extensionDelegate,
     extensionDelegateAssetList,
     users,
     base,
     reward,
     proxyAdmin,
-    comet,
     cometWithExtendedAssetList,
     assetListFactory,
-    cometProxy,
     cometProxyWithExtendedAssetList,
     configurator,
     configuratorProxy,
-    cometFactory,
     cometFactoryWithExtendedAssetList,
     tokens,
     unsupportedToken,
@@ -622,7 +673,7 @@ export async function makeRewards(opts: RewardsOpts = {}): Promise<Rewards> {
   return {
     opts,
     governor,
-    rewards
+    rewards,
   };
 }
 
@@ -638,22 +689,49 @@ export async function makeBulker(opts: BulkerOpts): Promise<BulkerInfo> {
 
   return {
     opts,
-    bulker
+    bulker,
   };
 }
-export async function bumpTotalsCollateral(comet: CometHarnessInterface, token: FaucetToken | NonStandardFaucetFeeToken, delta: bigint): Promise<TotalsCollateralStructOutput> {
+export async function bumpTotalsCollateral(comet: CometHarnessInterfaceExtendedAssetList, token: FaucetToken | NonStandardFaucetFeeToken, delta: bigint): Promise<TotalsCollateralStructOutput> {
   const t0 = await comet.totalsCollateral(token.address);
-  const t1 = Object.assign({}, t0, { totalSupplyAsset: t0.totalSupplyAsset.toBigInt() + delta });
+  const t1 = Object.assign({}, t0, {
+    totalSupplyAsset: t0.totalSupplyAsset.toBigInt() + delta,
+  });
   await token.allocateTo(comet.address, delta);
   await wait(comet.setTotalsCollateral(token.address, t1));
   return t1;
 }
 
-export async function setTotalsBasic(comet: CometHarnessInterface, overrides = {}): Promise<TotalsBasicStructOutput> {
-  const t0 = await comet.totalsBasic();
+export async function setTotalsBasic(cometWithExtendedAssetList: CometHarnessInterfaceExtendedAssetList, overrides = {}): Promise<TotalsBasicStructOutput> {
+  const t0 = await cometWithExtendedAssetList.totalsBasic();
   const t1 = Object.assign({}, t0, overrides);
-  await wait(comet.setTotalsBasic(t1));
+  await wait(cometWithExtendedAssetList.setTotalsBasic(t1));
   return t1;
+}
+
+export async function updateAssetBorrowCollateralFactor(configurator: Configurator, cometProxyAdmin: CometProxyAdmin, cometAddress: string, assetAddress: string, borrowCF: bigint) {
+  await configurator.updateAssetBorrowCollateralFactor(cometAddress, assetAddress, borrowCF);
+  await cometProxyAdmin.deployAndUpgradeTo(configurator.address, cometAddress);
+}
+
+export async function updateAssetLiquidateCollateralFactor(configurator: Configurator, cometProxyAdmin: CometProxyAdmin, cometAddress: string, assetAddress: string, liquidateCF: bigint, governor: SignerWithAddress) {
+  await configurator.connect(governor).updateAssetLiquidateCollateralFactor(cometAddress, assetAddress, liquidateCF);
+  await cometProxyAdmin.connect(governor).deployAndUpgradeTo(configurator.address, cometAddress);
+}
+
+export async function getLiquidity(comet: CometWithExtendedAssetList, token: FaucetToken | NonStandardFaucetFeeToken, amount: bigint): Promise<BigNumber> {
+  const assetInfo = await comet.getAssetInfoByAddress(token.address);
+  const priceUSD = mulPrice(amount, await comet.getPrice(assetInfo.priceFeed), assetInfo.scale);
+  return BigNumber.from(priceUSD).mul(assetInfo.borrowCollateralFactor).div(factorScale);
+}
+
+export async function getLiquidityWithLiquidateCF(comet: CometMainInterface, token: FaucetToken | NonStandardFaucetFeeToken, amount: bigint): Promise<BigNumber> {
+  const assetInfo = await comet.getAssetInfoByAddress(token.address);
+  const priceUSD = mulPrice(amount, await comet.getPrice(assetInfo.priceFeed), assetInfo.scale);
+  if (assetInfo.liquidateCollateralFactor.eq(0)) {
+    return BigNumber.from(0);
+  }
+  return BigNumber.from(priceUSD).mul(assetInfo.liquidateCollateralFactor).div(factorScale);
 }
 
 export function objectify(arrayObject) {
@@ -684,7 +762,7 @@ type Portfolio = {
   external: {
     [symbol: string]: bigint;
   };
-}
+};
 
 type TotalsAndReserves = {
   totals: {
@@ -693,27 +771,29 @@ type TotalsAndReserves = {
   reserves: {
     [symbol: string]: bigint;
   };
-}
+};
 
-export async function portfolio({ comet, base, tokens }, account): Promise<Portfolio> {
-  const internal = { [base]: await baseBalanceOf(comet, account) };
+export async function portfolio({ cometWithExtendedAssetList, base, tokens }, account): Promise<Portfolio> {
+  const internal = { [base]: await baseBalanceOf(cometWithExtendedAssetList, account) };
   const external = { [base]: BigInt(await tokens[base].balanceOf(account)) };
   for (const symbol in tokens) {
     if (symbol != base) {
-      internal[symbol] = BigInt(await comet.collateralBalanceOf(account, tokens[symbol].address));
+      internal[symbol] = BigInt(await cometWithExtendedAssetList.collateralBalanceOf(account, tokens[symbol].address));
       external[symbol] = BigInt(await tokens[symbol].balanceOf(account));
     }
   }
   return { internal, external };
 }
 
-export async function totalsAndReserves({ comet, base, tokens }): Promise<TotalsAndReserves> {
-  const totals = { [base]: BigInt((await comet.totalsBasic()).totalSupplyBase) };
-  const reserves = { [base]: BigInt(await comet.getReserves()) };
+export async function totalsAndReserves({ cometWithExtendedAssetList, base, tokens }): Promise<TotalsAndReserves> {
+  const totals = {
+    [base]: BigInt((await cometWithExtendedAssetList.totalsBasic()).totalSupplyBase),
+  };
+  const reserves = { [base]: BigInt(await cometWithExtendedAssetList.getReserves()) };
   for (const symbol in tokens) {
     if (symbol != base) {
-      totals[symbol] = BigInt((await comet.totalsCollateral(tokens[symbol].address)).totalSupplyAsset);
-      reserves[symbol] = BigInt(await comet.getCollateralReserves(tokens[symbol].address));
+      totals[symbol] = BigInt((await cometWithExtendedAssetList.totalsCollateral(tokens[symbol].address)).totalSupplyAsset);
+      reserves[symbol] = BigInt(await cometWithExtendedAssetList.getCollateralReserves(tokens[symbol].address));
     }
   }
   return { totals, reserves };
@@ -723,9 +803,7 @@ export interface TransactionResponseExt extends TransactionResponse {
   receipt: TransactionReceipt;
 }
 
-export async function wait(
-  tx: TransactionResponse | Promise<TransactionResponse>
-): Promise<TransactionResponseExt> {
+export async function wait(tx: TransactionResponse | Promise<TransactionResponse>): Promise<TransactionResponseExt> {
   const tx_ = await tx;
   let receipt = await tx_.wait();
   return {
@@ -735,7 +813,8 @@ export async function wait(
 }
 
 export function event(tx, index) {
-  const ev = tx.receipt.events[index], args = {};
+  const ev = tx.receipt.events[index],
+    args = {};
   for (const k in ev.args) {
     const v = ev.args[k];
     if (isNaN(Number(k))) {
@@ -766,4 +845,24 @@ function convertToBigInt(arr) {
 
 export function getGasUsed(tx: TransactionResponseExt): bigint {
   return tx.receipt.gasUsed.mul(tx.receipt.effectiveGasPrice).toBigInt();
+}
+
+/*//////////////////////////////////////////////////////////////
+                          FORK SETUP
+//////////////////////////////////////////////////////////////*/
+
+export async function setupFork(blockNumber?: number, jsonRpcUrl?: string) {
+  const mainnetConfig = hre.config.networks.mainnet as any;
+
+  await hre.network.provider.request({
+    method: 'hardhat_reset',
+    params: [
+      {
+        forking: {
+          jsonRpcUrl: jsonRpcUrl ?? mainnetConfig.url,
+          blockNumber: blockNumber ?? undefined,
+        },
+      },
+    ],
+  });
 }

@@ -3,8 +3,8 @@ import { exp, setTotalsBasic } from '../helpers';
 import { HttpNetworkConfig } from 'hardhat/types/config';
 import {
   CometExt__factory,
-  CometHarness__factory,
-  CometHarnessInterface,
+  CometHarnessExtendedAssetList__factory,
+  CometHarnessInterfaceExtendedAssetList,
   OnChainLiquidator__factory
 } from '../../build/types';
 import {
@@ -58,7 +58,7 @@ export async function makeProtocol() {
   const extensionDelegate = await CometExtFactory.deploy({ name32, symbol32 });
   await extensionDelegate.deployed();
 
-  const CometFactory = (await ethers.getContractFactory('CometHarness')) as CometHarness__factory;
+  const CometFactory = (await ethers.getContractFactory('CometHarnessExtendedAssetList')) as CometHarnessExtendedAssetList__factory;
   const config = {
     governor: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
     pauseGuardian: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
@@ -131,7 +131,7 @@ export async function makeProtocol() {
 
   const comet = await CometFactory.deploy(config);
   await comet.deployed();
-  const cometHarnessInterface = await ethers.getContractAt('CometHarnessInterface', comet.address) as CometHarnessInterface;
+  const cometHarnessInterface = await ethers.getContractAt('CometHarnessInterfaceExtendedAssetList', comet.address) as CometHarnessInterfaceExtendedAssetList;
 
   const [signer,, recipient] = await ethers.getSigners();
 

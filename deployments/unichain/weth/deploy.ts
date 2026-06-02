@@ -137,7 +137,7 @@ async function deployContracts(
   const bridgeReceiver = await deploymentManager.fromDep('bridgeReceiver', 'unichain', 'usdc');
 
   // Deploy Comet
-  const deployed = await deployComet(deploymentManager, deploySpec, {}, true);
+  const deployed = await deployComet(deploymentManager, deploySpec);
 
   return {
     ...deployed,

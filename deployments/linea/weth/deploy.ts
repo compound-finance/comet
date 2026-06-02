@@ -145,7 +145,7 @@ async function deployContracts(
   const bridgeReceiver = await deploymentManager.fromDep('bridgeReceiver', 'linea', 'usdc');
 
   // Deploy Comet
-  const deployed = await deployComet(deploymentManager, deploySpec, {}, true);
+  const deployed = await deployComet(deploymentManager, deploySpec);
 
   return {
     ...deployed,

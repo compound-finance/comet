@@ -12,7 +12,7 @@ describe('total tracking index bounds', function () {
         baseMinForRewards
       };
       const protocol = await makeProtocol(params);
-      const { comet } = protocol;
+      const { cometWithExtendedAssetList: comet } = protocol;
 
       const baseScale = (await comet.baseScale()).toBigInt();
       // Formula: MAX_UINT64 / (baseTrackingSupplySpeed * baseScale / baseMinForRewards)
@@ -26,7 +26,7 @@ describe('total tracking index bounds', function () {
         totalSupplyBase: BigNumber.from(baseMinForRewards), // 10k USDC base units
       });
 
-      await fastForward(secondsUntilOverflow-2);
+      await fastForward(secondsUntilOverflow-1);
 
       // First accrue is successful without overflow
       await comet.accrue();
@@ -44,7 +44,7 @@ describe('total tracking index bounds', function () {
         baseMinForRewards
       };
       const protocol = await makeProtocol(params);
-      const { comet } = protocol;
+      const { cometWithExtendedAssetList: comet } = protocol;
 
       const baseScale = (await comet.baseScale()).toBigInt();
       // Formula: MAX_UINT64 / (baseTrackingBorrowSpeed * baseScale / baseMinForRewards)
@@ -58,7 +58,7 @@ describe('total tracking index bounds', function () {
         totalBorrowBase: BigNumber.from(baseMinForRewards), // 10k USDC base units
       });
 
-      await fastForward(secondsUntilOverflow-2);
+      await fastForward(secondsUntilOverflow-1);
 
       // First accrue is successful without overflow
       await comet.accrue();
@@ -74,7 +74,7 @@ describe('total tracking index bounds', function () {
         baseTrackingBorrowSpeed: exp(1, 15),
       };
       const protocol = await makeProtocol(params);
-      const { comet } = protocol;
+      const { cometWithExtendedAssetList: comet } = protocol;
 
       const t0 = await setTotalsBasic(comet, {
         totalSupplyBase: BigNumber.from(exp(1, 15)).mul(await comet.baseScale()), // 1e15 base units
@@ -104,7 +104,7 @@ describe('total tracking index bounds', function () {
         baseTrackingBorrowSpeed: exp(1, 15),
       };
       const protocol = await makeProtocol(params);
-      const { comet } = protocol;
+      const { cometWithExtendedAssetList: comet } = protocol;
 
       const t0 = await setTotalsBasic(comet, {
         totalBorrowBase: BigNumber.from(exp(1, 15)).mul(await comet.baseScale()), // 1e15 base units
@@ -139,7 +139,7 @@ describe('total tracking index bounds', function () {
         baseMinForRewards
       };
       const protocol = await makeProtocol(params);
-      const { comet } = protocol;
+      const { cometWithExtendedAssetList: comet } = protocol;
 
       const baseScale = (await comet.baseScale()).toBigInt();
       // Formula: MAX_UINT64 / (baseTrackingSupplySpeed * baseScale / baseMinForRewards)
@@ -153,7 +153,7 @@ describe('total tracking index bounds', function () {
         totalSupplyBase: BigNumber.from(baseMinForRewards), // 100 WETH base units
       });
 
-      await fastForward(secondsUntilOverflow-2);
+      await fastForward(secondsUntilOverflow-1);
 
       // First accrue is successful without overflow
       await comet.accrue();
@@ -172,7 +172,7 @@ describe('total tracking index bounds', function () {
         baseMinForRewards
       };
       const protocol = await makeProtocol(params);
-      const { comet } = protocol;
+      const { cometWithExtendedAssetList: comet } = protocol;
 
       const baseScale = (await comet.baseScale()).toBigInt();
       // Formula: MAX_UINT64 / (baseTrackingBorrowSpeed * baseScale / baseMinForRewards)
@@ -186,7 +186,7 @@ describe('total tracking index bounds', function () {
         totalBorrowBase: BigNumber.from(baseMinForRewards), // 10k USDC base units
       });
 
-      await fastForward(secondsUntilOverflow-2);
+      await fastForward(secondsUntilOverflow-1);
 
       // First accrue is successful without overflow
       await comet.accrue();
@@ -203,7 +203,7 @@ describe('total tracking index bounds', function () {
         baseTrackingBorrowSpeed: exp(0.001, 15),
       };
       const protocol = await makeProtocol(params);
-      const { comet } = protocol;
+      const { cometWithExtendedAssetList: comet } = protocol;
 
       const t0 = await setTotalsBasic(comet, {
         totalSupplyBase: BigNumber.from(exp(1, 12)).mul(await comet.baseScale()), // 1e12 base units
@@ -234,7 +234,7 @@ describe('total tracking index bounds', function () {
         baseTrackingBorrowSpeed: exp(0.001, 15),
       };
       const protocol = await makeProtocol(params);
-      const { comet } = protocol;
+      const { cometWithExtendedAssetList: comet } = protocol;
 
       const t0 = await setTotalsBasic(comet, {
         totalBorrowBase: BigNumber.from(exp(1, 12)).mul(await comet.baseScale()), // 1e12 base units

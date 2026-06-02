@@ -21,7 +21,7 @@ describe('buyCollateral', function () {
         },
       }
     });
-    const { comet, tokens, users: [alice] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens, users: [alice] } = protocol;
     const { USDC, COMP } = tokens;
     const cometAsA = comet.connect(alice);
     const baseAsA = USDC.connect(alice);
@@ -90,7 +90,7 @@ describe('buyCollateral', function () {
         },
       }
     });
-    const { comet, tokens, users: [alice] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens, users: [alice] } = protocol;
     const { USDC, COMP } = tokens;
     const cometAsA = comet.connect(alice);
     const baseAsA = USDC.connect(alice);
@@ -98,8 +98,8 @@ describe('buyCollateral', function () {
     // Set reserves to -100 wei
     let t0 = await comet.totalsBasic();
     t0 = Object.assign({}, t0, {
-      totalSupplyBase: 100e6,
-      totalBorrowBase: 0n,
+      totalSupplyBase: 100e6 + 1,
+      totalBorrowBase: 1n,
     });
     await wait(comet.setTotalsBasic(t0));
 
@@ -152,7 +152,7 @@ describe('buyCollateral', function () {
         },
       }
     });
-    const { comet, tokens, users: [alice] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens, users: [alice] } = protocol;
     const { USDC, COMP } = tokens;
     const cometAsA = comet.connect(alice);
     const baseAsA = USDC.connect(alice);
@@ -200,7 +200,7 @@ describe('buyCollateral', function () {
         },
       }
     });
-    const { comet, tokens, users: [alice] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens, users: [alice] } = protocol;
     const { USDC, COMP } = tokens;
     const cometAsA = comet.connect(alice);
     const baseAsA = USDC.connect(alice);
@@ -219,7 +219,7 @@ describe('buyCollateral', function () {
 
   it('reverts if reserves are above target reserves', async () => {
     const protocol = await makeProtocol({base: 'USDC', targetReserves: 0});
-    const { comet, tokens, users: [alice] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens, users: [alice] } = protocol;
     const { USDC, COMP } = tokens;
     const cometAsA = comet.connect(alice);
     const baseAsA = USDC.connect(alice);
@@ -257,7 +257,7 @@ describe('buyCollateral', function () {
         },
       }
     });
-    const { comet, tokens, users: [alice] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens, users: [alice] } = protocol;
     const { USDC, COMP } = tokens;
     const cometAsA = comet.connect(alice);
     const baseAsA = USDC.connect(alice);
@@ -292,7 +292,7 @@ describe('buyCollateral', function () {
         },
       }
     });
-    const { comet, tokens, users: [alice] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens, users: [alice] } = protocol;
     const { USDC, COMP } = tokens;
     const cometAsA = comet.connect(alice);
     const baseAsA = USDC.connect(alice);
@@ -312,7 +312,7 @@ describe('buyCollateral', function () {
 
   it('reverts if buy is paused', async () => {
     const protocol = await makeProtocol({base: 'USDC', targetReserves: 0});
-    const { comet, tokens, pauseGuardian, users: [alice] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens, pauseGuardian, users: [alice] } = protocol;
     const { COMP } = tokens;
     const cometAsA = comet.connect(alice);
 
@@ -345,7 +345,7 @@ describe('buyCollateral', function () {
       }
     });
 
-    const { comet, tokens, users: [alice] } = protocol;
+    const { cometWithExtendedAssetList : comet, tokens, users: [alice] } = protocol;
     const { USDT, COMP } = tokens;
     
     // Set both COMP and USDT with 1% fees
@@ -431,7 +431,7 @@ describe('buyCollateral', function () {
         targetReserves: 1
       });
       const {
-        comet: normalComet,
+        cometWithExtendedAssetList : normalComet,
         tokens: normalTokens,
         users: [normalAlice, normalBob, evilAlice, evilBob] // addresses are constant
       } = normalProtocol;
@@ -450,7 +450,7 @@ describe('buyCollateral', function () {
         targetReserves: 1
       });
       const {
-        comet: evilComet,
+        cometWithExtendedAssetList : evilComet,
         tokens: evilTokens,
       } = evilProtocol;
       const { WETH: evilWETH, EVIL } = <{WETH: FaucetToken, EVIL: EvilToken}>evilTokens;
@@ -588,7 +588,7 @@ describe('buyCollateral', function () {
         targetReserves: 1
       });
       const {
-        comet: evilComet,
+        cometWithExtendedAssetList : evilComet,
         tokens: evilTokens,
         users: [evilAlice, evilBob]
       } = evilProtocol;

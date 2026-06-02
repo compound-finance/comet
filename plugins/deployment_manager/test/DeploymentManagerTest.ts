@@ -10,7 +10,6 @@ import {
 
 import { getBuildFile } from '../ContractMap';
 import { DeploymentManager } from '../DeploymentManager';
-import { fiatTokenBuildFile, mockImportSuccess } from './ImportTest';
 import { Migration } from '../Migration';
 import { expectedTemplate } from './MigrationTemplateTest';
 import { buildToken, faucetTokenBuildFile, tokenArgs } from './DeployHelpers';
@@ -85,23 +84,6 @@ export async function setupContracts(deploymentManager: DeploymentManager): Prom
 describe('DeploymentManager', () => {
   beforeEach(async () => {
     nock.disableNetConnect();
-  });
-
-  describe('import', () => {
-    // Skipping since this test fails a lot due to limits
-    //  and import is well-covered as everything else relies upon it
-    it.skip('should import succesfully', async () => {
-      mockImportSuccess('0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e');
-      let deploymentManager = new DeploymentManager('avalanche', 'frax', hre, {
-        importRetries: 0,
-        writeCacheToDisk: true,
-        baseDir: tempDir(),
-      });
-      let importResult = await deploymentManager.import(
-        '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e',
-      );
-      expect(importResult).to.eql(fiatTokenBuildFile);
-    });
   });
 
   describe('deploy', () => {

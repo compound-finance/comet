@@ -6,9 +6,7 @@ on:
         type: choice
         description: Network
         options:
-          - fuji
           - mainnet
-          - sepolia
           - polygon
           - arbitrum
           - base
@@ -59,10 +57,8 @@ jobs:
       ETHERSCAN_KEY_FOR_ARBITRUM: ${{ secrets.ETHERSCAN_KEY_FOR_ARBITRUM }}
       ETHERSCAN_KEY_FOR_POLYGON: ${{ secrets.ETHERSCAN_KEY_FOR_POLYGON }}
       ETHERSCAN_KEY_FOR_LINEA: ${{ secrets.ETHERSCAN_KEY_FOR_LINEA }}
-      SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
       MAINNET_QUICKNODE_LINK: ${{ secrets.MAINNET_QUICKNODE_LINK }}
-      SEPOLIA_QUICKNODE_LINK: ${{ secrets.SEPOLIA_QUICKNODE_LINK }}
       RONIN_QUICKNODE_LINK: ${{ secrets.RONIN_QUICKNODE_LINK }}
       POLYGON_QUICKNODE_LINK: ${{ secrets.POLYGON_QUICKNODE_LINK }}
       OPTIMISM_QUICKNODE_LINK: ${{ secrets.OPTIMISM_QUICKNODE_LINK }}
@@ -85,8 +81,6 @@ jobs:
           case ${{ github.event.inputs.network }} in
             polygon | arbitrum | base | optimism | mantle | scroll | linea | ronin | unichain)
                 echo "GOV_NETWORK=mainnet" >> $GITHUB_ENV ;;
-            sepolia)
-                echo "GOV_NETWORK=sepolia" >> $GITHUB_ENV ;;
             *)
                 echo "No governance network for selected network" ;;
           esac
@@ -101,20 +95,20 @@ jobs:
           echo "TENDERLY_ACCESS_KEY=$TENDERLY_ACCESS_KEY"   >> "$GITHUB_ENV"
 
       - name: Seacrest
-        uses: hayesgm/seacrest@af229b0a00b73cb6fa9940a836a62fa3b918fd77
+        uses: hayesgm/seacrest@1578d5b4cf165e97e11d3debf039db09a497211f
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ inputs.network }}"
-          ethereum_url: "${{ fromJSON('{\"linea\":\"${LINEA_QUICKNODE_LINK}\",\"ronin\":\"${RONIN_QUICKNODE_LINK}\",\"unichain\":\"${UNICHAIN_QUICKNODE_LINK}\",\"mantle\":\"${MANTLE_QUICKNODE_LINK}\",\"optimism\":\"${OPTIMISM_QUICKNODE_LINK}\",\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"${MAINNET_QUICKNODE_LINK}\",\"sepolia\":\"${SEPOLIA_QUICKNODE_LINK}\",\"polygon\":\"${POLYGON_QUICKNODE_LINK}\",\"arbitrum\":\"${ARBITRUM_QUICKNODE_LINK}\",\"base\":\"${BASE_QUICKNODE_LINK}\",\"scroll\":\"https://scroll.drpc.org\"}')[github.event.inputs.network] }}"
+          ethereum_url: "${{ fromJSON('{\"linea\":\"${LINEA_QUICKNODE_LINK}\",\"ronin\":\"${RONIN_QUICKNODE_LINK}\",\"unichain\":\"${UNICHAIN_QUICKNODE_LINK}\",\"mantle\":\"${MANTLE_QUICKNODE_LINK}\",\"optimism\":\"${OPTIMISM_QUICKNODE_LINK}\",\"mainnet\":\"${MAINNET_QUICKNODE_LINK}\",\"polygon\":\"${POLYGON_QUICKNODE_LINK}\",\"arbitrum\":\"${ARBITRUM_QUICKNODE_LINK}\",\"base\":\"${BASE_QUICKNODE_LINK}\",\"scroll\":\"https://scroll.drpc.org\"}')[github.event.inputs.network] }}"
           port: 8585
         if: github.event.inputs.eth_pk == ''
 
       - name: Seacrest (governance network)
-        uses: hayesgm/seacrest@af229b0a00b73cb6fa9940a836a62fa3b918fd77
+        uses: hayesgm/seacrest@1578d5b4cf165e97e11d3debf039db09a497211f
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ vars.GOV_NETWORK }}"
-          ethereum_url: "${{ fromJSON('{\"mainnet\":\"${MAINNET_QUICKNODE_LINK}\",\"sepolia\":\"${SEPOLIA_QUICKNODE_LINK}\"}')[vars.GOV_NETWORK] }}"
+          ethereum_url: "${{ fromJSON('{\"mainnet\":\"${MAINNET_QUICKNODE_LINK}\"}')[vars.GOV_NETWORK] }}"
           port: 8685
         if: github.event.inputs.eth_pk == '' && vars.GOV_NETWORK != '' && github.event.inputs.network != vars.GOV_NETWORK
 
