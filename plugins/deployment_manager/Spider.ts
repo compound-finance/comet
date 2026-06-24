@@ -42,7 +42,7 @@ function maybeStore(alias: Alias, address: Address, into: Aliases): boolean {
   if (maybeExists) {
     if (maybeExists.toLowerCase() === address.toLowerCase()) {
       return false;
-    } else if (maybeExists === constants.AddressZero && address !== constants.AddressZero) {
+    } else if (maybeExists.toLowerCase() === constants.AddressZero && address.toLowerCase() !== constants.AddressZero) {
       into.set(alias, address);
       return true;
     } else {
