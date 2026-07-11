@@ -239,6 +239,32 @@ async function crawl(
   }
 }
 
+/**
+ * Normalize address keys in the relation config map to lowercase so that
+ * lookups via ``relations[address.toLowerCase()]`` in ``crawl()`` succeed
+ * regardless of whether the config author used checksummed or lowercase
+ * addresses.  Without this normalization, a checksummed key like
+ * ``"0xAbCd"`` silently fails to match a lookup of ``"0xabcd"``, causing
+ * the spider to miss the contract configuration for that address.
+ *
+ * Only Ethereum address keys (``0x``-prefixed) are lowercased so that
+ * non-address keys such as contract names (``"contracts/Dog.sol:Dog"``)
+ * and alias templates (``"comet"``) remain intact — those lookups use
+ * the original casing and would break if lowercased unconditionally.
+ */
+function normalizeRelationKeys(relations: RelationConfigMap): RelationConfigMap {
+  const normalized: RelationConfigMap = {};
+  for (const [key, value] of Object.entries(relations)) {
+    // Only lowercase keys that look like Ethereum addresses (0x + 40 hex chars)
+    if (/^0x[a-fA-F0-9]{40}$/.test(key)) {
+      normalized[key.toLowerCase()] = value;
+    } else {
+      normalized[key] = value;
+    }
+  }
+  return normalized;
+}
+
 export async function spider(
   cache: Cache,
   network: string,
@@ -247,6 +273,9 @@ export async function spider(
   roots: Roots,
   trace: TraceFn = debug
 ): Promise<Spider> {
+  // Normalize relation keys to lowercase so address lookups are case-insensitive
+  relations = normalizeRelationKeys(relations);
+
   const context = {};
   const aliases = new Map();
   const contracts = new Map();
