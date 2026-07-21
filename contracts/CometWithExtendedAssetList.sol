@@ -771,7 +771,9 @@ contract CometWithExtendedAssetList is CometMainInterface {
         emit Supply(from, dst, amount);
 
         if (supplyAmount > 0) {
-            emit Transfer(address(0), dst, presentValueSupply(baseSupplyIndex, supplyAmount));
+            uint256 supplyValue = presentValueSupply(baseSupplyIndex, supplyAmount);
+            emit Transfer(address(0), dst, supplyValue);
+            emit TransferBase(address(0), dst, supplyValue);
         }
     }
 
@@ -892,11 +894,15 @@ contract CometWithExtendedAssetList is CometMainInterface {
         }
 
         if (withdrawAmount > 0) {
-            emit Transfer(src, address(0), presentValueSupply(baseSupplyIndex, withdrawAmount));
+            uint256 withdrawValue = presentValueSupply(baseSupplyIndex, withdrawAmount);
+            emit Transfer(src, address(0), withdrawValue);
+            emit TransferBase(src, address(0), withdrawValue);
         }
 
         if (supplyAmount > 0) {
-            emit Transfer(address(0), dst, presentValueSupply(baseSupplyIndex, supplyAmount));
+            uint256 supplyValue = presentValueSupply(baseSupplyIndex, supplyAmount);
+            emit Transfer(address(0), dst, supplyValue);
+            emit TransferBase(address(0), dst, supplyValue);
         }
     }
 
@@ -998,7 +1004,9 @@ contract CometWithExtendedAssetList is CometMainInterface {
         emit Withdraw(src, to, amount);
 
         if (withdrawAmount > 0) {
-            emit Transfer(src, address(0), presentValueSupply(baseSupplyIndex, withdrawAmount));
+            uint256 withdrawValue = presentValueSupply(baseSupplyIndex, withdrawAmount);
+            emit Transfer(src, address(0), withdrawValue);
+            emit TransferBase(src, address(0), withdrawValue);
         }
     }
 
@@ -1107,7 +1115,9 @@ contract CometWithExtendedAssetList is CometMainInterface {
         emit AbsorbDebt(absorber, account, basePaidOut, valueOfBasePaidOut);
 
         if (newPrincipal > 0) {
-            emit Transfer(address(0), account, presentValueSupply(baseSupplyIndex, unsigned104(newPrincipal)));
+            uint256 supplyValue = presentValueSupply(baseSupplyIndex, unsigned104(newPrincipal));
+            emit Transfer(address(0), account, supplyValue);
+            emit TransferBase(address(0), account, supplyValue);
         }
     }
 

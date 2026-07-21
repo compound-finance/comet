@@ -36,6 +36,7 @@ abstract contract CometMainInterface is CometCore {
 
     event Supply(address indexed from, address indexed dst, uint amount);
     event Transfer(address indexed from, address indexed to, uint amount);
+    event TransferBase(address indexed from, address indexed to, uint amount);
     event Withdraw(address indexed src, address indexed to, uint amount);
 
     event SupplyCollateral(address indexed from, address indexed dst, address indexed asset, uint amount);
