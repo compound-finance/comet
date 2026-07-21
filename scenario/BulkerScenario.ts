@@ -25,6 +25,13 @@ async function hasNativeAsBase(ctx: CometContext): Promise<boolean> {
   if ((await comet.baseToken()).toLowerCase() === wrappedNativeToken.toLowerCase()) return true;
 }
 
+async function bumpBulkerScenarioSupplyCaps(
+  context: CometContext,
+  supplyAmountPerAsset: Record<string, bigint>
+): Promise<void> {
+  await context.bumpSupplyCaps(supplyAmountPerAsset);
+}
+
 scenario(
   'Comet#bulker > WRON base all non-reward actions in one txn for single asset',
   {
@@ -63,6 +70,14 @@ scenario(
     // Approvals
     await collateralAsset.approve(albert, comet.address);
     await albert.allow(bulker.address, true);
+
+    const supplyCapAmounts: Record<string, bigint> = {
+      [collateralAsset.address]: toSupplyCollateral,
+    };
+    if (await hasNativeAsCollateral(context)) {
+      supplyCapAmounts[wrappedNativeToken] = toSupplyEth;
+    }
+    await bumpBulkerScenarioSupplyCaps(context, supplyCapAmounts);
 
     // Initial expectations
     expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(toSupplyCollateral);
@@ -158,6 +173,14 @@ scenario(
     await collateralAsset.approve(albert, comet.address);
     await albert.allow(bulker.address, true);
 
+    const supplyCapAmounts: Record<string, bigint> = {
+      [collateralAsset.address]: toSupplyCollateral,
+    };
+    if (await hasNativeAsCollateral(context)) {
+      supplyCapAmounts[wrappedNativeToken] = toSupplyEth;
+    }
+    await bumpBulkerScenarioSupplyCaps(context, supplyCapAmounts);
+
     // Initial expectations
     expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(toSupplyCollateral);
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(0n);
@@ -246,6 +269,14 @@ scenario(
     // Approvals
     await collateralAsset.approve(albert, comet.address);
     await albert.allow(bulker.address, true);
+
+    const supplyCapAmounts: Record<string, bigint> = {
+      [collateralAsset.address]: toSupplyCollateral,
+    };
+    if (await hasNativeAsCollateral(context)) {
+      supplyCapAmounts[wrappedNativeToken] = toSupplyEth;
+    }
+    await bumpBulkerScenarioSupplyCaps(context, supplyCapAmounts);
 
     // Initial expectations
     expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(toSupplyCollateral);
@@ -348,6 +379,15 @@ scenario(
     const expectedFinalRewardBalance = collateralAssetAddress === rewardTokenAddress ?
       startingRewardBalance + rewardOwed - toSupplyCollateral :
       startingRewardBalance + rewardOwed;
+
+    const supplyCapAmounts: Record<string, bigint> = {
+      [collateralAsset.address]: toSupplyCollateral,
+      [baseAssetAddress]: toSupplyBase,
+    };
+    if (await hasNativeAsCollateral(context)) {
+      supplyCapAmounts[wrappedNativeToken] = toSupplyEth;
+    }
+    await bumpBulkerScenarioSupplyCaps(context, supplyCapAmounts);
 
     // Albert's actions:
     // 1. Supplies 3000 units of collateral
@@ -461,6 +501,15 @@ scenario(
       startingRewardBalance + rewardOwed - toSupplyCollateral :
       startingRewardBalance + rewardOwed;
 
+    const supplyCapAmounts: Record<string, bigint> = {
+      [collateralAsset.address]: toSupplyCollateral,
+      [baseAssetAddress]: toSupplyBase,
+    };
+    if (await hasNativeAsCollateral(context)) {
+      supplyCapAmounts[wrappedNativeToken] = toSupplyEth;
+    }
+    await bumpBulkerScenarioSupplyCaps(context, supplyCapAmounts);
+
     // Albert's actions:
     // 1. Supplies 3000 units of collateral
     // 2. Borrows 1000 base
@@ -572,6 +621,15 @@ scenario(
     const expectedFinalRewardBalance = collateralAssetAddress === rewardTokenAddress ?
       startingRewardBalance + rewardOwed - toSupplyCollateral :
       startingRewardBalance + rewardOwed;
+
+    const supplyCapAmounts: Record<string, bigint> = {
+      [collateralAsset.address]: toSupplyCollateral,
+      [baseAssetAddress]: toSupplyBase,
+    };
+    if (await hasNativeAsCollateral(context)) {
+      supplyCapAmounts[wrappedNativeToken] = toSupplyEth;
+    }
+    await bumpBulkerScenarioSupplyCaps(context, supplyCapAmounts);
 
     // Albert's actions:
     // 1. Supplies 3000 units of collateral
