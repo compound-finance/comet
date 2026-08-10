@@ -56,13 +56,14 @@ const relationConfigMap: RelationConfigMap = {
             // This is a workaround for contracts that don't work in Hardhat fork
 
             // invalid opcode when calling symbol()
+            // Arbitrum-specific known contract mappings
             if (address === '0xd09acb80c1e8f2291862c4978a008791c9167003') {
               return 'tETH';
             }
             if (address === '0x5a7facb970d094b6c7ff1df0ea68d99e6e73cbff') {
               return 'weETH';
             }
-            if (address.toLowerCase() === '0x87eee96d50fb761ad85b1c982d28a042169d61b1') {
+            if (address === '0x87eee96d50fb761ad85b1c982d28a042169d61b1') {
               return 'wrsETH';
             }
             // Mantle-specific known contract mapping

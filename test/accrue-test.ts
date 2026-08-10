@@ -209,11 +209,13 @@ describe('accrue', function () {
 
     const t2 = Object.assign({}, t0, {
       baseBorrowIndex: 2n ** 64n - 1n,
+      totalSupplyBase: 80000,
+      totalBorrowBase: 20000,
     });
     await fastForward(998);
     const _s1 = await wait(comet.setTotalsBasic(t2));
     await fastForward(2);
-    await expect(wait(comet.accrue())).to.be.revertedWith('code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
+    await expect(comet.accrue()).to.be.revertedWith('code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
   });
 
   it('supports up to the maximum timestamp then breaks', async () => {

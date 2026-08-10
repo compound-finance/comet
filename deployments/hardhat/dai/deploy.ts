@@ -1,6 +1,6 @@
 import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
-import { Configurator, FaucetToken, SimplePriceFeed } from '../../../build/types';
-import { DeploySpec, cloneGov, deployComet, exp, sameAddress, wait } from '../../../src/deploy';
+import { FaucetToken, SimplePriceFeed } from '../../../build/types';
+import { DeploySpec, cloneGov, deployComet, exp, wait } from '../../../src/deploy';
 
 // Fixed test addresses for the dev market-admin role (impersonated by scenarios).
 const MARKET_ADMIN = '0x1111111111111111111111111111111111111111';
@@ -29,11 +29,10 @@ async function makePriceFeed(
 // TODO: Support configurable assets as well?
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
   const trace = deploymentManager.tracer();
-  const ethers = deploymentManager.hre.ethers;
   const signer = await deploymentManager.getSigner();
 
   // Deploy governance contracts
-  const { fauceteer, governor, timelock } = await cloneGov(deploymentManager);
+  const { fauceteer } = await cloneGov(deploymentManager);
 
   const DAI = await makeToken(deploymentManager, 10000000, 'DAI', 18, 'DAI');
   const GOLD = await makeToken(deploymentManager, 20000000, 'GOLD', 8, 'GOLD');
@@ -129,7 +128,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   trace(`Attempting to mint as ${signer.address}...`);
 
   await Promise.all(
-    [[DAI, 1e8], [GOLD, 2e6], [SILVER, 1e7]].map(([asset, units]) => {
+    ([[DAI, 1e8], [GOLD, 2e6], [SILVER, 1e7]] as [FaucetToken, number][]).map(([asset, units]) => {
       return deploymentManager.idempotent(
         async () => (await asset.balanceOf(fauceteer.address)).eq(0),
         async () => {

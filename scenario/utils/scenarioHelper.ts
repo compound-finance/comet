@@ -32,6 +32,7 @@ const defaultConfig = {
   transferCollateral: 100,
   supplyCollateral: 100,
   supplyBase: 1000,
+  reservesBase: 5000,
 };
 
 export function getConfigForScenario(ctx: CometContext, i?: number) {

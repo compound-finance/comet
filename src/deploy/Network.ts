@@ -116,7 +116,7 @@ export async function deployNetworkComet(
     baseBorrowMin,
     targetReserves,
     assetConfigs,
-    rewardTokenAddress
+    rewardTokenAddress,
   } = await getConfiguration(deploymentManager, configOverrides);
 
   /* Deploy contracts */

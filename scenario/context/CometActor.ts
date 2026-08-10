@@ -90,8 +90,25 @@ export default class CometActor {
     return await (await comet.connect(this.signer).supply(asset, amount)).wait();
   }
 
+  async supplyAssetTo({ dst, asset, amount }): Promise<ContractReceipt> {
+    const comet = await this.context.getComet();
+    return await (await comet.connect(this.signer).supplyTo(dst, asset, amount)).wait();
+  }
+
+  async safeSupplyAssetTo({ dst, asset, amount }): Promise<ContractReceipt> {
+    const comet = await this.context.getComet();
+    await this.context.bumpSupplyCaps({ [asset]: amount });
+    return await (await comet.connect(this.signer).supplyTo(dst, asset, amount)).wait();
+  }
+
   async supplyAssetFrom({ src, dst, asset, amount }): Promise<ContractReceipt> {
     const comet = await this.context.getComet();
+    return await (await comet.connect(this.signer).supplyFrom(src, dst, asset, amount)).wait();
+  }
+
+  async safeSupplyAssetFrom({ src, dst, asset, amount }): Promise<ContractReceipt> {
+    const comet = await this.context.getComet();
+    await this.context.bumpSupplyCaps({ [asset]: amount });
     return await (await comet.connect(this.signer).supplyFrom(src, dst, asset, amount)).wait();
   }
 
@@ -113,6 +130,11 @@ export default class CometActor {
   async withdrawAssetFrom({ src, dst, asset, amount }): Promise<ContractReceipt> {
     const comet = await this.context.getComet();
     return await (await comet.connect(this.signer).withdrawFrom(src, dst, asset, amount)).wait();
+  }
+
+  async withdrawAssetTo({ dst, asset, amount }): Promise<ContractReceipt> {
+    const comet = await this.context.getComet();
+    return await (await comet.connect(this.signer).withdrawTo(dst, asset, amount)).wait();
   }
 
   async absorb({ absorber, accounts }): Promise<ContractReceipt> {

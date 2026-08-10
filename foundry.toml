@@ -15,6 +15,12 @@ optimizer = true
 optimizer_runs = 1
 via_ir = true
 
+[profile.default.optimizer_details]
+yul = true
+
+[profile.default.optimizer_details.yulDetails]
+optimizerSteps = 'dhfoDgvulfnTUtnIf [xa[r]scLM cCTUtTOntnfDIul Lcul Vcul [j] Tpeul xa[rul] xa[r]cL gvif CTUca[r]LsTOtfDnca[r]Iulc] jmul[jul] VcTOcul jmul'
+
 remappings = [
     "@forge-std/=forge/lib/forge-std/",
     "@comet-contracts/=contracts/",

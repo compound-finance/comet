@@ -51,13 +51,14 @@ jobs:
       _TENDERLY_KEY_RONIN: ${{ secrets._TENDERLY_KEY_RONIN }}
       UNICHAIN_QUICKNODE_LINK: ${{ secrets.UNICHAIN_QUICKNODE_LINK }}
       LINEA_QUICKNODE_LINK: ${{ secrets.LINEA_QUICKNODE_LINK }}
+      SCROLL_QUICKNODE_LINK: ${{ secrets.SCROLL_QUICKNODE_LINK }}
     steps:
       - name: Seacrest
         uses: hayesgm/seacrest@1578d5b4cf165e97e11d3debf039db09a497211f
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ inputs.network }}"
-          ethereum_url: "${{ fromJSON('{\"linea\":\"${LINEA_QUICKNODE_LINK}\",\"ronin\":\"${RONIN_QUICKNODE_LINK}\",\"unichain\":\"${UNICHAIN_QUICKNODE_LINK}\",\"mantle\":\"${MANTLE_QUICKNODE_LINK}\",\"optimism\":\"${OPTIMISM_QUICKNODE_LINK}\",\"mainnet\":\"${MAINNET_QUICKNODE_LINK}\",\"polygon\":\"${POLYGON_QUICKNODE_LINK}\",\"arbitrum\":\"${ARBITRUM_QUICKNODE_LINK}\",\"base\":\"${BASE_QUICKNODE_LINK}\",\"scroll\":\"https://scroll.drpc.org\"}')[github.event.inputs.network] }}"
+          ethereum_url: "${{ fromJSON('{\"linea\":\"${LINEA_QUICKNODE_LINK}\",\"ronin\":\"${RONIN_QUICKNODE_LINK}\",\"unichain\":\"${UNICHAIN_QUICKNODE_LINK}\",\"mantle\":\"${MANTLE_QUICKNODE_LINK}\",\"optimism\":\"${OPTIMISM_QUICKNODE_LINK}\",\"mainnet\":\"${MAINNET_QUICKNODE_LINK}\",\"polygon\":\"${POLYGON_QUICKNODE_LINK}\",\"arbitrum\":\"${ARBITRUM_QUICKNODE_LINK}\",\"base\":\"${BASE_QUICKNODE_LINK}\",\"scroll\":\"${SCROLL_QUICKNODE_LINK}\"}')[github.event.inputs.network] }}"
           port: 8585
         if: github.event.inputs.eth_pk == ''
 
