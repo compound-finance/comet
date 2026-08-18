@@ -346,6 +346,9 @@ contract OnChainLiquidator is IUniswapV3FlashCallback, PeripheryImmutableState, 
         }
 
         // Swap asset or received ETH to base asset
+        // Use amountOutMin to enforce slippage protection at the router level,
+        // preventing sandwich attacks that extract value between swap execution
+        // and the post-swap check
         uint256 amountOut = ISwapRouter(uniswapRouter).exactInputSingle(
             ISwapRouter.ExactInputSingleParams({
                 tokenIn: swapToken,
@@ -354,17 +357,10 @@ contract OnChainLiquidator is IUniswapV3FlashCallback, PeripheryImmutableState, 
                 recipient: address(this),
                 deadline: block.timestamp,
                 amountIn: swapAmount,
-                amountOutMinimum: 0,
+                amountOutMinimum: amountOutMin,
                 sqrtPriceLimitX96: 0
             })
         );
-
-        // we do a manual check against `amountOutMin` (instead of specifying an
-        // `amountOutMinimum` in the swap) so we can provide better information
-        // in the error message
-        if (amountOut < amountOutMin) {
-            revert InsufficientAmountOut(swapToken, baseToken, swapAmount, amountOut, amountOutMin, poolConfig);
-        }
 
         emit Swap(swapToken, baseToken, swapAmount, amountOut, poolConfig);
 
@@ -399,19 +395,12 @@ contract OnChainLiquidator is IUniswapV3FlashCallback, PeripheryImmutableState, 
 
         uint256[] memory amounts = IUniswapV2Router(sushiSwapRouter).swapExactTokensForTokens(
             swapAmount,     // amountIn
-            0,              // amountOutMin
+            amountOutMin,   // amountOutMin - enforces slippage protection at router level
             path,           // path
             address(this),  // to
             block.timestamp // deadline
         );
         uint256 amountOut = amounts[amounts.length - 1];
-
-        // we do a manual check against `amountOutMin` (instead of specifying an
-        // `amountOutMinimum` in the swap) so we can provide better information
-        // in the error message
-        if (amountOut < amountOutMin) {
-            revert InsufficientAmountOut(swapToken, baseToken, swapAmount, amountOut, amountOutMin, poolConfig);
-        }
 
         emit Swap(swapToken, baseToken, swapAmount, amountOut, poolConfig);
 
@@ -431,7 +420,7 @@ contract OnChainLiquidator is IUniswapV3FlashCallback, PeripheryImmutableState, 
 
         int256[] memory limits = new int256[](2);
         limits[0] = type(int256).max;
-        limits[1] = type(int256).max;
+        limits[1] = -int256(amountOutMin);
 
         IAsset[] memory assets = new IAsset[](2);
         assets[0] = IAsset(asset);
@@ -467,10 +456,6 @@ contract OnChainLiquidator is IUniswapV3FlashCallback, PeripheryImmutableState, 
         }
 
         uint256 amountOut = uint256(signedAmountOut);
-
-        if (amountOut < amountOutMin) {
-            revert InsufficientAmountOut(swapToken, baseToken, swapAmount, amountOut, amountOutMin, poolConfig);
-        }
 
         emit Swap(swapToken, baseToken, swapAmount, amountOut, poolConfig);
 
@@ -512,15 +497,11 @@ contract OnChainLiquidator is IUniswapV3FlashCallback, PeripheryImmutableState, 
         int128 idxOfTokenOut = idxOfTokenIn == 0 ? int128(1) : int128(0);
 
         uint amountOut = IStableSwap(curvePool).exchange(
-            idxOfTokenIn,  // i idx of token to send
-            idxOfTokenOut, // j idx of token to receive
-            swapAmount,    // _dx amount of i to be exchanged
-            0              // _min_dy min amount of j to receive
+            idxOfTokenIn,    // i idx of token to send
+            idxOfTokenOut,   // j idx of token to receive
+            swapAmount,      // _dx amount of i to be exchanged
+            amountOutMin     // _min_dy min amount of j to receive - enforces slippage protection
         );
-
-        if (amountOut < amountOutMin) {
-            revert InsufficientAmountOut(tokenIn, tokenOut, swapAmount, amountOut, amountOutMin, poolConfig);
-        }
 
         // wrap any received ETH to WETH
         if (tokenOut == NULL_ADDRESS) {
