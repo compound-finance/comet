@@ -177,7 +177,7 @@ describe('configurator', function() {
       [configuratorProxy.address, cometProxy.address]
     );
 
-    expect(
+    await expect(
       timelock.executeTransactions(
         [proxyAdmin.address],
         [0],
@@ -278,10 +278,10 @@ describe('configurator', function() {
     )) as GovernorSimple__factory;
     const governorBravo = await GovernorFactory.deploy();
     await governorBravo.deployed();
-    governorBravo.initialize(timelock.address, [governor.address]);
+    await governorBravo.initialize(timelock.address, [governor.address]);
 
     // Setting GovernorBravo as the admin of timelock
-    timelock.setAdmin(governorBravo.address);
+    await timelock.setAdmin(governorBravo.address);
 
     const cometAsProxy = comet.attach(cometProxy.address);
     const ASSET_ADDRESS = (await cometAsProxy.getAssetInfo(1)).asset;

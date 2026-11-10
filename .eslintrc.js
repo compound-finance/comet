@@ -65,4 +65,17 @@ module.exports = {
     '@typescript-eslint/no-non-null-assertion': 'off',
     '@typescript-eslint/no-unused-vars': ['error', { 'varsIgnorePattern': '^_', 'argsIgnorePattern': '^_' } ]
   },
+  'overrides': [
+    {
+      // An unawaited tx or async matcher (e.g. expect(...).to.be.reverted) passes silently, so tests and scenarios must await them.
+      // The rule needs type information, so it is enabled only here, where the files are part of tsconfig.json.
+      'files': ['test/**/*.ts', 'scenario/**/*.ts'],
+      'parserOptions': {
+        'project': './tsconfig.json'
+      },
+      'rules': {
+        '@typescript-eslint/no-floating-promises': 'error'
+      }
+    }
+  ],
 };
